@@ -206,3 +206,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando modifiques la lista de archivos generados (comandos, hooks, workflows, scripts)
     - Cuando necesites referencia sobre template context y rendering
     - Cuando trabajes en TAREA 5.1 o features relacionadas con aplicación de planes
+
+- app_docs/feature-b6479a0a-filesystem-operations.md
+  - Conditions:
+    - Cuando trabajes con el módulo FileSystem en infrastructure/fs.py
+    - Cuando necesites entender operaciones de filesystem idempotentes (ensure_directory, append_file)
+    - Cuando implementes creación, lectura, escritura o eliminación de archivos/directorios
+    - Cuando trabajes con permisos de archivos (make_executable)
+    - Cuando necesites entender la integración de FileSystem con ScaffoldService
+    - Cuando modifiques operaciones de filesystem en apply_plan()
+    - Cuando necesites referencia sobre manejo de edge cases (archivos faltantes, directorios padre)
+    - Cuando trabajes con operaciones cross-platform usando pathlib.Path
+    - Cuando implementes funcionalidad que requiera append sin duplicación
