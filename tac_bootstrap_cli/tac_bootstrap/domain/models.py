@@ -150,15 +150,15 @@ class ProjectSpec(BaseModel):
 
     name: str = Field(..., description="Project name")
     mode: ProjectMode = Field(
-        ProjectMode.NEW, description="Project initialization mode (new or existing)"
+        default=ProjectMode.NEW, description="Project initialization mode (new or existing)"
     )
-    repo_root: str = Field(".", description="Repository root directory")
+    repo_root: str = Field(default=".", description="Repository root directory")
     language: Language = Field(..., description="Programming language")
     framework: Framework = Field(
-        Framework.NONE, description="Web framework or project type"
+        default=Framework.NONE, description="Web framework or project type"
     )
     architecture: Architecture = Field(
-        Architecture.SIMPLE, description="Software architecture pattern"
+        default=Architecture.SIMPLE, description="Software architecture pattern"
     )
     package_manager: PackageManager = Field(..., description="Package/dependency manager")
 
@@ -188,13 +188,13 @@ class PathsSpec(BaseModel):
     """
 
     app_root: str = Field(..., description="Application root directory")
-    agentic_root: str = Field(".", description="Agentic layer root directory")
-    prompts_dir: str = Field("prompts", description="Prompts directory")
-    adws_dir: str = Field("adws", description="AI Developer Workflows directory")
-    specs_dir: str = Field("specs", description="Specifications directory")
-    logs_dir: str = Field("logs", description="Logs directory")
-    scripts_dir: str = Field("scripts", description="Scripts directory")
-    worktrees_dir: str = Field("trees", description="Git worktrees directory")
+    agentic_root: str = Field(default=".", description="Agentic layer root directory")
+    prompts_dir: str = Field(default="prompts", description="Prompts directory")
+    adws_dir: str = Field(default="adws", description="AI Developer Workflows directory")
+    specs_dir: str = Field(default="specs", description="Specifications directory")
+    logs_dir: str = Field(default="logs", description="Logs directory")
+    scripts_dir: str = Field(default="scripts", description="Scripts directory")
+    worktrees_dir: str = Field(default="trees", description="Git worktrees directory")
 
 
 class CommandsSpec(BaseModel):
@@ -206,10 +206,10 @@ class CommandsSpec(BaseModel):
 
     start: str = Field(..., description="Command to start the application")
     test: str = Field(..., description="Command to run tests")
-    lint: str = Field("", description="Command to run linter")
-    typecheck: str = Field("", description="Command to run type checker")
-    format: str = Field("", description="Command to format code")
-    build: str = Field("", description="Command to build the project")
+    lint: str = Field(default="", description="Command to run linter")
+    typecheck: str = Field(default="", description="Command to run type checker")
+    format: str = Field(default="", description="Command to format code")
+    build: str = Field(default="", description="Command to build the project")
 
 
 class WorktreeConfig(BaseModel):
@@ -219,10 +219,10 @@ class WorktreeConfig(BaseModel):
     Enables ADWs to work in isolated git worktrees for concurrent workflows.
     """
 
-    enabled: bool = Field(True, description="Enable git worktrees")
-    max_parallel: int = Field(5, description="Maximum parallel worktrees", ge=1, le=10)
+    enabled: bool = Field(default=True, description="Enable git worktrees")
+    max_parallel: int = Field(default=5, description="Maximum parallel worktrees", ge=1, le=10)
     naming: str = Field(
-        "feat-{slug}-{timestamp}", description="Worktree naming pattern"
+        default="feat-{slug}-{timestamp}", description="Worktree naming pattern"
     )
 
 
@@ -231,12 +231,12 @@ class LoggingConfig(BaseModel):
     Logging configuration for agent execution tracking.
     """
 
-    level: str = Field("INFO", description="Log level (DEBUG, INFO, WARNING, ERROR)")
+    level: str = Field(default="INFO", description="Log level (DEBUG, INFO, WARNING, ERROR)")
     capture_agent_transcript: bool = Field(
-        True, description="Capture full agent conversation transcript"
+        default=True, description="Capture full agent conversation transcript"
     )
     run_id_strategy: RunIdStrategy = Field(
-        RunIdStrategy.UUID, description="Run ID generation strategy"
+        default=RunIdStrategy.UUID, description="Run ID generation strategy"
     )
 
 
@@ -248,10 +248,10 @@ class SafetyConfig(BaseModel):
     """
 
     require_tests_pass: bool = Field(
-        True, description="Require tests to pass before completion"
+        default=True, description="Require tests to pass before completion"
     )
     require_review_artifacts: bool = Field(
-        True, description="Require review artifacts before completion"
+        default=True, description="Require review artifacts before completion"
     )
     allowed_paths: List[str] = Field(
         default_factory=list, description="Paths agents are allowed to modify"
@@ -269,7 +269,7 @@ class WorkflowsConfig(BaseModel):
     """
 
     default: DefaultWorkflow = Field(
-        DefaultWorkflow.SDLC_ISO, description="Default workflow to use"
+        default=DefaultWorkflow.SDLC_ISO, description="Default workflow to use"
     )
     available: List[DefaultWorkflow] = Field(
         default_factory=lambda: [
@@ -286,8 +286,8 @@ class ModelPolicy(BaseModel):
     Model selection policy for different task types.
     """
 
-    default: str = Field("sonnet", description="Default model for standard tasks")
-    heavy: str = Field("opus", description="Model for complex/heavy tasks")
+    default: str = Field(default="sonnet", description="Default model for standard tasks")
+    heavy: str = Field(default="opus", description="Model for complex/heavy tasks")
 
 
 class AgenticSpec(BaseModel):
@@ -298,22 +298,22 @@ class AgenticSpec(BaseModel):
     """
 
     provider: AgenticProvider = Field(
-        AgenticProvider.CLAUDE_CODE, description="Agentic provider"
+        default=AgenticProvider.CLAUDE_CODE, description="Agentic provider"
     )
     model_policy: ModelPolicy = Field(
-        default_factory=ModelPolicy, description="Model selection policy"
+        default=ModelPolicy(), description="Model selection policy"
     )
     worktrees: WorktreeConfig = Field(
-        default_factory=WorktreeConfig, description="Git worktree configuration"
+        default=WorktreeConfig(), description="Git worktree configuration"
     )
     logging: LoggingConfig = Field(
-        default_factory=LoggingConfig, description="Logging configuration"
+        default=LoggingConfig(), description="Logging configuration"
     )
     safety: SafetyConfig = Field(
-        default_factory=SafetyConfig, description="Safety constraints"
+        default=SafetyConfig(), description="Safety constraints"
     )
     workflows: WorkflowsConfig = Field(
-        default_factory=WorkflowsConfig, description="Workflow configuration"
+        default=WorkflowsConfig(), description="Workflow configuration"
     )
 
 
@@ -324,9 +324,9 @@ class ClaudeSettings(BaseModel):
 
     project_name: str = Field(..., description="Project name for Claude Code")
     preferred_style: str = Field(
-        "concise", description="Preferred communication style"
+        default="concise", description="Preferred communication style"
     )
-    allow_shell: bool = Field(True, description="Allow shell command execution")
+    allow_shell: bool = Field(default=True, description="Allow shell command execution")
 
 
 class ClaudeCommandsConfig(BaseModel):
@@ -337,19 +337,19 @@ class ClaudeCommandsConfig(BaseModel):
     """
 
     prime: str = Field(
-        ".claude/commands/prime.md", description="Path to /prime command"
+        default=".claude/commands/prime.md", description="Path to /prime command"
     )
     start: str = Field(
-        ".claude/commands/start.md", description="Path to /start command"
+        default=".claude/commands/start.md", description="Path to /start command"
     )
     build: str = Field(
-        ".claude/commands/build.md", description="Path to /build command"
+        default=".claude/commands/build.md", description="Path to /build command"
     )
-    test: str = Field(".claude/commands/test.md", description="Path to /test command")
+    test: str = Field(default=".claude/commands/test.md", description="Path to /test command")
     review: str = Field(
-        ".claude/commands/review.md", description="Path to /review command"
+        default=".claude/commands/review.md", description="Path to /review command"
     )
-    ship: str = Field(".claude/commands/ship.md", description="Path to /ship command")
+    ship: str = Field(default=".claude/commands/ship.md", description="Path to /ship command")
 
 
 class ClaudeConfig(BaseModel):
@@ -361,7 +361,7 @@ class ClaudeConfig(BaseModel):
 
     settings: ClaudeSettings = Field(..., description="Claude Code settings")
     commands: ClaudeCommandsConfig = Field(
-        default_factory=ClaudeCommandsConfig, description="Slash command mappings"
+        default=ClaudeCommandsConfig(), description="Slash command mappings"
     )
 
 
@@ -371,19 +371,19 @@ class TemplatesConfig(BaseModel):
     """
 
     plan_template: str = Field(
-        "prompts/templates/plan.md", description="Plan document template"
+        default="prompts/templates/plan.md", description="Plan document template"
     )
     chore_template: str = Field(
-        "prompts/templates/chore.md", description="Chore document template"
+        default="prompts/templates/chore.md", description="Chore document template"
     )
     feature_template: str = Field(
-        "prompts/templates/feature.md", description="Feature document template"
+        default="prompts/templates/feature.md", description="Feature document template"
     )
     bug_template: str = Field(
-        "prompts/templates/bug.md", description="Bug document template"
+        default="prompts/templates/bug.md", description="Bug document template"
     )
     review_template: str = Field(
-        "prompts/templates/review.md", description="Review document template"
+        default="prompts/templates/review.md", description="Review document template"
     )
 
 
@@ -394,10 +394,10 @@ class BootstrapConfig(BaseModel):
     Controls what gets created during project initialization.
     """
 
-    create_git_repo: bool = Field(True, description="Initialize git repository")
-    initial_commit: bool = Field(True, description="Create initial commit")
-    license: str = Field("MIT", description="License type (MIT, Apache-2.0, etc.)")
-    readme: bool = Field(True, description="Generate README.md")
+    create_git_repo: bool = Field(default=True, description="Initialize git repository")
+    initial_commit: bool = Field(default=True, description="Create initial commit")
+    license: str = Field(default="MIT", description="License type (MIT, Apache-2.0, etc.)")
+    readme: bool = Field(default=True, description="Generate README.md")
 
 
 # ============================================================================
@@ -433,22 +433,31 @@ class TACConfig(BaseModel):
         )
     """
 
-    version: int = Field(1, description="Configuration schema version")
+    version: int = Field(default=1, description="Configuration schema version")
     project: ProjectSpec = Field(..., description="Project metadata and settings")
     paths: PathsSpec = Field(
-        default_factory=lambda: PathsSpec(app_root="src"),
+        default_factory=lambda: PathsSpec(
+            app_root="src",
+            agentic_root=".",
+            prompts_dir="prompts",
+            adws_dir="adws",
+            specs_dir="specs",
+            logs_dir="logs",
+            scripts_dir="scripts",
+            worktrees_dir="trees"
+        ),
         description="Directory structure configuration",
     )
     commands: CommandsSpec = Field(..., description="Shell command mappings")
     agentic: AgenticSpec = Field(
-        default_factory=AgenticSpec, description="Agentic layer configuration"
+        default=AgenticSpec(), description="Agentic layer configuration"
     )
     claude: ClaudeConfig = Field(..., description="Claude Code configuration")
     templates: TemplatesConfig = Field(
-        default_factory=TemplatesConfig, description="Template file paths"
+        default=TemplatesConfig(), description="Template file paths"
     )
     bootstrap: BootstrapConfig = Field(
-        default_factory=BootstrapConfig, description="Bootstrap options for new projects"
+        default=BootstrapConfig(), description="Bootstrap options for new projects"
     )
 
     model_config = {"extra": "forbid"}
