@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""
+Constants for Claude Code Hooks in {{ config.project.name }}.
+
+This module provides shared constants and utilities for all hooks.
+All values are derived from the project configuration.
+"""
+
+import os
+from pathlib import Path
+
+# ============================================================================
+# PROJECT METADATA
+# ============================================================================
+
+PROJECT_NAME = "{{ config.project.name }}"
+LANGUAGE = "{{ config.project.language }}"
+PACKAGE_MANAGER = "{{ config.project.package_manager }}"
+
+# ============================================================================
+# DIRECTORY PATHS
+# ============================================================================
+
+LOG_DIR = "{{ config.paths.logs_dir }}"
+SPECS_DIR = "{{ config.paths.specs_dir }}"
+ADWS_DIR = "{{ config.paths.adws_dir }}"
+SCRIPTS_DIR = "{{ config.paths.scripts_dir }}"
+PROMPTS_DIR = "{{ config.paths.prompts_dir }}"
+WORKTREES_DIR = "{{ config.paths.worktrees_dir }}"
+
+# ============================================================================
+# SAFETY CONFIGURATION
+# ============================================================================
+
+# Paths that agents are forbidden from modifying
+FORBIDDEN_PATHS = [
+{%- for path in config.agentic.safety.forbidden_paths %}
+    "{{ path }}",
+{%- endfor %}
+]
+
+# Paths that agents are allowed to modify
+ALLOWED_PATHS = [
+{%- for path in config.agentic.safety.allowed_paths %}
+    "{{ path }}",
+{%- endfor %}
+]
+
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+
+def get_session_log_dir(session_id: str) -> Path:
+    """
+    Get the log directory for a specific session.
+
+    Args:
+        session_id: The Claude session ID
+
+    Returns:
+        Path object for the session's log directory
+    """
+    return Path(LOG_DIR) / session_id
+
+
+def ensure_session_log_dir(session_id: str) -> Path:
+    """
+    Ensure the log directory for a session exists.
+
+    Args:
+        session_id: The Claude session ID
+
+    Returns:
+        Path object for the session's log directory
+    """
+    log_dir = get_session_log_dir(session_id)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    return log_dir
