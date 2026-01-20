@@ -193,3 +193,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender el patrón de confirmación y preview de configuración
     - Cuando trabajes con modo interactive vs non-interactive en CLI
     - Cuando necesites referencia sobre UI patterns con Rich (tablas, paneles, prompts coloridos)
+
+- app_docs/feature-c9d3ab60-scaffold-service-build-plan.md
+  - Conditions:
+    - Cuando trabajes con ScaffoldService.build_plan() o apply_plan()
+    - Cuando necesites entender la orquestación de construcción de planes de scaffolding
+    - Cuando trabajes con métodos privados de construcción (_add_directories, _add_claude_files, _add_adw_files, etc.)
+    - Cuando necesites entender la lógica de acciones de archivos basada en existing_repo flag
+    - Cuando implementes manejo de idempotencia (CREATE, SKIP, OVERWRITE, PATCH)
+    - Cuando trabajes con ApplyResult y tracking de estadísticas de scaffolding
+    - Cuando necesites entender la integración entre ScaffoldService y TemplateRepository/FileSystem
+    - Cuando modifiques la lista de archivos generados (comandos, hooks, workflows, scripts)
+    - Cuando necesites referencia sobre template context y rendering
+    - Cuando trabajes en TAREA 5.1 o features relacionadas con aplicación de planes
