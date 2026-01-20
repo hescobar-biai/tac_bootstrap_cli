@@ -157,3 +157,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes model selection logic (HEAVY_COMMANDS)
     - Cuando necesites referencia sobre variables TACConfig usadas en templates ADW
     - Cuando implementes generación de adws/ en proyectos target
+
+- app_docs/feature-feff53ac-scripts-config-templates.md
+  - Conditions:
+    - Cuando trabajes con templates de scripts bash (start.sh, test.sh, lint.sh, build.sh)
+    - Cuando necesites entender templates de configuración (config.yml, .mcp.json, .gitignore)
+    - Cuando modifiques o agregues templates en templates/scripts/ o templates/config/
+    - Cuando trabajes con templates de documentación de estructura (specs/README.md, app_docs/README.md, ai_docs/README.md)
+    - Cuando necesites entender convenciones de templates Jinja2 (enums con .value, booleans con | lower)
+    - Cuando implementes renderizado de archivos de configuración del proyecto
+    - Cuando necesites referencia sobre variables TACConfig usadas en templates de scripts/config
+    - Cuando trabajes con conditional rendering de comandos opcionales (lint, build, typecheck)
