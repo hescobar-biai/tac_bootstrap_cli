@@ -1,0 +1,65 @@
+"""Git operations for ADWs."""
+import subprocess
+from pathlib import Path
+from typing import Optional
+
+
+class GitOps:
+    """Git operations wrapper."""
+
+    def __init__(self, cwd: Optional[Path] = None):
+        self.cwd = cwd or Path.cwd()
+
+    def _run(self, *args: str) -> subprocess.CompletedProcess:
+        """Run a git command."""
+        return subprocess.run(
+            ["git", *args],
+            cwd=self.cwd,
+            capture_output=True,
+            text=True,
+        )
+
+    def create_branch(self, branch_name: str) -> bool:
+        """Create and checkout a new branch."""
+        result = self._run("checkout", "-b", branch_name)
+        return result.returncode == 0
+
+    def checkout(self, branch: str) -> bool:
+        """Checkout a branch."""
+        result = self._run("checkout", branch)
+        return result.returncode == 0
+
+    def add_all(self) -> bool:
+        """Stage all changes."""
+        result = self._run("add", "-A")
+        return result.returncode == 0
+
+    def commit(self, message: str) -> bool:
+        """Create a commit."""
+        result = self._run("commit", "-m", message)
+        return result.returncode == 0
+
+    def push(self, branch: str, set_upstream: bool = True) -> bool:
+        """Push branch to remote."""
+        args = ["push"]
+        if set_upstream:
+            args.extend(["-u", "origin", branch])
+        else:
+            args.append(branch)
+        result = self._run(*args)
+        return result.returncode == 0
+
+    def create_worktree(self, path: Path, branch: str) -> bool:
+        """Create a git worktree."""
+        result = self._run("worktree", "add", str(path), "-b", branch)
+        return result.returncode == 0
+
+    def remove_worktree(self, path: Path) -> bool:
+        """Remove a git worktree."""
+        result = self._run("worktree", "remove", str(path), "--force")
+        return result.returncode == 0
+
+    def get_current_branch(self) -> str:
+        """Get current branch name."""
+        result = self._run("branch", "--show-current")
+        return result.stdout.strip()

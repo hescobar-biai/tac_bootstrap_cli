@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+"""Cron trigger for ADWs.
+
+Polls for new tasks and spawns workflows.
+"""
+import argparse
+import time
+import sys
+from pathlib import Path
+
+SPECS_DIR = Path("{{ config.paths.specs_dir }}")
+POLL_INTERVAL = 20  # seconds
+
+
+def get_pending_tasks() -> list:
+    """Get pending task files from specs directory."""
+    tasks = []
+    for spec_file in SPECS_DIR.glob("*.md"):
+        content = spec_file.read_text()
+        if "status: pending" in content.lower():
+            tasks.append(spec_file)
+    return tasks
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Poll for tasks")
+    parser.add_argument("--once", action="store_true", help="Run once and exit")
+    parser.add_argument("--interval", type=int, default=POLL_INTERVAL, help="Poll interval in seconds")
+    args = parser.parse_args()
+
+    print(f"Starting trigger (interval: {args.interval}s)")
+
+    while True:
+        tasks = get_pending_tasks()
+
+        if tasks:
+            print(f"Found {len(tasks)} pending tasks")
+            for task in tasks:
+                print(f"  - {task.name}")
+                # Here you would spawn the appropriate workflow
+
+        if args.once:
+            break
+
+        time.sleep(args.interval)
+
+
+if __name__ == "__main__":
+    main()

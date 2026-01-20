@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""SDLC Workflow (Isolated).
+
+Complete software development lifecycle:
+Plan → Build → Test → Review → Ship
+
+Each run gets its own git worktree for isolation.
+"""
+import argparse
+import sys
+import uuid
+from pathlib import Path
+
+# Add parent to path for imports
+sys.path.insert(0, str(Path(__file__).parent))
+
+from adw_modules.state import ADWState
+from adw_modules.git_ops import GitOps
+from adw_modules.workflow_ops import WorkflowOps
+
+
+def generate_adw_id() -> str:
+    """Generate unique ADW ID."""
+    return uuid.uuid4().hex[:8]
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Run SDLC workflow")
+    parser.add_argument("--issue", type=int, help="Issue number")
+    parser.add_argument("--description", type=str, help="Issue description")
+    parser.add_argument("--adw-id", type=str, help="Resume existing ADW")
+    args = parser.parse_args()
+
+    # Initialize or resume state
+    if args.adw_id:
+        state = ADWState.load(args.adw_id)
+        if not state:
+            print(f"Error: ADW {args.adw_id} not found")
+            sys.exit(1)
+    else:
+        state = ADWState(
+            adw_id=generate_adw_id(),
+            issue_number=args.issue,
+        )
+        state.save()
+
+    print(f"ADW ID: {state.adw_id}")
+
+    # Setup worktree
+    git = GitOps()
+    worktree_path = Path("{{ config.paths.worktrees_dir }}") / state.adw_id
+    branch_name = f"adw-{state.adw_id}"
+
+    if not worktree_path.exists():
+        print(f"Creating worktree: {worktree_path}")
+        git.create_worktree(worktree_path, branch_name)
+        state.worktree_path = str(worktree_path)
+        state.branch_name = branch_name
+        state.save()
+
+    # Run workflow in worktree
+    ops = WorkflowOps(state, cwd=worktree_path)
+
+    description = args.description or f"Issue #{args.issue}"
+
+    # Phase 1: Plan
+    if "plan" not in state.phases_completed:
+        print("Phase 1: Planning...")
+        if not ops.plan(description):
+            print("Planning failed")
+            sys.exit(1)
+
+    # Phase 2: Build
+    if "build" not in state.phases_completed:
+        print("Phase 2: Building...")
+        plan_file = state.plan_file or f"{{ config.paths.specs_dir }}/issue-{args.issue}.md"
+        if not ops.build(plan_file):
+            print("Build failed")
+            sys.exit(1)
+
+    # Phase 3: Test
+    if "test" not in state.phases_completed:
+        print("Phase 3: Testing...")
+        if not ops.test():
+            print("Tests failed")
+            sys.exit(1)
+
+    # Phase 4: Review
+    if "review" not in state.phases_completed:
+        print("Phase 4: Reviewing...")
+        plan_file = state.plan_file or f"{{ config.paths.specs_dir }}/issue-{args.issue}.md"
+        if not ops.review(plan_file):
+            print("Review failed")
+            sys.exit(1)
+
+    # Phase 5: Ship
+    if "ship" not in state.phases_completed:
+        print("Phase 5: Shipping...")
+        if not ops.ship():
+            print("Ship failed")
+            sys.exit(1)
+
+    print(f"SDLC workflow completed for ADW {state.adw_id}")
+
+
+if __name__ == "__main__":
+    main()
