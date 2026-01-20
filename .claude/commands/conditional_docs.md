@@ -87,3 +87,11 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con la arquitectura DDD del CLI
     - Cuando necesites referencia sobre configuración de pyproject.toml
     - Cuando necesites entender los entry points del CLI
+
+- app_docs/feature-e29f22c3-configure-project-dependencies.md
+  - Conditions:
+    - Cuando trabajes con dependencias del proyecto (pyproject.toml)
+    - Cuando configures herramientas de desarrollo (ruff, mypy, pytest)
+    - Cuando necesites entender las dependencias de producción instaladas
+    - Cuando trabajes con gitpython para operaciones Git
+    - Cuando necesites referencia sobre configuraciones de linting y type checking
