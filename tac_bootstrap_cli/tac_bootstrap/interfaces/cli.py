@@ -276,13 +276,14 @@ def add_agentic(
             detected = detector.detect(repo_path)
 
             # Show auto-detection results
+            framework_display = detected.framework.value if detected.framework else "None"
             detection_text = f"""[bold]Auto-Detection Results[/bold]
 
 [cyan]Repository:[/cyan] {repo_path}
-[cyan]Project Name:[/cyan] {detected.name}
 [cyan]Language:[/cyan] {detected.language.value}
-[cyan]Framework:[/cyan] {detected.framework.value}
+[cyan]Framework:[/cyan] {framework_display}
 [cyan]Package Manager:[/cyan] {detected.package_manager.value}
+[cyan]App Root:[/cyan] {detected.app_root or '.'}
 """
             console.print(Panel(detection_text, border_style="cyan", title="Detection"))
 
@@ -292,12 +293,14 @@ def add_agentic(
                 config = run_add_agentic_wizard(repo_path, detected)
             else:
                 # Non-interactive mode: build config from detected settings
+                # Use repo directory name as project name
+                project_name = repo_path.name
                 default_cmds = get_default_commands(detected.language, detected.package_manager)
                 config = TACConfig(
                     project=ProjectSpec(
-                        name=detected.name,
+                        name=project_name,
                         language=detected.language,
-                        framework=detected.framework,
+                        framework=detected.framework or Framework.NONE,
                         package_manager=detected.package_manager,
                     ),
                     paths=PathsSpec(app_root=detected.app_root or "src"),
@@ -309,7 +312,7 @@ def add_agentic(
                         format=default_cmds.get("format", ""),
                         build=default_cmds.get("build", ""),
                     ),
-                    claude=ClaudeConfig(settings=ClaudeSettings(project_name=detected.name)),
+                    claude=ClaudeConfig(settings=ClaudeSettings(project_name=project_name)),
                 )
 
             # Build and apply plan
