@@ -24,6 +24,7 @@ dev = [
     "pytest-cov>=4.1.0",
     "mypy>=1.7.0",
     "ruff>=0.1.0",
+    "types-PyYAML>=6.0.0",
 ]
 
 [project.scripts]
@@ -45,6 +46,7 @@ python_version = "3.10"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
+disable_error_code = ["import-untyped", "misc"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

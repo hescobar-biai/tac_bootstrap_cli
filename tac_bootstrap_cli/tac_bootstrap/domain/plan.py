@@ -3,6 +3,7 @@
 These models represent the plan of operations to execute when scaffolding
 a project. The plan is built first, then can be previewed or executed.
 """
+
 from enum import Enum
 from typing import List, Optional
 
@@ -11,10 +12,11 @@ from pydantic import BaseModel, Field
 
 class FileAction(str, Enum):
     """Type of file operation to perform."""
-    CREATE = "create"    # Create new file (skip if exists)
+
+    CREATE = "create"  # Create new file (skip if exists)
     OVERWRITE = "overwrite"  # Create or overwrite existing
-    PATCH = "patch"      # Append to existing file
-    SKIP = "skip"        # Skip this file
+    PATCH = "patch"  # Append to existing file
+    SKIP = "skip"  # Skip this file
 
 
 class FileOperation(BaseModel):
@@ -22,6 +24,7 @@ class FileOperation(BaseModel):
 
     Represents one file to be created, modified, or skipped.
     """
+
     path: str = Field(..., description="Relative path from project root")
     action: FileAction = Field(..., description="Type of operation")
     template: Optional[str] = Field(None, description="Jinja2 template name to render")
@@ -38,6 +41,7 @@ class DirectoryOperation(BaseModel):
 
     Represents a directory to be created.
     """
+
     path: str = Field(..., description="Relative path from project root")
     reason: str = Field("", description="Purpose of this directory")
 
@@ -66,6 +70,7 @@ class ScaffoldPlan(BaseModel):
         scaffold_service.apply_plan(plan, output_dir)
         ```
     """
+
     directories: List[DirectoryOperation] = Field(default_factory=list)
     files: List[FileOperation] = Field(default_factory=list)
 
@@ -125,12 +130,14 @@ class ScaffoldPlan(BaseModel):
         executable: bool = False,
     ) -> "ScaffoldPlan":
         """Add a file operation to the plan (fluent interface)."""
-        self.files.append(FileOperation(
-            path=path,
-            action=action,
-            template=template,
-            content=content,
-            reason=reason,
-            executable=executable,
-        ))
+        self.files.append(
+            FileOperation(
+                path=path,
+                action=action,
+                template=template,
+                content=content,
+                reason=reason,
+                executable=executable,
+            )
+        )
         return self

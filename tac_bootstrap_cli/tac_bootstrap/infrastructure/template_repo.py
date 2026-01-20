@@ -47,9 +47,7 @@ class TemplateNotFoundError(Exception):
         self.template_name = template_name
         self.search_paths = search_paths
         paths_str = "\n  ".join(search_paths)
-        super().__init__(
-            f"Template '{template_name}' not found in:\n  {paths_str}"
-        )
+        super().__init__(f"Template '{template_name}' not found in:\n  {paths_str}")
 
 
 class TemplateRenderError(Exception):
@@ -58,9 +56,7 @@ class TemplateRenderError(Exception):
     def __init__(self, template_name: str, original_error: Exception):
         self.template_name = template_name
         self.original_error = original_error
-        super().__init__(
-            f"Failed to render template '{template_name}': {str(original_error)}"
-        )
+        super().__init__(f"Failed to render template '{template_name}': {str(original_error)}")
 
 
 # ============================================================================
@@ -255,10 +251,7 @@ class TemplateRepository:
             template = self.env.get_template(template_name)
             return template.render(config=context)
         except Jinja2TemplateNotFound as e:
-            raise TemplateNotFoundError(
-                template_name,
-                [str(self.templates_dir)]
-            ) from e
+            raise TemplateNotFoundError(template_name, [str(self.templates_dir)]) from e
         except (TemplateSyntaxError, Exception) as e:
             raise TemplateRenderError(template_name, e) from e
 
@@ -370,9 +363,6 @@ class TemplateRepository:
         template_path = self.templates_dir / template_name
 
         if not template_path.is_file():
-            raise TemplateNotFoundError(
-                template_name,
-                [str(self.templates_dir)]
-            )
+            raise TemplateNotFoundError(template_name, [str(self.templates_dir)])
 
         return template_path.read_text(encoding="utf-8")
