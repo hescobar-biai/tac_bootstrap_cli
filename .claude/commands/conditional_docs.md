@@ -181,3 +181,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites referencia sobre argumentos, opciones y help text de comandos
     - Cuando implementes wizard interactivo (interactive mode) en comandos
     - Cuando trabajes con validación de paths, carga de YAML, o construcción de TACConfig desde CLI
+
+- app_docs/feature-ede93862-interactive-wizard.md
+  - Conditions:
+    - Cuando trabajes con el wizard interactivo implementado con Rich UI
+    - Cuando necesites entender la integración del wizard con comandos CLI (init, add-agentic)
+    - Cuando modifiques o extiendas el flujo de configuración interactiva
+    - Cuando necesites referencia sobre run_init_wizard() o run_add_agentic_wizard()
+    - Cuando trabajes con selección de opciones numeradas y defaults contextuales
+    - Cuando implementes nuevas preguntas o pasos en el wizard
+    - Cuando necesites entender el patrón de confirmación y preview de configuración
+    - Cuando trabajes con modo interactive vs non-interactive en CLI
+    - Cuando necesites referencia sobre UI patterns con Rich (tablas, paneles, prompts coloridos)
