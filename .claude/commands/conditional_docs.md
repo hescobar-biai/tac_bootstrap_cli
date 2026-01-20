@@ -168,3 +168,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes renderizado de archivos de configuración del proyecto
     - Cuando necesites referencia sobre variables TACConfig usadas en templates de scripts/config
     - Cuando trabajes con conditional rendering de comandos opcionales (lint, build, typecheck)
+
+- app_docs/feature-a83dbd52-implement-main-cli-commands.md
+  - Conditions:
+    - Cuando trabajes con los comandos CLI principales (init, add-agentic, doctor, render, version)
+    - Cuando necesites entender la estructura completa de la interfaz CLI de TAC Bootstrap
+    - Cuando modifiques o agregues comandos CLI usando Typer
+    - Cuando trabajes con Rich para formateo de output en terminal (paneles, colores)
+    - Cuando necesites entender cómo integrar con ScaffoldService, DetectService, DoctorService (placeholder services)
+    - Cuando implementes dry-run mode o force flags en comandos
+    - Cuando trabajes con manejo de errores y mensajes de usuario en CLI
+    - Cuando necesites referencia sobre argumentos, opciones y help text de comandos
+    - Cuando implementes wizard interactivo (interactive mode) en comandos
+    - Cuando trabajes con validación de paths, carga de YAML, o construcción de TACConfig desde CLI
