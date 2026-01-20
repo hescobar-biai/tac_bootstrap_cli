@@ -95,3 +95,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender las dependencias de producción instaladas
     - Cuando trabajes con gitpython para operaciones Git
     - Cuando necesites referencia sobre configuraciones de linting y type checking
+
+- app_docs/feature-e80a5f17-pydantic-config-models.md
+  - Conditions:
+    - Cuando trabajes con los modelos Pydantic de configuración
+    - Cuando necesites entender TACConfig y sus sub-modelos (ProjectSpec, PathsSpec, CommandsSpec, AgenticSpec, etc.)
+    - Cuando implementes validación de configuración
+    - Cuando uses los helper functions (get_frameworks_for_language, get_package_managers_for_language, get_default_commands)
+    - Cuando necesites referencia de enums (Language, Framework, Architecture, PackageManager)
+    - Cuando trabajes con el wizard interactivo y necesites defaults contextuales
+    - Cuando implementes carga/guardado de config.yml
