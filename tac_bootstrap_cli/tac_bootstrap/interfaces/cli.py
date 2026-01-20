@@ -187,14 +187,12 @@ def init(
 
                 # List directories and files from plan
                 console.print("[bold cyan]Directories:[/bold cyan]")
-                for op in plan.operations:
-                    if op.operation_type == "create_dir":
-                        console.print(f"  📁 {op.target_path}")
+                for dir_op in plan.directories:
+                    console.print(f"  📁 {dir_op.path}")
 
                 console.print("\n[bold cyan]Files:[/bold cyan]")
-                for op in plan.operations:
-                    if op.operation_type in ("render_template", "copy_file"):
-                        console.print(f"  📄 {op.target_path}")
+                for file_op in plan.files:
+                    console.print(f"  📄 {file_op.path}")
 
                 console.print("\n[dim]Run without --dry-run to create the project[/dim]")
                 return
@@ -207,7 +205,7 @@ def init(
 
 [cyan]Location:[/cyan] {target_dir}
 [cyan]Files Created:[/cyan] {result.files_created}
-[cyan]Directories Created:[/cyan] {result.dirs_created}
+[cyan]Directories Created:[/cyan] {result.directories_created}
 
 [bold]Next Steps:[/bold]
   1. cd {name}
@@ -330,9 +328,18 @@ def add_agentic(
 """
                 console.print(Panel(preview_text, border_style="yellow", title="Preview"))
 
-                for op in plan.operations:
-                    action = "📝 Modify" if op.operation_type == "update_file" else "📄 Create"
-                    console.print(f"  {action} {op.target_path}")
+                # Show directories
+                for dir_op in plan.directories:
+                    console.print(f"  📁 Create {dir_op.path}")
+
+                # Show files
+                for file_op in plan.files:
+                    action = (
+                        "📝 Modify"
+                        if file_op.action.value in ("overwrite", "patch")
+                        else "📄 Create"
+                    )
+                    console.print(f"  {action} {file_op.path}")
 
                 console.print("\n[dim]Run without --dry-run to apply changes[/dim]")
                 return
@@ -345,7 +352,7 @@ def add_agentic(
 
 [cyan]Location:[/cyan] {repo_path}
 [cyan]Files Created:[/cyan] {result.files_created}
-[cyan]Files Modified:[/cyan] {result.files_modified}
+[cyan]Files Modified:[/cyan] {result.files_overwritten}
 
 [bold]Next Steps:[/bold]
   1. Review generated files in .claude/, adws/, scripts/
@@ -544,9 +551,18 @@ def render(
 """
                 console.print(Panel(preview_text, border_style="yellow", title="Preview"))
 
-                for op in plan.operations:
-                    action = "📝 Modify" if op.operation_type == "update_file" else "📄 Create"
-                    console.print(f"  {action} {op.target_path}")
+                # Show directories
+                for dir_op in plan.directories:
+                    console.print(f"  📁 Create {dir_op.path}")
+
+                # Show files
+                for file_op in plan.files:
+                    action = (
+                        "📝 Modify"
+                        if file_op.action.value in ("overwrite", "patch")
+                        else "📄 Create"
+                    )
+                    console.print(f"  {action} {file_op.path}")
 
                 console.print("\n[dim]Run without --dry-run to apply changes[/dim]")
                 return
@@ -559,7 +575,7 @@ def render(
 
 [cyan]Target:[/cyan] {target_dir}
 [cyan]Files Created:[/cyan] {result.files_created}
-[cyan]Files Modified:[/cyan] {result.files_modified}
+[cyan]Files Modified:[/cyan] {result.files_overwritten}
 
 All files have been regenerated from {config_file.name}
 """
