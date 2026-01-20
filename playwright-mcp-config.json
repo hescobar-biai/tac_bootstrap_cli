@@ -6,7 +6,7 @@
     },
     "contextOptions": {
       "recordVideo": {
-        "dir": "./videos",
+        "dir": "/Volumes/MAc1/Celes/tac_bootstrap/trees/e5a04ca0/videos",
         "size": {
           "width": 1920,
           "height": 1080

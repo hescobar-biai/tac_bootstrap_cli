@@ -80,3 +80,10 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
   - Conditions:
     - Cuando trabajes con templates de prompts
     - Cuando modifiques formatos de plan, feature, bug, o review
+
+- app_docs/feature-e5a04ca0-python-package-structure.md
+  - Conditions:
+    - Cuando necesites entender la estructura base del paquete Python
+    - Cuando trabajes con la arquitectura DDD del CLI
+    - Cuando necesites referencia sobre configuración de pyproject.toml
+    - Cuando necesites entender los entry points del CLI
