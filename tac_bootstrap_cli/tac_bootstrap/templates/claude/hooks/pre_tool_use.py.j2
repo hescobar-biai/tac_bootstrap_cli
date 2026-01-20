@@ -1,10 +1,23 @@
 #!/usr/bin/env python3
+"""
+Pre-tool-use hook for {{ config.project.name }}.
+
+This hook validates tool calls before execution to prevent dangerous operations.
+It checks for:
+- Dangerous rm commands
+- Access to forbidden paths (.env files, secrets, etc.)
+- Access to paths outside allowed directories
+
+Exit codes:
+- 0: Allow tool execution
+- 2: Block tool execution and show error to Claude
+"""
 
 import json
 import sys
 import re
-import os
 from pathlib import Path
+
 
 def is_dangerous_rm_command(command):
     """
@@ -49,41 +62,36 @@ def is_dangerous_rm_command(command):
 
     return False
 
-def is_forbidden_path_access(tool_name, tool_input, forbidden_paths):
+
+def is_forbidden_path_access(tool_name, tool_input):
     """
     Check if any tool is trying to access forbidden paths.
+    Forbidden paths are defined in config: {{ config.agentic.safety.forbidden_paths }}
     """
+    forbidden_paths = [
+{%- for path in config.agentic.safety.forbidden_paths %}
+        "{{ path }}",
+{%- endfor %}
+    ]
+
     if tool_name in ['Read', 'Edit', 'MultiEdit', 'Write', 'Bash']:
         # Check file paths for file-based tools
         if tool_name in ['Read', 'Edit', 'MultiEdit', 'Write']:
             file_path = tool_input.get('file_path', '')
             for forbidden in forbidden_paths:
                 if forbidden in file_path:
-                    return True, forbidden
+                    return True
 
         # Check bash commands for forbidden path access
         elif tool_name == 'Bash':
             command = tool_input.get('command', '')
             for forbidden in forbidden_paths:
-                # Check if forbidden path appears in command
+                # Simple check: if forbidden path appears in command
                 if forbidden in command:
-                    return True, forbidden
+                    return True
 
-    return False, None
+    return False
 
-def ensure_session_log_dir(session_id):
-    """
-    Ensure the log directory for a session exists.
-
-    Args:
-        session_id: The Claude session ID
-
-    Returns:
-        Path object for the session's log directory
-    """
-    log_dir = Path("{{ config.paths.logs_dir }}") / session_id
-    log_dir.mkdir(parents=True, exist_ok=True)
-    return log_dir
 
 def main():
     try:
@@ -93,18 +101,10 @@ def main():
         tool_name = input_data.get('tool_name', '')
         tool_input = input_data.get('tool_input', {})
 
-        # Forbidden paths from config
-        forbidden_paths = [
-            {% for path in config.agentic.safety.forbidden_paths -%}
-            "{{ path }}",
-            {% endfor -%}
-        ]
-
         # Check for forbidden path access
-        is_forbidden, forbidden_path = is_forbidden_path_access(tool_name, tool_input, forbidden_paths)
-        if is_forbidden:
-            print(f"BLOCKED: Access to forbidden path '{forbidden_path}' is prohibited", file=sys.stderr)
-            print("This path is marked as sensitive in the project configuration", file=sys.stderr)
+        if is_forbidden_path_access(tool_name, tool_input):
+            print("BLOCKED: Access to forbidden paths is prohibited", file=sys.stderr)
+            print("Forbidden paths: {{ config.agentic.safety.forbidden_paths | join(', ') }}", file=sys.stderr)
             sys.exit(2)  # Exit code 2 blocks tool call and shows error to Claude
 
         # Check for dangerous rm -rf commands
@@ -116,11 +116,13 @@ def main():
                 print("BLOCKED: Dangerous rm command detected and prevented", file=sys.stderr)
                 sys.exit(2)  # Exit code 2 blocks tool call and shows error to Claude
 
-        # Extract session_id
+        # Extract session_id for logging
         session_id = input_data.get('session_id', 'unknown')
 
-        # Ensure session log directory exists
-        log_dir = ensure_session_log_dir(session_id)
+        # Ensure log directory exists
+        log_base_dir = Path("{{ config.paths.logs_dir }}")
+        log_dir = log_base_dir / session_id
+        log_dir.mkdir(parents=True, exist_ok=True)
         log_path = log_dir / 'pre_tool_use.json'
 
         # Read existing log data or initialize empty list
