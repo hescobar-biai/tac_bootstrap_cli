@@ -1,0 +1,89 @@
+# TAC Bootstrap Configuration
+# Este archivo es la fuente de verdad para el generador
+
+version: 1
+
+project:
+  name: "tac-bootstrap"
+  mode: "existing"                    # new | existing
+  repo_root: "."
+  language: "python"
+  framework: "none"                   # CLI, no framework web
+  architecture: "ddd"                 # Domain-Driven Design
+  package_manager: "uv"
+
+paths:
+  app_root: "tac_bootstrap_cli"       # Donde vivira el CLI
+  agentic_root: "."
+  prompts_dir: "prompts"
+  adws_dir: "adws"
+  specs_dir: "specs"
+  logs_dir: "logs"
+  scripts_dir: "scripts"
+  worktrees_dir: "trees"
+
+commands:
+  start: "uv run tac-bootstrap --help"
+  test: "uv run pytest"
+  lint: "uv run ruff check ."
+  typecheck: "uv run mypy tac_bootstrap_cli"
+  format: "uv run ruff format ."
+  build: "uv build"
+
+agentic:
+  provider: "claude_code"
+  model_policy:
+    default: "sonnet"
+    heavy: "opus"
+  worktrees:
+    enabled: true
+    max_parallel: 5
+    naming: "feat-{slug}-{timestamp}"
+  logging:
+    level: "INFO"
+    capture_agent_transcript: true
+    run_id_strategy: "uuid"
+  safety:
+    require_tests_pass: true
+    require_review_artifacts: true
+    allowed_paths:
+      - "tac_bootstrap_cli/"
+      - "adws/"
+      - "scripts/"
+      - "specs/"
+      - "tests/"
+    forbidden_paths:
+      - ".env"
+      - "secrets/"
+  workflows:
+    default: "sdlc_iso"
+    available:
+      - "sdlc_iso"
+      - "patch_iso"
+      - "plan_implement"
+
+claude:
+  settings:
+    project_name: "tac-bootstrap"
+    preferred_style: "concise"
+    allow_shell: true
+  commands:
+    prime: ".claude/commands/prime.md"
+    start: ".claude/commands/start.md"
+    build: ".claude/commands/build.md"
+    test: ".claude/commands/test.md"
+    review: ".claude/commands/review.md"
+    ship: ".claude/commands/ship.md"
+
+templates:
+  plan_template: "prompts/templates/plan.md"
+  chore_template: "prompts/templates/chore.md"
+  feature_template: "prompts/templates/feature.md"
+  bug_template: "prompts/templates/bug.md"
+  review_template: "prompts/templates/review.md"
+
+bootstrap:
+  create_git_repo: false              # Ya existe
+  initial_commit: false
+  license: "MIT"
+  readme: true

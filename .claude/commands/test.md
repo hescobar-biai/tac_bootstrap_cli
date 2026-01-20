@@ -1,14 +1,14 @@
 # Application Validation Test Suite
 
-Execute comprehensive validation tests for both frontend and backend components, returning results in a standardized JSON format for automated processing.
+Ejecutar tests comprehensivos para TAC Bootstrap CLI, retornando resultados en formato JSON.
 
 ## Purpose
 
-Proactively identify and fix issues in the application before they impact users or developers. By running this comprehensive test suite, you can:
-- Detect syntax errors, type mismatches, and import failures
-- Identify broken tests or security vulnerabilities  
-- Verify build processes and dependencies
-- Ensure the application is in a healthy state
+Validar el CLI de TAC Bootstrap antes de hacer cambios:
+- Detectar errores de sintaxis y tipos
+- Identificar tests rotos
+- Verificar que el build funciona
+- Asegurar calidad del código
 
 ## Variables
 
@@ -16,68 +16,70 @@ TEST_COMMAND_TIMEOUT: 5 minutes
 
 ## Instructions
 
-- Execute each test in the sequence provided below
-- Capture the result (passed/failed) and any error messages
-- IMPORTANT: Return ONLY the JSON array with test results
-  - IMPORTANT: Do not include any additional text, explanations, or markdown formatting
-  - We'll immediately run JSON.parse() on the output, so make sure it's valid JSON
-- If a test passes, omit the error field
-- If a test fails, include the error message in the error field
-- Execute all tests even if some fail
-- Error Handling:
-  - If a command returns non-zero exit code, mark as failed and immediately stop processing tests
-  - Capture stderr output for error field
-  - Timeout commands after `TEST_COMMAND_TIMEOUT`
-  - IMPORTANT: If a test fails, stop processing tests and return the results thus far
-- Some tests may have dependencies (e.g., server must be stopped for port availability)
-- API health check is required
-- Test execution order is important - dependencies should be validated first
-- All file paths are relative to the project root
-- Always run `pwd` and `cd` before each test to ensure you're operating in the correct directory for the given test
+- Ejecutar cada test en secuencia
+- Capturar resultado (passed/failed) y mensajes de error
+- IMPORTANTE: Retornar SOLO el JSON array con resultados
+- Si un test pasa, omitir el campo error
+- Si un test falla, incluir mensaje de error
+- Ejecutar todos los tests aunque algunos fallen
+- Timeout de comandos: `TEST_COMMAND_TIMEOUT`
 
 ## Test Execution Sequence
 
-### Backend Tests
+### TAC Bootstrap CLI Tests (tac_bootstrap_cli/)
+
+**Si tac_bootstrap_cli/ existe:**
 
 1. **Python Syntax Check**
-   - Preparation Command: None
-   - Command: `cd app/server && uv run python -m py_compile server.py main.py core/*.py`
+   - Command: `cd tac_bootstrap_cli && uv run python -m py_compile tac_bootstrap/**/*.py`
    - test_name: "python_syntax_check"
-   - test_purpose: "Validates Python syntax by compiling source files to bytecode, catching syntax errors like missing colons, invalid indentation, or malformed statements"
+   - test_purpose: "Valida sintaxis Python compilando archivos fuente"
 
-2. **Backend Code Quality Check**
-   - Preparation Command: None
-   - Command: `cd app/server && uv run ruff check .`
+2. **Code Quality Check**
+   - Command: `cd tac_bootstrap_cli && uv run ruff check .`
    - test_name: "backend_linting"
-   - test_purpose: "Validates Python code quality, identifies unused imports, style violations, and potential bugs"
+   - test_purpose: "Valida calidad de código Python"
 
-3. **All Backend Tests**
-   - Preparation Command: None
+3. **Type Check**
+   - Command: `cd tac_bootstrap_cli && uv run mypy tac_bootstrap/ --ignore-missing-imports`
+   - test_name: "type_check"
+   - test_purpose: "Valida tipos con mypy"
+
+4. **Unit Tests**
+   - Command: `cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short`
+   - test_name: "unit_tests"
+   - test_purpose: "Ejecuta todos los tests unitarios"
+
+5. **CLI Smoke Test**
+   - Command: `cd tac_bootstrap_cli && uv run tac-bootstrap --help`
+   - test_name: "cli_smoke_test"
+   - test_purpose: "Verifica que el CLI arranca correctamente"
+
+**Si tac_bootstrap_cli/ NO existe:**
+
+1. **Structure Check**
+   - Command: `ls tac_bootstrap_cli/pyproject.toml`
+   - test_name: "structure_check"
+   - test_purpose: "Verifica que existe la estructura del CLI"
+   - Note: Este test fallará indicando que el CLI aún no existe
+
+### App de Ejemplo Tests (app/) - Opcional
+
+Solo si se está trabajando en la app de ejemplo:
+
+1. **Backend Tests**
    - Command: `cd app/server && uv run pytest tests/ -v --tb=short`
-   - test_name: "all_backend_tests"
-   - test_purpose: "Validates all backend functionality including file processing, SQL security, LLM integration, and API endpoints"
+   - test_name: "app_backend_tests"
 
-### Frontend Tests
-
-4. **TypeScript Type Check**
-   - Preparation Command: None
-   - Command: `cd app/client && bun tsc --noEmit`
-   - test_name: "typescript_check"
-   - test_purpose: "Validates TypeScript type correctness without generating output files, catching type errors, missing imports, and incorrect function signatures"
-
-5. **Frontend Build**
-   - Preparation Command: None
+2. **Frontend Build**
    - Command: `cd app/client && bun run build`
-   - test_name: "frontend_build"
-   - test_purpose: "Validates the complete frontend build process including bundling, asset optimization, and production compilation"
+   - test_name: "app_frontend_build"
 
 ## Report
 
-- IMPORTANT: Return results exclusively as a JSON array based on the `Output Structure` section below.
-- Sort the JSON array with failed tests (passed: false) at the top
-- Include all tests in the output, both passed and failed
-- The execution_command field should contain the exact command that can be run to reproduce the test
-- This allows subsequent agents to quickly identify and resolve errors
+- IMPORTANTE: Retornar resultados como JSON array
+- Ordenar con tests fallidos primero
+- Incluir todos los tests en el output
 
 ### Output Structure
 
@@ -89,8 +91,7 @@ TEST_COMMAND_TIMEOUT: 5 minutes
     "execution_command": "string",
     "test_purpose": "string",
     "error": "optional string"
-  },
-  ...
+  }
 ]
 ```
 
@@ -99,17 +100,17 @@ TEST_COMMAND_TIMEOUT: 5 minutes
 ```json
 [
   {
-    "test_name": "frontend_build",
+    "test_name": "unit_tests",
     "passed": false,
-    "execution_command": "cd app/client && bun run build",
-    "test_purpose": "Validates TypeScript compilation, module resolution, and production build process for the frontend application",
-    "error": "TS2345: Argument of type 'string' is not assignable to parameter of type 'number'"
+    "execution_command": "cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short",
+    "test_purpose": "Ejecuta todos los tests unitarios",
+    "error": "AssertionError: Expected X but got Y"
   },
   {
-    "test_name": "all_backend_tests",
+    "test_name": "python_syntax_check",
     "passed": true,
-    "execution_command": "cd app/server && uv run pytest tests/ -v --tb=short",
-    "test_purpose": "Validates all backend functionality including file processing, SQL security, LLM integration, and API endpoints"
+    "execution_command": "cd tac_bootstrap_cli && uv run python -m py_compile tac_bootstrap/**/*.py",
+    "test_purpose": "Valida sintaxis Python compilando archivos fuente"
   }
 ]
 ```

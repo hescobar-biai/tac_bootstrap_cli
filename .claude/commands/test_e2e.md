@@ -1,55 +1,61 @@
 # E2E Test Runner
 
-Execute end-to-end (E2E) tests using Playwright browser automation (MCP Server). If any errors occur and assertions fail mark the test as failed and explain exactly what went wrong.
+Ejecutar tests end-to-end (E2E) usando Playwright browser automation (MCP Server).
+
+## Nota para TAC Bootstrap CLI
+
+Este comando está diseñado para proyectos que generará TAC Bootstrap CLI que tengan UI web.
+Para el desarrollo del CLI mismo, usar `/test` que ejecuta tests unitarios de Python.
+
+## Cuándo Usar Este Comando
+
+- Cuando el proyecto generado tenga una UI web (frontend)
+- Cuando existan archivos de test en `.claude/commands/e2e/`
+- NO usar para el desarrollo del CLI tac-bootstrap en sí
 
 ## Variables
 
-adw_id: $ARGUMENT if provided, otherwise generate a random 8 character hex string
-agent_name: $ARGUMENT if provided, otherwise use 'test_e2e'
+adw_id: $ARGUMENT si se proporciona, de lo contrario generar hex string de 8 caracteres
+agent_name: $ARGUMENT si se proporciona, de lo contrario usar 'test_e2e'
 e2e_test_file: $ARGUMENT
-application_url: $ARGUMENT if provided, otherwise determine from port configuration:
-  - If `.ports.env` exists, source it and use http://localhost:${FRONTEND_PORT}
-  - Otherwise use default http://localhost:5173
+application_url: $ARGUMENT si se proporciona, de lo contrario determinar de configuración de puerto:
+  - Si `.ports.env` existe, usar http://localhost:${FRONTEND_PORT}
+  - De lo contrario usar default http://localhost:5173
 
 ## Instructions
 
-- If `application_url` was not provided, check for `.ports.env`:
-  - If it exists, source it and use http://localhost:${FRONTEND_PORT}
-  - Otherwise use default http://localhost:5173
-- Read the `e2e_test_file`
-- Digest the `User Story` to first understand what we're validating
-- IMPORTANT: Execute the `Test Steps` detailed in the `e2e_test_file` using Playwright browser automation
-- Review the `Success Criteria` and if any of them fail, mark the test as failed and explain exactly what went wrong
-- Review the steps that say '**Verify**...' and if they fail, mark the test as failed and explain exactly what went wrong
-- Capture screenshots as specified
-- IMPORTANT: Return results in the format requested by the `Output Format`
-- Initialize Playwright browser in headed mode for visibility
-- Use the determined `application_url`
-- Allow time for async operations and element visibility
-- IMPORTANT: After taking each screenshot, save it to `Screenshot Directory` with descriptive names. Use absolute paths to move the files to the `Screenshot Directory` with the correct name.
-- Capture and report any errors encountered
-- Ultra think about the `Test Steps` and execute them in order
-- If you encounter an error, mark the test as failed immediately and explain exactly what went wrong and on what step it occurred. For example: '(Step 1 ❌) Failed to find element with selector "query-input" on page "http://localhost:5173"'
-- Use `pwd` or equivalent to get the absolute path to the codebase for writing and displaying the correct paths to the screenshots
+- Si `application_url` no se proporciona, verificar `.ports.env`:
+  - Si existe, usar http://localhost:${FRONTEND_PORT}
+  - De lo contrario usar default http://localhost:5173
+- Leer el `e2e_test_file`
+- Digerir el `User Story` para entender qué se valida
+- IMPORTANTE: Ejecutar los `Test Steps` detallados en `e2e_test_file` usando Playwright
+- Revisar `Success Criteria` y si alguno falla, marcar test como fallido
+- Capturar screenshots según especificado
+- IMPORTANTE: Retornar resultados en el formato del `Output Format`
+- Inicializar Playwright browser en modo headed para visibilidad
+- Usar la URL determinada de `application_url`
+- Permitir tiempo para operaciones async y visibilidad de elementos
+- Si hay error, marcar test como fallido inmediatamente y explicar qué paso falló
 
 ## Setup
 
-Read and Execute `.claude/commands/prepare_app.md` now to prepare the application for the test.
+Leer y Ejecutar `.claude/commands/prepare_app.md` para preparar la aplicación.
 
 ## Screenshot Directory
 
 <absolute path to codebase>/agents/<adw_id>/<agent_name>/img/<directory name based on test file name>/*.png
 
-Each screenshot should be saved with a descriptive name that reflects what is being captured. The directory structure ensures that:
-- Screenshots are organized by ADW ID (workflow run)
-- They are stored under the specified agent name (e.g., e2e_test_runner_0, e2e_test_resolver_iter1_0)
-- Each test has its own subdirectory based on the test file name (e.g., test_basic_query → basic_query/)
+Cada screenshot debe guardarse con nombre descriptivo. La estructura de directorios asegura que:
+- Screenshots están organizados por ADW ID (workflow run)
+- Se almacenan bajo el nombre de agente especificado
+- Cada test tiene su propio subdirectorio basado en el nombre del archivo de test
 
 ## Report
 
-- Exclusively return the JSON output as specified in the test file
-- Capture any unexpected errors
-- IMPORTANT: Ensure all screenshots are saved in the `Screenshot Directory`
+- Retornar exclusivamente el JSON output especificado en el archivo de test
+- Capturar errores inesperados
+- IMPORTANTE: Asegurar que todos los screenshots estén en `Screenshot Directory`
 
 ### Output Format
 
@@ -58,9 +64,7 @@ Each screenshot should be saved with a descriptive name that reflects what is be
   "test_name": "Test Name Here",
   "status": "passed|failed",
   "screenshots": [
-    "<absolute path to codebase>/agents/<adw_id>/<agent_name>/img/<test name>/01_<descriptive name>.png",
-    "<absolute path to codebase>/agents/<adw_id>/<agent_name>/img/<test name>/02_<descriptive name>.png",
-    "<absolute path to codebase>/agents/<adw_id>/<agent_name>/img/<test name>/03_<descriptive name>.png"
+    "<absolute path>/agents/<adw_id>/<agent_name>/img/<test name>/01_<descriptive name>.png"
   ],
   "error": null
 }

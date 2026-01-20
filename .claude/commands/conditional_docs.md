@@ -1,63 +1,82 @@
 # Conditional Documentation Guide
 
-This prompt helps you determine what documentation you should read based on the specific changes you need to make in the codebase. Review the conditions below and read the relevant documentation before proceeding with your task.
+Esta guía ayuda a determinar qué documentación leer basado en los cambios específicos que necesitas hacer en el codebase de TAC Bootstrap CLI.
 
 ## Instructions
-- Review the task you've been asked to perform
-- Check each documentation path in the Conditional Documentation section
-- For each path, evaluate if any of the listed conditions apply to your task
-  - IMPORTANT: Only read the documentation if any one of the conditions match your task
-- IMPORTANT: You don't want to excessively read documentation. Only read the documentation if it's relevant to your task.
+- Revisar la tarea que te han asignado
+- Verificar cada path de documentación en la sección Conditional Documentation
+- Para cada path, evaluar si alguna de las condiciones aplica a tu tarea
+  - IMPORTANTE: Solo leer la documentación si alguna condición coincide con tu tarea
+- IMPORTANTE: No leer documentación excesivamente. Solo leer si es relevante.
 
 ## Conditional Documentation
 
+- PLAN_TAC_BOOTSTRAP.md
+  - Conditions:
+    - Cuando necesites entender el plan completo de implementación
+    - Cuando implementes cualquier tarea del CLI
+    - Cuando necesites saber qué fase/tarea trabajar a continuación
+    - Cuando necesites entender la arquitectura DDD del CLI
+
+- CLAUDE.md
+  - Conditions:
+    - Cuando necesites entender cómo los agentes deben trabajar en el proyecto
+    - Cuando empieces a trabajar en cualquier tarea del CLI
+    - Cuando necesites referencia rápida de comandos y estructura
+
+- config.yml
+  - Conditions:
+    - Cuando trabajes con configuración del proyecto
+    - Cuando necesites entender los paths y comandos configurados
+    - Cuando trabajes con el sistema de templates
+
 - README.md
   - Conditions:
-    - When operating on anything under app/server
-    - When operating on anything under app/client
-    - When first understanding the project structure
-    - When you want to learn the commands to start or stop the server or client
+    - Cuando necesites entender el propósito del proyecto
+    - Cuando necesites saber cómo usar el CLI
+    - Al primer contacto con el proyecto
 
-- app/client/src/style.css
+- tac_bootstrap_cli/tac_bootstrap/domain/models.py
   - Conditions:
-    - When you need to make changes to the client's style
+    - Cuando trabajes con modelos Pydantic
+    - Cuando necesites entender TACConfig, ProjectSpec, AgenticSpec
+    - Cuando modifiques validación de configuración
 
-- .claude/commands/classify_adw.md
+- tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
   - Conditions:
-    - When adding or removing new `adws/adw_*.py` files
+    - Cuando trabajes con generación de archivos
+    - Cuando implementes build_plan o apply_plan
+    - Cuando necesites entender cómo se crean los archivos
+
+- tac_bootstrap_cli/tac_bootstrap/interfaces/cli.py
+  - Conditions:
+    - Cuando trabajes con comandos CLI (init, add-agentic, doctor, render)
+    - Cuando agregues nuevos comandos
+    - Cuando modifiques la interfaz de usuario
+
+- tac_bootstrap_cli/tac_bootstrap/interfaces/wizard.py
+  - Conditions:
+    - Cuando trabajes con el wizard interactivo
+    - Cuando modifiques preguntas al usuario
+    - Cuando trabajes con Rich para UI de terminal
+
+- tac_bootstrap_cli/tac_bootstrap/infrastructure/template_repo.py
+  - Conditions:
+    - Cuando trabajes con templates Jinja2
+    - Cuando agregues o modifiques templates
+    - Cuando necesites entender el sistema de renderizado
 
 - adws/README.md
   - Conditions:
-    - When you're operating in the `adws/` directory
+    - Cuando trabajes en el directorio `adws/`
+    - Cuando modifiques AI Developer Workflows
+    - Cuando necesites entender la estructura de ADWs
 
-- app_docs/feature-490eb6b5-one-click-table-exports.md
+- .claude/commands/classify_adw.md
   - Conditions:
-    - When working with CSV export functionality
-    - When implementing table or query result export features
-    - When troubleshooting download button functionality
-    - When working with pandas-based data export utilities
+    - Cuando agregues o elimines archivos `adws/adw_*.py`
 
-- app_docs/feature-4c768184-model-upgrades.md
+- prompts/templates/*.md
   - Conditions:
-    - When working with LLM model configurations
-    - When updating OpenAI or Anthropic model versions
-    - When troubleshooting SQL query generation accuracy
-    - When working with the llm_processor module
-
-- app_docs/feature-f055c4f8-off-white-background.md
-  - Conditions:
-    - When working with application background styling
-    - When modifying CSS color variables or themes
-    - When implementing visual design changes to the client application
-
-- app_docs/feature-6445fc8f-light-sky-blue-background.md
-  - Conditions:
-    - When working with light sky blue background styling
-    - When implementing background color changes to light blue variants
-    - When troubleshooting visual hierarchy with light blue backgrounds
-
-- app_docs/feature-cc73faf1-upload-button-text.md
-  - Conditions:
-    - When working with upload button text or labeling
-    - When implementing UI text changes for data upload functionality
-    - When troubleshooting upload button display or terminology
+    - Cuando trabajes con templates de prompts
+    - Cuando modifiques formatos de plan, feature, bug, o review

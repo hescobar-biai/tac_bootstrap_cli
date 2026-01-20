@@ -1,51 +1,48 @@
 # Patch Plan
 
-Create a **focused patch plan** to resolve a specific issue based on the `review_change_request`. Follow the `Instructions` to create a concise plan that addresses the issue with minimal, targeted changes.
+Crear un **plan de patch enfocado** para resolver un issue específico en TAC Bootstrap CLI basado en el `review_change_request`.
 
 ## Variables
 
 adw_id: $1
 review_change_request: $2
-spec_path: $3 if provided, otherwise leave it blank
-agent_name: $4 if provided, otherwise use 'patch_agent'
-issue_screenshots: $5 (optional) - comma-separated list of screenshot paths if provided
+spec_path: $3 si se proporciona, de lo contrario dejar en blanco
+agent_name: $4 si se proporciona, de lo contrario usar 'patch_agent'
+issue_screenshots: $5 (opcional) - lista de paths a screenshots separados por coma
 
 ## Instructions
 
-- IMPORTANT: You're creating a patch plan to fix a specific review issue. Keep changes small, focused, and targeted
-- Read the original specification (spec) file at `spec_path` if provided to understand the context and requirements
-- IMPORTANT Use the `review_change_request` to understand exactly what needs and use it as the basis for your patch plan
-- If `issue_screenshots` are provided, examine them to better understand the visual context of the issue
-- Create the patch plan in `specs/patch/` directory with filename: `patch-adw-{adw_id}-{descriptive-name}.md`
-  - Replace `{descriptive-name}` with a short name based on the issue (e.g., "fix-button-color", "update-validation", "correct-layout")
-- IMPORTANT: This is a PATCH - keep the scope minimal. Only fix what's described in the `review_change_request` and nothing more. Address only the `review_change_request`.
-- Run `git diff --stat`. If changes are available, use them to understand what's been done in the codebase and so you can understand the exact changes you should detail in the patch plan.
-- Ultra think about the most efficient way to implement the solution with minimal code changes
-- Base your `Plan Format: Validation` on the validation steps from `spec_path` if provided
-  - If any tests fail in the validation steps, you must fix them.
-  - If not provided, READ `.claude/commands/test.md: ## Test Execution Sequence` and execute the tests to understand the tests that need to be run to validate the patch.
-- Replace every <placeholder> in the `Plan Format` with specific implementation details
-- IMPORTANT: When you finish writing the patch plan, return exclusively the path to the patch plan file created and nothing else.
+- IMPORTANTE: Estás creando un patch plan para arreglar un issue específico. Mantener cambios pequeños y enfocados.
+- Leer la especificación original (spec) en `spec_path` si se proporciona.
+- IMPORTANTE: Usar `review_change_request` para entender exactamente qué necesita ser arreglado.
+- Si `issue_screenshots` se proporcionan, examinarlos para entender el contexto visual.
+- Crear el patch plan en `specs/patch/` con filename: `patch-adw-{adw_id}-{descriptive-name}.md`
+- IMPORTANTE: Esto es un PATCH - mantener el scope mínimo. Solo arreglar lo descrito en `review_change_request`.
+- Ejecutar `git diff --stat` para entender cambios existentes.
+- Pensar sobre la forma más eficiente de implementar con cambios mínimos.
+- Basar la validación en los pasos de validación del `spec_path` si se proporciona.
+- Reemplazar cada <placeholder> en el formato con detalles específicos.
 
 ## Relevant Files
 
-Focus on the following files:
-- `README.md` - Contains the project overview and instructions.
-- `app/server/**` - Contains the codebase server.
-- `app/client/**` - Contains the codebase client.
-- `scripts/**` - Contains the scripts to start and stop the server + client.
-- `adws/**` - Contains the AI Developer Workflow (ADW) scripts.
+Archivos clave para TAC Bootstrap CLI:
 
-- Read `.claude/commands/conditional_docs.md` to check if your task requires additional documentation
-- If your task matches any of the conditions listed, reference those documentation files to understand the context better when creating your patch plan
+- `PLAN_TAC_BOOTSTRAP.md` - Plan maestro del proyecto
+- `CLAUDE.md` - Guía para agentes
+- `config.yml` - Configuración del proyecto
+- `tac_bootstrap_cli/` - Código fuente del CLI
+  - `tac_bootstrap/domain/` - Modelos Pydantic
+  - `tac_bootstrap/application/` - Servicios
+  - `tac_bootstrap/infrastructure/` - Templates, FS
+  - `tac_bootstrap/interfaces/` - CLI, Wizard
+  - `tests/` - Tests unitarios
 
-Ignore all other files in the codebase.
-
+Leer `.claude/commands/conditional_docs.md` para documentación adicional.
 
 ## Plan Format
 
 ```md
-# Patch: <concise patch title>
+# Patch: <título conciso del patch>
 
 ## Metadata
 adw_id: `{adw_id}`
@@ -53,40 +50,41 @@ review_change_request: `{review_change_request}`
 
 ## Issue Summary
 **Original Spec:** <spec_path>
-**Issue:** <brief description of the review issue based on the `review_change_request`>
-**Solution:** <brief description of the solution approach based on the `review_change_request`>
+**Issue:** <descripción breve del issue basado en `review_change_request`>
+**Solution:** <descripción breve del approach basado en `review_change_request`>
 
 ## Files to Modify
-Use these files to implement the patch:
+Archivos a modificar para implementar el patch:
 
-<list only the files that need changes - be specific and minimal>
+<listar solo los archivos que necesitan cambios - ser específico y mínimo>
 
 ## Implementation Steps
-IMPORTANT: Execute every step in order, top to bottom.
+IMPORTANTE: Ejecutar cada paso en orden.
 
-<list 2-5 focused steps to implement the patch. Each step should be a concrete action.>
+<listar 2-5 pasos enfocados. Cada paso debe ser una acción concreta.>
 
-### Step 1: <specific action>
-- <implementation detail>
-- <implementation detail>
+### Step 1: <acción específica>
+- <detalle de implementación>
+- <detalle de implementación>
 
-### Step 2: <specific action>
-- <implementation detail>
-- <implementation detail>
+### Step 2: <acción específica>
+- <detalle de implementación>
 
-<continue as needed, but keep it minimal>
+<continuar según sea necesario, pero mantenerlo mínimo>
 
 ## Validation
-Execute every command to validate the patch is complete with zero regressions.
+Ejecutar comandos para validar el patch con cero regresiones:
 
-<list 1-5 specific commands or checks to verify the patch works correctly>
+- `cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short` - Tests unitarios
+- `cd tac_bootstrap_cli && uv run ruff check .` - Linting
+- `cd tac_bootstrap_cli && uv run tac-bootstrap --help` - Smoke test
 
 ## Patch Scope
-**Lines of code to change:** <estimate>
+**Lines of code to change:** <estimación>
 **Risk level:** <low|medium|high>
-**Testing required:** <brief description>
+**Testing required:** <descripción breve>
 ```
 
 ## Report
 
-- IMPORTANT: Return exclusively the path to the patch plan file created and nothing else.
+- IMPORTANTE: Retornar exclusivamente el path al archivo de patch plan creado.

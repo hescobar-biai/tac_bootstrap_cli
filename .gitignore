@@ -1,7 +1,17 @@
+# TAC Bootstrap .gitignore
+
 # Environment variables
 .env
+.env.local
+.env.*.local
 app/server/.env
 .ports.env
+
+# Secrets (never commit!)
+secrets/
+*.pem
+*.key
+credentials.json
 
 # Python
 __pycache__/
@@ -68,3 +78,16 @@ videos/
 # Bun lock files
 bun.lock
 bun.lockb
+
+# Build outputs
+build/
+*.egg
+*.whl
+
+# Coverage
+.coverage
+htmlcov/
+coverage.xml
+
+# TAC Bootstrap CLI build
+tac_bootstrap_cli/dist/

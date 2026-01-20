@@ -1,23 +1,49 @@
-# Start the application
+# Start
+
+Iniciar TAC Bootstrap CLI en modo desarrollo.
 
 ## Variables
+- PORT: No aplica (CLI, no servidor web)
 
-PORT: If `.ports.env` exists, read FRONTEND_PORT from it, otherwise default to 5173
+## Check
+Verificar que tac_bootstrap_cli existe:
+```bash
+ls tac_bootstrap_cli/pyproject.toml
+```
 
 ## Workflow
 
-1. Check if `.ports.env` exists:
-   - If it exists, source it and use `FRONTEND_PORT` for the PORT variable
-   - If not, use default PORT: 5173
+### Si tac_bootstrap_cli existe:
 
-2. Check to see if a process is already running on port PORT.
+1. Verificar dependencias:
+   ```bash
+   cd tac_bootstrap_cli && uv sync
+   ```
 
-3. If it is just open it in the browser with `open http://localhost:PORT`.
+2. Mostrar ayuda del CLI:
+   ```bash
+   cd tac_bootstrap_cli && uv run tac-bootstrap --help
+   ```
 
-4. If there is no process running on port PORT, run these commands:
-   - Run `nohup sh ./scripts/start.sh > /dev/null 2>&1 &`
-   - Note: start.sh automatically reads `.ports.env` if it exists
-   - Run `sleep 3`
-   - Run `open http://localhost:PORT`
+3. Mostrar versión:
+   ```bash
+   cd tac_bootstrap_cli && uv run tac-bootstrap version
+   ```
 
-5. Let the user know that the application is running on port PORT and the browser is open.
+### Si tac_bootstrap_cli NO existe:
+
+1. Informar que el CLI aún no ha sido creado
+2. Mostrar instrucciones:
+   ```
+   El CLI de TAC Bootstrap aún no existe.
+
+   Para crearlo, ejecuta TAREA 1.1 del plan:
+   1. Lee PLAN_TAC_BOOTSTRAP.md
+   2. Busca "TAREA 1.1: Crear estructura base"
+   3. Ejecuta el prompt de esa tarea
+   ```
+
+## Report
+- Estado del CLI (instalado/pendiente)
+- Comandos disponibles (si está instalado)
+- Próximos pasos
