@@ -168,7 +168,7 @@ def check_env_vars(logger: Optional[logging.Logger] = None) -> None:
         SystemExit: If required environment variables are missing
     """
     required_vars = [
-        "ANTHROPIC_API_KEY",
+        # "ANTHROPIC_API_KEY",
         "CLAUDE_CODE_PATH",
     ]
     missing_vars = [var for var in required_vars if not os.getenv(var)]
