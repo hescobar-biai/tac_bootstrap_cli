@@ -115,3 +115,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con preview/dry-run de generación de proyectos
     - Cuando necesites query methods para filtrar operaciones por tipo (create, overwrite, patch, skip)
     - Cuando uses fluent interface para construcción de planes
+
+- app_docs/feature-d2f77c7a-jinja2-template-infrastructure.md
+  - Conditions:
+    - Cuando trabajes con el sistema de templates Jinja2
+    - Cuando necesites entender TemplateRepository y sus métodos
+    - Cuando uses filtros personalizados (snake_case, kebab_case, pascal_case)
+    - Cuando implementes generación de archivos desde templates
+    - Cuando trabajes con render(), render_string(), template_exists(), list_templates()
+    - Cuando necesites manejar excepciones de templates (TemplateNotFoundError, TemplateRenderError)
+    - Cuando trabajes en TAREA 3.2 (copiar templates base) o TAREA 3.3 (TemplateGeneratorService)
