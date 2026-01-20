@@ -231,3 +231,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender el manejo de errores de Git (GitResult dataclass)
     - Cuando implementes operaciones de remote (get_remote_url)
     - Cuando necesites referencia sobre uso de subprocess para comandos Git
+
+- app_docs/feature-3b39c634-detect-service.md
+  - Conditions:
+    - Cuando trabajes con el módulo DetectService en application/detect_service.py
+    - Cuando necesites auto-detectar el stack tecnológico de un repositorio
+    - Cuando implementes detección de lenguaje (Python, TypeScript, JavaScript, Go, Rust, Java)
+    - Cuando trabajes con detección de package managers (uv, pip, poetry, npm, pnpm, yarn, bun, cargo, maven, gradle)
+    - Cuando necesites detectar frameworks (FastAPI, Django, Flask, Next.js, NestJS, Express, React, Vue, Gin, Echo, Axum, Actix, Spring)
+    - Cuando implementes detección de app root directory o comandos de proyecto
+    - Cuando integres DetectService con WizardService para pre-poblar defaults en add-agentic
+    - Cuando necesites entender parsing defensivo de package.json, pyproject.toml, requirements.txt
+    - Cuando trabajes con helpers (_read_package_json, _get_python_deps)
+    - Cuando necesites referencia sobre manejo de compatibilidad Python 3.10/3.11 con tomllib/tomli
