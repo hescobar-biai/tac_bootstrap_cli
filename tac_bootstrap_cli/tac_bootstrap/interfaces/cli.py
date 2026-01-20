@@ -7,6 +7,12 @@ app = typer.Typer(
     add_completion=False,
 )
 
+@app.callback(invoke_without_command=True)
+def main(ctx: typer.Context):
+    """Bootstrap Agentic Layer for Claude Code with TAC patterns."""
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+
 @app.command()
 def version():
     """Show version."""

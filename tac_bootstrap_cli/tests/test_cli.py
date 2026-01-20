@@ -1,5 +1,6 @@
 """Test CLI interface."""
 from typer.testing import CliRunner
+
 from tac_bootstrap.interfaces.cli import app
 
 runner = CliRunner()
