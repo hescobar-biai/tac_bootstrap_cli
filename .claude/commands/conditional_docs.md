@@ -244,3 +244,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender parsing defensivo de package.json, pyproject.toml, requirements.txt
     - Cuando trabajes con helpers (_read_package_json, _get_python_deps)
     - Cuando necesites referencia sobre manejo de compatibilidad Python 3.10/3.11 con tomllib/tomli
+
+- app_docs/feature-7f57eb36-doctor-service.md
+  - Conditions:
+    - Cuando trabajes con el módulo DoctorService en application/doctor_service.py
+    - Cuando necesites validar setups de Agentic Layer (health checks)
+    - Cuando implementes el comando tac-bootstrap doctor
+    - Cuando trabajes con diagnósticos de directorios, configuración, hooks, o ADWs
+    - Cuando necesites auto-fix de issues comunes (directorios faltantes, hooks no ejecutables)
+    - Cuando trabajes con modelos de diagnóstico (Issue, DiagnosticReport, FixResult, Severity)
+    - Cuando implementes checks de JSON/YAML (settings.json, config.yml)
+    - Cuando necesites entender validación de estructura de proyecto
+    - Cuando trabajes con permisos de archivos y executability checks
+    - Cuando necesites referencia sobre patrón de auto-fix con callbacks fix_fn
