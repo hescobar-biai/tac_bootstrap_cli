@@ -218,3 +218,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites referencia sobre manejo de edge cases (archivos faltantes, directorios padre)
     - Cuando trabajes con operaciones cross-platform usando pathlib.Path
     - Cuando implementes funcionalidad que requiera append sin duplicación
+
+- app_docs/feature-8a2e9cbb-git-adapter.md
+  - Conditions:
+    - Cuando trabajes con el módulo GitAdapter en infrastructure/git_adapter.py
+    - Cuando necesites realizar operaciones Git durante scaffolding o ADWs
+    - Cuando implementes operaciones de repositorio (init, is_repo, add, commit)
+    - Cuando trabajes con branches (checkout, branch_exists, get_current_branch)
+    - Cuando necesites gestionar worktrees (create_worktree, remove_worktree, list_worktrees)
+    - Cuando trabajes con status de repositorio (status, has_changes)
+    - Cuando necesites integrar GitAdapter con ScaffoldService o workflows ADW
+    - Cuando necesites entender el manejo de errores de Git (GitResult dataclass)
+    - Cuando implementes operaciones de remote (get_remote_url)
+    - Cuando necesites referencia sobre uso de subprocess para comandos Git
