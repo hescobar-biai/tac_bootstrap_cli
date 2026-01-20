@@ -3191,30 +3191,3236 @@ print(result)
 
 ---
 
-## FASE 4-9: Continuacion...
+## FASE 4: CLI con Typer + Rich (40-55%)
 
-Las fases 4-9 siguen el mismo patron de prompts detallados. Por brevedad, aqui estan los titulos:
+---
 
-### FASE 4: CLI con Typer + Rich (40-55%)
-- **TAREA 4.1**: Implementar comandos CLI (init, add-agentic, doctor, render)
-- **TAREA 4.2**: Implementar wizard interactivo con Rich
+### TAREA 4.1: Implementar comandos CLI principales
 
-### FASE 5: Servicio de Scaffold (55-70%)
-- **TAREA 5.1**: Implementar ScaffoldService.build_plan()
-- **TAREA 5.2**: Implementar ScaffoldService.apply_plan()
-- **TAREA 5.3**: Implementar FileSystem operations
+```markdown
+# Prompt para Agente
 
-### FASE 6: Servicio de Deteccion (70-80%)
-- **TAREA 6.1**: Implementar DetectService (auto-detect stack)
+## Contexto
+Ya tenemos los modelos de dominio (TACConfig, ScaffoldPlan), el repositorio de templates,
+y los templates Jinja2. Ahora necesitamos implementar los comandos CLI que el usuario
+ejecutara para generar la Agentic Layer.
 
-### FASE 7: Servicio Doctor (80-90%)
-- **TAREA 7.1**: Implementar DoctorService (validacion)
+Los comandos principales son:
+- `init` - Crear proyecto nuevo con agentic layer
+- `add-agentic` - Inyectar agentic layer en repo existente
+- `doctor` - Validar setup existente
+- `render` - Re-generar desde config.yml
 
-### FASE 8: Tests (90-95%)
-- **TAREA 8.1**: Tests unitarios para todos los modulos
+## Objetivo
+Implementar los 4 comandos CLI usando Typer con opciones y argumentos apropiados.
 
-### FASE 9: Documentacion (95-100%)
-- **TAREA 9.1**: README y documentacion de uso
+## Archivo a Modificar
+`/Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/interfaces/cli.py`
+
+## Contenido Completo
+
+```python
+"""CLI interface for TAC Bootstrap.
+
+Commands:
+    init        Create new project with Agentic Layer
+    add-agentic Inject Agentic Layer into existing repo
+    doctor      Validate existing setup
+    render      Re-generate from config.yml
+"""
+import sys
+from pathlib import Path
+from typing import Optional
+
+import typer
+from rich.console import Console
+from rich.panel import Panel
+
+from tac_bootstrap import __version__
+from tac_bootstrap.domain.models import (
+    Language,
+    Framework,
+    PackageManager,
+    Architecture,
+    TACConfig,
+    ProjectSpec,
+    CommandsSpec,
+    ClaudeConfig,
+    ClaudeSettings,
+    PathsSpec,
+    get_default_commands,
+)
+
+app = typer.Typer(
+    name="tac-bootstrap",
+    help="Bootstrap Agentic Layer for Claude Code with TAC patterns",
+    add_completion=False,
+)
+
+console = Console()
+
+
+@app.callback(invoke_without_command=True)
+def main(ctx: typer.Context) -> None:
+    """Bootstrap Agentic Layer for Claude Code with TAC patterns."""
+    if ctx.invoked_subcommand is None:
+        console.print(Panel.fit(
+            f"[bold blue]TAC Bootstrap[/bold blue] v{__version__}\n\n"
+            "Use [green]--help[/green] for available commands",
+            title="🚀 Agentic Layer Generator"
+        ))
+
+
+@app.command()
+def version() -> None:
+    """Show version information."""
+    console.print(f"[bold]tac-bootstrap[/bold] v{__version__}")
+
+
+@app.command()
+def init(
+    name: str = typer.Argument(..., help="Project name"),
+    output_dir: Optional[Path] = typer.Option(
+        None, "--output", "-o",
+        help="Output directory (default: ./<name>)"
+    ),
+    language: Language = typer.Option(
+        Language.PYTHON, "--language", "-l",
+        help="Programming language"
+    ),
+    framework: Framework = typer.Option(
+        Framework.NONE, "--framework", "-f",
+        help="Web framework"
+    ),
+    package_manager: Optional[PackageManager] = typer.Option(
+        None, "--package-manager", "-p",
+        help="Package manager (auto-detected if not specified)"
+    ),
+    architecture: Architecture = typer.Option(
+        Architecture.SIMPLE, "--architecture", "-a",
+        help="Software architecture pattern"
+    ),
+    interactive: bool = typer.Option(
+        True, "--interactive/--no-interactive", "-i/-I",
+        help="Use interactive wizard"
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run",
+        help="Show what would be created without creating"
+    ),
+) -> None:
+    """Create a new project with Agentic Layer.
+
+    Example:
+        tac-bootstrap init my-app --language python --framework fastapi
+    """
+    from tac_bootstrap.application.scaffold_service import ScaffoldService
+    from tac_bootstrap.interfaces.wizard import run_init_wizard
+
+    # Use wizard if interactive
+    if interactive:
+        config = run_init_wizard(name, language, framework, package_manager, architecture)
+    else:
+        # Auto-detect package manager if not specified
+        if package_manager is None:
+            from tac_bootstrap.domain.models import get_package_managers_for_language
+            managers = get_package_managers_for_language(language)
+            package_manager = managers[0] if managers else PackageManager.PIP
+
+        # Get default commands
+        commands = get_default_commands(language, package_manager)
+
+        config = TACConfig(
+            project=ProjectSpec(
+                name=name,
+                language=language,
+                framework=framework,
+                architecture=architecture,
+                package_manager=package_manager,
+            ),
+            paths=PathsSpec(app_root="src"),
+            commands=CommandsSpec(**commands),
+            claude=ClaudeConfig(
+                settings=ClaudeSettings(project_name=name)
+            ),
+        )
+
+    # Determine output directory
+    target_dir = output_dir or Path.cwd() / config.project.name
+
+    # Build and apply scaffold plan
+    service = ScaffoldService()
+    plan = service.build_plan(config)
+
+    if dry_run:
+        console.print(Panel(plan.summary, title="[yellow]Dry Run[/yellow]"))
+        console.print("\n[bold]Directories to create:[/bold]")
+        for d in plan.directories:
+            console.print(f"  📁 {d.path}/")
+        console.print("\n[bold]Files to create:[/bold]")
+        for f in plan.get_files_to_create():
+            console.print(f"  📄 {f.path}")
+        return
+
+    # Apply the plan
+    result = service.apply_plan(plan, target_dir, config)
+
+    if result.success:
+        console.print(Panel.fit(
+            f"[green]✓[/green] Project created at [bold]{target_dir}[/bold]\n\n"
+            f"Created {result.directories_created} directories\n"
+            f"Created {result.files_created} files\n\n"
+            f"[dim]Next steps:[/dim]\n"
+            f"  cd {config.project.name}\n"
+            f"  claude -p '/prime'",
+            title="🎉 Success"
+        ))
+    else:
+        console.print(f"[red]Error:[/red] {result.error}")
+        raise typer.Exit(1)
+
+
+@app.command("add-agentic")
+def add_agentic(
+    repo_path: Path = typer.Argument(
+        Path("."),
+        help="Path to existing repository"
+    ),
+    interactive: bool = typer.Option(
+        True, "--interactive/--no-interactive", "-i/-I",
+        help="Use interactive wizard"
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run",
+        help="Show what would be created without creating"
+    ),
+    force: bool = typer.Option(
+        False, "--force", "-f",
+        help="Overwrite existing files"
+    ),
+) -> None:
+    """Inject Agentic Layer into an existing repository.
+
+    Auto-detects the project's language, framework, and package manager.
+
+    Example:
+        cd my-existing-project
+        tac-bootstrap add-agentic .
+    """
+    from tac_bootstrap.application.detect_service import DetectService
+    from tac_bootstrap.application.scaffold_service import ScaffoldService
+    from tac_bootstrap.interfaces.wizard import run_add_agentic_wizard
+
+    repo_path = repo_path.resolve()
+
+    if not repo_path.exists():
+        console.print(f"[red]Error:[/red] Path does not exist: {repo_path}")
+        raise typer.Exit(1)
+
+    # Auto-detect project settings
+    detector = DetectService()
+    detected = detector.detect(repo_path)
+
+    console.print(Panel(
+        f"[bold]Detected:[/bold]\n"
+        f"  Language: {detected.language.value}\n"
+        f"  Framework: {detected.framework.value if detected.framework else 'none'}\n"
+        f"  Package Manager: {detected.package_manager.value}",
+        title="🔍 Auto-Detection"
+    ))
+
+    # Use wizard or auto-config
+    if interactive:
+        config = run_add_agentic_wizard(repo_path, detected)
+    else:
+        commands = get_default_commands(detected.language, detected.package_manager)
+        config = TACConfig(
+            project=ProjectSpec(
+                name=repo_path.name,
+                mode="existing",
+                language=detected.language,
+                framework=detected.framework or Framework.NONE,
+                package_manager=detected.package_manager,
+            ),
+            paths=PathsSpec(app_root=detected.app_root or "src"),
+            commands=CommandsSpec(**commands),
+            claude=ClaudeConfig(
+                settings=ClaudeSettings(project_name=repo_path.name)
+            ),
+        )
+
+    # Build plan
+    service = ScaffoldService()
+    plan = service.build_plan(config, existing_repo=True)
+
+    if dry_run:
+        console.print(Panel(plan.summary, title="[yellow]Dry Run[/yellow]"))
+        for f in plan.files:
+            status = f.action.value
+            console.print(f"  [{status}] {f.path}")
+        return
+
+    # Apply plan
+    result = service.apply_plan(plan, repo_path, config, force=force)
+
+    if result.success:
+        console.print(Panel.fit(
+            f"[green]✓[/green] Agentic Layer added to [bold]{repo_path}[/bold]\n\n"
+            f"Created {result.files_created} files\n"
+            f"Skipped {result.files_skipped} existing files\n\n"
+            f"[dim]Next steps:[/dim]\n"
+            f"  claude -p '/prime'",
+            title="🎉 Success"
+        ))
+    else:
+        console.print(f"[red]Error:[/red] {result.error}")
+        raise typer.Exit(1)
+
+
+@app.command()
+def doctor(
+    repo_path: Path = typer.Argument(
+        Path("."),
+        help="Path to repository to validate"
+    ),
+    fix: bool = typer.Option(
+        False, "--fix",
+        help="Attempt to fix issues automatically"
+    ),
+) -> None:
+    """Validate an existing Agentic Layer setup.
+
+    Checks for:
+    - Required directories exist
+    - Required files exist
+    - Configuration is valid
+    - Commands are executable
+
+    Example:
+        tac-bootstrap doctor .
+    """
+    from tac_bootstrap.application.doctor_service import DoctorService
+
+    repo_path = repo_path.resolve()
+
+    service = DoctorService()
+    report = service.diagnose(repo_path)
+
+    # Display results
+    if report.healthy:
+        console.print(Panel.fit(
+            "[green]✓[/green] All checks passed!",
+            title="🏥 Health Check"
+        ))
+    else:
+        console.print(Panel.fit(
+            f"[red]✗[/red] Found {len(report.issues)} issue(s)",
+            title="🏥 Health Check"
+        ))
+
+        for issue in report.issues:
+            severity_color = {
+                "error": "red",
+                "warning": "yellow",
+                "info": "blue"
+            }.get(issue.severity, "white")
+
+            console.print(f"  [{severity_color}]{issue.severity.upper()}[/{severity_color}] {issue.message}")
+            if issue.suggestion:
+                console.print(f"         [dim]Suggestion: {issue.suggestion}[/dim]")
+
+        if fix:
+            console.print("\n[bold]Attempting fixes...[/bold]")
+            fix_result = service.fix(repo_path, report)
+            console.print(f"  Fixed {fix_result.fixed_count} issue(s)")
+
+        raise typer.Exit(1)
+
+
+@app.command()
+def render(
+    config_file: Path = typer.Argument(
+        Path("config.yml"),
+        help="Path to config.yml file"
+    ),
+    output_dir: Optional[Path] = typer.Option(
+        None, "--output", "-o",
+        help="Output directory (default: same as config file)"
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run",
+        help="Show what would be created without creating"
+    ),
+    force: bool = typer.Option(
+        False, "--force", "-f",
+        help="Overwrite existing files"
+    ),
+) -> None:
+    """Re-generate Agentic Layer from config.yml.
+
+    Useful for updating after modifying config.yml manually.
+
+    Example:
+        tac-bootstrap render config.yml
+    """
+    import yaml
+    from tac_bootstrap.application.scaffold_service import ScaffoldService
+
+    if not config_file.exists():
+        console.print(f"[red]Error:[/red] Config file not found: {config_file}")
+        raise typer.Exit(1)
+
+    # Load config
+    try:
+        with open(config_file) as f:
+            raw_config = yaml.safe_load(f)
+        config = TACConfig(**raw_config)
+    except Exception as e:
+        console.print(f"[red]Error parsing config:[/red] {e}")
+        raise typer.Exit(1)
+
+    # Determine output directory
+    target_dir = output_dir or config_file.parent
+
+    # Build and apply plan
+    service = ScaffoldService()
+    plan = service.build_plan(config, existing_repo=True)
+
+    if dry_run:
+        console.print(Panel(plan.summary, title="[yellow]Dry Run[/yellow]"))
+        for f in plan.files:
+            console.print(f"  [{f.action.value}] {f.path}")
+        return
+
+    result = service.apply_plan(plan, target_dir, config, force=force)
+
+    if result.success:
+        console.print(Panel.fit(
+            f"[green]✓[/green] Regenerated from [bold]{config_file}[/bold]\n\n"
+            f"Updated {result.files_created} files",
+            title="🔄 Render Complete"
+        ))
+    else:
+        console.print(f"[red]Error:[/red] {result.error}")
+        raise typer.Exit(1)
+
+
+if __name__ == "__main__":
+    app()
+```
+
+## Criterios de Aceptacion
+1. [ ] Comando `init` crea proyecto nuevo con opciones de lenguaje/framework
+2. [ ] Comando `add-agentic` detecta e inyecta en repo existente
+3. [ ] Comando `doctor` valida setup y reporta issues
+4. [ ] Comando `render` regenera desde config.yml
+5. [ ] Todos los comandos soportan `--dry-run`
+6. [ ] Output usa Rich para formateo bonito
+
+## Comandos de Verificacion
+```bash
+cd /Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli
+
+# Verificar que CLI carga sin errores
+uv run tac-bootstrap --help
+uv run tac-bootstrap init --help
+uv run tac-bootstrap add-agentic --help
+uv run tac-bootstrap doctor --help
+uv run tac-bootstrap render --help
+
+# Smoke test version
+uv run tac-bootstrap version
+```
+
+## NO hacer
+- No implementar la logica de ScaffoldService aun (siguiente tarea)
+- No implementar DetectService aun (FASE 6)
+- No implementar DoctorService aun (FASE 7)
+- No implementar wizard aun (siguiente tarea)
+```
+
+---
+
+### TAREA 4.2: Implementar wizard interactivo con Rich
+
+```markdown
+# Prompt para Agente
+
+## Contexto
+La CLI ya tiene los comandos basicos. Ahora necesitamos implementar el wizard
+interactivo que guia al usuario para configurar el proyecto paso a paso.
+
+El wizard usa Rich para:
+- Prompts interactivos con opciones
+- Colores y formateo bonito
+- Confirmacion antes de ejecutar
+
+## Objetivo
+Crear el modulo wizard.py con funciones para guiar la configuracion interactiva.
+
+## Archivo a Crear
+`/Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/interfaces/wizard.py`
+
+## Contenido Completo
+
+```python
+"""Interactive wizard for TAC Bootstrap configuration.
+
+Uses Rich for beautiful terminal UI with prompts and selections.
+"""
+from pathlib import Path
+from typing import Optional
+
+from rich.console import Console
+from rich.panel import Panel
+from rich.prompt import Prompt, Confirm
+from rich.table import Table
+
+from tac_bootstrap.domain.models import (
+    TACConfig,
+    ProjectSpec,
+    PathsSpec,
+    CommandsSpec,
+    ClaudeConfig,
+    ClaudeSettings,
+    AgenticSpec,
+    Language,
+    Framework,
+    Architecture,
+    PackageManager,
+    ProjectMode,
+    get_frameworks_for_language,
+    get_package_managers_for_language,
+    get_default_commands,
+)
+
+console = Console()
+
+
+def select_from_enum(prompt: str, enum_class, default=None, filter_fn=None) -> any:
+    """Interactive selection from enum values.
+
+    Args:
+        prompt: Question to ask
+        enum_class: Enum class to select from
+        default: Default value
+        filter_fn: Optional function to filter valid options
+
+    Returns:
+        Selected enum value
+    """
+    options = list(enum_class)
+    if filter_fn:
+        options = [o for o in options if filter_fn(o)]
+
+    # Build options table
+    table = Table(show_header=False, box=None, padding=(0, 2))
+    for i, opt in enumerate(options, 1):
+        is_default = opt == default
+        marker = "[green]>[/green]" if is_default else " "
+        table.add_row(f"{marker} {i}.", f"[bold]{opt.value}[/bold]")
+
+    console.print(f"\n[bold]{prompt}[/bold]")
+    console.print(table)
+
+    # Get selection
+    default_num = options.index(default) + 1 if default in options else 1
+    choice = Prompt.ask(
+        "Select option",
+        default=str(default_num),
+        choices=[str(i) for i in range(1, len(options) + 1)]
+    )
+
+    return options[int(choice) - 1]
+
+
+def run_init_wizard(
+    name: str,
+    language: Optional[Language] = None,
+    framework: Optional[Framework] = None,
+    package_manager: Optional[PackageManager] = None,
+    architecture: Optional[Architecture] = None,
+) -> TACConfig:
+    """Run interactive wizard for project initialization.
+
+    Args:
+        name: Project name (already provided)
+        language: Pre-selected language (or None to ask)
+        framework: Pre-selected framework (or None to ask)
+        package_manager: Pre-selected package manager (or None to ask)
+        architecture: Pre-selected architecture (or None to ask)
+
+    Returns:
+        Configured TACConfig
+    """
+    console.print(Panel.fit(
+        f"[bold blue]Creating new project:[/bold blue] {name}\n\n"
+        "Let's configure your Agentic Layer!",
+        title="🚀 TAC Bootstrap Wizard"
+    ))
+
+    # Step 1: Language
+    if language is None:
+        language = select_from_enum(
+            "What programming language?",
+            Language,
+            default=Language.PYTHON
+        )
+    console.print(f"  [green]✓[/green] Language: {language.value}")
+
+    # Step 2: Framework
+    if framework is None:
+        valid_frameworks = get_frameworks_for_language(language)
+        framework = select_from_enum(
+            "What framework?",
+            Framework,
+            default=Framework.NONE,
+            filter_fn=lambda f: f in valid_frameworks
+        )
+    console.print(f"  [green]✓[/green] Framework: {framework.value}")
+
+    # Step 3: Package Manager
+    if package_manager is None:
+        valid_managers = get_package_managers_for_language(language)
+        package_manager = select_from_enum(
+            "What package manager?",
+            PackageManager,
+            default=valid_managers[0] if valid_managers else None,
+            filter_fn=lambda p: p in valid_managers
+        )
+    console.print(f"  [green]✓[/green] Package Manager: {package_manager.value}")
+
+    # Step 4: Architecture
+    if architecture is None:
+        architecture = select_from_enum(
+            "What architecture pattern?",
+            Architecture,
+            default=Architecture.SIMPLE
+        )
+    console.print(f"  [green]✓[/green] Architecture: {architecture.value}")
+
+    # Step 5: Commands (with smart defaults)
+    console.print("\n[bold]Commands Configuration[/bold]")
+    default_commands = get_default_commands(language, package_manager)
+
+    start_cmd = Prompt.ask(
+        "  Start command",
+        default=default_commands.get("start", "")
+    )
+    test_cmd = Prompt.ask(
+        "  Test command",
+        default=default_commands.get("test", "")
+    )
+    lint_cmd = Prompt.ask(
+        "  Lint command (optional)",
+        default=default_commands.get("lint", "")
+    )
+
+    # Step 6: Worktrees
+    use_worktrees = Confirm.ask(
+        "\nEnable git worktrees for parallel workflows?",
+        default=True
+    )
+
+    # Build config
+    config = TACConfig(
+        project=ProjectSpec(
+            name=name,
+            mode=ProjectMode.NEW,
+            language=language,
+            framework=framework,
+            architecture=architecture,
+            package_manager=package_manager,
+        ),
+        paths=PathsSpec(
+            app_root="src" if architecture != Architecture.SIMPLE else ".",
+        ),
+        commands=CommandsSpec(
+            start=start_cmd,
+            test=test_cmd,
+            lint=lint_cmd,
+        ),
+        agentic=AgenticSpec(
+            worktrees={"enabled": use_worktrees, "max_parallel": 5},
+        ),
+        claude=ClaudeConfig(
+            settings=ClaudeSettings(project_name=name)
+        ),
+    )
+
+    # Confirmation
+    console.print("\n")
+    _show_config_summary(config)
+
+    if not Confirm.ask("\nProceed with this configuration?", default=True):
+        console.print("[yellow]Aborted.[/yellow]")
+        raise SystemExit(0)
+
+    return config
+
+
+def run_add_agentic_wizard(
+    repo_path: Path,
+    detected: "DetectedProject",
+) -> TACConfig:
+    """Run wizard for adding agentic layer to existing project.
+
+    Args:
+        repo_path: Path to existing repository
+        detected: Auto-detected project settings
+
+    Returns:
+        Configured TACConfig
+    """
+    console.print(Panel.fit(
+        f"[bold blue]Adding Agentic Layer to:[/bold blue] {repo_path.name}\n\n"
+        "Review detected settings and customize commands.",
+        title="🔧 TAC Bootstrap Wizard"
+    ))
+
+    # Confirm or change detected settings
+    language = select_from_enum(
+        "Programming language (detected):",
+        Language,
+        default=detected.language
+    )
+
+    framework = select_from_enum(
+        "Framework (detected):",
+        Framework,
+        default=detected.framework or Framework.NONE,
+        filter_fn=lambda f: f in get_frameworks_for_language(language)
+    )
+
+    package_manager = select_from_enum(
+        "Package manager (detected):",
+        PackageManager,
+        default=detected.package_manager,
+        filter_fn=lambda p: p in get_package_managers_for_language(language)
+    )
+
+    # Commands - most important for existing projects
+    console.print("\n[bold]Configure Commands[/bold]")
+    console.print("[dim]These commands will be used by Claude Code and ADW workflows[/dim]\n")
+
+    default_commands = get_default_commands(language, package_manager)
+
+    start_cmd = Prompt.ask(
+        "  Start command",
+        default=detected.commands.get("start", default_commands.get("start", ""))
+    )
+    test_cmd = Prompt.ask(
+        "  Test command",
+        default=detected.commands.get("test", default_commands.get("test", ""))
+    )
+    lint_cmd = Prompt.ask(
+        "  Lint command",
+        default=detected.commands.get("lint", default_commands.get("lint", ""))
+    )
+    build_cmd = Prompt.ask(
+        "  Build command",
+        default=detected.commands.get("build", default_commands.get("build", ""))
+    )
+
+    # Worktrees
+    use_worktrees = Confirm.ask(
+        "\nEnable git worktrees for parallel workflows?",
+        default=True
+    )
+
+    # Build config
+    config = TACConfig(
+        project=ProjectSpec(
+            name=repo_path.name,
+            mode=ProjectMode.EXISTING,
+            repo_root=str(repo_path),
+            language=language,
+            framework=framework,
+            package_manager=package_manager,
+        ),
+        paths=PathsSpec(
+            app_root=detected.app_root or "src",
+        ),
+        commands=CommandsSpec(
+            start=start_cmd,
+            test=test_cmd,
+            lint=lint_cmd,
+            build=build_cmd,
+        ),
+        agentic=AgenticSpec(
+            worktrees={"enabled": use_worktrees, "max_parallel": 5},
+        ),
+        claude=ClaudeConfig(
+            settings=ClaudeSettings(project_name=repo_path.name)
+        ),
+    )
+
+    # Confirmation
+    console.print("\n")
+    _show_config_summary(config)
+
+    if not Confirm.ask("\nProceed with this configuration?", default=True):
+        console.print("[yellow]Aborted.[/yellow]")
+        raise SystemExit(0)
+
+    return config
+
+
+def _show_config_summary(config: TACConfig) -> None:
+    """Display configuration summary table."""
+    table = Table(title="Configuration Summary", show_header=True)
+    table.add_column("Setting", style="cyan")
+    table.add_column("Value", style="green")
+
+    table.add_row("Project Name", config.project.name)
+    table.add_row("Language", config.project.language.value)
+    table.add_row("Framework", config.project.framework.value)
+    table.add_row("Package Manager", config.project.package_manager.value)
+    table.add_row("Architecture", config.project.architecture.value)
+    table.add_row("Start Command", config.commands.start)
+    table.add_row("Test Command", config.commands.test)
+    table.add_row("Worktrees Enabled", str(config.agentic.worktrees.enabled))
+
+    console.print(table)
+```
+
+## Criterios de Aceptacion
+1. [ ] select_from_enum muestra opciones numeradas
+2. [ ] run_init_wizard guia configuracion completa
+3. [ ] run_add_agentic_wizard usa valores detectados como defaults
+4. [ ] Tabla de resumen muestra configuracion final
+5. [ ] Confirmacion antes de proceder
+6. [ ] UI es clara y bonita con Rich
+
+## Comandos de Verificacion
+```bash
+cd /Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli
+
+# Test import
+uv run python -c "
+from tac_bootstrap.interfaces.wizard import select_from_enum, run_init_wizard
+from tac_bootstrap.domain.models import Language
+print('Wizard module loaded successfully')
+"
+
+# Test con init interactivo (manual)
+# uv run tac-bootstrap init test-project
+```
+
+## NO hacer
+- No implementar logica de scaffolding (FASE 5)
+- No implementar deteccion (FASE 6)
+```
+
+---
+
+## FASE 5: Servicio de Scaffold (55-70%)
+
+---
+
+### TAREA 5.1: Implementar ScaffoldService.build_plan()
+
+```markdown
+# Prompt para Agente
+
+## Contexto
+El ScaffoldService es el servicio central que construye y aplica el plan de scaffolding.
+Ya tenemos los modelos ScaffoldPlan, FileOperation y DirectoryOperation en domain/plan.py.
+Ahora necesitamos implementar la logica que construye el plan basado en la configuracion.
+
+## Objetivo
+Implementar el metodo build_plan() que analiza la configuracion y construye un
+ScaffoldPlan con todas las operaciones necesarias.
+
+## Archivo a Crear
+`/Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py`
+
+## Contenido Completo
+
+```python
+"""Scaffold Service for building and applying generation plans.
+
+This service is responsible for:
+1. Building a ScaffoldPlan from TACConfig
+2. Applying the plan to create directories and files
+3. Handling idempotency and existing files
+"""
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import List, Optional
+
+from tac_bootstrap.domain.models import TACConfig
+from tac_bootstrap.domain.plan import (
+    ScaffoldPlan,
+    FileOperation,
+    FileAction,
+    DirectoryOperation,
+)
+from tac_bootstrap.infrastructure.template_repo import TemplateRepository
+
+
+@dataclass
+class ApplyResult:
+    """Result of applying a scaffold plan."""
+    success: bool = True
+    directories_created: int = 0
+    files_created: int = 0
+    files_skipped: int = 0
+    files_overwritten: int = 0
+    error: Optional[str] = None
+    errors: List[str] = field(default_factory=list)
+
+
+class ScaffoldService:
+    """Service for building and applying scaffold plans.
+
+    Example:
+        service = ScaffoldService()
+        plan = service.build_plan(config)
+        result = service.apply_plan(plan, output_dir, config)
+    """
+
+    def __init__(self, template_repo: Optional[TemplateRepository] = None):
+        """Initialize scaffold service.
+
+        Args:
+            template_repo: Template repository (created if not provided)
+        """
+        self.template_repo = template_repo or TemplateRepository()
+
+    def build_plan(
+        self,
+        config: TACConfig,
+        existing_repo: bool = False,
+    ) -> ScaffoldPlan:
+        """Build a scaffold plan from configuration.
+
+        Args:
+            config: TAC configuration
+            existing_repo: Whether scaffolding into existing repo
+
+        Returns:
+            ScaffoldPlan with all operations to perform
+        """
+        plan = ScaffoldPlan()
+
+        # Add directory structure
+        self._add_directories(plan, config)
+
+        # Add Claude configuration files
+        self._add_claude_files(plan, config, existing_repo)
+
+        # Add ADW files
+        self._add_adw_files(plan, config, existing_repo)
+
+        # Add script files
+        self._add_script_files(plan, config, existing_repo)
+
+        # Add config files
+        self._add_config_files(plan, config, existing_repo)
+
+        # Add structure READMEs
+        self._add_structure_files(plan, config, existing_repo)
+
+        return plan
+
+    def _add_directories(self, plan: ScaffoldPlan, config: TACConfig) -> None:
+        """Add directory operations to plan."""
+        directories = [
+            (".claude", "Claude Code configuration"),
+            (".claude/commands", "Slash commands"),
+            (".claude/hooks", "Execution hooks"),
+            (".claude/hooks/utils", "Hook utilities"),
+            (config.paths.adws_dir, "AI Developer Workflows"),
+            (f"{config.paths.adws_dir}/adw_modules", "ADW shared modules"),
+            (f"{config.paths.adws_dir}/adw_triggers", "ADW triggers"),
+            (config.paths.specs_dir, "Specifications"),
+            (config.paths.logs_dir, "Execution logs"),
+            (config.paths.scripts_dir, "Utility scripts"),
+            (config.paths.prompts_dir, "Prompt templates"),
+            (f"{config.paths.prompts_dir}/templates", "Document templates"),
+            ("agents", "ADW agent state"),
+            (config.paths.worktrees_dir, "Git worktrees"),
+            ("app_docs", "Application documentation"),
+            ("ai_docs", "AI-generated documentation"),
+        ]
+
+        for path, reason in directories:
+            plan.add_directory(path, reason)
+
+    def _add_claude_files(
+        self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
+    ) -> None:
+        """Add .claude/ configuration files."""
+        action = FileAction.CREATE if not existing_repo else FileAction.SKIP
+
+        # Settings
+        plan.add_file(
+            ".claude/settings.json",
+            action=action,
+            template="claude/settings.json.j2",
+            reason="Claude Code settings and permissions",
+        )
+
+        # Commands - all slash commands
+        commands = [
+            "prime", "start", "build", "test", "lint",
+            "feature", "bug", "chore", "patch",
+            "implement", "commit", "pull_request",
+            "review", "document", "health_check",
+            "prepare_app", "install", "track_agentic_kpis",
+        ]
+
+        for cmd in commands:
+            plan.add_file(
+                f".claude/commands/{cmd}.md",
+                action=action,
+                template=f"claude/commands/{cmd}.md.j2",
+                reason=f"/{cmd} slash command",
+            )
+
+        # Hooks
+        hooks = [
+            ("pre_tool_use.py", "Pre-execution validation"),
+            ("post_tool_use.py", "Post-execution logging"),
+            ("stop.py", "Session cleanup"),
+        ]
+
+        for hook, reason in hooks:
+            plan.add_file(
+                f".claude/hooks/{hook}",
+                action=action,
+                template=f"claude/hooks/{hook}.j2",
+                reason=reason,
+                executable=True,
+            )
+
+        # Hook utils
+        plan.add_file(
+            ".claude/hooks/utils/__init__.py",
+            action=action,
+            template="claude/hooks/utils/__init__.py.j2",
+            reason="Hook utilities package",
+        )
+        plan.add_file(
+            ".claude/hooks/utils/constants.py",
+            action=action,
+            template="claude/hooks/utils/constants.py.j2",
+            reason="Shared constants for hooks",
+        )
+
+    def _add_adw_files(
+        self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
+    ) -> None:
+        """Add adws/ workflow files."""
+        action = FileAction.CREATE if not existing_repo else FileAction.SKIP
+        adws_dir = config.paths.adws_dir
+
+        # README
+        plan.add_file(
+            f"{adws_dir}/README.md",
+            action=action,
+            template="adws/README.md.j2",
+            reason="ADW documentation",
+        )
+
+        # Modules
+        modules = [
+            ("__init__.py", "Package init"),
+            ("agent.py", "Claude Code wrapper"),
+            ("state.py", "State persistence"),
+            ("git_ops.py", "Git operations"),
+            ("workflow_ops.py", "Workflow orchestration"),
+        ]
+
+        for module, reason in modules:
+            plan.add_file(
+                f"{adws_dir}/adw_modules/{module}",
+                action=action,
+                template=f"adws/adw_modules/{module}.j2",
+                reason=reason,
+            )
+
+        # Workflows
+        workflows = [
+            ("adw_sdlc_iso.py", "SDLC workflow (isolated)"),
+            ("adw_patch_iso.py", "Patch workflow (isolated)"),
+        ]
+
+        for workflow, reason in workflows:
+            plan.add_file(
+                f"{adws_dir}/{workflow}",
+                action=action,
+                template=f"adws/{workflow}.j2",
+                reason=reason,
+                executable=True,
+            )
+
+        # Triggers
+        plan.add_file(
+            f"{adws_dir}/adw_triggers/__init__.py",
+            action=action,
+            template="adws/adw_triggers/__init__.py.j2",
+            reason="Triggers package",
+        )
+        plan.add_file(
+            f"{adws_dir}/adw_triggers/trigger_cron.py",
+            action=action,
+            template="adws/adw_triggers/trigger_cron.py.j2",
+            reason="Cron-based task polling",
+            executable=True,
+        )
+
+    def _add_script_files(
+        self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
+    ) -> None:
+        """Add scripts/ utility files."""
+        action = FileAction.CREATE if not existing_repo else FileAction.SKIP
+        scripts_dir = config.paths.scripts_dir
+
+        scripts = [
+            ("start.sh", "Application starter"),
+            ("test.sh", "Test runner"),
+            ("lint.sh", "Linter runner"),
+            ("build.sh", "Build script"),
+        ]
+
+        for script, reason in scripts:
+            plan.add_file(
+                f"{scripts_dir}/{script}",
+                action=action,
+                template=f"scripts/{script}.j2",
+                reason=reason,
+                executable=True,
+            )
+
+    def _add_config_files(
+        self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
+    ) -> None:
+        """Add configuration files."""
+        action = FileAction.CREATE if not existing_repo else FileAction.SKIP
+
+        # config.yml - always create/overwrite to capture user settings
+        plan.add_file(
+            "config.yml",
+            action=FileAction.OVERWRITE if existing_repo else FileAction.CREATE,
+            template="config/config.yml.j2",
+            reason="TAC Bootstrap configuration",
+        )
+
+        # .mcp.json
+        plan.add_file(
+            ".mcp.json",
+            action=action,
+            template="config/.mcp.json.j2",
+            reason="MCP server configuration",
+        )
+
+        # .gitignore - append if exists
+        plan.add_file(
+            ".gitignore",
+            action=FileAction.PATCH if existing_repo else FileAction.CREATE,
+            template="config/.gitignore.j2",
+            reason="Git ignore patterns",
+        )
+
+    def _add_structure_files(
+        self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
+    ) -> None:
+        """Add README files for directory structure."""
+        action = FileAction.CREATE if not existing_repo else FileAction.SKIP
+
+        structure_readmes = [
+            (f"{config.paths.specs_dir}/README.md", "structure/specs/README.md.j2"),
+            ("app_docs/README.md", "structure/app_docs/README.md.j2"),
+            ("ai_docs/README.md", "structure/ai_docs/README.md.j2"),
+        ]
+
+        for path, template in structure_readmes:
+            plan.add_file(
+                path,
+                action=action,
+                template=template,
+                reason="Directory documentation",
+            )
+
+    def apply_plan(
+        self,
+        plan: ScaffoldPlan,
+        output_dir: Path,
+        config: TACConfig,
+        force: bool = False,
+    ) -> ApplyResult:
+        """Apply a scaffold plan to create files and directories.
+
+        Args:
+            plan: The scaffold plan to apply
+            output_dir: Target directory
+            config: Configuration for template rendering
+            force: Overwrite existing files
+
+        Returns:
+            ApplyResult with statistics and any errors
+        """
+        from tac_bootstrap.infrastructure.fs import FileSystem
+
+        result = ApplyResult()
+        fs = FileSystem()
+        template_context = {"config": config}
+
+        # Create directories first
+        for dir_op in plan.directories:
+            dir_path = output_dir / dir_op.path
+            try:
+                fs.ensure_directory(dir_path)
+                result.directories_created += 1
+            except Exception as e:
+                result.errors.append(f"Failed to create {dir_op.path}: {e}")
+
+        # Process files
+        for file_op in plan.files:
+            file_path = output_dir / file_op.path
+
+            try:
+                # Determine action based on existence and force flag
+                if file_path.exists() and file_op.action == FileAction.CREATE:
+                    if not force:
+                        result.files_skipped += 1
+                        continue
+                    # Force mode - treat as overwrite
+                    actual_action = FileAction.OVERWRITE
+                else:
+                    actual_action = file_op.action
+
+                if actual_action == FileAction.SKIP:
+                    result.files_skipped += 1
+                    continue
+
+                # Render content
+                if file_op.template:
+                    content = self.template_repo.render(
+                        file_op.template, template_context
+                    )
+                elif file_op.content:
+                    content = file_op.content
+                else:
+                    content = ""
+
+                # Apply based on action
+                if actual_action == FileAction.PATCH:
+                    fs.append_file(file_path, content)
+                else:
+                    fs.write_file(file_path, content)
+
+                # Make executable if needed
+                if file_op.executable:
+                    fs.make_executable(file_path)
+
+                if actual_action == FileAction.OVERWRITE and file_path.exists():
+                    result.files_overwritten += 1
+                else:
+                    result.files_created += 1
+
+            except Exception as e:
+                result.errors.append(f"Failed to create {file_op.path}: {e}")
+
+        # Set success based on errors
+        if result.errors:
+            result.success = False
+            result.error = f"{len(result.errors)} error(s) occurred"
+
+        return result
+```
+
+## Criterios de Aceptacion
+1. [ ] build_plan() genera plan completo con ~50+ operaciones
+2. [ ] Directorios se agregan en orden correcto
+3. [ ] Archivos .claude/ incluyen settings, commands y hooks
+4. [ ] Archivos adws/ incluyen modules y workflows
+5. [ ] Scripts son marcados como ejecutables
+6. [ ] apply_plan() crea estructura correctamente
+
+## Comandos de Verificacion
+```bash
+cd /Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli
+
+# Test build_plan
+uv run python -c "
+from tac_bootstrap.application.scaffold_service import ScaffoldService
+from tac_bootstrap.domain.models import *
+
+service = ScaffoldService()
+config = TACConfig(
+    project=ProjectSpec(name='test', language=Language.PYTHON, package_manager=PackageManager.UV),
+    commands=CommandsSpec(start='uv run python -m app', test='uv run pytest'),
+    claude=ClaudeConfig(settings=ClaudeSettings(project_name='test'))
+)
+
+plan = service.build_plan(config)
+print(plan.summary)
+print(f'Directories: {plan.total_directories}')
+print(f'Files: {plan.total_files}')
+"
+```
+
+## NO hacer
+- No crear los archivos reales aun (eso es apply_plan)
+- No implementar FileSystem aun (siguiente tarea)
+```
+
+---
+
+### TAREA 5.2: Implementar FileSystem operations
+
+```markdown
+# Prompt para Agente
+
+## Contexto
+El ScaffoldService necesita operaciones de filesystem para crear directorios y archivos.
+Estas operaciones deben ser idempotentes y seguras.
+
+## Objetivo
+Implementar el modulo fs.py con operaciones de filesystem idempotentes.
+
+## Archivo a Crear
+`/Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/infrastructure/fs.py`
+
+## Contenido Completo
+
+```python
+"""File system operations for scaffold generation.
+
+Provides idempotent, safe file system operations.
+"""
+import os
+import stat
+from pathlib import Path
+from typing import Optional
+
+
+class FileSystem:
+    """Safe file system operations.
+
+    All operations are idempotent where possible.
+    """
+
+    def ensure_directory(self, path: Path) -> bool:
+        """Ensure directory exists, creating if necessary.
+
+        Args:
+            path: Directory path to ensure
+
+        Returns:
+            True if created, False if already existed
+        """
+        if path.exists():
+            return False
+        path.mkdir(parents=True, exist_ok=True)
+        return True
+
+    def write_file(
+        self,
+        path: Path,
+        content: str,
+        encoding: str = "utf-8",
+    ) -> None:
+        """Write content to file, creating parent directories.
+
+        Args:
+            path: File path
+            content: Content to write
+            encoding: File encoding
+        """
+        # Ensure parent directory exists
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write file
+        path.write_text(content, encoding=encoding)
+
+    def append_file(
+        self,
+        path: Path,
+        content: str,
+        encoding: str = "utf-8",
+        separator: str = "\n\n",
+    ) -> None:
+        """Append content to file, creating if doesn't exist.
+
+        Args:
+            path: File path
+            content: Content to append
+            encoding: File encoding
+            separator: Separator between existing and new content
+        """
+        # Ensure parent directory exists
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        if path.exists():
+            existing = path.read_text(encoding=encoding)
+            # Don't append if content already present
+            if content.strip() in existing:
+                return
+            new_content = existing.rstrip() + separator + content
+        else:
+            new_content = content
+
+        path.write_text(new_content, encoding=encoding)
+
+    def make_executable(self, path: Path) -> None:
+        """Make file executable (chmod +x).
+
+        Args:
+            path: File path to make executable
+        """
+        if not path.exists():
+            return
+
+        current_mode = path.stat().st_mode
+        # Add execute permission for user, group, other (if they have read)
+        new_mode = current_mode | stat.S_IXUSR
+        if current_mode & stat.S_IRGRP:
+            new_mode |= stat.S_IXGRP
+        if current_mode & stat.S_IROTH:
+            new_mode |= stat.S_IXOTH
+
+        os.chmod(path, new_mode)
+
+    def file_exists(self, path: Path) -> bool:
+        """Check if file exists.
+
+        Args:
+            path: File path
+
+        Returns:
+            True if file exists
+        """
+        return path.is_file()
+
+    def dir_exists(self, path: Path) -> bool:
+        """Check if directory exists.
+
+        Args:
+            path: Directory path
+
+        Returns:
+            True if directory exists
+        """
+        return path.is_dir()
+
+    def read_file(
+        self,
+        path: Path,
+        encoding: str = "utf-8",
+        default: Optional[str] = None,
+    ) -> Optional[str]:
+        """Read file content.
+
+        Args:
+            path: File path
+            encoding: File encoding
+            default: Default value if file doesn't exist
+
+        Returns:
+            File content or default
+        """
+        if not path.exists():
+            return default
+        return path.read_text(encoding=encoding)
+
+    def copy_file(self, src: Path, dst: Path) -> None:
+        """Copy file from src to dst.
+
+        Args:
+            src: Source file path
+            dst: Destination file path
+        """
+        import shutil
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+
+    def remove_file(self, path: Path) -> bool:
+        """Remove file if exists.
+
+        Args:
+            path: File path
+
+        Returns:
+            True if removed, False if didn't exist
+        """
+        if path.exists():
+            path.unlink()
+            return True
+        return False
+
+    def remove_directory(self, path: Path, recursive: bool = False) -> bool:
+        """Remove directory.
+
+        Args:
+            path: Directory path
+            recursive: Remove contents recursively
+
+        Returns:
+            True if removed, False if didn't exist
+        """
+        import shutil
+        if not path.exists():
+            return False
+
+        if recursive:
+            shutil.rmtree(path)
+        else:
+            path.rmdir()
+        return True
+```
+
+## Criterios de Aceptacion
+1. [ ] ensure_directory es idempotente
+2. [ ] write_file crea directorios padres
+3. [ ] append_file no duplica contenido
+4. [ ] make_executable funciona correctamente
+5. [ ] Todas las operaciones manejan paths que no existen
+
+## Comandos de Verificacion
+```bash
+cd /Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli
+
+# Test FileSystem
+uv run python -c "
+from tac_bootstrap.infrastructure.fs import FileSystem
+from pathlib import Path
+import tempfile
+
+fs = FileSystem()
+with tempfile.TemporaryDirectory() as tmp:
+    tmp_path = Path(tmp)
+
+    # Test ensure_directory
+    test_dir = tmp_path / 'a/b/c'
+    created = fs.ensure_directory(test_dir)
+    print(f'Created: {created}, Exists: {test_dir.exists()}')
+
+    # Test write_file
+    test_file = tmp_path / 'test.txt'
+    fs.write_file(test_file, 'Hello World')
+    print(f'Content: {test_file.read_text()}')
+
+    # Test append_file
+    fs.append_file(test_file, 'New line')
+    print(f'After append: {test_file.read_text()}')
+
+    # Test make_executable
+    script = tmp_path / 'script.sh'
+    fs.write_file(script, '#!/bin/bash\\necho hi')
+    fs.make_executable(script)
+    import os
+    print(f'Executable: {os.access(script, os.X_OK)}')
+
+print('All tests passed!')
+"
+```
+
+## NO hacer
+- No agregar funcionalidad de git (eso va en git_adapter)
+- No agregar logging complejo
+```
+
+---
+
+### TAREA 5.3: Implementar GitAdapter
+
+```markdown
+# Prompt para Agente
+
+## Contexto
+Necesitamos un adaptador para operaciones Git que se usan durante scaffolding,
+como inicializar repositorio, crear commits iniciales, etc.
+
+## Objetivo
+Implementar git_adapter.py con operaciones Git basicas.
+
+## Archivo a Crear
+`/Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/infrastructure/git_adapter.py`
+
+## Contenido Completo
+
+```python
+"""Git adapter for repository operations.
+
+Provides a clean interface for Git operations during scaffolding.
+"""
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional, List
+
+
+@dataclass
+class GitResult:
+    """Result of a git operation."""
+    success: bool
+    output: str = ""
+    error: str = ""
+
+
+class GitAdapter:
+    """Adapter for Git operations.
+
+    Example:
+        git = GitAdapter(repo_path)
+        git.init()
+        git.add_all()
+        git.commit("Initial commit")
+    """
+
+    def __init__(self, repo_path: Path):
+        """Initialize Git adapter.
+
+        Args:
+            repo_path: Path to repository root
+        """
+        self.repo_path = repo_path
+
+    def _run(self, *args: str, check: bool = True) -> GitResult:
+        """Run a git command.
+
+        Args:
+            *args: Git command arguments
+            check: Raise on non-zero exit
+
+        Returns:
+            GitResult with output
+        """
+        try:
+            result = subprocess.run(
+                ["git", *args],
+                cwd=self.repo_path,
+                capture_output=True,
+                text=True,
+                check=check,
+            )
+            return GitResult(
+                success=result.returncode == 0,
+                output=result.stdout.strip(),
+                error=result.stderr.strip(),
+            )
+        except subprocess.CalledProcessError as e:
+            return GitResult(
+                success=False,
+                output=e.stdout.strip() if e.stdout else "",
+                error=e.stderr.strip() if e.stderr else str(e),
+            )
+        except FileNotFoundError:
+            return GitResult(
+                success=False,
+                error="Git is not installed or not in PATH",
+            )
+
+    def is_repo(self) -> bool:
+        """Check if path is a git repository.
+
+        Returns:
+            True if .git exists
+        """
+        return (self.repo_path / ".git").is_dir()
+
+    def init(self, initial_branch: str = "main") -> GitResult:
+        """Initialize a new git repository.
+
+        Args:
+            initial_branch: Name of initial branch
+
+        Returns:
+            GitResult
+        """
+        return self._run("init", "-b", initial_branch)
+
+    def add(self, *paths: str) -> GitResult:
+        """Stage files for commit.
+
+        Args:
+            *paths: Paths to stage (or "." for all)
+
+        Returns:
+            GitResult
+        """
+        return self._run("add", *paths)
+
+    def add_all(self) -> GitResult:
+        """Stage all changes.
+
+        Returns:
+            GitResult
+        """
+        return self._run("add", "-A")
+
+    def commit(self, message: str, allow_empty: bool = False) -> GitResult:
+        """Create a commit.
+
+        Args:
+            message: Commit message
+            allow_empty: Allow empty commits
+
+        Returns:
+            GitResult
+        """
+        args = ["commit", "-m", message]
+        if allow_empty:
+            args.append("--allow-empty")
+        return self._run(*args)
+
+    def status(self, porcelain: bool = True) -> GitResult:
+        """Get repository status.
+
+        Args:
+            porcelain: Use porcelain format
+
+        Returns:
+            GitResult with status
+        """
+        args = ["status"]
+        if porcelain:
+            args.append("--porcelain")
+        return self._run(*args)
+
+    def get_current_branch(self) -> Optional[str]:
+        """Get current branch name.
+
+        Returns:
+            Branch name or None
+        """
+        result = self._run("branch", "--show-current", check=False)
+        return result.output if result.success else None
+
+    def branch_exists(self, branch: str) -> bool:
+        """Check if branch exists.
+
+        Args:
+            branch: Branch name
+
+        Returns:
+            True if branch exists
+        """
+        result = self._run("rev-parse", "--verify", branch, check=False)
+        return result.success
+
+    def checkout(self, branch: str, create: bool = False) -> GitResult:
+        """Checkout a branch.
+
+        Args:
+            branch: Branch name
+            create: Create branch if doesn't exist
+
+        Returns:
+            GitResult
+        """
+        args = ["checkout"]
+        if create:
+            args.append("-b")
+        args.append(branch)
+        return self._run(*args)
+
+    def create_worktree(
+        self, path: Path, branch: str, create_branch: bool = True
+    ) -> GitResult:
+        """Create a git worktree.
+
+        Args:
+            path: Path for worktree
+            branch: Branch name
+            create_branch: Create new branch
+
+        Returns:
+            GitResult
+        """
+        args = ["worktree", "add", str(path)]
+        if create_branch:
+            args.extend(["-b", branch])
+        else:
+            args.append(branch)
+        return self._run(*args)
+
+    def remove_worktree(self, path: Path, force: bool = False) -> GitResult:
+        """Remove a git worktree.
+
+        Args:
+            path: Worktree path
+            force: Force removal
+
+        Returns:
+            GitResult
+        """
+        args = ["worktree", "remove", str(path)]
+        if force:
+            args.append("--force")
+        return self._run(*args)
+
+    def list_worktrees(self) -> List[str]:
+        """List all worktrees.
+
+        Returns:
+            List of worktree paths
+        """
+        result = self._run("worktree", "list", "--porcelain", check=False)
+        if not result.success:
+            return []
+
+        worktrees = []
+        for line in result.output.split("\n"):
+            if line.startswith("worktree "):
+                worktrees.append(line[9:])
+        return worktrees
+
+    def has_changes(self) -> bool:
+        """Check if there are uncommitted changes.
+
+        Returns:
+            True if there are changes
+        """
+        result = self.status(porcelain=True)
+        return bool(result.output.strip())
+
+    def get_remote_url(self, remote: str = "origin") -> Optional[str]:
+        """Get URL of a remote.
+
+        Args:
+            remote: Remote name
+
+        Returns:
+            Remote URL or None
+        """
+        result = self._run("remote", "get-url", remote, check=False)
+        return result.output if result.success else None
+```
+
+## Criterios de Aceptacion
+1. [ ] is_repo detecta repositorios existentes
+2. [ ] init crea nuevo repositorio
+3. [ ] add_all y commit funcionan correctamente
+4. [ ] Worktree operations funcionan
+5. [ ] Errores se manejan gracefully
+
+## Comandos de Verificacion
+```bash
+cd /Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli
+
+# Test GitAdapter
+uv run python -c "
+from tac_bootstrap.infrastructure.git_adapter import GitAdapter
+from pathlib import Path
+import tempfile
+
+with tempfile.TemporaryDirectory() as tmp:
+    git = GitAdapter(Path(tmp))
+
+    # Test init
+    result = git.init()
+    print(f'Init: {result.success}')
+
+    # Test is_repo
+    print(f'Is repo: {git.is_repo()}')
+
+    # Test branch
+    print(f'Branch: {git.get_current_branch()}')
+
+print('GitAdapter tests passed!')
+"
+```
+
+## NO hacer
+- No implementar push (requiere autenticacion)
+- No implementar clone (fuera de scope)
+```
+
+---
+
+## FASE 6: Servicio de Deteccion (70-80%)
+
+---
+
+### TAREA 6.1: Implementar DetectService
+
+```markdown
+# Prompt para Agente
+
+## Contexto
+El comando `add-agentic` necesita auto-detectar el lenguaje, framework y package manager
+de un repositorio existente para sugerir configuracion apropiada.
+
+## Objetivo
+Implementar DetectService que analiza un repositorio y detecta su stack tecnologico.
+
+## Archivo a Crear
+`/Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/detect_service.py`
+
+## Contenido Completo
+
+```python
+"""Detection service for existing repositories.
+
+Analyzes repository structure to detect:
+- Programming language
+- Framework
+- Package manager
+- Project commands
+"""
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Dict, List, Optional
+import json
+
+from tac_bootstrap.domain.models import Language, Framework, PackageManager
+
+
+@dataclass
+class DetectedProject:
+    """Result of project detection."""
+    language: Language
+    framework: Optional[Framework] = None
+    package_manager: PackageManager = PackageManager.PIP
+    app_root: Optional[str] = None
+    commands: Dict[str, str] = field(default_factory=dict)
+    confidence: float = 0.0  # 0-1 confidence score
+
+
+class DetectService:
+    """Service for detecting project configuration.
+
+    Example:
+        detector = DetectService()
+        detected = detector.detect(Path("/path/to/repo"))
+        print(f"Language: {detected.language}")
+    """
+
+    def detect(self, repo_path: Path) -> DetectedProject:
+        """Detect project configuration from repository.
+
+        Args:
+            repo_path: Path to repository root
+
+        Returns:
+            DetectedProject with detected settings
+        """
+        # Detect language first
+        language = self._detect_language(repo_path)
+
+        # Detect package manager based on language
+        package_manager = self._detect_package_manager(repo_path, language)
+
+        # Detect framework based on language
+        framework = self._detect_framework(repo_path, language)
+
+        # Detect app root
+        app_root = self._detect_app_root(repo_path, language)
+
+        # Detect commands from config files
+        commands = self._detect_commands(repo_path, language, package_manager)
+
+        return DetectedProject(
+            language=language,
+            framework=framework,
+            package_manager=package_manager,
+            app_root=app_root,
+            commands=commands,
+            confidence=0.8,  # TODO: Calculate actual confidence
+        )
+
+    def _detect_language(self, repo_path: Path) -> Language:
+        """Detect primary programming language.
+
+        Checks for language-specific files in order of priority.
+        """
+        # Python indicators
+        python_files = [
+            "pyproject.toml", "setup.py", "requirements.txt",
+            "Pipfile", "poetry.lock", "uv.lock"
+        ]
+        if any((repo_path / f).exists() for f in python_files):
+            return Language.PYTHON
+
+        # TypeScript indicators
+        ts_files = ["tsconfig.json", "*.ts", "*.tsx"]
+        if (repo_path / "tsconfig.json").exists():
+            return Language.TYPESCRIPT
+
+        # JavaScript indicators (check after TS)
+        js_files = ["package.json"]
+        if (repo_path / "package.json").exists():
+            # Check if it has TypeScript
+            pkg_json = self._read_package_json(repo_path)
+            if pkg_json:
+                deps = {**pkg_json.get("dependencies", {}),
+                        **pkg_json.get("devDependencies", {})}
+                if "typescript" in deps:
+                    return Language.TYPESCRIPT
+            return Language.JAVASCRIPT
+
+        # Go indicators
+        if (repo_path / "go.mod").exists():
+            return Language.GO
+
+        # Rust indicators
+        if (repo_path / "Cargo.toml").exists():
+            return Language.RUST
+
+        # Java indicators
+        java_files = ["pom.xml", "build.gradle", "build.gradle.kts"]
+        if any((repo_path / f).exists() for f in java_files):
+            return Language.JAVA
+
+        # Default to Python
+        return Language.PYTHON
+
+    def _detect_package_manager(
+        self, repo_path: Path, language: Language
+    ) -> PackageManager:
+        """Detect package manager for language."""
+        if language == Language.PYTHON:
+            if (repo_path / "uv.lock").exists() or (repo_path / ".python-version").exists():
+                return PackageManager.UV
+            if (repo_path / "poetry.lock").exists():
+                return PackageManager.POETRY
+            if (repo_path / "Pipfile.lock").exists():
+                return PackageManager.PIPENV
+            return PackageManager.PIP
+
+        if language in (Language.TYPESCRIPT, Language.JAVASCRIPT):
+            if (repo_path / "pnpm-lock.yaml").exists():
+                return PackageManager.PNPM
+            if (repo_path / "yarn.lock").exists():
+                return PackageManager.YARN
+            if (repo_path / "bun.lockb").exists():
+                return PackageManager.BUN
+            return PackageManager.NPM
+
+        if language == Language.GO:
+            return PackageManager.GO_MOD
+
+        if language == Language.RUST:
+            return PackageManager.CARGO
+
+        if language == Language.JAVA:
+            if (repo_path / "pom.xml").exists():
+                return PackageManager.MAVEN
+            return PackageManager.GRADLE
+
+        return PackageManager.PIP
+
+    def _detect_framework(
+        self, repo_path: Path, language: Language
+    ) -> Optional[Framework]:
+        """Detect web framework."""
+        if language == Language.PYTHON:
+            # Check pyproject.toml or requirements.txt
+            deps = self._get_python_deps(repo_path)
+            if "fastapi" in deps:
+                return Framework.FASTAPI
+            if "django" in deps:
+                return Framework.DJANGO
+            if "flask" in deps:
+                return Framework.FLASK
+
+        if language in (Language.TYPESCRIPT, Language.JAVASCRIPT):
+            pkg_json = self._read_package_json(repo_path)
+            if pkg_json:
+                deps = {**pkg_json.get("dependencies", {}),
+                        **pkg_json.get("devDependencies", {})}
+                if "next" in deps:
+                    return Framework.NEXTJS
+                if "@nestjs/core" in deps:
+                    return Framework.NESTJS
+                if "express" in deps:
+                    return Framework.EXPRESS
+                if "react" in deps:
+                    return Framework.REACT
+                if "vue" in deps:
+                    return Framework.VUE
+
+        if language == Language.GO:
+            # Check go.mod for framework imports
+            go_mod = repo_path / "go.mod"
+            if go_mod.exists():
+                content = go_mod.read_text()
+                if "gin-gonic/gin" in content:
+                    return Framework.GIN
+                if "labstack/echo" in content:
+                    return Framework.ECHO
+
+        if language == Language.RUST:
+            cargo_toml = repo_path / "Cargo.toml"
+            if cargo_toml.exists():
+                content = cargo_toml.read_text()
+                if "axum" in content:
+                    return Framework.AXUM
+                if "actix" in content:
+                    return Framework.ACTIX
+
+        if language == Language.JAVA:
+            pom = repo_path / "pom.xml"
+            if pom.exists() and "spring" in pom.read_text().lower():
+                return Framework.SPRING
+
+        return Framework.NONE
+
+    def _detect_app_root(
+        self, repo_path: Path, language: Language
+    ) -> Optional[str]:
+        """Detect application root directory."""
+        # Common patterns
+        common_roots = ["src", "app", "lib"]
+        for root in common_roots:
+            if (repo_path / root).is_dir():
+                return root
+
+        # Language-specific
+        if language == Language.PYTHON:
+            # Look for package directory
+            for item in repo_path.iterdir():
+                if item.is_dir() and (item / "__init__.py").exists():
+                    return item.name
+
+        return "."
+
+    def _detect_commands(
+        self,
+        repo_path: Path,
+        language: Language,
+        package_manager: PackageManager,
+    ) -> Dict[str, str]:
+        """Detect existing project commands."""
+        commands = {}
+
+        # Check package.json scripts
+        if language in (Language.TYPESCRIPT, Language.JAVASCRIPT):
+            pkg_json = self._read_package_json(repo_path)
+            if pkg_json and "scripts" in pkg_json:
+                scripts = pkg_json["scripts"]
+                if "start" in scripts or "dev" in scripts:
+                    cmd = scripts.get("dev", scripts.get("start"))
+                    commands["start"] = f"{package_manager.value} run {cmd.split()[0] if cmd else 'dev'}"
+                if "test" in scripts:
+                    commands["test"] = f"{package_manager.value} test"
+                if "lint" in scripts:
+                    commands["lint"] = f"{package_manager.value} run lint"
+                if "build" in scripts:
+                    commands["build"] = f"{package_manager.value} run build"
+
+        # Check pyproject.toml scripts
+        if language == Language.PYTHON:
+            pyproject = repo_path / "pyproject.toml"
+            if pyproject.exists():
+                try:
+                    import tomllib
+                    with open(pyproject, "rb") as f:
+                        data = tomllib.load(f)
+                    scripts = data.get("project", {}).get("scripts", {})
+                    # Use common script names if defined
+                except Exception:
+                    pass
+
+        return commands
+
+    def _read_package_json(self, repo_path: Path) -> Optional[dict]:
+        """Read and parse package.json."""
+        pkg_path = repo_path / "package.json"
+        if not pkg_path.exists():
+            return None
+        try:
+            return json.loads(pkg_path.read_text())
+        except json.JSONDecodeError:
+            return None
+
+    def _get_python_deps(self, repo_path: Path) -> List[str]:
+        """Get list of Python dependencies."""
+        deps = []
+
+        # Check pyproject.toml
+        pyproject = repo_path / "pyproject.toml"
+        if pyproject.exists():
+            try:
+                import tomllib
+                with open(pyproject, "rb") as f:
+                    data = tomllib.load(f)
+                project_deps = data.get("project", {}).get("dependencies", [])
+                deps.extend(d.split("[")[0].split(">=")[0].split("==")[0].lower()
+                           for d in project_deps)
+            except Exception:
+                pass
+
+        # Check requirements.txt
+        reqs = repo_path / "requirements.txt"
+        if reqs.exists():
+            for line in reqs.read_text().splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    pkg = line.split("[")[0].split(">=")[0].split("==")[0]
+                    deps.append(pkg.lower())
+
+        return deps
+```
+
+## Criterios de Aceptacion
+1. [ ] Detecta Python por pyproject.toml, requirements.txt, etc
+2. [ ] Detecta TypeScript por tsconfig.json
+3. [ ] Detecta package managers correctamente
+4. [ ] Detecta frameworks populares (FastAPI, Next.js, etc)
+5. [ ] Extrae comandos de package.json scripts
+
+## Comandos de Verificacion
+```bash
+cd /Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli
+
+# Test on self (this is a Python project)
+uv run python -c "
+from tac_bootstrap.application.detect_service import DetectService
+from pathlib import Path
+
+detector = DetectService()
+detected = detector.detect(Path('.'))
+print(f'Language: {detected.language}')
+print(f'Package Manager: {detected.package_manager}')
+print(f'Framework: {detected.framework}')
+print(f'App Root: {detected.app_root}')
+"
+```
+
+## NO hacer
+- No usar APIs externas para deteccion
+- No analizar contenido de archivos grandes
+```
+
+---
+
+## FASE 7: Servicio Doctor (80-90%)
+
+---
+
+### TAREA 7.1: Implementar DoctorService
+
+```markdown
+# Prompt para Agente
+
+## Contexto
+El comando `doctor` necesita validar que un setup de Agentic Layer esta completo
+y funcional. Debe detectar problemas comunes y sugerir correcciones.
+
+## Objetivo
+Implementar DoctorService que diagnostica y puede reparar setups de Agentic Layer.
+
+## Archivo a Crear
+`/Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/doctor_service.py`
+
+## Contenido Completo
+
+```python
+"""Doctor service for validating Agentic Layer setups.
+
+Performs health checks and can auto-fix common issues.
+"""
+from dataclasses import dataclass, field
+from enum import Enum
+from pathlib import Path
+from typing import List, Optional, Callable
+import subprocess
+
+
+class Severity(str, Enum):
+    """Issue severity levels."""
+    ERROR = "error"      # Must fix for functionality
+    WARNING = "warning"  # Should fix for best results
+    INFO = "info"        # Optional improvement
+
+
+@dataclass
+class Issue:
+    """A detected issue."""
+    severity: Severity
+    message: str
+    suggestion: Optional[str] = None
+    fix_fn: Optional[Callable[[Path], bool]] = None
+
+
+@dataclass
+class DiagnosticReport:
+    """Result of diagnostic check."""
+    healthy: bool = True
+    issues: List[Issue] = field(default_factory=list)
+
+    def add_issue(self, issue: Issue) -> None:
+        """Add an issue to the report."""
+        self.issues.append(issue)
+        if issue.severity == Severity.ERROR:
+            self.healthy = False
+
+
+@dataclass
+class FixResult:
+    """Result of attempting fixes."""
+    fixed_count: int = 0
+    failed_count: int = 0
+    messages: List[str] = field(default_factory=list)
+
+
+class DoctorService:
+    """Service for diagnosing and fixing Agentic Layer setups.
+
+    Example:
+        doctor = DoctorService()
+        report = doctor.diagnose(repo_path)
+        if not report.healthy:
+            fix_result = doctor.fix(repo_path, report)
+    """
+
+    def diagnose(self, repo_path: Path) -> DiagnosticReport:
+        """Run all diagnostic checks.
+
+        Args:
+            repo_path: Path to repository
+
+        Returns:
+            DiagnosticReport with all issues found
+        """
+        report = DiagnosticReport()
+
+        # Run all checks
+        self._check_directory_structure(repo_path, report)
+        self._check_claude_config(repo_path, report)
+        self._check_commands(repo_path, report)
+        self._check_hooks(repo_path, report)
+        self._check_adws(repo_path, report)
+        self._check_config_yml(repo_path, report)
+
+        return report
+
+    def fix(self, repo_path: Path, report: DiagnosticReport) -> FixResult:
+        """Attempt to fix issues in report.
+
+        Args:
+            repo_path: Path to repository
+            report: Diagnostic report with issues
+
+        Returns:
+            FixResult with statistics
+        """
+        result = FixResult()
+
+        for issue in report.issues:
+            if issue.fix_fn:
+                try:
+                    if issue.fix_fn(repo_path):
+                        result.fixed_count += 1
+                        result.messages.append(f"Fixed: {issue.message}")
+                    else:
+                        result.failed_count += 1
+                except Exception as e:
+                    result.failed_count += 1
+                    result.messages.append(f"Failed to fix {issue.message}: {e}")
+
+        return result
+
+    def _check_directory_structure(
+        self, repo_path: Path, report: DiagnosticReport
+    ) -> None:
+        """Check required directories exist."""
+        required_dirs = [
+            ".claude",
+            ".claude/commands",
+            ".claude/hooks",
+        ]
+
+        for dir_path in required_dirs:
+            full_path = repo_path / dir_path
+            if not full_path.is_dir():
+                report.add_issue(Issue(
+                    severity=Severity.ERROR,
+                    message=f"Missing required directory: {dir_path}",
+                    suggestion=f"Run: mkdir -p {dir_path}",
+                    fix_fn=lambda p, d=dir_path: self._fix_create_dir(p, d),
+                ))
+
+        # Optional directories (warnings)
+        optional_dirs = ["adws", "specs", "scripts"]
+        for dir_path in optional_dirs:
+            full_path = repo_path / dir_path
+            if not full_path.is_dir():
+                report.add_issue(Issue(
+                    severity=Severity.WARNING,
+                    message=f"Missing optional directory: {dir_path}",
+                    suggestion=f"Consider creating {dir_path}/ for better organization",
+                ))
+
+    def _check_claude_config(
+        self, repo_path: Path, report: DiagnosticReport
+    ) -> None:
+        """Check Claude Code configuration."""
+        settings_path = repo_path / ".claude" / "settings.json"
+
+        if not settings_path.exists():
+            report.add_issue(Issue(
+                severity=Severity.ERROR,
+                message="Missing .claude/settings.json",
+                suggestion="Run: tac-bootstrap add-agentic . to create configuration",
+            ))
+            return
+
+        # Validate JSON
+        try:
+            import json
+            settings = json.loads(settings_path.read_text())
+        except json.JSONDecodeError as e:
+            report.add_issue(Issue(
+                severity=Severity.ERROR,
+                message=f"Invalid JSON in settings.json: {e}",
+                suggestion="Fix the JSON syntax error",
+            ))
+            return
+
+        # Check for required fields
+        if "permissions" not in settings:
+            report.add_issue(Issue(
+                severity=Severity.WARNING,
+                message="settings.json missing 'permissions' field",
+                suggestion="Add permissions configuration for better security",
+            ))
+
+    def _check_commands(self, repo_path: Path, report: DiagnosticReport) -> None:
+        """Check slash commands exist."""
+        commands_dir = repo_path / ".claude" / "commands"
+        if not commands_dir.is_dir():
+            return  # Already reported in directory check
+
+        # Essential commands
+        essential_commands = ["prime.md", "test.md", "commit.md"]
+        for cmd in essential_commands:
+            cmd_path = commands_dir / cmd
+            if not cmd_path.exists():
+                report.add_issue(Issue(
+                    severity=Severity.WARNING,
+                    message=f"Missing essential command: /{cmd.replace('.md', '')}",
+                    suggestion="This command is commonly used in workflows",
+                ))
+
+        # Check if any commands exist
+        md_files = list(commands_dir.glob("*.md"))
+        if not md_files:
+            report.add_issue(Issue(
+                severity=Severity.ERROR,
+                message="No slash commands found in .claude/commands/",
+                suggestion="Add at least prime.md and test.md",
+            ))
+
+    def _check_hooks(self, repo_path: Path, report: DiagnosticReport) -> None:
+        """Check hook scripts."""
+        hooks_dir = repo_path / ".claude" / "hooks"
+        if not hooks_dir.is_dir():
+            return
+
+        hook_files = ["pre_tool_use.py", "post_tool_use.py"]
+        for hook in hook_files:
+            hook_path = hooks_dir / hook
+            if hook_path.exists():
+                # Check if executable
+                import os
+                if not os.access(hook_path, os.X_OK):
+                    report.add_issue(Issue(
+                        severity=Severity.WARNING,
+                        message=f"Hook {hook} is not executable",
+                        suggestion=f"Run: chmod +x .claude/hooks/{hook}",
+                        fix_fn=lambda p, h=hook: self._fix_make_executable(p, h),
+                    ))
+
+    def _check_adws(self, repo_path: Path, report: DiagnosticReport) -> None:
+        """Check ADW setup."""
+        adws_dir = repo_path / "adws"
+        if not adws_dir.is_dir():
+            return  # Optional, already warned
+
+        # Check for modules
+        modules_dir = adws_dir / "adw_modules"
+        if not modules_dir.is_dir():
+            report.add_issue(Issue(
+                severity=Severity.WARNING,
+                message="Missing adws/adw_modules/ directory",
+                suggestion="ADW workflows need shared modules",
+            ))
+
+        # Check for at least one workflow
+        workflows = list(adws_dir.glob("adw_*.py"))
+        if not workflows:
+            report.add_issue(Issue(
+                severity=Severity.INFO,
+                message="No ADW workflows found",
+                suggestion="Consider adding adw_sdlc_iso.py for automated workflows",
+            ))
+
+    def _check_config_yml(self, repo_path: Path, report: DiagnosticReport) -> None:
+        """Check config.yml exists and is valid."""
+        config_path = repo_path / "config.yml"
+
+        if not config_path.exists():
+            report.add_issue(Issue(
+                severity=Severity.WARNING,
+                message="Missing config.yml",
+                suggestion="config.yml enables idempotent regeneration with 'tac-bootstrap render'",
+            ))
+            return
+
+        # Validate YAML
+        try:
+            import yaml
+            config = yaml.safe_load(config_path.read_text())
+        except yaml.YAMLError as e:
+            report.add_issue(Issue(
+                severity=Severity.ERROR,
+                message=f"Invalid YAML in config.yml: {e}",
+                suggestion="Fix the YAML syntax error",
+            ))
+            return
+
+        # Check required fields
+        if not config:
+            report.add_issue(Issue(
+                severity=Severity.ERROR,
+                message="config.yml is empty",
+                suggestion="Run tac-bootstrap add-agentic to regenerate",
+            ))
+            return
+
+        required_fields = ["project", "commands"]
+        for field_name in required_fields:
+            if field_name not in config:
+                report.add_issue(Issue(
+                    severity=Severity.ERROR,
+                    message=f"config.yml missing required field: {field_name}",
+                    suggestion="Add the missing configuration section",
+                ))
+
+    # Fix functions
+    def _fix_create_dir(self, repo_path: Path, dir_path: str) -> bool:
+        """Fix by creating directory."""
+        full_path = repo_path / dir_path
+        full_path.mkdir(parents=True, exist_ok=True)
+        return full_path.is_dir()
+
+    def _fix_make_executable(self, repo_path: Path, hook: str) -> bool:
+        """Fix by making hook executable."""
+        import os
+        import stat
+        hook_path = repo_path / ".claude" / "hooks" / hook
+        if hook_path.exists():
+            current = hook_path.stat().st_mode
+            hook_path.chmod(current | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+            return os.access(hook_path, os.X_OK)
+        return False
+```
+
+## Criterios de Aceptacion
+1. [ ] Detecta directorios faltantes (error vs warning)
+2. [ ] Valida JSON de settings.json
+3. [ ] Valida YAML de config.yml
+4. [ ] Detecta hooks no ejecutables
+5. [ ] fix() puede crear directorios y chmod hooks
+
+## Comandos de Verificacion
+```bash
+cd /Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli
+
+# Test on a directory without agentic layer
+uv run python -c "
+from tac_bootstrap.application.doctor_service import DoctorService
+from pathlib import Path
+import tempfile
+
+doctor = DoctorService()
+
+# Test on empty directory
+with tempfile.TemporaryDirectory() as tmp:
+    report = doctor.diagnose(Path(tmp))
+    print(f'Healthy: {report.healthy}')
+    print(f'Issues: {len(report.issues)}')
+    for issue in report.issues[:5]:
+        print(f'  [{issue.severity.value}] {issue.message}')
+"
+```
+
+## NO hacer
+- No intentar fixes que requieran network
+- No modificar archivos de usuario sin fix_fn
+```
+
+---
+
+## FASE 8: Tests (90-95%)
+
+---
+
+### TAREA 8.1: Tests unitarios completos
+
+```markdown
+# Prompt para Agente
+
+## Contexto
+Necesitamos tests unitarios para todos los modulos implementados para asegurar
+calidad y prevenir regresiones.
+
+## Objetivo
+Crear tests unitarios completos para:
+- domain/models.py
+- domain/plan.py
+- application/scaffold_service.py
+- application/detect_service.py
+- application/doctor_service.py
+- infrastructure/template_repo.py
+- infrastructure/fs.py
+
+## Archivos a Crear
+
+### 1. `tests/test_models.py`
+
+```python
+"""Tests for domain models."""
+import pytest
+from tac_bootstrap.domain.models import (
+    TACConfig,
+    ProjectSpec,
+    CommandsSpec,
+    ClaudeConfig,
+    ClaudeSettings,
+    Language,
+    Framework,
+    PackageManager,
+    get_frameworks_for_language,
+    get_package_managers_for_language,
+    get_default_commands,
+)
+
+
+class TestProjectSpec:
+    """Tests for ProjectSpec model."""
+
+    def test_name_sanitization(self):
+        """Project name should be sanitized."""
+        spec = ProjectSpec(
+            name="  My Project  ",
+            language=Language.PYTHON,
+            package_manager=PackageManager.UV,
+        )
+        assert spec.name == "my-project"
+
+    def test_empty_name_raises(self):
+        """Empty name should raise ValueError."""
+        with pytest.raises(ValueError):
+            ProjectSpec(
+                name="",
+                language=Language.PYTHON,
+                package_manager=PackageManager.UV,
+            )
+
+
+class TestTACConfig:
+    """Tests for TACConfig model."""
+
+    def test_minimal_config(self):
+        """Minimal config should have defaults."""
+        config = TACConfig(
+            project=ProjectSpec(
+                name="test",
+                language=Language.PYTHON,
+                package_manager=PackageManager.UV,
+            ),
+            commands=CommandsSpec(start="echo start", test="echo test"),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="test")),
+        )
+        assert config.version == 1
+        assert config.paths.adws_dir == "adws"
+        assert config.agentic.provider.value == "claude_code"
+
+
+class TestHelperFunctions:
+    """Tests for helper functions."""
+
+    def test_frameworks_for_python(self):
+        """Python should have FastAPI, Django, Flask."""
+        frameworks = get_frameworks_for_language(Language.PYTHON)
+        assert Framework.FASTAPI in frameworks
+        assert Framework.DJANGO in frameworks
+
+    def test_package_managers_for_typescript(self):
+        """TypeScript should have pnpm, npm, yarn, bun."""
+        managers = get_package_managers_for_language(Language.TYPESCRIPT)
+        assert PackageManager.PNPM in managers
+        assert PackageManager.NPM in managers
+
+    def test_default_commands_python_uv(self):
+        """Python + UV should have correct defaults."""
+        commands = get_default_commands(Language.PYTHON, PackageManager.UV)
+        assert "uv run pytest" in commands["test"]
+        assert "uv run ruff" in commands["lint"]
+```
+
+### 2. `tests/test_plan.py`
+
+```python
+"""Tests for scaffold plan models."""
+import pytest
+from tac_bootstrap.domain.plan import (
+    ScaffoldPlan,
+    FileOperation,
+    FileAction,
+    DirectoryOperation,
+)
+
+
+class TestScaffoldPlan:
+    """Tests for ScaffoldPlan model."""
+
+    def test_empty_plan(self):
+        """Empty plan should have zero counts."""
+        plan = ScaffoldPlan()
+        assert plan.total_directories == 0
+        assert plan.total_files == 0
+
+    def test_add_directory_fluent(self):
+        """add_directory should return self for chaining."""
+        plan = ScaffoldPlan()
+        result = plan.add_directory("test", "Test dir")
+        assert result is plan
+        assert plan.total_directories == 1
+
+    def test_add_file_fluent(self):
+        """add_file should return self for chaining."""
+        plan = ScaffoldPlan()
+        result = plan.add_file("test.txt", FileAction.CREATE)
+        assert result is plan
+        assert plan.total_files == 1
+
+    def test_chaining(self):
+        """Should support method chaining."""
+        plan = (
+            ScaffoldPlan()
+            .add_directory("dir1")
+            .add_directory("dir2")
+            .add_file("file1.txt")
+            .add_file("file2.txt")
+        )
+        assert plan.total_directories == 2
+        assert plan.total_files == 2
+
+    def test_get_files_by_action(self):
+        """Should filter files by action."""
+        plan = ScaffoldPlan()
+        plan.add_file("create.txt", FileAction.CREATE)
+        plan.add_file("skip.txt", FileAction.SKIP)
+        plan.add_file("patch.txt", FileAction.PATCH)
+
+        assert len(plan.get_files_to_create()) == 1
+        assert len(plan.get_files_skipped()) == 1
+        assert len(plan.get_files_to_patch()) == 1
+
+    def test_summary(self):
+        """Summary should include counts."""
+        plan = ScaffoldPlan()
+        plan.add_directory("dir")
+        plan.add_file("file.txt", FileAction.CREATE)
+        plan.add_file("skip.txt", FileAction.SKIP)
+
+        summary = plan.summary
+        assert "1 directories" in summary
+        assert "1 files to create" in summary
+        assert "1 skipped" in summary
+```
+
+### 3. `tests/test_scaffold_service.py`
+
+```python
+"""Tests for scaffold service."""
+import pytest
+from pathlib import Path
+import tempfile
+
+from tac_bootstrap.application.scaffold_service import ScaffoldService
+from tac_bootstrap.domain.models import (
+    TACConfig,
+    ProjectSpec,
+    CommandsSpec,
+    ClaudeConfig,
+    ClaudeSettings,
+    Language,
+    PackageManager,
+)
+
+
+@pytest.fixture
+def config():
+    """Create a test config."""
+    return TACConfig(
+        project=ProjectSpec(
+            name="test-project",
+            language=Language.PYTHON,
+            package_manager=PackageManager.UV,
+        ),
+        commands=CommandsSpec(start="uv run python -m app", test="uv run pytest"),
+        claude=ClaudeConfig(settings=ClaudeSettings(project_name="test-project")),
+    )
+
+
+class TestScaffoldService:
+    """Tests for ScaffoldService."""
+
+    def test_build_plan_creates_directories(self, config):
+        """build_plan should include required directories."""
+        service = ScaffoldService()
+        plan = service.build_plan(config)
+
+        dir_paths = [d.path for d in plan.directories]
+        assert ".claude" in dir_paths
+        assert ".claude/commands" in dir_paths
+        assert "adws" in dir_paths
+
+    def test_build_plan_creates_files(self, config):
+        """build_plan should include required files."""
+        service = ScaffoldService()
+        plan = service.build_plan(config)
+
+        file_paths = [f.path for f in plan.files]
+        assert ".claude/settings.json" in file_paths
+        assert "config.yml" in file_paths
+
+    def test_build_plan_marks_scripts_executable(self, config):
+        """Script files should be marked executable."""
+        service = ScaffoldService()
+        plan = service.build_plan(config)
+
+        script_files = [f for f in plan.files if f.path.endswith(".sh")]
+        assert all(f.executable for f in script_files)
+
+    def test_apply_plan_creates_structure(self, config):
+        """apply_plan should create directories and files."""
+        service = ScaffoldService()
+        plan = service.build_plan(config)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            result = service.apply_plan(plan, Path(tmp), config)
+
+            assert result.success
+            assert result.directories_created > 0
+            assert result.files_created > 0
+            assert (Path(tmp) / ".claude").is_dir()
+            assert (Path(tmp) / "config.yml").is_file()
+```
+
+### 4. `tests/test_detect_service.py`
+
+```python
+"""Tests for detect service."""
+import pytest
+from pathlib import Path
+import tempfile
+import json
+
+from tac_bootstrap.application.detect_service import DetectService
+from tac_bootstrap.domain.models import Language, PackageManager, Framework
+
+
+class TestDetectService:
+    """Tests for DetectService."""
+
+    def test_detect_python_by_pyproject(self):
+        """Should detect Python by pyproject.toml."""
+        detector = DetectService()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "pyproject.toml").write_text("[project]\nname='test'")
+            result = detector.detect(Path(tmp))
+
+            assert result.language == Language.PYTHON
+
+    def test_detect_uv_by_lock(self):
+        """Should detect UV by uv.lock."""
+        detector = DetectService()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "pyproject.toml").touch()
+            (Path(tmp) / "uv.lock").touch()
+            result = detector.detect(Path(tmp))
+
+            assert result.package_manager == PackageManager.UV
+
+    def test_detect_typescript_by_tsconfig(self):
+        """Should detect TypeScript by tsconfig.json."""
+        detector = DetectService()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "tsconfig.json").write_text("{}")
+            result = detector.detect(Path(tmp))
+
+            assert result.language == Language.TYPESCRIPT
+
+    def test_detect_nextjs_from_package_json(self):
+        """Should detect Next.js framework."""
+        detector = DetectService()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "tsconfig.json").write_text("{}")
+            (Path(tmp) / "package.json").write_text(
+                json.dumps({"dependencies": {"next": "^14.0.0"}})
+            )
+            result = detector.detect(Path(tmp))
+
+            assert result.framework == Framework.NEXTJS
+
+    def test_detect_app_root(self):
+        """Should detect src as app root."""
+        detector = DetectService()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "pyproject.toml").touch()
+            (Path(tmp) / "src").mkdir()
+            result = detector.detect(Path(tmp))
+
+            assert result.app_root == "src"
+```
+
+### 5. `tests/test_doctor_service.py`
+
+```python
+"""Tests for doctor service."""
+import pytest
+from pathlib import Path
+import tempfile
+import json
+
+from tac_bootstrap.application.doctor_service import DoctorService, Severity
+
+
+class TestDoctorService:
+    """Tests for DoctorService."""
+
+    def test_diagnose_empty_directory(self):
+        """Empty directory should have errors."""
+        doctor = DoctorService()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            report = doctor.diagnose(Path(tmp))
+
+            assert not report.healthy
+            assert any(i.severity == Severity.ERROR for i in report.issues)
+
+    def test_diagnose_valid_setup(self):
+        """Valid setup should be healthy."""
+        doctor = DoctorService()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            # Create minimal valid structure
+            (tmp_path / ".claude" / "commands").mkdir(parents=True)
+            (tmp_path / ".claude" / "hooks").mkdir(parents=True)
+            (tmp_path / ".claude" / "settings.json").write_text('{"version": 1}')
+            (tmp_path / ".claude" / "commands" / "prime.md").write_text("# Prime")
+            (tmp_path / ".claude" / "commands" / "test.md").write_text("# Test")
+            (tmp_path / ".claude" / "commands" / "commit.md").write_text("# Commit")
+            (tmp_path / "config.yml").write_text("project:\n  name: test\ncommands:\n  start: echo")
+
+            report = doctor.diagnose(tmp_path)
+
+            # Should have no errors (may have warnings for optional stuff)
+            errors = [i for i in report.issues if i.severity == Severity.ERROR]
+            assert len(errors) == 0
+
+    def test_fix_creates_directories(self):
+        """fix() should create missing directories."""
+        doctor = DoctorService()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            report = doctor.diagnose(Path(tmp))
+            result = doctor.fix(Path(tmp), report)
+
+            # Should have fixed some directory issues
+            assert result.fixed_count > 0
+            assert (Path(tmp) / ".claude").is_dir()
+```
+
+## Criterios de Aceptacion
+1. [ ] Tests para models.py cubren validacion y helpers
+2. [ ] Tests para plan.py cubren fluent interface y queries
+3. [ ] Tests para scaffold_service cubren build y apply
+4. [ ] Tests para detect_service cubren cada lenguaje
+5. [ ] Tests para doctor_service cubren diagnose y fix
+6. [ ] Coverage > 80%
+
+## Comandos de Verificacion
+```bash
+cd /Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli
+
+# Run all tests
+uv run pytest tests/ -v
+
+# With coverage
+uv run pytest tests/ --cov=tac_bootstrap --cov-report=term-missing
+
+# Run specific test file
+uv run pytest tests/test_models.py -v
+```
+
+## NO hacer
+- No crear tests de integracion complejos
+- No mockear filesystem innecesariamente
+```
+
+---
+
+## FASE 9: Documentacion (95-100%)
+
+---
+
+### TAREA 9.1: README y documentacion de uso
+
+```markdown
+# Prompt para Agente
+
+## Contexto
+TAC Bootstrap necesita documentacion clara para que los usuarios puedan
+instalarlo y usarlo efectivamente.
+
+## Objetivo
+Crear README.md completo con:
+- Descripcion del proyecto
+- Instalacion
+- Uso de comandos
+- Ejemplos
+- Configuracion
+
+## Archivo a Crear
+`/Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli/README.md`
+
+## Contenido Completo
+
+```markdown
+# TAC Bootstrap
+
+CLI to bootstrap Agentic Layer for Claude Code with TAC (Tactical Agentic Coding) patterns.
+
+Transform any repository into an AI-assisted development environment in minutes.
+
+## Features
+
+- **Quick Setup**: Add complete agentic layer to any project in minutes
+- **Auto-Detection**: Automatically detects language, framework, and package manager
+- **Smart Defaults**: Sensible defaults based on your tech stack
+- **Idempotent**: Safe to run multiple times without duplicating files
+- **Customizable**: Full control via config.yml
+
+## Installation
+
+```bash
+# With UV (recommended)
+uv tool install tac-bootstrap
+
+# With pip
+pip install tac-bootstrap
+
+# From source
+git clone https://github.com/your-org/tac-bootstrap
+cd tac-bootstrap/tac_bootstrap_cli
+uv pip install -e .
+```
+
+## Quick Start
+
+### For New Projects
+
+```bash
+# Interactive wizard
+tac-bootstrap init my-awesome-app
+
+# Non-interactive with options
+tac-bootstrap init my-app --language python --framework fastapi --no-interactive
+```
+
+### For Existing Projects
+
+```bash
+cd your-existing-project
+
+# Interactive (recommended)
+tac-bootstrap add-agentic .
+
+# Auto-detect and apply
+tac-bootstrap add-agentic . --no-interactive
+```
+
+## Commands
+
+### `init`
+
+Create a new project with Agentic Layer.
+
+```bash
+tac-bootstrap init <name> [options]
+
+Options:
+  -l, --language          Programming language (python, typescript, go, rust, java)
+  -f, --framework         Web framework (fastapi, nextjs, etc.)
+  -p, --package-manager   Package manager (uv, npm, pnpm, etc.)
+  -a, --architecture      Architecture pattern (simple, layered, ddd)
+  -o, --output            Output directory
+  -i/-I, --interactive    Enable/disable interactive wizard
+  --dry-run               Preview without creating files
+```
+
+### `add-agentic`
+
+Inject Agentic Layer into existing repository.
+
+```bash
+tac-bootstrap add-agentic [path] [options]
+
+Options:
+  -i/-I, --interactive    Enable/disable interactive wizard
+  -f, --force             Overwrite existing files
+  --dry-run               Preview without creating files
+```
+
+### `doctor`
+
+Validate Agentic Layer setup.
+
+```bash
+tac-bootstrap doctor [path] [options]
+
+Options:
+  --fix                   Attempt to fix issues automatically
+```
+
+### `render`
+
+Regenerate Agentic Layer from config.yml.
+
+```bash
+tac-bootstrap render [config.yml] [options]
+
+Options:
+  -o, --output            Output directory
+  -f, --force             Overwrite existing files
+  --dry-run               Preview without creating files
+```
+
+## Generated Structure
+
+After running `tac-bootstrap`, your project will have:
+
+```
+project/
+├── .claude/
+│   ├── settings.json     # Claude Code settings
+│   ├── commands/         # Slash commands (/prime, /test, etc.)
+│   └── hooks/            # Execution hooks
+├── adws/
+│   ├── adw_modules/      # Shared workflow modules
+│   ├── adw_sdlc_iso.py   # SDLC workflow
+│   └── adw_patch_iso.py  # Quick patch workflow
+├── scripts/              # Utility scripts
+├── specs/                # Feature/bug specifications
+├── logs/                 # Execution logs
+├── config.yml            # TAC configuration
+└── .mcp.json            # MCP server config
+```
+
+## Configuration
+
+### config.yml
+
+```yaml
+version: 1
+
+project:
+  name: "my-app"
+  language: "python"
+  framework: "fastapi"
+  package_manager: "uv"
+
+commands:
+  start: "uv run python -m app"
+  test: "uv run pytest"
+  lint: "uv run ruff check ."
+
+agentic:
+  provider: "claude_code"
+  model_policy:
+    default: "sonnet"
+    heavy: "opus"
+  worktrees:
+    enabled: true
+    max_parallel: 5
+```
+
+## Workflows
+
+### SDLC Workflow
+
+Complete development lifecycle: Plan → Build → Test → Review → Ship
+
+```bash
+uv run adws/adw_sdlc_iso.py --issue 123
+```
+
+### Patch Workflow
+
+Quick fixes: Build → Test → Ship
+
+```bash
+uv run adws/adw_patch_iso.py --issue 456 --fix "Fix typo in README"
+```
+
+## Slash Commands
+
+After setup, use these commands with Claude Code:
+
+| Command | Description |
+|---------|-------------|
+| `/prime` | Load project context |
+| `/start` | Start the application |
+| `/test` | Run tests |
+| `/feature <desc>` | Plan a new feature |
+| `/bug <desc>` | Plan a bug fix |
+| `/implement <plan>` | Implement from plan |
+| `/commit` | Create git commit |
+| `/review <plan>` | Review implementation |
+
+## Requirements
+
+- Python 3.10+
+- Git
+- Claude Code CLI
+
+## Contributing
+
+Contributions welcome! Please read CONTRIBUTING.md first.
+
+## License
+
+MIT
+```
+
+## Criterios de Aceptacion
+1. [ ] README tiene instalacion clara
+2. [ ] Todos los comandos documentados con ejemplos
+3. [ ] Estructura generada explicada
+4. [ ] config.yml documentado
+5. [ ] Workflows explicados
+
+## Comandos de Verificacion
+```bash
+cd /Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli
+
+# Check README exists and has content
+wc -l README.md
+head -50 README.md
+```
+
+## NO hacer
+- No agregar badges aun (requiere CI setup)
+- No documentar features no implementadas
+```
 
 ---
 
