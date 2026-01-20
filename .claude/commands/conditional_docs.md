@@ -135,3 +135,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites referencia sobre variables TACConfig usadas en templates Claude
     - Cuando implementes generación de .claude/ en proyectos target
     - Cuando trabajes en TAREA 3.3 (hooks templates) o comandos slash personalizados
+
+- app_docs/feature-fbc4585b-claude-hooks-templates.md
+  - Conditions:
+    - Cuando trabajes con templates de hooks de Claude Code
+    - Cuando necesites entender pre_tool_use.py, post_tool_use.py, stop.py templates
+    - Cuando modifiques validación de comandos peligrosos o forbidden paths
+    - Cuando trabajes con logging de tool usage o session cleanup
+    - Cuando necesites entender la estructura de logs de sesión
+    - Cuando implementes generación de .claude/hooks/ en proyectos target
+    - Cuando trabajes con hooks de safety y auditoría
