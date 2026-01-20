@@ -1,0 +1,39 @@
+# Document
+
+Generate documentation for recent changes.
+
+## Variables
+- $ARGUMENTS: Feature/component to document
+
+## Instructions
+
+1. **Identify What to Document**
+   - Parse $ARGUMENTS for the target
+   - Find related code and specs
+
+2. **Generate Documentation**
+   Create/update docs in `app_docs/`:
+   - Overview of the feature
+   - Usage examples
+   - API reference (if applicable)
+   - Configuration options
+
+3. **Documentation Format**
+   ```markdown
+   # [Feature Name]
+
+   ## Overview
+   [What it does]
+
+   ## Usage
+   [How to use it]
+
+   ## Examples
+   [Code examples]
+
+   ## Configuration
+   [Any config options]
+   ```
+
+## Report
+- Documentation created: `app_docs/[name].md`

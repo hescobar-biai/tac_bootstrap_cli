@@ -1,0 +1,38 @@
+# Prime
+
+Prepare the agent with project context.
+
+## Variables
+- $ARGUMENTS: Optional focus area
+
+## Instructions
+
+1. Read and understand the project structure:
+   - Project: {{ config.project.name }}
+   - Language: {{ config.project.language.value }}
+   - Framework: {{ config.project.framework.value if config.project.framework else 'none' }}
+   - Architecture: {{ config.project.architecture.value }}
+
+2. Key directories:
+   - App code: `{{ config.paths.app_root }}/`
+   - Specs: `{{ config.paths.specs_dir }}/`
+   - ADWs: `{{ config.paths.adws_dir }}/`
+   - Scripts: `{{ config.paths.scripts_dir }}/`
+
+3. Available commands:
+   - Start: `{{ config.commands.start }}`
+   - Test: `{{ config.commands.test }}`
+{% if config.commands.lint %}
+   - Lint: `{{ config.commands.lint }}`
+{% endif %}
+{% if config.commands.build %}
+   - Build: `{{ config.commands.build }}`
+{% endif %}
+
+4. Rules:
+   - Never modify files in: {{ config.agentic.safety.forbidden_paths | join(', ') }}
+   - Always run tests before completing work
+   - Follow {{ config.project.architecture.value }} architecture patterns
+
+## Report
+Confirm you understand the project context and are ready to work.

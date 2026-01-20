@@ -1,0 +1,48 @@
+# Chore Planning
+
+Plan a maintenance task (refactoring, dependencies, config, etc).
+
+## Variables
+- $ARGUMENTS: Chore description
+
+## Instructions
+
+1. **Understand the Task**
+   - Parse the chore description from $ARGUMENTS
+   - Identify scope and boundaries
+   - Determine success criteria
+
+2. **Plan the Work**
+   - List all changes needed
+   - Identify risks or breaking changes
+   - Plan verification steps
+
+3. **Create the Plan**
+   Write a plan file to `{{ config.paths.specs_dir }}/`
+
+## Plan Format
+```markdown
+# Chore: [Title]
+
+## Description
+[What needs to be done]
+
+## Changes
+- [ ] Change 1
+- [ ] Change 2
+
+## Files to Modify
+- `path/to/file` - [what changes]
+
+## Verification
+- [ ] Tests pass
+- [ ] Build succeeds
+- [ ] No breaking changes
+
+## Definition of Done
+- [ ] All changes complete
+- [ ] Verified working
+```
+
+## Report
+- Plan file created: `{{ config.paths.specs_dir }}/chore-[name].md`

@@ -1,0 +1,57 @@
+# Bug Planning
+
+Plan a bug fix.
+
+## Variables
+- $ARGUMENTS: Bug description or issue reference
+
+## Instructions
+
+1. **Understand the Bug**
+   - Parse the bug description from $ARGUMENTS
+   - Identify expected vs actual behavior
+   - Determine reproduction steps if not provided
+
+2. **Investigate**
+   - Find the relevant code
+   - Identify the root cause
+   - Check for related issues
+
+3. **Plan the Fix**
+   - Determine the minimal fix
+   - Identify any side effects
+   - Plan regression tests
+
+4. **Create the Plan**
+   Write a plan file to `{{ config.paths.specs_dir }}/`
+
+## Plan Format
+```markdown
+# Bug: [Title]
+
+## Description
+[What is broken]
+
+## Root Cause
+[Why it's broken]
+
+## Fix
+[How to fix it]
+
+## Files to Modify
+- `path/to/file.py` - [what changes]
+
+## Test Cases
+- [ ] Test that reproduces the bug
+- [ ] Test for regression
+
+## Definition of Done
+- [ ] Bug is fixed
+- [ ] Tests pass
+- [ ] No regression introduced
+```
+
+## Report
+- Plan file created: `{{ config.paths.specs_dir }}/bug-[name].md`
+- Root cause identified: yes/no
+- Ready for implementation: yes/no

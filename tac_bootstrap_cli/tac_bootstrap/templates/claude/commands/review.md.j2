@@ -1,0 +1,52 @@
+# Review
+
+Review implementation against the plan/spec.
+
+## Variables
+- $1: Path to the plan/spec file
+
+## Instructions
+
+1. **Load the Spec**
+   Read the plan file from $1
+
+2. **Verify Completion**
+   For each item in the plan:
+   - Check if implemented correctly
+   - Verify tests exist
+   - Note any deviations
+
+3. **Run Validation**
+   - Tests: `{{ config.commands.test }}`
+{% if config.commands.lint %}
+   - Lint: `{{ config.commands.lint }}`
+{% endif %}
+{% if config.commands.build %}
+   - Build: `{{ config.commands.build }}`
+{% endif %}
+
+4. **Check Quality**
+   - Code follows {{ config.project.architecture.value }} patterns
+   - No hardcoded values
+   - Error handling present
+   - No security issues
+
+5. **Generate Report**
+
+## Report Format
+```markdown
+# Review: [Plan Name]
+
+## Checklist
+- [ ] All tasks from plan completed
+- [ ] Tests pass
+- [ ] Lint passes
+- [ ] Build succeeds
+- [ ] Code quality acceptable
+
+## Issues Found
+- (list any issues)
+
+## Verdict
+- APPROVED / NEEDS_CHANGES
+```

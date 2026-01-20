@@ -125,3 +125,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con render(), render_string(), template_exists(), list_templates()
     - Cuando necesites manejar excepciones de templates (TemplateNotFoundError, TemplateRenderError)
     - Cuando trabajes en TAREA 3.2 (copiar templates base) o TAREA 3.3 (TemplateGeneratorService)
+
+- app_docs/feature-d30e0391-claude-templates.md
+  - Conditions:
+    - Cuando trabajes con templates de configuración Claude (.claude/)
+    - Cuando necesites entender los templates de settings.json y comandos slash
+    - Cuando modifiques o agregues comandos en templates/claude/commands/
+    - Cuando trabajes con parametrización de permisos y hooks de Claude Code
+    - Cuando necesites referencia sobre variables TACConfig usadas en templates Claude
+    - Cuando implementes generación de .claude/ en proyectos target
+    - Cuando trabajes en TAREA 3.3 (hooks templates) o comandos slash personalizados
