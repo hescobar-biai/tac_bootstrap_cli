@@ -1,4 +1,5 @@
 """Test basic package functionality."""
+
 from tac_bootstrap import __version__
 
 

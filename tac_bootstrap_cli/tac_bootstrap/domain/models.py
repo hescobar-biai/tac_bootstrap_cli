@@ -221,9 +221,7 @@ class WorktreeConfig(BaseModel):
 
     enabled: bool = Field(default=True, description="Enable git worktrees")
     max_parallel: int = Field(default=5, description="Maximum parallel worktrees", ge=1, le=10)
-    naming: str = Field(
-        default="feat-{slug}-{timestamp}", description="Worktree naming pattern"
-    )
+    naming: str = Field(default="feat-{slug}-{timestamp}", description="Worktree naming pattern")
 
 
 class LoggingConfig(BaseModel):
@@ -300,18 +298,12 @@ class AgenticSpec(BaseModel):
     provider: AgenticProvider = Field(
         default=AgenticProvider.CLAUDE_CODE, description="Agentic provider"
     )
-    model_policy: ModelPolicy = Field(
-        default=ModelPolicy(), description="Model selection policy"
-    )
+    model_policy: ModelPolicy = Field(default=ModelPolicy(), description="Model selection policy")
     worktrees: WorktreeConfig = Field(
         default=WorktreeConfig(), description="Git worktree configuration"
     )
-    logging: LoggingConfig = Field(
-        default=LoggingConfig(), description="Logging configuration"
-    )
-    safety: SafetyConfig = Field(
-        default=SafetyConfig(), description="Safety constraints"
-    )
+    logging: LoggingConfig = Field(default=LoggingConfig(), description="Logging configuration")
+    safety: SafetyConfig = Field(default=SafetyConfig(), description="Safety constraints")
     workflows: WorkflowsConfig = Field(
         default=WorkflowsConfig(), description="Workflow configuration"
     )
@@ -323,9 +315,7 @@ class ClaudeSettings(BaseModel):
     """
 
     project_name: str = Field(..., description="Project name for Claude Code")
-    preferred_style: str = Field(
-        default="concise", description="Preferred communication style"
-    )
+    preferred_style: str = Field(default="concise", description="Preferred communication style")
     allow_shell: bool = Field(default=True, description="Allow shell command execution")
 
 
@@ -336,19 +326,11 @@ class ClaudeCommandsConfig(BaseModel):
     Maps command names to their prompt file paths.
     """
 
-    prime: str = Field(
-        default=".claude/commands/prime.md", description="Path to /prime command"
-    )
-    start: str = Field(
-        default=".claude/commands/start.md", description="Path to /start command"
-    )
-    build: str = Field(
-        default=".claude/commands/build.md", description="Path to /build command"
-    )
+    prime: str = Field(default=".claude/commands/prime.md", description="Path to /prime command")
+    start: str = Field(default=".claude/commands/start.md", description="Path to /start command")
+    build: str = Field(default=".claude/commands/build.md", description="Path to /build command")
     test: str = Field(default=".claude/commands/test.md", description="Path to /test command")
-    review: str = Field(
-        default=".claude/commands/review.md", description="Path to /review command"
-    )
+    review: str = Field(default=".claude/commands/review.md", description="Path to /review command")
     ship: str = Field(default=".claude/commands/ship.md", description="Path to /ship command")
 
 
@@ -444,18 +426,14 @@ class TACConfig(BaseModel):
             specs_dir="specs",
             logs_dir="logs",
             scripts_dir="scripts",
-            worktrees_dir="trees"
+            worktrees_dir="trees",
         ),
         description="Directory structure configuration",
     )
     commands: CommandsSpec = Field(..., description="Shell command mappings")
-    agentic: AgenticSpec = Field(
-        default=AgenticSpec(), description="Agentic layer configuration"
-    )
+    agentic: AgenticSpec = Field(default=AgenticSpec(), description="Agentic layer configuration")
     claude: ClaudeConfig = Field(..., description="Claude Code configuration")
-    templates: TemplatesConfig = Field(
-        default=TemplatesConfig(), description="Template file paths"
-    )
+    templates: TemplatesConfig = Field(default=TemplatesConfig(), description="Template file paths")
     bootstrap: BootstrapConfig = Field(
         default=BootstrapConfig(), description="Bootstrap options for new projects"
     )
@@ -543,9 +521,7 @@ def get_package_managers_for_language(language: Language) -> List[PackageManager
     return mapping.get(language, [])
 
 
-def get_default_commands(
-    language: Language, package_manager: PackageManager
-) -> Dict[str, str]:
+def get_default_commands(language: Language, package_manager: PackageManager) -> Dict[str, str]:
     """
     Get default command mappings for language/package manager combination.
 
