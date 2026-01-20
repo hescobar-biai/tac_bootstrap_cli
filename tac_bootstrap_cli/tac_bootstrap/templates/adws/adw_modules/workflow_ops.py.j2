@@ -1,0 +1,96 @@
+"""Workflow operations for ADWs."""
+from pathlib import Path
+from typing import Optional
+from .agent import run_claude_command, get_model_for_command
+from .state import ADWState
+
+
+class WorkflowOps:
+    """High-level workflow operations."""
+
+    def __init__(self, state: ADWState, cwd: Optional[Path] = None):
+        self.state = state
+        self.cwd = cwd or Path.cwd()
+
+    def plan(self, issue_description: str) -> bool:
+        """Run planning phase."""
+        # Determine issue class
+        classify_result = run_claude_command(
+            "classify_issue",
+            issue_description,
+            cwd=self.cwd,
+        )
+
+        if not classify_result["success"]:
+            self.state.set_error(f"Classification failed: {classify_result['error']}")
+            return False
+
+        # Run appropriate planning command
+        issue_class = self.state.issue_class or "chore"
+        plan_result = run_claude_command(
+            issue_class,  # feature, bug, or chore
+            issue_description,
+            cwd=self.cwd,
+            model=get_model_for_command(issue_class),
+        )
+
+        if plan_result["success"]:
+            self.state.mark_phase_complete("plan")
+
+        return plan_result["success"]
+
+    def build(self, plan_file: str) -> bool:
+        """Run build/implementation phase."""
+        result = run_claude_command(
+            "implement",
+            plan_file,
+            cwd=self.cwd,
+            model=get_model_for_command("implement"),
+        )
+
+        if result["success"]:
+            self.state.mark_phase_complete("build")
+
+        return result["success"]
+
+    def test(self) -> bool:
+        """Run test phase."""
+        result = run_claude_command(
+            "test",
+            "",
+            cwd=self.cwd,
+        )
+
+        if result["success"]:
+            self.state.mark_phase_complete("test")
+
+        return result["success"]
+
+    def review(self, plan_file: str) -> bool:
+        """Run review phase."""
+        result = run_claude_command(
+            "review",
+            plan_file,
+            cwd=self.cwd,
+            model=get_model_for_command("review"),
+        )
+
+        if result["success"]:
+            self.state.mark_phase_complete("review")
+
+        return result["success"]
+
+    def ship(self) -> bool:
+        """Run ship phase (commit + PR)."""
+        # Commit changes
+        commit_result = run_claude_command("commit", "", cwd=self.cwd)
+        if not commit_result["success"]:
+            return False
+
+        # Create PR
+        pr_result = run_claude_command("pull_request", "", cwd=self.cwd)
+
+        if pr_result["success"]:
+            self.state.mark_phase_complete("ship")
+
+        return pr_result["success"]

@@ -145,3 +145,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender la estructura de logs de sesión
     - Cuando implementes generación de .claude/hooks/ en proyectos target
     - Cuando trabajes con hooks de safety y auditoría
+
+- app_docs/feature-f0f4ea73-adw-templates.md
+  - Conditions:
+    - Cuando trabajes con templates de ADWs (AI Developer Workflows)
+    - Cuando necesites entender los templates de adw_modules/ (agent.py, state.py, git_ops.py, workflow_ops.py)
+    - Cuando modifiques o agregues workflows (adw_sdlc_iso.py, adw_patch_iso.py)
+    - Cuando trabajes con triggers automaticos (adw_triggers/)
+    - Cuando necesites entender el patrón de worktree isolation
+    - Cuando trabajes con state management y persistencia de workflows
+    - Cuando implementes model selection logic (HEAVY_COMMANDS)
+    - Cuando necesites referencia sobre variables TACConfig usadas en templates ADW
+    - Cuando implementes generación de adws/ en proyectos target

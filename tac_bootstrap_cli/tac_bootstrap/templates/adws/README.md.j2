@@ -1,0 +1,48 @@
+# AI Developer Workflows (ADWs)
+
+Este directorio contiene los workflows automatizados para {{ config.project.name }}.
+
+## Estructura
+
+```
+{{ config.paths.adws_dir }}/
+├── adw_modules/          # Modulos compartidos
+│   ├── agent.py          # Wrapper de Claude Code CLI
+│   ├── state.py          # Persistencia de estado
+│   ├── git_ops.py        # Operaciones git
+│   └── workflow_ops.py   # Orquestacion
+├── adw_sdlc_iso.py       # Workflow SDLC completo
+├── adw_patch_iso.py      # Workflow de patch rapido
+└── adw_triggers/         # Triggers automaticos
+    └── trigger_cron.py   # Polling de tareas
+```
+
+## Workflows Disponibles
+
+### SDLC Iso (Isolated)
+Workflow completo: Plan → Build → Test → Review → Ship
+
+```bash
+{{ config.project.package_manager.value }} run python {{ config.paths.adws_dir }}/adw_sdlc_iso.py --issue 123
+```
+
+### Patch Iso
+Workflow rapido para fixes: Build → Test → Ship
+
+```bash
+{{ config.project.package_manager.value }} run python {{ config.paths.adws_dir }}/adw_patch_iso.py --issue 456
+```
+
+## Conceptos Clave
+
+### Aislamiento (Iso)
+Cada workflow corre en su propio git worktree para evitar conflictos.
+Los worktrees se crean en `{{ config.paths.worktrees_dir }}/`.
+
+### Estado Persistente
+El estado de cada workflow se guarda en `agents/{adw_id}/adw_state.json`.
+
+### Puertos
+Cada worktree tiene puertos asignados para evitar conflictos:
+- Backend: 9100-9114
+- Frontend: 9200-9214
