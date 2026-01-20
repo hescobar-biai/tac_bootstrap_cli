@@ -8,13 +8,13 @@ app = typer.Typer(
 )
 
 @app.callback(invoke_without_command=True)
-def main(ctx: typer.Context):
+def main(ctx: typer.Context) -> None:
     """Bootstrap Agentic Layer for Claude Code with TAC patterns."""
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help())
 
 @app.command()
-def version():
+def version() -> None:
     """Show version."""
     from tac_bootstrap import __version__
     print(f"tac-bootstrap v{__version__}")
