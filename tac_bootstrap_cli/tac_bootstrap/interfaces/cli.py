@@ -121,40 +121,47 @@ def init(
         target_dir = target_dir.resolve()
 
         if interactive:
-            console.print("[yellow]Interactive wizard not yet implemented[/yellow]")
-            console.print("[dim]Use --no-interactive to continue[/dim]")
-            raise typer.Exit(1)
+            from tac_bootstrap.interfaces.wizard import run_init_wizard
 
-        # Auto-detect package manager if not specified
-        if package_manager is None:
-            valid_pms = get_package_managers_for_language(language)
-            if not valid_pms:
-                console.print(f"[red]No package managers available for {language.value}[/red]")
-                raise typer.Exit(1)
-            package_manager = valid_pms[0]  # Use first as default
-            console.print(f"[dim]Auto-detected package manager: {package_manager.value}[/dim]")
-
-        # Build configuration
-        default_cmds = get_default_commands(language, package_manager)
-        config = TACConfig(
-            project=ProjectSpec(
+            config = run_init_wizard(
                 name=name,
                 language=language,
                 framework=framework,
-                architecture=architecture,
                 package_manager=package_manager,
-            ),
-            paths=PathsSpec(app_root="src"),
-            commands=CommandsSpec(
-                start=default_cmds.get("start", ""),
-                test=default_cmds.get("test", ""),
-                lint=default_cmds.get("lint", ""),
-                typecheck=default_cmds.get("typecheck", ""),
-                format=default_cmds.get("format", ""),
-                build=default_cmds.get("build", ""),
-            ),
-            claude=ClaudeConfig(settings=ClaudeSettings(project_name=name)),
-        )
+                architecture=architecture,
+            )
+        else:
+            # Non-interactive mode: build config from CLI arguments
+            # Auto-detect package manager if not specified
+            if package_manager is None:
+                valid_pms = get_package_managers_for_language(language)
+                if not valid_pms:
+                    console.print(f"[red]No package managers available for {language.value}[/red]")
+                    raise typer.Exit(1)
+                package_manager = valid_pms[0]  # Use first as default
+                console.print(f"[dim]Auto-detected package manager: {package_manager.value}[/dim]")
+
+            # Build configuration
+            default_cmds = get_default_commands(language, package_manager)
+            config = TACConfig(
+                project=ProjectSpec(
+                    name=name,
+                    language=language,
+                    framework=framework,
+                    architecture=architecture,
+                    package_manager=package_manager,
+                ),
+                paths=PathsSpec(app_root="src"),
+                commands=CommandsSpec(
+                    start=default_cmds.get("start", ""),
+                    test=default_cmds.get("test", ""),
+                    lint=default_cmds.get("lint", ""),
+                    typecheck=default_cmds.get("typecheck", ""),
+                    format=default_cmds.get("format", ""),
+                    build=default_cmds.get("build", ""),
+                ),
+                claude=ClaudeConfig(settings=ClaudeSettings(project_name=name)),
+            )
 
         # Import scaffold service (will fail if not implemented yet)
         try:
@@ -164,15 +171,15 @@ def init(
             plan = service.build_plan(config, existing_repo=False)
 
             if dry_run:
-                # Show preview
+                # Show preview (use values from config which are guaranteed to be set)
                 preview_text = f"""[bold]Dry Run - Preview[/bold]
 
 [cyan]Target Directory:[/cyan] {target_dir}
-[cyan]Project Name:[/cyan] {name}
-[cyan]Language:[/cyan] {language.value}
-[cyan]Framework:[/cyan] {framework.value}
-[cyan]Package Manager:[/cyan] {package_manager.value}
-[cyan]Architecture:[/cyan] {architecture.value}
+[cyan]Project Name:[/cyan] {config.project.name}
+[cyan]Language:[/cyan] {config.project.language.value}
+[cyan]Framework:[/cyan] {config.project.framework.value}
+[cyan]Package Manager:[/cyan] {config.project.package_manager.value}
+[cyan]Architecture:[/cyan] {config.project.architecture.value}
 
 [bold]Would create:[/bold]
 """
@@ -282,30 +289,30 @@ def add_agentic(
             console.print(Panel(detection_text, border_style="cyan", title="Detection"))
 
             if interactive:
-                console.print("[yellow]Interactive wizard not yet implemented[/yellow]")
-                console.print("[dim]Use --no-interactive to continue with detected settings[/dim]")
-                raise typer.Exit(1)
+                from tac_bootstrap.interfaces.wizard import run_add_agentic_wizard
 
-            # Build config from detected settings
-            default_cmds = get_default_commands(detected.language, detected.package_manager)
-            config = TACConfig(
-                project=ProjectSpec(
-                    name=detected.name,
-                    language=detected.language,
-                    framework=detected.framework,
-                    package_manager=detected.package_manager,
-                ),
-                paths=PathsSpec(app_root=detected.app_root or "src"),
-                commands=CommandsSpec(
-                    start=default_cmds.get("start", ""),
-                    test=default_cmds.get("test", ""),
-                    lint=default_cmds.get("lint", ""),
-                    typecheck=default_cmds.get("typecheck", ""),
-                    format=default_cmds.get("format", ""),
-                    build=default_cmds.get("build", ""),
-                ),
-                claude=ClaudeConfig(settings=ClaudeSettings(project_name=detected.name)),
-            )
+                config = run_add_agentic_wizard(repo_path, detected)
+            else:
+                # Non-interactive mode: build config from detected settings
+                default_cmds = get_default_commands(detected.language, detected.package_manager)
+                config = TACConfig(
+                    project=ProjectSpec(
+                        name=detected.name,
+                        language=detected.language,
+                        framework=detected.framework,
+                        package_manager=detected.package_manager,
+                    ),
+                    paths=PathsSpec(app_root=detected.app_root or "src"),
+                    commands=CommandsSpec(
+                        start=default_cmds.get("start", ""),
+                        test=default_cmds.get("test", ""),
+                        lint=default_cmds.get("lint", ""),
+                        typecheck=default_cmds.get("typecheck", ""),
+                        format=default_cmds.get("format", ""),
+                        build=default_cmds.get("build", ""),
+                    ),
+                    claude=ClaudeConfig(settings=ClaudeSettings(project_name=detected.name)),
+                )
 
             # Build and apply plan
             from tac_bootstrap.application.scaffold_service import ScaffoldService
