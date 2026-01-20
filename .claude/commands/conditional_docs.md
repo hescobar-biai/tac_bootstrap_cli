@@ -105,3 +105,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites referencia de enums (Language, Framework, Architecture, PackageManager)
     - Cuando trabajes con el wizard interactivo y necesites defaults contextuales
     - Cuando implementes carga/guardado de config.yml
+
+- app_docs/feature-72bb26fe-scaffolding-plan-models.md
+  - Conditions:
+    - Cuando trabajes con modelos de plan de scaffolding
+    - Cuando necesites entender FileAction, FileOperation, DirectoryOperation, ScaffoldPlan
+    - Cuando implementes ScaffoldService.build_plan() o apply_plan()
+    - Cuando necesites construir planes de operaciones de archivos/directorios
+    - Cuando trabajes con preview/dry-run de generación de proyectos
+    - Cuando necesites query methods para filtrar operaciones por tipo (create, overwrite, patch, skip)
+    - Cuando uses fluent interface para construcción de planes
