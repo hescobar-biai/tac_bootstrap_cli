@@ -1,0 +1,38 @@
+# Health Check
+
+Validate the project setup and agentic layer.
+
+## Instructions
+
+1. **Check Structure**
+   Verify these directories exist:
+   - `.claude/commands/`
+   - `{{ config.paths.adws_dir }}/`
+   - `{{ config.paths.specs_dir }}/`
+   - `{{ config.paths.scripts_dir }}/`
+
+2. **Check Configuration**
+   - `.claude/settings.json` is valid JSON
+   - `config.yml` exists and is valid
+
+3. **Check Commands**
+   Verify these work:
+   - Start: `{{ config.commands.start }}`
+   - Test: `{{ config.commands.test }}`
+
+4. **Check Git**
+   - Is a git repository
+   - Has remote configured (optional)
+
+## Report Format
+```
+Health Check Results
+====================
+Structure:    [PASS/FAIL]
+Config:       [PASS/FAIL]
+Commands:     [PASS/FAIL]
+Git:          [PASS/FAIL]
+
+Issues:
+- (list any issues found)
+```

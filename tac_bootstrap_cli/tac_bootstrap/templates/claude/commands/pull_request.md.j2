@@ -1,0 +1,46 @@
+# Pull Request
+
+Create a GitHub pull request.
+
+## Variables
+- $ARGUMENTS: Optional PR title/description
+
+## Instructions
+
+1. **Ensure Branch is Ready**
+   - Verify all commits are made
+   - Ensure tests pass
+   - Check that branch is pushed to remote
+
+2. **Gather Context**
+   - Review commit history on this branch
+   - Identify the main changes
+   - List any related issues
+
+3. **Create PR**
+   Use GitHub CLI or provide instructions:
+   ```bash
+   gh pr create --title "Title" --body "Description"
+   ```
+
+4. **PR Description Format**
+   ```markdown
+   ## Summary
+   [Brief description of changes]
+
+   ## Changes
+   - Change 1
+   - Change 2
+
+   ## Testing
+   - [ ] Tests pass
+   - [ ] Manual testing completed
+
+   ## Related Issues
+   Closes #123
+   ```
+
+## Report
+- PR created: yes/no
+- PR URL: [url]
+- Title: [title]

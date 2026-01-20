@@ -1,0 +1,62 @@
+# Feature Planning
+
+Plan a new feature implementation.
+
+## Variables
+- $ARGUMENTS: Feature description or issue reference
+
+## Instructions
+
+1. **Understand the Request**
+   - Parse the feature description from $ARGUMENTS
+   - Identify acceptance criteria
+   - List any ambiguities to clarify
+
+2. **Research the Codebase**
+   - Find related existing code
+   - Identify files that need modification
+   - Note any patterns to follow
+
+3. **Design the Solution**
+   - Break down into discrete tasks
+   - Identify dependencies between tasks
+   - Consider edge cases and error handling
+
+4. **Create the Plan**
+   Write a plan file to `{{ config.paths.specs_dir }}/` with:
+   - Summary of the feature
+   - List of files to modify/create
+   - Step-by-step implementation tasks
+   - Test cases to add
+   - Definition of done
+
+## Plan Format
+```markdown
+# Feature: [Name]
+
+## Summary
+[1-2 sentence description]
+
+## Files to Modify
+- `path/to/file.py` - [what changes]
+- `path/to/new_file.py` - [create new]
+
+## Implementation Steps
+1. [ ] Step one
+2. [ ] Step two
+...
+
+## Test Cases
+- [ ] Test case 1
+- [ ] Test case 2
+
+## Definition of Done
+- [ ] All tests pass
+- [ ] Code follows {{ config.project.architecture.value }} patterns
+- [ ] No linting errors
+```
+
+## Report
+- Plan file created: `{{ config.paths.specs_dir }}/feature-[name].md`
+- Ready for implementation: yes/no
+- Questions/blockers: (if any)
