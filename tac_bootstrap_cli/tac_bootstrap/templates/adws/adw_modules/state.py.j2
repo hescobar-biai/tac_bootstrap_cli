@@ -1,0 +1,63 @@
+"""ADW State management.
+
+Handles persistence of workflow state across steps.
+"""
+import json
+from dataclasses import dataclass, field, asdict
+from pathlib import Path
+from typing import Optional, List
+from datetime import datetime
+
+
+@dataclass
+class ADWState:
+    """State for an AI Developer Workflow run.
+
+    Persisted to agents/{adw_id}/adw_state.json
+    """
+    adw_id: str
+    issue_number: Optional[int] = None
+    issue_class: Optional[str] = None  # feature, bug, chore
+    branch_name: Optional[str] = None
+    plan_file: Optional[str] = None
+    worktree_path: Optional[str] = None
+    backend_port: Optional[int] = None
+    frontend_port: Optional[int] = None
+    current_phase: str = "init"
+    phases_completed: List[str] = field(default_factory=list)
+    created_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    error: Optional[str] = None
+
+    def save(self, base_dir: Path = Path("agents")) -> None:
+        """Save state to disk."""
+        state_dir = base_dir / self.adw_id
+        state_dir.mkdir(parents=True, exist_ok=True)
+
+        self.updated_at = datetime.now().isoformat()
+
+        state_file = state_dir / "adw_state.json"
+        state_file.write_text(json.dumps(asdict(self), indent=2))
+
+    @classmethod
+    def load(cls, adw_id: str, base_dir: Path = Path("agents")) -> Optional["ADWState"]:
+        """Load state from disk."""
+        state_file = base_dir / adw_id / "adw_state.json"
+
+        if not state_file.exists():
+            return None
+
+        data = json.loads(state_file.read_text())
+        return cls(**data)
+
+    def mark_phase_complete(self, phase: str) -> None:
+        """Mark a phase as completed."""
+        if phase not in self.phases_completed:
+            self.phases_completed.append(phase)
+        self.current_phase = phase
+        self.save()
+
+    def set_error(self, error: str) -> None:
+        """Set error state."""
+        self.error = error
+        self.save()

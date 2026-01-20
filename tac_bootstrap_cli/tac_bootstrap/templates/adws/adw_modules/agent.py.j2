@@ -1,0 +1,80 @@
+"""Claude Code agent wrapper.
+
+Provides a clean interface for running Claude Code commands.
+"""
+import subprocess
+import json
+from pathlib import Path
+from typing import Optional, Dict, Any
+
+
+def run_claude_command(
+    command: str,
+    args: str = "",
+    cwd: Optional[Path] = None,
+    model: str = "{{ config.agentic.model_policy.default }}",
+    capture_output: bool = True,
+) -> Dict[str, Any]:
+    """Run a Claude Code slash command.
+
+    Args:
+        command: The slash command to run (e.g., "implement", "test")
+        args: Arguments to pass to the command
+        cwd: Working directory (defaults to current)
+        model: Model to use (sonnet/opus)
+        capture_output: Whether to capture and return output
+
+    Returns:
+        Dict with 'success', 'output', and 'error' keys
+    """
+    full_command = f"/{command}"
+    if args:
+        full_command += f" {args}"
+
+    cmd = [
+        "claude",
+        "--print",
+        "--dangerously-skip-permissions",
+        "--model", model,
+        "-p", full_command,
+    ]
+
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=cwd or Path.cwd(),
+            capture_output=capture_output,
+            text=True,
+            timeout=3600,  # 1 hour timeout
+        )
+
+        return {
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr,
+            "returncode": result.returncode,
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "success": False,
+            "output": "",
+            "error": "Command timed out after 1 hour",
+            "returncode": -1,
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "output": "",
+            "error": str(e),
+            "returncode": -1,
+        }
+
+
+# Model selection based on command complexity
+HEAVY_COMMANDS = ["implement", "feature", "bug", "review", "document"]
+
+def get_model_for_command(command: str) -> str:
+    """Get the appropriate model for a command."""
+    if command in HEAVY_COMMANDS:
+        return "{{ config.agentic.model_policy.heavy }}"
+    return "{{ config.agentic.model_policy.default }}"

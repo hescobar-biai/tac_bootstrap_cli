@@ -46,9 +46,7 @@ def sample_config() -> TACConfig:
             test="uv run pytest",
             lint="uv run ruff check .",
         ),
-        claude=ClaudeConfig(
-            settings=ClaudeSettings(project_name="my-test-app")
-        ),
+        claude=ClaudeConfig(settings=ClaudeSettings(project_name="my-test-app")),
     )
 
 
@@ -82,9 +80,7 @@ def temp_templates_dir(tmp_path: Path) -> Path:
 
     adws_dir = templates_dir / "adws"
     adws_dir.mkdir()
-    (adws_dir / "workflow.py.j2").write_text(
-        "# Workflow for {{ config.project.name }}\n"
-    )
+    (adws_dir / "workflow.py.j2").write_text("# Workflow for {{ config.project.name }}\n")
 
     scripts_dir = templates_dir / "scripts"
     scripts_dir.mkdir()
@@ -292,17 +288,13 @@ class TestTemplateRendering:
 
     def test_render_string_with_filter(self, repo: TemplateRepository, sample_config: TACConfig):
         """Test rendering template string with filter."""
-        result = repo.render_string(
-            "{{ config.project.name | snake_case }}",
-            sample_config
-        )
+        result = repo.render_string("{{ config.project.name | snake_case }}", sample_config)
         assert result == "my_test_app"
 
     def test_render_string_multiline(self, repo: TemplateRepository, sample_config: TACConfig):
         """Test rendering multiline template string."""
         template_str = (
-            "Name: {{ config.project.name }}\n"
-            "Language: {{ config.project.language.value }}"
+            "Name: {{ config.project.name }}\nLanguage: {{ config.project.language.value }}"
         )
         result = repo.render_string(template_str, sample_config)
         assert "Name: my-test-app" in result

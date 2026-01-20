@@ -135,3 +135,49 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites referencia sobre variables TACConfig usadas en templates Claude
     - Cuando implementes generación de .claude/ en proyectos target
     - Cuando trabajes en TAREA 3.3 (hooks templates) o comandos slash personalizados
+
+- app_docs/feature-fbc4585b-claude-hooks-templates.md
+  - Conditions:
+    - Cuando trabajes con templates de hooks de Claude Code
+    - Cuando necesites entender pre_tool_use.py, post_tool_use.py, stop.py templates
+    - Cuando modifiques validación de comandos peligrosos o forbidden paths
+    - Cuando trabajes con logging de tool usage o session cleanup
+    - Cuando necesites entender la estructura de logs de sesión
+    - Cuando implementes generación de .claude/hooks/ en proyectos target
+    - Cuando trabajes con hooks de safety y auditoría
+
+- app_docs/feature-f0f4ea73-adw-templates.md
+  - Conditions:
+    - Cuando trabajes con templates de ADWs (AI Developer Workflows)
+    - Cuando necesites entender los templates de adw_modules/ (agent.py, state.py, git_ops.py, workflow_ops.py)
+    - Cuando modifiques o agregues workflows (adw_sdlc_iso.py, adw_patch_iso.py)
+    - Cuando trabajes con triggers automaticos (adw_triggers/)
+    - Cuando necesites entender el patrón de worktree isolation
+    - Cuando trabajes con state management y persistencia de workflows
+    - Cuando implementes model selection logic (HEAVY_COMMANDS)
+    - Cuando necesites referencia sobre variables TACConfig usadas en templates ADW
+    - Cuando implementes generación de adws/ en proyectos target
+
+- app_docs/feature-feff53ac-scripts-config-templates.md
+  - Conditions:
+    - Cuando trabajes con templates de scripts bash (start.sh, test.sh, lint.sh, build.sh)
+    - Cuando necesites entender templates de configuración (config.yml, .mcp.json, .gitignore)
+    - Cuando modifiques o agregues templates en templates/scripts/ o templates/config/
+    - Cuando trabajes con templates de documentación de estructura (specs/README.md, app_docs/README.md, ai_docs/README.md)
+    - Cuando necesites entender convenciones de templates Jinja2 (enums con .value, booleans con | lower)
+    - Cuando implementes renderizado de archivos de configuración del proyecto
+    - Cuando necesites referencia sobre variables TACConfig usadas en templates de scripts/config
+    - Cuando trabajes con conditional rendering de comandos opcionales (lint, build, typecheck)
+
+- app_docs/feature-a83dbd52-implement-main-cli-commands.md
+  - Conditions:
+    - Cuando trabajes con los comandos CLI principales (init, add-agentic, doctor, render, version)
+    - Cuando necesites entender la estructura completa de la interfaz CLI de TAC Bootstrap
+    - Cuando modifiques o agregues comandos CLI usando Typer
+    - Cuando trabajes con Rich para formateo de output en terminal (paneles, colores)
+    - Cuando necesites entender cómo integrar con ScaffoldService, DetectService, DoctorService (placeholder services)
+    - Cuando implementes dry-run mode o force flags en comandos
+    - Cuando trabajes con manejo de errores y mensajes de usuario en CLI
+    - Cuando necesites referencia sobre argumentos, opciones y help text de comandos
+    - Cuando implementes wizard interactivo (interactive mode) en comandos
+    - Cuando trabajes con validación de paths, carga de YAML, o construcción de TACConfig desde CLI

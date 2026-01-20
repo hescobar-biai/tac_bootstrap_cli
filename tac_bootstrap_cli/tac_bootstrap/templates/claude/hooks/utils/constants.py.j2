@@ -50,7 +50,6 @@ ALLOWED_PATHS = [
 # HELPER FUNCTIONS
 # ============================================================================
 
-
 def get_session_log_dir(session_id: str) -> Path:
     """
     Get the log directory for a specific session.
@@ -62,7 +61,6 @@ def get_session_log_dir(session_id: str) -> Path:
         Path object for the session's log directory
     """
     return Path(LOG_DIR) / session_id
-
 
 def ensure_session_log_dir(session_id: str) -> Path:
     """
