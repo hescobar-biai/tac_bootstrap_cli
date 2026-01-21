@@ -402,3 +402,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features que generen documentación de principios gobernantes
     - Cuando necesites referencia sobre integración del constitution con otros comandos (/review, /implement)
     - Cuando trabajes con templates de 900+ líneas con conditional rendering extensivo
+
+- app_docs/feature-df044912-clarification-phase-adw-planning.md
+  - Conditions:
+    - Cuando trabajes con la fase de clarificación en adw_plan_iso.py o su template
+    - Cuando necesites entender cómo funciona el análisis de ambigüedades en issues
+    - Cuando modifiques o extiendas clarify_issue() en workflow_ops.py
+    - Cuando trabajes con los modelos ClarificationQuestion o ClarificationResponse
+    - Cuando necesites entender los flags --skip-clarify o --clarify-continue
+    - Cuando implementes features de análisis LLM para detección de requisitos ambiguos
+    - Cuando trabajes con workflow pause/resume logic en ADWs
+    - Cuando necesites referencia sobre categorización de preguntas (requirements, technical_decision, edge_case, missing_info)
+    - Cuando modifiques el prompt de clarificación o necesites entender las cuatro categorías de análisis
