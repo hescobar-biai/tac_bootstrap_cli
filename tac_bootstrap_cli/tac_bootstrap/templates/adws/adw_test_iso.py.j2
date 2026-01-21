@@ -1,0 +1,389 @@
+#!/usr/bin/env -S uv run
+# /// script
+# dependencies = ["python-dotenv", "pydantic"]
+# ///
+
+"""
+ADW Test Iso - AI Developer Workflow for agentic testing in isolated worktrees
+
+Usage:
+  uv run adw_test_iso.py <issue-number> <adw-id> [--skip-e2e]
+
+Workflow:
+1. Load state and validate worktree exists
+2. Run application test suite in worktree
+3. Report results to issue
+4. Create commit with test results in worktree
+5. Push and update PR
+
+This workflow REQUIRES that adw_plan_iso.py or adw_patch_iso.py has been run first
+to create the worktree. It cannot create worktrees itself.
+"""
+
+import json
+import subprocess
+import sys
+import os
+import logging
+from typing import Tuple, Optional, List
+from dotenv import load_dotenv
+from adw_modules.data_types import (
+    AgentTemplateRequest,
+    GitHubIssue,
+    AgentPromptResponse,
+    TestResult,
+    E2ETestResult,
+    IssueClassSlashCommand,
+)
+from adw_modules.agent import execute_template
+from adw_modules.github import (
+    extract_repo_path,
+    fetch_issue,
+    make_issue_comment,
+    get_repo_url,
+)
+from adw_modules.utils import make_adw_id, setup_logger, parse_json, check_env_vars
+from adw_modules.state import ADWState
+from adw_modules.git_ops import commit_changes, finalize_git_operations
+from adw_modules.workflow_ops import (
+    format_issue_message,
+    create_commit,
+    ensure_adw_id,
+    classify_issue,
+)
+from adw_modules.worktree_ops import validate_worktree
+
+AGENT_TESTER = "test_runner"
+AGENT_E2E_TESTER = "e2e_test_runner"
+AGENT_BRANCH_GENERATOR = "branch_generator"
+
+MAX_TEST_RETRY_ATTEMPTS = 4
+MAX_E2E_TEST_RETRY_ATTEMPTS = 2
+
+
+def run_tests(adw_id: str, logger: logging.Logger, working_dir: Optional[str] = None) -> AgentPromptResponse:
+    """Run the test suite using the /test command."""
+    test_template_request = AgentTemplateRequest(
+        agent_name=AGENT_TESTER,
+        slash_command="/test",
+        args=[],
+        adw_id=adw_id,
+        working_dir=working_dir,
+    )
+    test_response = execute_template(test_template_request)
+    return test_response
+
+
+def parse_test_results(
+    output: str, logger: logging.Logger
+) -> Tuple[List[TestResult], int, int]:
+    """Parse test results JSON and return (results, passed_count, failed_count)."""
+    try:
+        results = parse_json(output, List[TestResult])
+        passed_count = sum(1 for test in results if test.passed)
+        failed_count = len(results) - passed_count
+        return results, passed_count, failed_count
+    except Exception as e:
+        logger.error(f"Error parsing test results: {e}")
+        return [], 0, 0
+
+
+def format_test_results_comment(
+    results: List[TestResult], passed_count: int, failed_count: int
+) -> str:
+    """Format test results for GitHub issue comment with JSON blocks."""
+    if not results:
+        return "No test results found"
+
+    failed_tests = [test for test in results if not test.passed]
+    passed_tests = [test for test in results if test.passed]
+
+    comment_parts = []
+
+    if failed_tests:
+        comment_parts.append("")
+        comment_parts.append("## Failed Tests")
+        comment_parts.append("")
+        for test in failed_tests:
+            comment_parts.append(f"### {test.test_name}")
+            comment_parts.append("")
+            comment_parts.append("```json")
+            comment_parts.append(json.dumps(test.model_dump(), indent=2))
+            comment_parts.append("```")
+            comment_parts.append("")
+
+    if passed_tests:
+        comment_parts.append("## Passed Tests")
+        comment_parts.append("")
+        for test in passed_tests:
+            comment_parts.append(f"### {test.test_name}")
+            comment_parts.append("")
+            comment_parts.append("```json")
+            comment_parts.append(json.dumps(test.model_dump(), indent=2))
+            comment_parts.append("```")
+            comment_parts.append("")
+
+    comment_parts.append("## Summary")
+    comment_parts.append(f"- **Passed**: {passed_count}")
+    comment_parts.append(f"- **Failed**: {failed_count}")
+    comment_parts.append(f"- **Total**: {len(results)}")
+
+    return "\n".join(comment_parts)
+
+
+def resolve_failed_tests(
+    failed_tests: List[TestResult],
+    adw_id: str,
+    issue_number: str,
+    logger: logging.Logger,
+    worktree_path: str,
+    iteration: int = 1,
+) -> Tuple[int, int]:
+    """Attempt to resolve failed tests using the resolve_failed_test command."""
+    resolved_count = 0
+    unresolved_count = 0
+
+    for idx, test in enumerate(failed_tests):
+        logger.info(f"\n=== Resolving failed test {idx + 1}/{len(failed_tests)}: {test.test_name} ===")
+        test_payload = test.model_dump_json(indent=2)
+        agent_name = f"test_resolver_iter{iteration}_{idx}"
+
+        resolve_request = AgentTemplateRequest(
+            agent_name=agent_name,
+            slash_command="/resolve_failed_test",
+            args=[test_payload],
+            adw_id=adw_id,
+            working_dir=worktree_path,
+        )
+
+        make_issue_comment(
+            issue_number,
+            format_issue_message(
+                adw_id, agent_name, f"Attempting to resolve: {test.test_name}\n```json\n{test_payload}\n```"
+            ),
+        )
+
+        response = execute_template(resolve_request)
+
+        if response.success:
+            resolved_count += 1
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, agent_name, f"Successfully resolved: {test.test_name}"),
+            )
+            logger.info(f"Successfully resolved: {test.test_name}")
+        else:
+            unresolved_count += 1
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, agent_name, f"Failed to resolve: {test.test_name}"),
+            )
+            logger.error(f"Failed to resolve: {test.test_name}")
+
+    return resolved_count, unresolved_count
+
+
+def run_tests_with_resolution(
+    adw_id: str,
+    issue_number: str,
+    logger: logging.Logger,
+    worktree_path: str,
+    max_attempts: int = MAX_TEST_RETRY_ATTEMPTS,
+) -> Tuple[List[TestResult], int, int, AgentPromptResponse]:
+    """Run tests with automatic resolution and retry logic."""
+    attempt = 0
+    results = []
+    passed_count = 0
+    failed_count = 0
+    test_response = None
+
+    while attempt < max_attempts:
+        attempt += 1
+        logger.info(f"\n=== Test Run Attempt {attempt}/{max_attempts} ===")
+
+        test_response = run_tests(adw_id, logger, worktree_path)
+
+        if not test_response.success:
+            logger.error(f"Error running tests: {test_response.output}")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, AGENT_TESTER, f"Error running tests: {test_response.output}"),
+            )
+            break
+
+        results, passed_count, failed_count = parse_test_results(test_response.output, logger)
+
+        if failed_count == 0:
+            logger.info("All tests passed, stopping retry attempts")
+            break
+        if attempt == max_attempts:
+            logger.info(f"Reached maximum retry attempts ({max_attempts}), stopping")
+            break
+
+        logger.info("\n=== Attempting to resolve failed tests ===")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", f"Found {failed_count} failed tests. Attempting resolution..."),
+        )
+
+        failed_tests = [test for test in results if not test.passed]
+        resolved, unresolved = resolve_failed_tests(
+            failed_tests, adw_id, issue_number, logger, worktree_path, iteration=attempt
+        )
+
+        if resolved > 0:
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"Resolved {resolved}/{failed_count} failed tests"),
+            )
+            logger.info(f"\n=== Re-running tests after resolving {resolved} tests ===")
+        else:
+            logger.info("No tests were resolved, stopping retry attempts")
+            break
+
+    if attempt == max_attempts and failed_count > 0:
+        logger.warning(f"Reached maximum retry attempts ({max_attempts}) with {failed_count} failures remaining")
+
+    return results, passed_count, failed_count, test_response
+
+
+def main():
+    """Main entry point."""
+    load_dotenv()
+
+    skip_e2e = "--skip-e2e" in sys.argv
+    if skip_e2e:
+        sys.argv.remove("--skip-e2e")
+
+    if len(sys.argv) < 3:
+        print("Usage: uv run adw_test_iso.py <issue-number> <adw-id> [--skip-e2e]")
+        print("\nError: adw-id is required to locate the worktree")
+        print("Run adw_plan_iso.py or adw_patch_iso.py first to create the worktree")
+        sys.exit(1)
+
+    issue_number = sys.argv[1]
+    adw_id = sys.argv[2]
+
+    temp_logger = setup_logger(adw_id, "adw_test_iso")
+    state = ADWState.load(adw_id, temp_logger)
+    if state:
+        issue_number = state.get("issue_number", issue_number)
+        make_issue_comment(
+            issue_number,
+            f"{adw_id}_ops: Found existing state - starting isolated testing\n```json\n{json.dumps(state.data, indent=2)}\n```"
+        )
+    else:
+        logger = setup_logger(adw_id, "adw_test_iso")
+        logger.error(f"No state found for ADW ID: {adw_id}")
+        print(f"\nError: No state found for ADW ID: {adw_id}")
+        sys.exit(1)
+
+    state.append_adw_id("adw_test_iso")
+
+    logger = setup_logger(adw_id, "adw_test_iso")
+    logger.info(f"ADW Test Iso starting - ID: {adw_id}, Issue: {issue_number}, Skip E2E: {skip_e2e}")
+
+    check_env_vars(logger)
+
+    valid, error = validate_worktree(adw_id, state)
+    if not valid:
+        logger.error(f"Worktree validation failed: {error}")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", f"Worktree validation failed: {error}")
+        )
+        sys.exit(1)
+
+    worktree_path = state.get("worktree_path")
+    logger.info(f"Using worktree at: {worktree_path}")
+
+    backend_port = state.get("backend_port", "9100")
+    frontend_port = state.get("frontend_port", "9200")
+
+    make_issue_comment(
+        issue_number,
+        format_issue_message(adw_id, "ops", f"Starting isolated testing phase\n"
+                           f"Worktree: {worktree_path}\n"
+                           f"Ports - Backend: {backend_port}, Frontend: {frontend_port}\n"
+                           f"E2E Tests: {'Skipped' if skip_e2e else 'Enabled'}")
+    )
+
+    test_results = []
+
+    logger.info("Running unit tests in worktree with automatic resolution")
+    make_issue_comment(
+        issue_number,
+        format_issue_message(adw_id, AGENT_TESTER, "Running unit tests in isolated environment...")
+    )
+
+    results, passed_count, failed_count, test_response = run_tests_with_resolution(
+        adw_id, issue_number, logger, worktree_path
+    )
+
+    test_results = results
+
+    if results:
+        comment = format_test_results_comment(results, passed_count, failed_count)
+        make_issue_comment(issue_number, format_issue_message(adw_id, AGENT_TESTER, comment))
+        logger.info(f"Test results: {passed_count} passed, {failed_count} failed")
+    else:
+        logger.warning("No test results found in output")
+
+    total_failures = failed_count
+
+    try:
+        github_repo_url = get_repo_url()
+        repo_path = extract_repo_path(github_repo_url)
+    except ValueError as e:
+        logger.error(f"Error getting repository URL: {e}")
+        sys.exit(1)
+
+    logger.info("Fetching issue data for commit message")
+    issue = fetch_issue(issue_number, repo_path)
+
+    issue_command = state.get("issue_class")
+    if not issue_command:
+        issue_command, error = classify_issue(issue, adw_id, logger)
+        if error:
+            issue_command = "/feature"
+        else:
+            state.update(issue_class=issue_command)
+            state.save("adw_test_iso")
+
+    logger.info("Creating test commit")
+    commit_msg, error = create_commit(AGENT_TESTER, issue, issue_command, adw_id, logger, worktree_path)
+
+    if error:
+        logger.error(f"Error creating commit message: {error}")
+        sys.exit(1)
+
+    success, error = commit_changes(commit_msg, cwd=worktree_path)
+
+    if not success:
+        logger.error(f"Error committing test results: {error}")
+        sys.exit(1)
+
+    logger.info(f"Committed test results: {commit_msg}")
+    make_issue_comment(issue_number, format_issue_message(adw_id, AGENT_TESTER, "Test results committed"))
+
+    finalize_git_operations(state, logger, cwd=worktree_path)
+
+    logger.info("Isolated testing phase completed successfully")
+    make_issue_comment(issue_number, format_issue_message(adw_id, "ops", "Isolated testing phase completed"))
+
+    state.save("adw_test_iso")
+
+    make_issue_comment(
+        issue_number,
+        f"{adw_id}_ops: Final test state:\n```json\n{json.dumps(state.data, indent=2)}\n```"
+    )
+
+    if total_failures > 0:
+        logger.error(f"Test workflow completed with {total_failures} failures")
+        sys.exit(1)
+    else:
+        logger.info("All tests passed successfully")
+
+
+if __name__ == "__main__":
+    main()

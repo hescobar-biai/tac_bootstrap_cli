@@ -193,13 +193,18 @@ class ScaffoldService:
             reason="ADW documentation",
         )
 
-        # Modules
+        # Modules - all ADW infrastructure modules
         modules = [
             ("__init__.py", "Package init"),
             ("agent.py", "Claude Code wrapper"),
             ("state.py", "State persistence"),
             ("git_ops.py", "Git operations"),
             ("workflow_ops.py", "Workflow orchestration"),
+            ("data_types.py", "Data models and types"),
+            ("github.py", "GitHub API operations"),
+            ("utils.py", "Utility functions"),
+            ("worktree_ops.py", "Git worktree management"),
+            ("r2_uploader.py", "Cloudflare R2 uploader"),
         ]
 
         for module, reason in modules:
@@ -210,10 +215,25 @@ class ScaffoldService:
                 reason=reason,
             )
 
-        # Workflows
+        # Workflows - all isolated ADW workflows
         workflows = [
+            # Core orchestration
             ("adw_sdlc_iso.py", "SDLC workflow (isolated)"),
+            ("adw_sdlc_zte_iso.py", "Zero Touch Execution workflow"),
             ("adw_patch_iso.py", "Patch workflow (isolated)"),
+            # Individual phases
+            ("adw_plan_iso.py", "Planning phase (isolated)"),
+            ("adw_build_iso.py", "Build phase (isolated)"),
+            ("adw_test_iso.py", "Test phase (isolated)"),
+            ("adw_review_iso.py", "Review phase (isolated)"),
+            ("adw_document_iso.py", "Documentation phase (isolated)"),
+            ("adw_ship_iso.py", "Ship/merge phase (isolated)"),
+            # Compositional workflows
+            ("adw_plan_build_iso.py", "Plan + Build workflow"),
+            ("adw_plan_build_test_iso.py", "Plan + Build + Test workflow"),
+            ("adw_plan_build_test_review_iso.py", "Plan + Build + Test + Review workflow"),
+            ("adw_plan_build_review_iso.py", "Plan + Build + Review workflow"),
+            ("adw_plan_build_document_iso.py", "Plan + Build + Document workflow"),
         ]
 
         for workflow, reason in workflows:
