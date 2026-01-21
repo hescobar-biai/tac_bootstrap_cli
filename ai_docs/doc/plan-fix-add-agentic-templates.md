@@ -85,7 +85,7 @@ Verifica que el fix del comando add-agentic funciona correctamente.
 
 3. Ejecutar el comando:
    ```bash
-   tac-bootstrap add-agentic
+   uv run tac-bootstrap add-agentic
    ```
 
 4. Verificar que se crearon los archivos:
