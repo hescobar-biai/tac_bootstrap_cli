@@ -81,17 +81,17 @@ def init(
     output_dir: Optional[Path] = typer.Option(
         None, "--output", "-o", help="Output directory (default: ./{name})"
     ),
-    language: Language = typer.Option(
-        Language.PYTHON, "--language", "-l", help="Programming language"
+    language: Optional[Language] = typer.Option(
+        None, "--language", "-l", help="Programming language (default: python)"
     ),
-    framework: Framework = typer.Option(
-        Framework.NONE, "--framework", "-f", help="Web framework or project type"
+    framework: Optional[Framework] = typer.Option(
+        None, "--framework", "-f", help="Web framework or project type (default: none)"
     ),
     package_manager: Optional[PackageManager] = typer.Option(
         None, "--package-manager", "-p", help="Package manager (auto-detected if not specified)"
     ),
-    architecture: Architecture = typer.Option(
-        Architecture.SIMPLE, "--architecture", "-a", help="Software architecture pattern"
+    architecture: Optional[Architecture] = typer.Option(
+        None, "--architecture", "-a", help="Software architecture pattern (default: simple)"
     ),
     interactive: bool = typer.Option(
         True, "--interactive/--no-interactive", help="Use interactive wizard"
@@ -132,6 +132,14 @@ def init(
             )
         else:
             # Non-interactive mode: build config from CLI arguments
+            # Use defaults for any unspecified options
+            if language is None:
+                language = Language.PYTHON
+            if framework is None:
+                framework = Framework.NONE
+            if architecture is None:
+                architecture = Architecture.SIMPLE
+
             # Auto-detect package manager if not specified
             if package_manager is None:
                 valid_pms = get_package_managers_for_language(language)
