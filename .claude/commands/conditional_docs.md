@@ -390,3 +390,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features que generen outputs duales (JSON + markdown)
     - Cuando necesites referencia sobre edge case handling en parsing de specs
     - Cuando trabajes con templates de comandos que leen y procesan archivos markdown
+
+- app_docs/feature-f7606da7-constitution-principles-prime.md
+  - Conditions:
+    - Cuando trabajes con el template constitution.md.j2 o el comando /prime
+    - Cuando necesites entender cómo funciona la generación del constitution file
+    - Cuando modifiques o extiendas las cinco secciones del constitution (coding, testing, architecture, UX/DX, performance)
+    - Cuando trabajes con parametrización basada en language, framework, architecture
+    - Cuando necesites entender el contenido específico de lenguaje (Python, TypeScript, Go, Rust, Java)
+    - Cuando trabajes con patrones específicos de framework (FastAPI, Next.js, Gin, Axum, Spring Boot)
+    - Cuando implementes features que generen documentación de principios gobernantes
+    - Cuando necesites referencia sobre integración del constitution con otros comandos (/review, /implement)
+    - Cuando trabajes con templates de 900+ líneas con conditional rendering extensivo

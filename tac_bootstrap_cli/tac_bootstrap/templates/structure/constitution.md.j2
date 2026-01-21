@@ -1,0 +1,909 @@
+# {{ config.project.name }} - Project Constitution
+
+**Generated**: {{ "now" | default("auto-generated") }}
+**Purpose**: This document defines the governing principles, standards, and guidelines for developing {{ config.project.name }}. All contributors (human and AI) must follow these principles to maintain consistency, quality, and architectural coherence.
+
+---
+
+## 1. Coding Principles
+
+### Style Guide
+{% if config.project.language.value == "python" %}
+- **Follow PEP 8**: Python Enhancement Proposal 8 is the standard style guide
+- **Use type hints**: All function signatures must include type annotations
+- **Maximum line length**: 100 characters (configurable in tool config)
+- **Import ordering**: Standard library → Third-party → Local imports (use `isort` or `ruff`)
+- **Docstrings**: Use Google-style or NumPy-style docstrings for all public functions/classes
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+- **Follow Airbnb Style Guide**: Industry-standard JavaScript/TypeScript conventions
+- **Use ESLint + Prettier**: Auto-format all code, enforce style rules
+- **Semicolons**: Required (or explicitly omit if configured)
+- **Quotes**: Single quotes for strings (or as configured in Prettier)
+{% if config.project.language.value == "typescript" %}
+- **Strict mode**: Always enable `strict: true` in tsconfig.json
+- **No `any` type**: Use `unknown` for truly unknown types, otherwise be specific
+- **Explicit return types**: All exported functions must declare return types
+{% endif %}
+- **Arrow functions**: Prefer arrow functions for callbacks and short functions
+{% elif config.project.language.value == "go" %}
+- **Follow Effective Go**: Official Go programming guide
+- **Use gofmt/goimports**: All code must be formatted with `gofmt` or `goimports`
+- **Error handling**: Always check errors, never ignore with `_`
+- **Naming conventions**: MixedCaps for exported names, mixedCaps for unexported
+- **Package comments**: Every package must have a doc comment
+{% elif config.project.language.value == "rust" %}
+- **Follow Rust API Guidelines**: Official Rust design patterns
+- **Use rustfmt**: All code must be formatted with `cargo fmt`
+- **Use clippy**: Address all clippy warnings (allow only when justified)
+- **Naming conventions**: `snake_case` for functions/variables, `CamelCase` for types
+- **Documentation**: Doc comments (`///`) for all public items
+{% elif config.project.language.value == "java" %}
+- **Follow Google Java Style Guide**: Industry-standard Java conventions
+- **Use Checkstyle**: Enforce style rules automatically
+- **Naming conventions**: `camelCase` for methods/variables, `PascalCase` for classes
+- **Annotations**: Use `@Override`, `@Nullable`, `@NonNull` appropriately
+- **Javadoc**: Required for all public APIs
+{% endif %}
+
+### Patterns to Use
+{% if config.project.framework.value == "fastapi" %}
+- **Dependency Injection**: Use FastAPI's `Depends()` for shared dependencies
+- **Pydantic Models**: Define request/response schemas with Pydantic
+- **Async/Await**: Use `async def` for I/O-bound operations
+- **APIRouter**: Organize endpoints into routers by domain
+- **Background Tasks**: Use `BackgroundTasks` for non-blocking operations
+{% elif config.project.framework.value == "nextjs" %}
+- **Server Components**: Default to React Server Components (App Router)
+- **Client Components**: Use `"use client"` only when needed (interactivity, hooks)
+- **Data Fetching**: Use server-side data fetching in Server Components
+- **Image Optimization**: Use `next/image` for all images
+- **Font Optimization**: Use `next/font` for font loading
+{% elif config.project.framework.value == "gin" %}
+- **Middleware**: Use middleware for cross-cutting concerns (auth, logging)
+- **Context Usage**: Pass `*gin.Context` to handlers, extract params/body properly
+- **Error Handling**: Return structured JSON errors with appropriate status codes
+- **Grouping**: Use router groups for versioned APIs or shared middleware
+{% elif config.project.framework.value == "axum" %}
+- **Extractors**: Use extractors (`Json`, `Query`, `Path`, `State`) for request data
+- **Tower Services**: Leverage Tower middleware for cross-cutting concerns
+- **State Management**: Use `State<AppState>` for shared application state
+- **Error Handling**: Implement `IntoResponse` for custom error types
+{% elif config.project.framework.value == "spring" %}
+- **Dependency Injection**: Use constructor injection (prefer over field injection)
+- **Annotations**: `@Service`, `@Repository`, `@Controller` for layer separation
+- **JPA Best Practices**: Use proper entity relationships, avoid N+1 queries
+- **DTOs**: Use Data Transfer Objects for API contracts (separate from entities)
+{% else %}
+- **Separation of Concerns**: Keep business logic separate from I/O and presentation
+- **Composition over Inheritance**: Favor composition for code reuse
+- **Interface Segregation**: Define small, focused interfaces
+{% endif %}
+
+{% if config.project.architecture.value == "ddd" %}
+- **Ubiquitous Language**: Use domain terms consistently in code and communication
+- **Aggregates**: Enforce consistency boundaries, one repository per aggregate
+- **Value Objects**: Use immutable value objects for domain concepts without identity
+- **Domain Events**: Publish events for significant domain occurrences
+{% elif config.project.architecture.value == "clean" %}
+- **Dependency Rule**: Inner layers never depend on outer layers
+- **Use Cases**: Encapsulate application business rules in use case classes
+- **Entities**: Keep core business entities framework-agnostic
+{% elif config.project.architecture.value == "hexagonal" %}
+- **Ports**: Define interfaces for external dependencies (persistence, APIs)
+- **Adapters**: Implement ports with specific technologies (PostgreSQL, REST)
+- **Domain Isolation**: Keep domain logic independent of infrastructure
+{% endif %}
+
+### Anti-Patterns to Avoid
+{% if config.project.language.value == "python" %}
+- **Mutable default arguments**: Never use `def func(arg=[]):`
+- **Bare `except`**: Always catch specific exceptions
+- **Import ***: Never use wildcard imports
+- **Global state**: Minimize global variables, prefer dependency injection
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+- **Callback hell**: Use async/await instead of deeply nested callbacks
+- **Mutating props**: Never mutate component props or function parameters
+- **Using `var`**: Always use `const` (or `let` if reassignment needed)
+{% if config.project.language.value == "typescript" %}
+- **Type assertions**: Avoid `as` assertions unless absolutely necessary
+- **Non-null assertions**: Avoid `!` operator, handle nullability explicitly
+{% endif %}
+{% elif config.project.language.value == "go" %}
+- **Ignoring errors**: Never use `_, _ = someFunc()` to ignore errors
+- **Goroutine leaks**: Always ensure goroutines can terminate
+- **Premature optimization**: Profile before optimizing
+{% elif config.project.language.value == "rust" %}
+- **`.unwrap()` in production**: Use proper error handling with `?` or `match`
+- **Cloning everywhere**: Understand borrowing before resorting to `.clone()`
+- **Ignoring warnings**: Address all compiler warnings
+{% elif config.project.language.value == "java" %}
+- **Catching `Exception`**: Catch specific exceptions, not the base class
+- **String concatenation in loops**: Use `StringBuilder` for repeated concatenation
+- **Not closing resources**: Use try-with-resources for auto-closable resources
+{% endif %}
+
+### Naming Conventions
+{% if config.project.language.value == "python" %}
+- **Modules/Packages**: `snake_case`
+- **Classes**: `PascalCase`
+- **Functions/Variables**: `snake_case`
+- **Constants**: `UPPER_SNAKE_CASE`
+- **Private**: Prefix with single underscore `_private_method`
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+- **Files**: `kebab-case.ts` or `PascalCase.tsx` (components)
+- **Classes/Interfaces**: `PascalCase`
+- **Functions/Variables**: `camelCase`
+- **Constants**: `UPPER_SNAKE_CASE` or `camelCase` (depending on convention)
+- **React Components**: `PascalCase`
+{% elif config.project.language.value == "go" %}
+- **Packages**: Short, lowercase, single word (e.g., `http`, `user`)
+- **Exported**: `MixedCaps` (uppercase first letter)
+- **Unexported**: `mixedCaps` (lowercase first letter)
+- **Interfaces**: Often end with `-er` suffix (e.g., `Reader`, `Writer`)
+{% elif config.project.language.value == "rust" %}
+- **Modules/Packages**: `snake_case`
+- **Types/Traits**: `PascalCase`
+- **Functions/Variables**: `snake_case`
+- **Constants**: `SCREAMING_SNAKE_CASE`
+- **Lifetime parameters**: Short lowercase (e.g., `'a`, `'b`)
+{% elif config.project.language.value == "java" %}
+- **Packages**: `lowercase.dot.separated`
+- **Classes/Interfaces**: `PascalCase`
+- **Methods/Variables**: `camelCase`
+- **Constants**: `UPPER_SNAKE_CASE`
+{% endif %}
+
+---
+
+## 2. Testing Standards
+
+### Coverage Requirements
+- **Minimum Coverage**: 80% line coverage for all code
+- **Critical Paths**: 100% coverage for business logic and domain layer
+{% if config.project.architecture.value == "ddd" %}
+- **Domain Layer**: 100% coverage (entities, value objects, aggregates)
+- **Application Layer**: 90% coverage (use cases, services)
+- **Infrastructure Layer**: 70% coverage (repositories, adapters)
+{% endif %}
+- **New Code**: All new features must include tests before merging
+
+### Test Types Required
+{% if config.project.language.value == "python" %}
+- **Unit Tests**: Fast, isolated tests using `pytest`
+  - Test individual functions/classes in isolation
+  - Mock external dependencies (databases, APIs, file I/O)
+  - Run in < 1 second total
+- **Integration Tests**: Test component interactions
+  - Test repository implementations with real database (use test containers or in-memory DB)
+  - Test API endpoints with TestClient
+  - Run in < 10 seconds total
+- **E2E Tests** (if applicable): Full user scenarios
+  - Test complete workflows through the API
+  - Use realistic test data
+  - Run in < 30 seconds total
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+- **Unit Tests**: Fast, isolated tests using Jest or Vitest
+  - Test functions, hooks, utilities in isolation
+  - Mock modules with `jest.mock()` or `vi.mock()`
+  - Run in < 2 seconds total
+- **Component Tests**: Test React components
+  - Use React Testing Library
+  - Test user interactions, not implementation details
+  - Mock API calls and external dependencies
+- **Integration Tests**: Test API routes and database interactions
+  - Use supertest for API testing
+  - Test with real database (test containers or in-memory)
+- **E2E Tests** (if applicable): Use Playwright or Cypress
+  - Test critical user journeys
+  - Run in CI/CD pipeline
+{% elif config.project.language.value == "go" %}
+- **Unit Tests**: Fast, isolated tests using `go test`
+  - Use table-driven tests for multiple cases
+  - Mock interfaces with generated mocks (mockgen) or manual mocks
+  - Run in < 1 second with `go test -short`
+- **Integration Tests**: Test with real dependencies
+  - Use build tags (`// +build integration`)
+  - Test database repositories with testcontainers
+  - Run separately from unit tests
+{% elif config.project.language.value == "rust" %}
+- **Unit Tests**: Fast, isolated tests using `cargo test`
+  - Keep tests in same file as code (`#[cfg(test)] mod tests`)
+  - Use `#[test]` attribute for test functions
+  - Mock with traits and test doubles
+- **Integration Tests**: Tests in `tests/` directory
+  - Test public API of crates
+  - Use real dependencies when appropriate
+- **Doc Tests**: Executable examples in documentation
+  - Include code examples in `///` doc comments
+  - Ensure examples compile and run
+{% elif config.project.language.value == "java" %}
+- **Unit Tests**: Fast, isolated tests using JUnit 5
+  - Use `@Test` annotations
+  - Mock with Mockito
+  - Run with Maven/Gradle in < 5 seconds
+- **Integration Tests**: Test with Spring context
+  - Use `@SpringBootTest` for full context
+  - Use `@DataJpaTest` for repository tests
+  - Separate integration tests with naming convention (*IT.java)
+{% endif %}
+
+### Test Organization
+{% if config.project.language.value == "python" %}
+- **Structure**: Mirror source structure in `tests/` directory
+  ```
+  {{ config.paths.app_root }}/
+    domain/
+      models.py
+  tests/
+    domain/
+      test_models.py
+  ```
+- **Naming**: Test files prefixed with `test_`
+- **Fixtures**: Use `conftest.py` for shared fixtures
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+- **Co-location**: Place test files next to source files
+  ```
+  src/
+    components/
+      Button.tsx
+      Button.test.tsx
+  ```
+- **Naming**: Test files suffixed with `.test.ts` or `.spec.ts`
+- **Setup**: Use `beforeEach`/`afterEach` for test setup/teardown
+{% elif config.project.language.value == "go" %}
+- **Same package**: Test files in same package as source (use `_test.go` suffix)
+  ```
+  user/
+    user.go
+    user_test.go
+  ```
+- **Table-driven**: Use table-driven tests for multiple scenarios
+- **Subtests**: Use `t.Run()` for subtests
+{% elif config.project.language.value == "rust" %}
+- **Unit tests**: In same file within `#[cfg(test)] mod tests`
+- **Integration tests**: In `tests/` directory at crate root
+- **Test modules**: Organize tests in submodules for clarity
+{% elif config.project.language.value == "java" %}
+- **Mirror structure**: Test packages mirror source packages
+  ```
+  src/main/java/com/example/
+  src/test/java/com/example/
+  ```
+- **Naming**: Test classes suffixed with `Test` (e.g., `UserServiceTest`)
+{% endif %}
+
+### Mocking Strategy
+- **Mock External Dependencies**: Always mock databases, APIs, file system, network calls in unit tests
+- **Test Real Implementations**: Use real implementations in integration tests (with test containers or in-memory alternatives)
+- **Mock Boundaries**: Mock at architectural boundaries (ports in hexagonal, repositories in DDD)
+- **Avoid Over-Mocking**: Don't mock simple data structures or pure functions
+{% if config.project.language.value == "python" %}
+- **Tools**: Use `unittest.mock` or `pytest-mock` for mocking
+- **Patching**: Patch at the point of use, not at the point of definition
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+- **Tools**: Use Jest mocks or Vitest mocks
+- **Module mocking**: `jest.mock()` for entire modules, `jest.fn()` for functions
+{% elif config.project.language.value == "go" %}
+- **Tools**: Use interfaces + mockgen or hand-written mocks
+- **Interface-based**: Design for testability with interfaces
+{% elif config.project.language.value == "rust" %}
+- **Tools**: Use traits for dependency injection and test doubles
+- **Conditional compilation**: Use `#[cfg(test)]` for test-only code
+{% elif config.project.language.value == "java" %}
+- **Tools**: Mockito for mocking
+- **Constructor injection**: Design for testability with constructor injection
+{% endif %}
+
+### Running Tests
+```bash
+# Run all tests
+{{ config.commands.test }}
+
+{% if config.project.language.value == "python" %}
+# Run specific test file
+uv run pytest tests/path/to/test_file.py
+
+# Run with coverage
+uv run pytest --cov={{ config.paths.app_root }} --cov-report=html
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+# Run specific test
+{{ config.commands.test }} path/to/test.test.ts
+
+# Run with coverage
+{{ config.commands.test }} --coverage
+{% elif config.project.language.value == "go" %}
+# Run with coverage
+go test -cover ./...
+
+# Run integration tests
+go test -tags=integration ./...
+{% elif config.project.language.value == "rust" %}
+# Run with output
+cargo test -- --nocapture
+
+# Run specific test
+cargo test test_name
+{% elif config.project.language.value == "java" %}
+# Run with Maven
+mvn test
+
+# Run with Gradle
+gradle test
+{% endif %}
+```
+
+---
+
+## 3. Architecture Guidelines
+
+### Folder Structure
+{% if config.project.architecture.value == "ddd" %}
+```
+{{ config.paths.app_root }}/
+├── domain/              # Domain layer (business logic, entities)
+│   ├── models/          # Entities, value objects, aggregates
+│   ├── events/          # Domain events
+│   └── exceptions/      # Domain-specific exceptions
+├── application/         # Application layer (use cases, services)
+│   ├── services/        # Application services
+│   └── dto/             # Data Transfer Objects
+├── infrastructure/      # Infrastructure layer (external concerns)
+│   ├── persistence/     # Repositories, database implementations
+│   ├── api/             # External API clients
+│   └── messaging/       # Message queue implementations
+└── interfaces/          # Interface/Presentation layer
+    ├── cli/             # CLI interface
+    ├── api/             # REST/GraphQL API
+    └── web/             # Web UI
+```
+{% elif config.project.architecture.value == "clean" %}
+```
+{{ config.paths.app_root }}/
+├── entities/            # Core business entities (innermost layer)
+├── use_cases/           # Application business rules
+├── adapters/            # Interface adapters (controllers, presenters, gateways)
+│   ├── controllers/
+│   ├── presenters/
+│   └── gateways/
+└── frameworks/          # External frameworks and tools (outermost layer)
+    ├── database/
+    └── web/
+```
+{% elif config.project.architecture.value == "hexagonal" %}
+```
+{{ config.paths.app_root }}/
+├── domain/              # Core domain logic (center of hexagon)
+│   ├── models/
+│   └── services/
+├── ports/               # Interfaces for external dependencies
+│   ├── inbound/         # Driving ports (API, CLI)
+│   └── outbound/        # Driven ports (database, external APIs)
+└── adapters/            # Implementations of ports
+    ├── inbound/         # HTTP, CLI, gRPC adapters
+    └── outbound/        # PostgreSQL, Redis, HTTP client adapters
+```
+{% elif config.project.architecture.value == "layered" %}
+```
+{{ config.paths.app_root }}/
+├── presentation/        # UI/API layer
+│   ├── controllers/
+│   └── views/
+├── business/            # Business logic layer
+│   ├── services/
+│   └── models/
+└── data/                # Data access layer
+    ├── repositories/
+    └── models/
+```
+{% elif config.project.architecture.value == "simple" %}
+```
+{{ config.paths.app_root }}/
+├── models/              # Data models
+├── services/            # Business logic
+├── api/                 # API routes/controllers
+├── utils/               # Utility functions
+└── config/              # Configuration
+```
+{% endif %}
+
+### Separation of Concerns
+{% if config.project.architecture.value == "ddd" %}
+- **Domain Layer**: No dependencies on infrastructure or application layers
+  - Contains pure business logic, entities, value objects
+  - Defines repository interfaces (implemented in infrastructure)
+  - Publishes domain events
+- **Application Layer**: Orchestrates domain objects, no direct infrastructure access
+  - Implements use cases by coordinating domain objects
+  - Depends on domain layer, not on infrastructure
+  - Defines application services
+- **Infrastructure Layer**: Implements technical concerns
+  - Implements repository interfaces
+  - Handles database, external APIs, messaging
+  - Depends on domain and application layers
+- **Interface Layer**: Handles user interaction
+  - Controllers, CLI commands, API routes
+  - Depends on application layer
+  - Translates between external formats and domain
+{% elif config.project.architecture.value == "clean" %}
+- **Dependency Rule**: Source code dependencies only point inward
+  - Entities have no dependencies
+  - Use cases depend only on entities
+  - Adapters depend on use cases and entities
+  - Frameworks depend on everything but nothing depends on them
+{% elif config.project.architecture.value == "hexagonal" %}
+- **Domain Isolation**: Core domain has no dependencies on adapters
+- **Port Definitions**: Ports defined in domain, implemented by adapters
+- **Dependency Direction**: Adapters depend on ports, not vice versa
+{% elif config.project.architecture.value == "layered" %}
+- **Unidirectional Dependencies**: Each layer only depends on the layer below
+  - Presentation → Business → Data
+  - No skip-layer dependencies (e.g., Presentation → Data)
+{% else %}
+- **Single Responsibility**: Each module has one reason to change
+- **Clear Boundaries**: Separate business logic from I/O and frameworks
+{% endif %}
+
+### Dependency Management
+{% if config.project.package_manager.value == "uv" %}
+- **Add dependencies**: `uv add <package>`
+- **Add dev dependencies**: `uv add --dev <package>`
+- **Update**: `uv lock --upgrade-package <package>`
+- **Sync**: `uv sync` to install from lockfile
+{% elif config.project.package_manager.value == "poetry" %}
+- **Add dependencies**: `poetry add <package>`
+- **Add dev dependencies**: `poetry add --group dev <package>`
+- **Update**: `poetry update <package>`
+- **Install**: `poetry install` to install from lockfile
+{% elif config.project.package_manager.value in ["npm", "pnpm", "yarn"] %}
+- **Add dependencies**: `{{ config.project.package_manager.value }} add <package>`
+- **Add dev dependencies**: `{{ config.project.package_manager.value }} add -D <package>`
+- **Update**: `{{ config.project.package_manager.value }} update <package>`
+- **Install**: `{{ config.project.package_manager.value }} install`
+{% elif config.project.package_manager.value == "cargo" %}
+- **Add dependencies**: `cargo add <package>`
+- **Add dev dependencies**: `cargo add --dev <package>`
+- **Update**: `cargo update`
+- **Build**: `cargo build` to fetch and compile dependencies
+{% elif config.project.package_manager.value == "go" %}
+- **Add dependencies**: `go get <package>`
+- **Update**: `go get -u <package>`
+- **Tidy**: `go mod tidy` to clean up dependencies
+{% elif config.project.package_manager.value in ["maven", "gradle"] %}
+- **Add dependencies**: Edit `pom.xml` (Maven) or `build.gradle` (Gradle)
+- **Update**: `mvn versions:display-dependency-updates` or `gradle dependencyUpdates`
+{% endif %}
+
+**Allowed Dependencies**:
+- Standard library (always allowed)
+- Framework-specific libraries ({{ config.project.framework.value }})
+- Testing libraries (pytest, jest, etc.)
+- Utility libraries (logging, date handling, validation)
+
+**Forbidden Dependencies**:
+- Deprecated packages (check package documentation)
+- Unmaintained libraries (no updates in > 2 years)
+- License-incompatible packages (check LICENSE before adding)
+
+**Adding New Dependencies**:
+1. Check if existing dependency can solve the problem
+2. Evaluate package popularity, maintenance, and security
+3. Add to appropriate dependency group (prod vs dev)
+4. Document reason in commit message or ADR (Architecture Decision Record)
+
+---
+
+## 4. UX/DX Guidelines
+
+### Error Handling
+{% if config.project.language.value == "python" %}
+- **Use Exceptions**: Raise exceptions for exceptional conditions
+- **Specific Exceptions**: Catch and raise specific exception types
+- **Error Messages**: Include context and actionable information
+  ```python
+  raise ValueError(f"Invalid user ID: {user_id}. Must be positive integer.")
+  ```
+- **Don't Swallow**: Never use bare `except:` without re-raising or logging
+- **Custom Exceptions**: Define domain-specific exceptions when appropriate
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+- **Use Errors**: Throw Error objects, not strings
+- **Async Errors**: Use try/catch with async/await
+- **Error Messages**: Provide clear, actionable messages
+  ```typescript
+  throw new Error(`User ${userId} not found. Check user ID and try again.`);
+  ```
+- **Result Types** (TypeScript): Consider Result<T, E> pattern for expected errors
+{% elif config.project.language.value == "go" %}
+- **Return Errors**: Functions return `error` as last return value
+- **Check Errors**: Always check and handle errors
+  ```go
+  if err != nil {
+      return fmt.Errorf("failed to load user %d: %w", userID, err)
+  }
+  ```
+- **Wrap Errors**: Use `fmt.Errorf` with `%w` to wrap errors
+- **Custom Errors**: Use sentinel errors or custom error types for domain errors
+{% elif config.project.language.value == "rust" %}
+- **Use Result<T, E>**: Return Result for operations that can fail
+- **Use ? Operator**: Propagate errors with `?`
+- **Error Context**: Use `context()` or `with_context()` from anyhow
+  ```rust
+  let user = load_user(id).context("Failed to load user from database")?;
+  ```
+- **Error Types**: Define custom error types with thiserror for libraries
+{% elif config.project.language.value == "java" %}
+- **Checked Exceptions**: Use for recoverable errors
+- **Runtime Exceptions**: Use for programming errors
+- **Try-with-resources**: Auto-close resources
+  ```java
+  throw new IllegalArgumentException("User ID must be positive, got: " + userId);
+  ```
+- **Logging**: Log exceptions with full stack trace at appropriate level
+{% endif %}
+
+### User-Facing Messages
+- **Error Messages**:
+  - Clear and specific about what went wrong
+  - Suggest next action or how to fix
+  - Avoid technical jargon for end users
+  - Example: ❌ "NullPointerException" → ✅ "User profile not found. Please check the user ID."
+
+- **Success Messages**:
+  - Confirm the action completed
+  - Be concise
+  - Example: "User profile updated successfully"
+
+- **Progress Indicators**:
+  - Show progress for long-running operations (> 2 seconds)
+  - Provide estimates when possible
+  - Example: "Processing... 3 of 10 files"
+
+{% if config.project.framework.value in ["fastapi", "express", "gin", "axum", "spring"] %}
+### API Response Format
+```json
+// Success response
+{
+  "data": { ... },
+  "message": "Success message (optional)"
+}
+
+// Error response
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message",
+    "details": { ... }  // Optional additional context
+  }
+}
+```
+
+**HTTP Status Codes**:
+- `200 OK`: Successful GET, PUT, PATCH
+- `201 Created`: Successful POST
+- `204 No Content`: Successful DELETE
+- `400 Bad Request`: Invalid input
+- `401 Unauthorized`: Authentication required
+- `403 Forbidden`: Authenticated but not authorized
+- `404 Not Found`: Resource doesn't exist
+- `422 Unprocessable Entity`: Validation failed
+- `500 Internal Server Error`: Server error (log details, return generic message)
+{% endif %}
+
+### Logging Standards
+{% if config.project.language.value == "python" %}
+- **Use logging module**: Don't use `print()` for logging
+- **Levels**:
+  - `DEBUG`: Detailed diagnostic information
+  - `INFO`: Confirmation that things are working as expected
+  - `WARNING`: Something unexpected but application continues
+  - `ERROR`: Error occurred, functionality impaired
+  - `CRITICAL`: Serious error, application may crash
+- **Format**: Include timestamp, level, logger name, message
+  ```python
+  logging.info(f"User {user_id} logged in from {ip_address}")
+  ```
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+- **Use logging library**: Winston, Pino, or framework logger
+- **Levels**: debug, info, warn, error
+- **Structured logging**: Log objects, not just strings
+  ```typescript
+  logger.info({ userId, action: 'login', ip }, 'User logged in');
+  ```
+{% elif config.project.language.value == "go" %}
+- **Use structured logging**: slog (Go 1.21+) or zap/zerolog
+- **Levels**: Debug, Info, Warn, Error
+- **Structured fields**: Log key-value pairs
+  ```go
+  slog.Info("User logged in", "user_id", userID, "ip", ipAddress)
+  ```
+{% elif config.project.language.value == "rust" %}
+- **Use tracing or log crate**: Structured, leveled logging
+- **Levels**: trace, debug, info, warn, error
+- **Spans**: Use tracing spans for request context
+  ```rust
+  info!(user_id = %user_id, "User logged in");
+  ```
+{% elif config.project.language.value == "java" %}
+- **Use SLF4J + Logback**: Standard Java logging
+- **Levels**: TRACE, DEBUG, INFO, WARN, ERROR
+- **MDC**: Use Mapped Diagnostic Context for request tracking
+  ```java
+  logger.info("User {} logged in from {}", userId, ipAddress);
+  ```
+{% endif %}
+
+**What to Log**:
+- Application startup/shutdown
+- Requests and responses (at INFO or DEBUG level)
+- Business events (user actions, state changes)
+- Errors with full context
+- Performance metrics for slow operations (> 1s)
+
+**What NOT to Log**:
+- Passwords, API keys, tokens
+- Personally Identifiable Information (PII) unless necessary and secured
+- Full request bodies with sensitive data
+
+### Documentation Requirements
+- **README.md**: Must include:
+  - Project description
+  - Setup instructions
+  - Usage examples
+  - Development commands
+  - Contributing guidelines
+
+{% if config.project.language.value == "python" %}
+- **Docstrings**: Required for all public functions, classes, modules
+  ```python
+  def process_user(user_id: int) -> User:
+      """
+      Load and process user data.
+
+      Args:
+          user_id: Unique identifier for the user.
+
+      Returns:
+          User object with processed data.
+
+      Raises:
+          ValueError: If user_id is invalid.
+          UserNotFoundError: If user doesn't exist.
+      """
+  ```
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+- **JSDoc/TSDoc**: Required for exported functions and classes
+  ```typescript
+  /**
+   * Load and process user data.
+   * @param userId - Unique identifier for the user
+   * @returns Promise resolving to User object
+   * @throws {UserNotFoundError} If user doesn't exist
+   */
+  async function processUser(userId: number): Promise<User>
+  ```
+{% elif config.project.language.value == "go" %}
+- **Package comments**: Every package needs a doc comment
+- **Exported identifiers**: Comment all exported functions, types, constants
+  ```go
+  // ProcessUser loads and processes user data from the database.
+  // Returns an error if the user is not found or processing fails.
+  func ProcessUser(userID int) (*User, error)
+  ```
+{% elif config.project.language.value == "rust" %}
+- **Doc comments**: Use `///` for all public items
+  ```rust
+  /// Load and process user data.
+  ///
+  /// # Arguments
+  /// * `user_id` - Unique identifier for the user
+  ///
+  /// # Errors
+  /// Returns an error if the user is not found.
+  pub fn process_user(user_id: i32) -> Result<User, Error>
+  ```
+{% elif config.project.language.value == "java" %}
+- **Javadoc**: Required for all public APIs
+  ```java
+  /**
+   * Load and process user data.
+   *
+   * @param userId Unique identifier for the user
+   * @return User object with processed data
+   * @throws UserNotFoundException If user doesn't exist
+   */
+  public User processUser(int userId) throws UserNotFoundException
+  ```
+{% endif %}
+
+- **Architecture Decision Records (ADRs)**: Document significant architectural decisions
+- **API Documentation**: Auto-generate from code (OpenAPI/Swagger for REST APIs)
+
+---
+
+## 5. Performance Expectations
+
+### Acceptable Limits
+{% if config.project.framework.value in ["fastapi", "express", "gin", "axum", "spring"] %}
+**API Response Times** (95th percentile):
+- Simple queries (single DB lookup): < 50ms
+- Complex queries (joins, aggregations): < 200ms
+- Data mutations (create, update, delete): < 100ms
+- Batch operations: < 1000ms for 100 items
+
+**Throughput**:
+- Minimum: 100 requests/second for standard endpoints
+- Target: 1000 requests/second for critical endpoints
+{% endif %}
+
+**Test Suite Execution**:
+{% if config.project.language.value == "python" %}
+- Unit tests: < 5 seconds
+- Integration tests: < 30 seconds
+- Full suite: < 2 minutes
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+- Unit tests: < 3 seconds
+- Integration tests: < 15 seconds
+- E2E tests: < 2 minutes
+{% elif config.project.language.value == "go" %}
+- Unit tests (short): < 1 second
+- Integration tests: < 10 seconds
+{% elif config.project.language.value == "rust" %}
+- Unit tests: < 2 seconds
+- Integration tests: < 10 seconds
+{% elif config.project.language.value == "java" %}
+- Unit tests: < 10 seconds
+- Integration tests: < 1 minute
+{% endif %}
+
+**Build Time**:
+{% if config.project.language.value == "python" %}
+- Package build: < 30 seconds
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+- Development build: < 10 seconds
+- Production build: < 2 minutes
+{% elif config.project.language.value == "go" %}
+- Build: < 30 seconds
+{% elif config.project.language.value == "rust" %}
+- Debug build: < 2 minutes
+- Release build: < 5 minutes
+{% elif config.project.language.value == "java" %}
+- Build: < 1 minute
+{% endif %}
+
+### When to Optimize
+- **Profile First**: Use profiling tools to identify bottlenecks before optimizing
+{% if config.project.language.value == "python" %}
+  - Tools: `cProfile`, `py-spy`, `memory_profiler`
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+  - Tools: Chrome DevTools, `clinic.js`, `0x`
+{% elif config.project.language.value == "go" %}
+  - Tools: `pprof`, `go test -bench`, `trace`
+{% elif config.project.language.value == "rust" %}
+  - Tools: `cargo-flamegraph`, `perf`, `criterion` for benchmarks
+{% elif config.project.language.value == "java" %}
+  - Tools: JProfiler, VisualVM, JMH for benchmarks
+{% endif %}
+
+- **Optimize when**:
+  - Endpoint exceeds acceptable response time limits
+  - Test suite takes > 2x the target time
+  - User-reported performance issues
+  - Profiling shows clear bottleneck (> 50% of execution time in one area)
+
+- **Don't optimize when**:
+  - Performance is within acceptable limits
+  - No user complaints or measured issues
+  - Optimization would significantly complicate code
+
+### Optimization Strategies
+{% if config.project.framework.value in ["fastapi", "django", "flask", "express", "nestjs", "gin", "axum", "spring"] %}
+**Database Query Optimization**:
+- Use indexes on frequently queried columns
+- Avoid N+1 queries (use joins or prefetch)
+- Paginate large result sets
+- Use database query explain/analyze to identify slow queries
+{% if config.project.language.value == "python" and config.project.framework.value in ["django"] %}
+- Use `select_related()` and `prefetch_related()` for related objects
+{% elif config.project.language.value == "python" and config.project.framework.value in ["fastapi"] %}
+- Use async database drivers (asyncpg, motor) for concurrency
+{% endif %}
+
+**Caching**:
+- Cache expensive computations (> 100ms)
+- Cache external API responses with TTL
+- Use in-memory cache (Redis) for frequently accessed data
+- Implement cache invalidation strategy
+{% endif %}
+
+**Algorithmic Optimization**:
+- Use appropriate data structures (hash maps for O(1) lookup, sets for membership tests)
+- Avoid nested loops where possible (target O(n log n) or better)
+- Use lazy evaluation and generators for large datasets
+{% if config.project.language.value == "python" %}
+- Use list comprehensions instead of loops for transformations
+- Use `itertools` for efficient iteration
+{% elif config.project.language.value == "go" %}
+- Reuse buffers and slices to reduce allocations
+- Use `sync.Pool` for frequently allocated objects
+{% elif config.project.language.value == "rust" %}
+- Use iterators and iterator adapters (map, filter, fold)
+- Minimize allocations, prefer stack over heap
+- Use `&str` and `&[T]` slices to avoid copies
+{% endif %}
+
+{% if config.project.framework.value in ["fastapi", "express", "gin", "axum", "spring"] %}
+**Concurrency/Parallelism**:
+{% if config.project.language.value == "python" %}
+- Use `async`/`await` for I/O-bound operations
+- Use `multiprocessing` for CPU-bound operations
+- Avoid blocking the event loop in async code
+{% elif config.project.language.value in ["typescript", "javascript"] %}
+- Use `Promise.all()` for parallel async operations
+- Use worker threads for CPU-intensive tasks
+- Avoid blocking the event loop
+{% elif config.project.language.value == "go" %}
+- Use goroutines for concurrent I/O
+- Use `sync.WaitGroup` or `errgroup` for coordination
+- Use buffered channels to reduce blocking
+{% elif config.project.language.value == "rust" %}
+- Use `tokio` or `async-std` for async I/O
+- Use `rayon` for data parallelism
+- Minimize contention on shared state (use message passing)
+{% elif config.project.language.value == "java" %}
+- Use virtual threads (Java 21+) or thread pools
+- Use `CompletableFuture` for async operations
+- Minimize synchronized blocks
+{% endif %}
+{% endif %}
+
+### Profiling Guidelines
+- **Establish Baseline**: Measure current performance before optimizing
+- **Isolate Bottlenecks**: Profile to find the 20% of code causing 80% of slowness
+- **Measure Impact**: Profile again after optimization to verify improvement
+- **Automate Benchmarks**: Use benchmark tools to catch performance regressions
+{% if config.project.language.value == "python" %}
+  ```bash
+  uv run pytest tests/ --benchmark-only
+  ```
+{% elif config.project.language.value == "go" %}
+  ```bash
+  go test -bench=. -benchmem ./...
+  ```
+{% elif config.project.language.value == "rust" %}
+  ```bash
+  cargo bench
+  ```
+{% elif config.project.language.value == "java" %}
+  ```bash
+  # Use JMH (Java Microbenchmark Harness)
+  mvn clean install
+  java -jar target/benchmarks.jar
+  ```
+{% endif %}
+
+---
+
+## Constitution Adherence
+
+This constitution is a living document. All code reviews should reference specific sections when requesting changes. Deviations from these principles require explicit justification and documentation.
+
+**For Code Reviews**:
+- Check that code follows Section 1 (Coding Principles)
+- Verify tests meet Section 2 standards (Testing Standards)
+- Ensure changes respect Section 3 architecture (Architecture Guidelines)
+- Confirm error handling matches Section 4 (UX/DX Guidelines)
+- Review performance impact against Section 5 (Performance Expectations)
+
+**For New Features**:
+- Read this constitution before starting
+- Reference relevant sections in implementation plan
+- Ensure tests and documentation meet standards
+
+**For Refactoring**:
+- Use this constitution to identify inconsistencies
+- Bring existing code up to current standards
+- Document architecture decisions in ADRs
+
+---
+
+**Last Updated**: Auto-generated by TAC Bootstrap
+**Maintained By**: {{ config.project.name }} team
