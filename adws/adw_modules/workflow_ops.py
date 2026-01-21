@@ -13,6 +13,8 @@ from adw_modules.data_types import (
     AgentPromptResponse,
     IssueClassSlashCommand,
     ADWExtractionResult,
+    ClarificationQuestion,
+    ClarificationResponse,
 )
 from adw_modules.agent import execute_template
 from adw_modules.github import get_repo_url, extract_repo_path, ADW_BOT_IDENTIFIER
@@ -155,12 +157,122 @@ def classify_issue(
     return issue_command, None  # type: ignore
 
 
+def clarify_issue(
+    issue: GitHubIssue,
+    adw_id: str,
+    logger: logging.Logger,
+    working_dir: Optional[str] = None,
+) -> Tuple[Optional[ClarificationResponse], Optional[str]]:
+    """Analyze GitHub issue for ambiguities and generate clarification questions.
+    Returns (ClarificationResponse, error_message) tuple."""
+
+    logger.info("Analyzing issue for ambiguities...")
+
+    # Construct the analysis prompt
+    prompt = f"""You are an expert software requirements analyst. Analyze the following GitHub issue and identify any ambiguities, missing information, or unclear decisions.
+
+Issue Title: {issue.title}
+Issue Body: {issue.body}
+
+Analyze the issue for:
+1. **Requirements**: Are the functional requirements clear and complete? Are success criteria defined?
+2. **Technical Decisions**: Are technology choices, architectural patterns, or implementation approaches specified?
+3. **Edge Cases**: Are error scenarios, boundary conditions, or special cases considered?
+4. **Missing Information**: Is any critical context, data, or specification missing?
+
+For each ambiguity found, generate a specific question categorized as:
+- "requirements" - unclear functional requirements
+- "technical_decision" - unspecified technical choices
+- "edge_case" - unhandled scenarios
+- "missing_info" - absent critical information
+
+Rate severity as: "critical", "important", or "nice_to_have"
+
+If NO ambiguities are found, explain why the issue is sufficiently clear.
+
+Return your analysis as JSON:
+{{
+  "has_ambiguities": boolean,
+  "questions": [
+    {{"question": "...", "category": "...", "severity": "..."}}
+  ],
+  "assumptions": ["assumption if continuing without answer"],
+  "analysis": "brief explanation"
+}}
+
+IMPORTANT: Return ONLY the JSON object, no markdown formatting or code blocks."""
+
+    # Execute the agent with inline prompt (using AgentPromptRequest would be cleaner, but we'll use execute_template)
+    from adw_modules.agent import execute_prompt
+    from adw_modules.data_types import AgentPromptRequest
+
+    request = AgentPromptRequest(
+        prompt=prompt,
+        adw_id=adw_id,
+        agent_name="clarifier",
+        model="sonnet",
+        dangerously_skip_permissions=False,
+        output_file=f"agents/{adw_id}/clarifier/clarification.txt",
+        working_dir=working_dir,
+    )
+
+    try:
+        response = execute_prompt(request, logger)
+
+        if not response.success:
+            logger.warning(f"Clarification analysis failed: {response.output}")
+            return None, response.output
+
+        # Parse the JSON response
+        output = response.output.strip()
+
+        # Remove markdown code blocks if present
+        if output.startswith("```"):
+            lines = output.split("\n")
+            # Find first and last code fence
+            start_idx = 0
+            end_idx = len(lines)
+            for i, line in enumerate(lines):
+                if line.startswith("```"):
+                    if start_idx == 0:
+                        start_idx = i + 1
+                    else:
+                        end_idx = i
+                        break
+            output = "\n".join(lines[start_idx:end_idx])
+
+        data = parse_json(output, dict)
+
+        # Parse into ClarificationResponse
+        clarification = ClarificationResponse(
+            has_ambiguities=data.get("has_ambiguities", False),
+            questions=[
+                ClarificationQuestion(**q) for q in data.get("questions", [])
+            ],
+            assumptions=data.get("assumptions", []),
+            analysis=data.get("analysis", ""),
+        )
+
+        if clarification.has_ambiguities:
+            logger.info(f"Found {len(clarification.questions)} ambiguities in issue")
+        else:
+            logger.info("No ambiguities detected - issue is sufficiently clear")
+
+        return clarification, None
+
+    except Exception as e:
+        error_msg = f"Error during clarification analysis: {str(e)}"
+        logger.error(error_msg)
+        return None, error_msg
+
+
 def build_plan(
     issue: GitHubIssue,
     command: str,
     adw_id: str,
     logger: logging.Logger,
     working_dir: Optional[str] = None,
+    clarifications: Optional[str] = None,
 ) -> AgentPromptResponse:
     """Build implementation plan for the issue using the specified command."""
     # Use minimal payload like classify_issue does
@@ -168,10 +280,15 @@ def build_plan(
         by_alias=True, include={"number", "title", "body"}
     )
 
+    # If clarifications are provided, add them to the args
+    args = [str(issue.number), adw_id, minimal_issue_json]
+    if clarifications:
+        args.append(clarifications)
+
     issue_plan_template_request = AgentTemplateRequest(
         agent_name=AGENT_PLANNER,
         slash_command=command,
-        args=[str(issue.number), adw_id, minimal_issue_json],
+        args=args,
         adw_id=adw_id,
         working_dir=working_dir,
     )
