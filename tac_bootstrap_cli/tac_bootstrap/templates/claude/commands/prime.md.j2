@@ -11,6 +11,7 @@ git ls-files
 - README.md
 - CLAUDE.md
 - config.yml
+- constitution.md
 {% if config.paths.adws_dir %}
 - {{ config.paths.adws_dir }}/README.md
 {% endif %}
@@ -70,6 +71,9 @@ uv run {{ config.paths.adws_dir }}/adw_sdlc_iso.py --issue <num>
 
 ## Report
 - Summary of {{ config.project.name }}
+- Constitution principles loaded and available for reference
 - Current development state
 - Next task to implement
 - Key files for current task
+
+**Note**: The `constitution.md` file defines the project's governing principles for code style, testing, architecture, UX/DX, and performance. Reference these principles during development and code review.
