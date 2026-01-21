@@ -27,6 +27,54 @@ cd tac-bootstrap/tac_bootstrap_cli
 uv pip install -e .
 ```
 
+## Development
+
+### Quick Commands
+
+| Command | Description |
+|---------|-------------|
+| `make install` | Install dependencies |
+| `make install-dev` | Install with dev dependencies |
+| `make test` | Run all tests |
+| `make test-v` | Run tests with verbose output |
+| `make test-cov` | Run tests with coverage report |
+| `make lint` | Run ruff linter |
+| `make lint-fix` | Run linter with auto-fix |
+| `make format` | Format code with ruff |
+| `make typecheck` | Run mypy type checker |
+| `make build` | Build package wheel |
+| `make clean` | Clean generated files |
+| `make help` | Show all commands |
+
+### Development Workflow
+
+```bash
+# 1. Clone and install
+git clone https://github.com/your-org/tac-bootstrap
+cd tac-bootstrap/tac_bootstrap_cli
+make install-dev
+
+# 2. Make changes to the code
+
+# 3. Lint and format
+make lint-fix
+make format
+
+# 4. Run tests
+make test
+
+# 5. Commit your changes
+```
+
+### Running the CLI Locally
+
+```bash
+make cli-help           # Show CLI help
+make cli-version        # Show version
+make cli-init-dry       # Example init with dry-run
+make cli-doctor         # Example doctor command
+```
+
 ## Quick Start
 
 ### For New Projects
