@@ -221,8 +221,6 @@ class ADWStateData(BaseModel):
     plan_file: Optional[str] = None
     issue_class: Optional[IssueClassSlashCommand] = None
     worktree_path: Optional[str] = None
-    backend_port: Optional[int] = None
-    frontend_port: Optional[int] = None
     model_set: Optional[ModelSet] = "base"
     all_adws: List[str] = Field(default_factory=list)
 
