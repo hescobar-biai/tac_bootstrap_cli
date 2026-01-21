@@ -6,7 +6,11 @@
     },
     "contextOptions": {
       "recordVideo": {
+<<<<<<< HEAD
         "dir": "/Volumes/MAc1/Celes/tac_bootstrap/trees/63d027f6/videos",
+=======
+        "dir": "/Volumes/MAc1/Celes/tac_bootstrap/trees/073aa60c/videos",
+>>>>>>> feature-issue-43-adw-073aa60c-create-prepare-app-template
         "size": {
           "width": 1920,
           "height": 1080

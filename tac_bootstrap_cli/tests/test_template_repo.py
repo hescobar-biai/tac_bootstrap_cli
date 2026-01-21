@@ -465,3 +465,154 @@ class TestErrorMessages:
         error_msg = str(exc_info.value)
         assert "failed to render" in error_msg.lower() or "render" in error_msg.lower()
         assert "<string>" in error_msg
+
+
+# ============================================================================
+# TEST COMMAND TEMPLATES
+# ============================================================================
+
+
+class TestCommandTemplates:
+    """Test command template rendering with different configurations."""
+
+    def test_prepare_app_template_python_uv(self):
+        """Test prepare_app template renders for Python + UV."""
+        from tac_bootstrap.infrastructure.template_repo import TemplateRepository
+
+        config = TACConfig(
+            project=ProjectSpec(
+                name="test-app",
+                language=Language.PYTHON,
+                package_manager=PackageManager.UV,
+            ),
+            commands=CommandsSpec(
+                start="uv run python -m app",
+                test="uv run pytest",
+                build="uv build",
+            ),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="test-app")),
+        )
+
+        repo = TemplateRepository()
+        content = repo.render("claude/commands/prepare_app.md.j2", config)
+
+        # Should include UV sync command
+        assert "uv sync" in content
+        # Should include start validation
+        assert config.commands.start in content
+        # Should include build command
+        assert "uv build" in content
+        # Should have report section
+        assert "## Report" in content
+
+    def test_prepare_app_template_typescript_pnpm(self):
+        """Test prepare_app template renders for TypeScript + PNPM."""
+        from tac_bootstrap.domain.models import Framework
+        from tac_bootstrap.infrastructure.template_repo import TemplateRepository
+
+        config = TACConfig(
+            project=ProjectSpec(
+                name="my-nextjs-app",
+                language=Language.TYPESCRIPT,
+                package_manager=PackageManager.PNPM,
+                framework=Framework.NEXTJS,
+            ),
+            commands=CommandsSpec(
+                start="pnpm dev",
+                test="pnpm test",
+                build="pnpm build",
+            ),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="my-nextjs-app")),
+        )
+
+        repo = TemplateRepository()
+        content = repo.render("claude/commands/prepare_app.md.j2", config)
+
+        # Should include PNPM install command
+        assert "pnpm install" in content
+        # Should include build command
+        assert "pnpm build" in content
+        # Should include start validation
+        assert "pnpm dev" in content
+
+    def test_prepare_app_template_go(self):
+        """Test prepare_app template renders for Go."""
+        from tac_bootstrap.infrastructure.template_repo import TemplateRepository
+
+        config = TACConfig(
+            project=ProjectSpec(
+                name="my-go-app",
+                language=Language.GO,
+                package_manager=PackageManager.GO_MOD,
+            ),
+            commands=CommandsSpec(
+                start="go run .",
+                test="go test ./...",
+            ),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="my-go-app")),
+        )
+
+        repo = TemplateRepository()
+        content = repo.render("claude/commands/prepare_app.md.j2", config)
+
+        # Should include go mod download
+        assert "go mod download" in content
+        # Should include start validation
+        assert "go run ." in content
+        # Should NOT include build section since no build command
+        # (build is optional)
+
+    def test_prepare_app_template_django(self):
+        """Test prepare_app template includes Django migrations."""
+        from tac_bootstrap.domain.models import Framework
+        from tac_bootstrap.infrastructure.template_repo import TemplateRepository
+
+        config = TACConfig(
+            project=ProjectSpec(
+                name="django-app",
+                language=Language.PYTHON,
+                package_manager=PackageManager.UV,
+                framework=Framework.DJANGO,
+            ),
+            commands=CommandsSpec(
+                start="uv run python manage.py runserver",
+                test="uv run pytest",
+            ),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="django-app")),
+        )
+
+        repo = TemplateRepository()
+        content = repo.render("claude/commands/prepare_app.md.j2", config)
+
+        # Should include migrations section
+        assert "migrate" in content.lower()
+        # Should include UV sync
+        assert "uv sync" in content
+
+    def test_prepare_app_template_no_build(self):
+        """Test prepare_app template when no build command is provided."""
+        from tac_bootstrap.infrastructure.template_repo import TemplateRepository
+
+        config = TACConfig(
+            project=ProjectSpec(
+                name="simple-app",
+                language=Language.PYTHON,
+                package_manager=PackageManager.PIP,
+            ),
+            commands=CommandsSpec(
+                start="python -m app",
+                test="pytest",
+                build="",  # No build command
+            ),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="simple-app")),
+        )
+
+        repo = TemplateRepository()
+        content = repo.render("claude/commands/prepare_app.md.j2", config)
+
+        # Should include pip install
+        assert "pip install" in content
+        # Should have validation section
+        assert "Validate Application Can Start" in content
+        # Build section should be conditional and not error out
+        assert "## Report" in content
