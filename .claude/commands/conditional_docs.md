@@ -274,3 +274,12 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando modifiques o extiendas el template de lint
     - Cuando trabajes con templates de comandos slash en general y necesites referencia
     - Cuando trabajes en features que requieran conditional rendering de comandos
+
+- app_docs/feature-issue-44-adw-d450b40b-install-template.md
+  - Conditions:
+    - Cuando trabajes con el template de comando /install
+    - Cuando necesites entender cómo se implementó install.md.j2
+    - Cuando modifiques o extiendas el template de install
+    - Cuando trabajes con package manager detection y conditional commands
+    - Cuando necesites referencia sobre manejo de errores de instalación
+    - Cuando trabajes con templates que soporten múltiples package managers
