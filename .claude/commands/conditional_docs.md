@@ -266,3 +266,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando modifiques características del proyecto que deben reflejarse en README
     - Cuando trabajes en mejoras de documentación o user guides
     - Cuando necesites ejemplo de cómo documentar features del CLI
+
+- app_docs/feature-073aa60c-prepare-app-template.md
+  - Conditions:
+    - Cuando trabajes con el template prepare_app.md.j2
+    - Cuando necesites entender cómo funciona el comando /prepare_app generado
+    - Cuando modifiques o extiendas la funcionalidad de preparación de aplicaciones
+    - Cuando agregues soporte para nuevos package managers en prepare_app
+    - Cuando trabajes con validación de entorno o preparación de dependencias
+    - Cuando necesites referencia sobre preparación framework-specific (migraciones Django, builds Next.js)
+    - Cuando trabajes con templates de comandos slash parametricos
+    - Cuando necesites entender diseño idempotente en templates de comandos
