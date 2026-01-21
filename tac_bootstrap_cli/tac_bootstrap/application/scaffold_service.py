@@ -337,6 +337,39 @@ class ScaffoldService:
                 reason="Directory documentation",
             )
 
+        # Add AI reference documentation
+        ai_docs_files = [
+            ("ai_docs/anthropic_quick_start.md", "structure/ai_docs/anthropic_quick_start.md.j2", "Anthropic API quickstart"),
+            ("ai_docs/claude_code_cli_reference.md", "structure/ai_docs/claude_code_cli_reference.md.j2", "Claude Code CLI reference"),
+            ("ai_docs/claude_code_sdk.md", "structure/ai_docs/claude_code_sdk.md.j2", "Claude Code SDK documentation"),
+            ("ai_docs/claude-code-hooks.md", "structure/ai_docs/claude-code-hooks.md.j2", "Claude Code hooks reference"),
+            ("ai_docs/e2b.md", "structure/ai_docs/e2b.md.j2", "E2B sandbox documentation"),
+            ("ai_docs/mcp-python-sdk.md", "structure/ai_docs/mcp-python-sdk.md.j2", "MCP Python SDK documentation"),
+            ("ai_docs/openai_quick_start.md", "structure/ai_docs/openai_quick_start.md.j2", "OpenAI API quickstart"),
+            ("ai_docs/uv-scripts.md", "structure/ai_docs/uv-scripts.md.j2", "UV scripts guide"),
+        ]
+
+        for path, template, reason in ai_docs_files:
+            plan.add_file(
+                path,
+                action=action,
+                template=template,
+                reason=reason,
+            )
+
+        # Add app_docs files
+        app_docs_files = [
+            ("app_docs/agentic_kpis.md", "structure/app_docs/agentic_kpis.md.j2", "ADW performance metrics"),
+        ]
+
+        for path, template, reason in app_docs_files:
+            plan.add_file(
+                path,
+                action=action,
+                template=template,
+                reason=reason,
+            )
+
     def apply_plan(
         self,
         plan: ScaffoldPlan,
