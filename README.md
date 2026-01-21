@@ -160,6 +160,81 @@ uv run adws/adw_sdlc_iso.py --issue 123
 uv run adws/adw_patch_iso.py --issue 456 --fix "descripcion"
 ```
 
+### Development with Makefile
+
+El CLI incluye un `Makefile` en `tac_bootstrap_cli/` con comandos convenientes para desarrollo.
+
+#### Quick Commands
+
+| Comando | Descripción |
+|---------|-------------|
+| `make install` | Instalar dependencias |
+| `make install-dev` | Instalar con dependencias de desarrollo |
+| `make dev` | Ejecutar CLI en modo desarrollo (smoke test) |
+| `make lint` | Verificar código con ruff |
+| `make lint-fix` | Verificar código con auto-fix |
+| `make format` | Formatear código con ruff |
+| `make typecheck` | Verificar tipos con mypy |
+| `make test` | Correr todos los tests |
+| `make test-v` | Correr tests con salida verbose |
+| `make test-cov` | Correr tests con reporte de coverage |
+| `make test-watch` | Correr tests en modo watch |
+| `make build` | Construir paquete wheel |
+| `make clean` | Limpiar archivos generados y caches |
+| `make cli-help` | Mostrar ayuda del CLI |
+| `make cli-version` | Mostrar versión del CLI |
+| `make help` | Mostrar todos los comandos disponibles |
+
+#### Development Workflow
+
+1. Clonar el repositorio
+   ```bash
+   git clone <repo-url>
+   cd tac_bootstrap
+   ```
+
+2. Instalar dependencias de desarrollo
+   ```bash
+   cd tac_bootstrap_cli
+   make install-dev
+   ```
+
+3. Hacer cambios en el código
+
+4. Verificar y formatear código
+   ```bash
+   make lint format
+   ```
+
+5. Ejecutar tests
+   ```bash
+   make test
+   ```
+
+6. Hacer commit de cambios
+   ```bash
+   git add .
+   git commit -m "descripcion del cambio"
+   ```
+
+#### Running the CLI locally
+
+```bash
+# Ver ayuda general
+make cli-help
+
+# Ver versión
+make cli-version
+
+# Probar comando init (ejemplo)
+uv run tac-bootstrap init my-project --dry-run
+
+# Probar comando doctor (ejemplo)
+uv run tac-bootstrap doctor
+```
+
+**Nota:** Los comandos `make` deben ejecutarse desde el directorio `tac_bootstrap_cli/` o usando `make -C tac_bootstrap_cli <target>` desde la raíz del repositorio.
+
 ---
 
 ## Arquitectura Interna
