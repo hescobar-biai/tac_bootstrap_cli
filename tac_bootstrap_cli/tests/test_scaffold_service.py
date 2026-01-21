@@ -131,15 +131,16 @@ class TestScaffoldServiceBuildPlan:
         assert any("test.md" in p for p in file_paths)
         assert any("commit.md" in p for p in file_paths)
 
-    def test_build_plan_existing_repo_skips_files(
+    def test_build_plan_existing_repo_creates_files(
         self, service: ScaffoldService, config: TACConfig
     ):
-        """build_plan with existing_repo=True should mark some files as SKIP."""
+        """build_plan with existing_repo=True should mark files as CREATE (idempotent)."""
         plan = service.build_plan(config, existing_repo=True)
 
-        # Should have some SKIP actions for existing files
-        skip_files = plan.get_files_skipped()
-        assert len(skip_files) > 0, "Should skip some files in existing repo"
+        # Files should be marked CREATE (not SKIP) because CREATE is idempotent
+        # CREATE will skip files that already exist during apply_plan
+        create_files = [f for f in plan.files if f.action == FileAction.CREATE]
+        assert len(create_files) > 0, "Should use CREATE action which is safe for existing repos"
 
     def test_build_plan_new_repo_creates_files(self, service: ScaffoldService, config: TACConfig):
         """build_plan with existing_repo=False should create all files."""

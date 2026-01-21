@@ -110,7 +110,7 @@ class ScaffoldService:
 
     def _add_claude_files(self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool) -> None:
         """Add .claude/ configuration files."""
-        action = FileAction.CREATE if not existing_repo else FileAction.SKIP
+        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
 
         # Settings
         plan.add_file(
@@ -201,7 +201,7 @@ class ScaffoldService:
 
     def _add_adw_files(self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool) -> None:
         """Add adws/ workflow files."""
-        action = FileAction.CREATE if not existing_repo else FileAction.SKIP
+        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
         adws_dir = config.paths.adws_dir
 
         # README
@@ -281,7 +281,7 @@ class ScaffoldService:
 
     def _add_script_files(self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool) -> None:
         """Add scripts/ utility files."""
-        action = FileAction.CREATE if not existing_repo else FileAction.SKIP
+        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
         scripts_dir = config.paths.scripts_dir
 
         scripts = [
@@ -302,7 +302,7 @@ class ScaffoldService:
 
     def _add_config_files(self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool) -> None:
         """Add configuration files."""
-        action = FileAction.CREATE if not existing_repo else FileAction.SKIP
+        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
 
         # config.yml - always create/overwrite to capture user settings
         plan.add_file(
@@ -340,7 +340,7 @@ class ScaffoldService:
         self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
     ) -> None:
         """Add README files for directory structure."""
-        action = FileAction.CREATE if not existing_repo else FileAction.SKIP
+        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
 
         structure_readmes = [
             (f"{config.paths.specs_dir}/README.md", "structure/specs/README.md.j2"),
