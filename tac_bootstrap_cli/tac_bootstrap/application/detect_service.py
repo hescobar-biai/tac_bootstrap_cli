@@ -44,6 +44,7 @@ class DetectedProject:
         commands: Common project commands (start, test, lint, build)
         confidence: Detection confidence score (0-1)
     """
+
     language: Language
     framework: Optional[Framework] = None
     package_manager: PackageManager = PackageManager.PIP
@@ -89,7 +90,7 @@ class DetectService:
             package_manager=package_manager,
             app_root=app_root,
             commands=commands,
-            confidence=0.8  # TODO: calculate real confidence
+            confidence=0.8,  # TODO: calculate real confidence
         )
 
     def _detect_language(self, repo_path: Path) -> Language:
@@ -104,8 +105,12 @@ class DetectService:
         """
         # Python detection
         python_files = [
-            "pyproject.toml", "setup.py", "requirements.txt",
-            "Pipfile", "poetry.lock", "uv.lock"
+            "pyproject.toml",
+            "setup.py",
+            "requirements.txt",
+            "Pipfile",
+            "poetry.lock",
+            "uv.lock",
         ]
         if any((repo_path / file).exists() for file in python_files):
             return Language.PYTHON
@@ -279,10 +284,7 @@ class DetectService:
         return "."
 
     def _detect_commands(
-        self,
-        repo_path: Path,
-        language: Language,
-        package_manager: PackageManager
+        self, repo_path: Path, language: Language, package_manager: PackageManager
     ) -> Dict[str, str]:
         """
         Detect existing project commands from configuration files.

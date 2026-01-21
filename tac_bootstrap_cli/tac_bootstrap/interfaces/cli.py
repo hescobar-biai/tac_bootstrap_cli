@@ -283,7 +283,7 @@ def add_agentic(
 [cyan]Language:[/cyan] {detected.language.value}
 [cyan]Framework:[/cyan] {framework_display}
 [cyan]Package Manager:[/cyan] {detected.package_manager.value}
-[cyan]App Root:[/cyan] {detected.app_root or '.'}
+[cyan]App Root:[/cyan] {detected.app_root or "."}
 """
             console.print(Panel(detection_text, border_style="cyan", title="Detection"))
 
