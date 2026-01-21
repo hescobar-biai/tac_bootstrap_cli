@@ -20,6 +20,7 @@ Transform any repository into an AI-assisted development environment in minutes.
 # Clone the release
 git clone --branch v0.1.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
+make install-dev
 
 # Install globally with uv tool
 export CLAUDE_CODE_PATH=$(which claude)
@@ -28,7 +29,7 @@ uv tool install .
 # Now works from ANY directory
 cd ..
 tac-bootstrap --help  # ✅ Works everywhere
-uv run tac-bootstrap init my-awesome-app
+tac-bootstrap init my-awesome-app
 ```
 
 ### Option 2: Development Install (for contributing)
