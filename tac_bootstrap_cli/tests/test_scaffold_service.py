@@ -190,7 +190,6 @@ class TestScaffoldServiceBuildPlan:
 class TestScaffoldServiceApplyPlan:
     """Tests for ScaffoldService.apply_plan method."""
 
-    @pytest.mark.skip(reason="Requires real templates - integration test")
     def test_apply_plan_creates_structure(self, service: ScaffoldService, config: TACConfig):
         """apply_plan should create directories and files."""
         plan = service.build_plan(config)
@@ -205,7 +204,6 @@ class TestScaffoldServiceApplyPlan:
             assert (tmp_path / ".claude").is_dir()
             assert (tmp_path / "config.yml").is_file()
 
-    @pytest.mark.skip(reason="Requires real templates - integration test")
     def test_apply_plan_creates_nested_directories(
         self, service: ScaffoldService, config: TACConfig
     ):
@@ -221,7 +219,6 @@ class TestScaffoldServiceApplyPlan:
             assert (tmp_path / ".claude" / "hooks").is_dir()
             assert (tmp_path / "adws" / "adw_modules").is_dir()
 
-    @pytest.mark.skip(reason="Requires real templates - integration test")
     def test_apply_plan_renders_templates(self, service: ScaffoldService, config: TACConfig):
         """apply_plan should render Jinja2 templates with config."""
         plan = service.build_plan(config)
@@ -238,7 +235,6 @@ class TestScaffoldServiceApplyPlan:
                 content = config_file.read_text()
                 assert "test-project" in content or "test_project" in content
 
-    @pytest.mark.skip(reason="Requires real templates - integration test")
     def test_apply_plan_makes_scripts_executable(self, service: ScaffoldService, config: TACConfig):
         """apply_plan should make script files executable."""
         plan = service.build_plan(config)
@@ -261,7 +257,6 @@ class TestScaffoldServiceApplyPlan:
                     is_executable = bool(st.st_mode & stat.S_IXUSR)
                     assert is_executable, f"{file_path} should be executable"
 
-    @pytest.mark.skip(reason="Requires real templates - integration test")
     def test_apply_plan_skips_existing_files(self, service: ScaffoldService, config: TACConfig):
         """apply_plan should skip files marked as SKIP."""
         plan = service.build_plan(config)
@@ -285,7 +280,6 @@ class TestScaffoldServiceApplyPlan:
                 assert skip_file.read_text() == "ORIGINAL CONTENT"
                 assert result.files_skipped > 0
 
-    @pytest.mark.skip(reason="Requires real templates - integration test")
     def test_apply_plan_counts_operations(self, service: ScaffoldService, config: TACConfig):
         """apply_plan should count operations correctly."""
         plan = service.build_plan(config)
@@ -299,7 +293,6 @@ class TestScaffoldServiceApplyPlan:
             # files_created should match files that were actually created
             assert result.files_created > 0
 
-    @pytest.mark.skip(reason="Requires real templates - integration test")
     def test_apply_plan_idempotent(self, service: ScaffoldService, config: TACConfig):
         """apply_plan should be idempotent when run twice."""
         plan = service.build_plan(config)
@@ -317,7 +310,6 @@ class TestScaffoldServiceApplyPlan:
             # Second run should skip files that already exist
             assert result2.files_skipped >= result1.files_created
 
-    @pytest.mark.skip(reason="Requires real templates - integration test")
     def test_apply_plan_with_force(self, service: ScaffoldService, config: TACConfig):
         """apply_plan with force should overwrite existing files."""
         plan = service.build_plan(config)
@@ -342,7 +334,6 @@ class TestScaffoldServiceApplyPlan:
                 assert new_content != "MODIFIED"
                 assert result.files_overwritten > 0
 
-    @pytest.mark.skip(reason="Requires real templates - integration test")
     def test_apply_plan_to_nonexistent_directory_creates_it(
         self, service: ScaffoldService, config: TACConfig
     ):
@@ -359,7 +350,6 @@ class TestScaffoldServiceApplyPlan:
             assert output_dir.exists()
             assert output_dir.is_dir()
 
-    @pytest.mark.skip(reason="Requires real templates - integration test")
     def test_apply_plan_error_handling(self, service: ScaffoldService, config: TACConfig):
         """apply_plan should handle errors gracefully."""
         plan = service.build_plan(config)

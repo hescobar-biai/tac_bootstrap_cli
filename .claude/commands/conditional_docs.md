@@ -366,3 +366,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender cómo simular side_effect para secuencias de prompts
     - Cuando implementes tests de enum selection, filtering, o edge cases
     - Cuando trabajes con tests de wizard cancellation o default value handling
+
+- app_docs/chore-b408e27f-enable-scaffold-service-tests.md
+  - Conditions:
+    - Cuando necesites entender qué tests de integración fueron habilitados en test_scaffold_service.py
+    - Cuando trabajes con tests de ScaffoldService.apply_plan()
+    - Cuando necesites referencia sobre testing con templates reales
+    - Cuando trabajes con tests de renderizado de templates Jinja2
+    - Cuando necesites entender tests de operaciones de filesystem (create, skip, overwrite)
+    - Cuando trabajes con tests de idempotencia o force mode en scaffolding
+    - Cuando necesites entender el fix del template context en scaffold_service.py
+    - Cuando trabajes con validación de permisos ejecutables en scripts generados
+    - Cuando necesites referencia sobre tests de integración que usan tempfile

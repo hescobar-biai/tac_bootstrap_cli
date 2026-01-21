@@ -331,7 +331,6 @@ class ScaffoldService:
 
         result = ApplyResult()
         fs = FileSystem()
-        template_context = {"config": config}
 
         # Create directories first
         for dir_op in plan.directories:
@@ -363,7 +362,7 @@ class ScaffoldService:
 
                 # Render content
                 if file_op.template:
-                    content = self.template_repo.render(file_op.template, template_context)
+                    content = self.template_repo.render(file_op.template, config)
                 elif file_op.content:
                     content = file_op.content
                 else:
