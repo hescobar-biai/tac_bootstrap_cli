@@ -305,3 +305,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes en mejoras de documentación para contribuidores
     - Cuando necesites entender el desarrollo workflow documentado para TAC Bootstrap CLI
     - Cuando modifiques la estructura de directorios y necesites actualizar notas sobre dónde ejecutar comandos make
+
+- app_docs/feature-e43f8346-lint-template-spec.md
+  - Conditions:
+    - Cuando necesites entender la especificación del template lint.md.j2
+    - Cuando trabajes con verificación del template /lint existente
+    - Cuando necesites referencia sobre variables de configuración usadas en lint template (config.commands.lint)
+    - Cuando trabajes con testing de templates de comandos slash
+    - Cuando necesites entender el patrón de verificación de templates ya implementados
+    - Cuando trabajes con validación de templates Jinja2 en TAC Bootstrap
+    - Cuando implementes edge case handling para comandos no configurados
