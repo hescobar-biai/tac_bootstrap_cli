@@ -82,4 +82,21 @@ Extraer detalles de la chore de la variable `issue_json` (parsear JSON y usar ca
 
 ## Report
 
-- IMPORTANTE: Retornar exclusivamente el path al archivo de plan creado.
+CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
+
+1. First, check if a plan file already exists in `specs/` matching pattern: `issue-{issue_number}-adw-{adw_id}-*.md`
+2. If plan file EXISTS: Return ONLY the relative path, nothing else
+3. If plan file does NOT exist: Create it following the Plan Format, then return ONLY the path
+
+YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the path like:
+```
+specs/issue-37-adw-e4dc9574-chore_planner-chore-name.md
+```
+
+DO NOT include:
+- Any explanation or commentary
+- Phrases like "Perfect!", "I found...", "The plan file is at..."
+- Markdown formatting around the path
+- Multiple lines
+
+ONLY output the bare path. This is machine-parsed.
