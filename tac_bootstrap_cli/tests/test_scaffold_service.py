@@ -142,6 +142,14 @@ class TestScaffoldServiceBuildPlan:
         create_files = [f for f in plan.files if f.action == FileAction.CREATE]
         assert len(create_files) > 0, "Should use CREATE action which is safe for existing repos"
 
+        # Verify .claude/ files specifically use CREATE action
+        claude_files = [f for f in plan.files if ".claude/" in str(f.path)]
+        assert len(claude_files) > 0, "Should have .claude/ template files"
+        for file_op in claude_files:
+            assert (
+                file_op.action == FileAction.CREATE
+            ), f"{file_op.path} should be CREATE, not {file_op.action}"
+
     def test_build_plan_new_repo_creates_files(self, service: ScaffoldService, config: TACConfig):
         """build_plan with existing_repo=False should create all files."""
         plan = service.build_plan(config, existing_repo=False)
@@ -280,6 +288,33 @@ class TestScaffoldServiceApplyPlan:
             if skip_file:
                 assert skip_file.read_text() == "ORIGINAL CONTENT"
                 assert result.files_skipped > 0
+
+    def test_apply_plan_create_does_not_overwrite_existing(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """apply_plan with CREATE action should NOT overwrite existing files."""
+        plan = service.build_plan(config, existing_repo=True)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+
+            # Find a file with CREATE action
+            create_file = None
+            for file_op in plan.files:
+                if file_op.action == FileAction.CREATE:
+                    create_file = tmp_path / file_op.path
+                    create_file.parent.mkdir(parents=True, exist_ok=True)
+                    create_file.write_text("ORIGINAL CONTENT")
+                    break
+
+            assert create_file is not None, "Should have at least one CREATE action file"
+
+            # Apply plan without force
+            result = service.apply_plan(plan, tmp_path, config, force=False)
+
+            # Verify file was NOT overwritten
+            assert create_file.read_text() == "ORIGINAL CONTENT"
+            assert result.files_skipped >= 1
 
     def test_apply_plan_counts_operations(self, service: ScaffoldService, config: TACConfig):
         """apply_plan should count operations correctly."""
