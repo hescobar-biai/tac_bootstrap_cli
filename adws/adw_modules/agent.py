@@ -668,6 +668,34 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
         )
 
 
+def execute_prompt(
+    request: AgentPromptRequest,
+    logger: Optional[logging.Logger] = None,
+) -> AgentPromptResponse:
+    """Execute a raw prompt through Claude Code (not a slash command).
+
+    This is useful for custom prompts that don't map to a slash command,
+    such as the clarification analysis prompt.
+
+    Args:
+        request: The prompt request configuration
+        logger: Optional logger for debug output
+
+    Returns:
+        AgentPromptResponse with the result
+    """
+    if logger:
+        logger.debug(f"Executing prompt for {request.agent_name}")
+
+    # Create output directory if needed
+    output_dir = os.path.dirname(request.output_file)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+
+    # Execute with retry logic
+    return prompt_claude_code_with_retry(request)
+
+
 def execute_template(request: AgentTemplateRequest) -> AgentPromptResponse:
     """Execute a Claude Code template with slash command and arguments.
 
