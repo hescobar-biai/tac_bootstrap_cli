@@ -80,23 +80,110 @@ make cli-doctor         # Example doctor command
 ### For New Projects
 
 ```bash
-# Interactive wizard
+# Interactive wizard (recommended)
 tac-bootstrap init my-awesome-app
 
-# Non-interactive with options
-tac-bootstrap init my-app --language python --framework fastapi --no-interactive
+# Preview what will be created (dry-run)
+tac-bootstrap init my-app --dry-run
+
+# Non-interactive with all options
+tac-bootstrap init my-api \
+  --language python \
+  --framework fastapi \
+  --package-manager uv \
+  --architecture ddd \
+  --output ./projects/my-api \
+  --no-interactive
+```
+
+#### Available Options for `init`
+
+| Option | Short | Values | Default |
+|--------|-------|--------|---------|
+| `--language` | `-l` | python, typescript, javascript, go, rust, java | python |
+| `--framework` | `-f` | fastapi, django, flask, nextjs, express, nestjs, react, vue, gin, echo, axum, actix, spring, none | none |
+| `--package-manager` | `-p` | uv, poetry, pip, pipenv, pnpm, npm, yarn, bun, go, cargo, maven, gradle | auto |
+| `--architecture` | `-a` | simple, layered, ddd, clean, hexagonal | simple |
+| `--output` | `-o` | PATH | ./{name} |
+| `--interactive` | | | enabled |
+| `--dry-run` | | | disabled |
+
+#### Examples by Language
+
+```bash
+# Python + FastAPI + UV + DDD
+tac-bootstrap init my-api -l python -f fastapi -p uv -a ddd --no-interactive
+
+# Python + Django + Poetry
+tac-bootstrap init my-webapp -l python -f django -p poetry --no-interactive
+
+# TypeScript + Next.js + pnpm
+tac-bootstrap init my-frontend -l typescript -f nextjs -p pnpm --no-interactive
+
+# TypeScript + NestJS + npm
+tac-bootstrap init my-backend -l typescript -f nestjs -p npm --no-interactive
+
+# Go + Gin
+tac-bootstrap init my-service -l go -f gin --no-interactive
+
+# Rust + Axum
+tac-bootstrap init my-rust-api -l rust -f axum --no-interactive
+
+# Java + Spring + Maven
+tac-bootstrap init my-java-app -l java -f spring -p maven --no-interactive
 ```
 
 ### For Existing Projects
 
 ```bash
+# Navigate to your project
 cd your-existing-project
 
-# Interactive (recommended)
-tac-bootstrap add-agentic .
+# Interactive wizard (recommended) - auto-detects your stack
+tac-bootstrap add-agentic
 
-# Auto-detect and apply
-tac-bootstrap add-agentic . --no-interactive
+# Add to specific path
+tac-bootstrap add-agentic /path/to/your/repo
+
+# Preview changes without applying (dry-run)
+tac-bootstrap add-agentic --dry-run
+
+# Force overwrite existing agentic files
+tac-bootstrap add-agentic --force
+
+# Non-interactive with auto-detection
+tac-bootstrap add-agentic --no-interactive
+
+# Combine options
+tac-bootstrap add-agentic /path/to/repo --force --no-interactive
+```
+
+#### Available Options for `add-agentic`
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--interactive` | | Use interactive wizard (default) |
+| `--no-interactive` | | Skip wizard, use auto-detection |
+| `--dry-run` | | Preview changes without applying |
+| `--force` | `-f` | Overwrite existing files |
+
+### Utility Commands
+
+```bash
+# Validate your agentic setup
+tac-bootstrap doctor /path/to/repo
+
+# Auto-fix common issues
+tac-bootstrap doctor /path/to/repo --fix
+
+# Regenerate from config.yml
+tac-bootstrap render config.yml --output ./my-project
+
+# Regenerate with force overwrite
+tac-bootstrap render config.yml --force --dry-run
+
+# Show version
+tac-bootstrap version
 ```
 
 ## Commands
