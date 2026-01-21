@@ -257,3 +257,12 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender validación de estructura de proyecto
     - Cuando trabajes con permisos de archivos y executability checks
     - Cuando necesites referencia sobre patrón de auto-fix con callbacks fix_fn
+
+- app_docs/feature-4ea00b7a-readme-usage-documentation.md
+  - Conditions:
+    - Cuando necesites referencia sobre la documentación del README
+    - Cuando necesites entender qué se documentó en el README del CLI
+    - Cuando agregues nuevos comandos CLI y necesites actualizar documentación
+    - Cuando modifiques características del proyecto que deben reflejarse en README
+    - Cuando trabajes en mejoras de documentación o user guides
+    - Cuando necesites ejemplo de cómo documentar features del CLI
