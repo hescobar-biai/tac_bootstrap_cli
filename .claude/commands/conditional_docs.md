@@ -447,3 +447,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con verificación de .claude/ files en tests de build_plan
     - Cuando debugues comportamiento de FileAction.CREATE en apply_plan
     - Cuando trabajes en issues relacionados con testing de existing repos (issue #74)
+
+- app_docs/chore-60574393-update-cli-documentation.md
+  - Conditions:
+    - Cuando trabajes con la documentación del comando add-agentic en README
+    - Cuando necesites entender qué archivos/directorios crea add-agentic
+    - Cuando modifiques o extiendas la sección "For Existing Projects" del README
+    - Cuando necesites referencia sobre las garantías de seguridad documentadas (no overwrites, idempotente)
+    - Cuando trabajes en actualizaciones de documentación del CLI
+    - Cuando agregues nuevos archivos a la generación del agentic layer y necesites actualizar docs
+    - Cuando trabajes en issues relacionados con documentación de add-agentic (issue #76)
