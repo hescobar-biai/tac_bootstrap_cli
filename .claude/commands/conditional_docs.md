@@ -327,3 +327,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con error handling en templates de comandos
     - Cuando necesites entender verificación post-instalación
     - Cuando trabajes con templates de comandos idempotentes
+
+- app_docs/feature-18f94bef-track-agentic-kpis-template.md
+  - Conditions:
+    - Cuando trabajes con el template track_agentic_kpis.md.j2
+    - Cuando necesites entender cómo funciona el comando /track_agentic_kpis generado
+    - Cuando modifiques o extiendas la funcionalidad de tracking de KPIs agenticos
+    - Cuando trabajes con los cuatro KPIs de TAC (SIZE, ATTEMPTS, STREAK, PRESENCE)
+    - Cuando necesites entender parsing de ADW state JSON
+    - Cuando trabajes con cálculos de métricas usando Python en templates
+    - Cuando implementes comandos que leen/actualizan archivos markdown de tracking
+    - Cuando trabajes con el sistema dual de tablas (Agentic KPIs + ADW KPIs)
+    - Cuando necesites referencia sobre comandos complejos multi-paso en templates
+    - Cuando trabajes con análisis de git diff y métricas de código
