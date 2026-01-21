@@ -414,3 +414,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con workflow pause/resume logic en ADWs
     - Cuando necesites referencia sobre categorización de preguntas (requirements, technical_decision, edge_case, missing_info)
     - Cuando modifiques el prompt de clarificación o necesites entender las cuatro categorías de análisis
+
+- app_docs/feature-b638d5b6-fileaction-skip-logic-fix.md
+  - Conditions:
+    - Cuando trabajes con la lógica de FileAction en scaffold_service.py
+    - Cuando necesites entender el comportamiento de CREATE vs SKIP para repos existentes
+    - Cuando modifiques métodos de scaffolding (_add_claude_files, _add_adw_files, etc.)
+    - Cuando trabajes con idempotencia en operaciones de archivos
+    - Cuando necesites entender por qué CREATE es seguro para repos existentes
+    - Cuando debugees problemas de archivos no creados en repos existentes
+    - Cuando trabajes con la lógica de apply_plan y verificación de existencia de archivos
+    - Cuando modifiques tests relacionados con existing_repo flag
