@@ -107,7 +107,8 @@ class TestScaffoldServiceBuildPlan:
 
         # Find ADW Python files (excluding __init__.py and modules)
         adw_python_files = [
-            f for f in plan.files
+            f
+            for f in plan.files
             if f.path.startswith("adws/adw_")
             and f.path.endswith(".py")
             and "__init__" not in f.path
@@ -238,9 +239,7 @@ class TestScaffoldServiceApplyPlan:
                 assert "test-project" in content or "test_project" in content
 
     @pytest.mark.skip(reason="Requires real templates - integration test")
-    def test_apply_plan_makes_scripts_executable(
-        self, service: ScaffoldService, config: TACConfig
-    ):
+    def test_apply_plan_makes_scripts_executable(self, service: ScaffoldService, config: TACConfig):
         """apply_plan should make script files executable."""
         plan = service.build_plan(config)
 

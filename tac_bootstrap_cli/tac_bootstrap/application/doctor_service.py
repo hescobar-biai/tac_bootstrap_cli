@@ -29,9 +29,10 @@ class Severity(str, Enum):
 
     Used to classify issues by their impact on functionality.
     """
-    ERROR = "error"      # Must fix for functionality
+
+    ERROR = "error"  # Must fix for functionality
     WARNING = "warning"  # Should fix for best results
-    INFO = "info"        # Optional improvement
+    INFO = "info"  # Optional improvement
 
 
 @dataclass
@@ -45,6 +46,7 @@ class Issue:
         suggestion: Optional suggestion for fixing the issue
         fix_fn: Optional function to auto-fix the issue
     """
+
     severity: Severity
     message: str
     suggestion: Optional[str] = None
@@ -60,6 +62,7 @@ class DiagnosticReport:
         healthy: Flag indicating overall health (False if any ERROR exists)
         issues: List of detected issues
     """
+
     healthy: bool = True
     issues: List[Issue] = field(default_factory=list)
 
@@ -85,6 +88,7 @@ class FixResult:
         failed_count: Number of failed fix attempts
         messages: List of result messages
     """
+
     fixed_count: int = 0
     failed_count: int = 0
     messages: List[str] = field(default_factory=list)
@@ -170,28 +174,32 @@ class DoctorService:
         for dir_path in required_dirs:
             full_path = repo_path / dir_path
             if not full_path.is_dir():
-                report.add_issue(Issue(
-                    severity=Severity.ERROR,
-                    message=f"Missing required directory: {dir_path}",
-                    suggestion=f"Run: mkdir -p {dir_path}",
-                    fix_fn=lambda p, d=dir_path: self._fix_create_dir(p, d)
-                ))
+                report.add_issue(
+                    Issue(
+                        severity=Severity.ERROR,
+                        message=f"Missing required directory: {dir_path}",
+                        suggestion=f"Run: mkdir -p {dir_path}",
+                        fix_fn=lambda p, d=dir_path: self._fix_create_dir(p, d),
+                    )
+                )
 
         # Optional directories
         optional_dirs = {
             "adws": "ADW workflows for automated development tasks",
             "specs": "Specifications and feature documentation",
-            "scripts": "Utility scripts for project automation"
+            "scripts": "Utility scripts for project automation",
         }
         for dir_path, benefit in optional_dirs.items():
             full_path = repo_path / dir_path
             if not full_path.is_dir():
-                report.add_issue(Issue(
-                    severity=Severity.WARNING,
-                    message=f"Missing optional directory: {dir_path}",
-                    suggestion=f"Consider creating {dir_path}/ for {benefit}",
-                    fix_fn=lambda p, d=dir_path: self._fix_create_dir(p, d)
-                ))
+                report.add_issue(
+                    Issue(
+                        severity=Severity.WARNING,
+                        message=f"Missing optional directory: {dir_path}",
+                        suggestion=f"Consider creating {dir_path}/ for {benefit}",
+                        fix_fn=lambda p, d=dir_path: self._fix_create_dir(p, d),
+                    )
+                )
 
     def _check_claude_config(self, repo_path: Path, report: DiagnosticReport) -> None:
         """
@@ -204,11 +212,13 @@ class DoctorService:
         config_path = repo_path / ".claude" / "settings.json"
 
         if not config_path.exists():
-            report.add_issue(Issue(
-                severity=Severity.ERROR,
-                message="Missing .claude/settings.json",
-                suggestion="Create settings.json with required Claude Code configuration"
-            ))
+            report.add_issue(
+                Issue(
+                    severity=Severity.ERROR,
+                    message="Missing .claude/settings.json",
+                    suggestion="Create settings.json with required Claude Code configuration",
+                )
+            )
             return
 
         try:
@@ -216,17 +226,21 @@ class DoctorService:
                 settings = json.load(f)
 
             if "permissions" not in settings:
-                report.add_issue(Issue(
-                    severity=Severity.WARNING,
-                    message="settings.json missing 'permissions' field",
-                    suggestion="Add permissions configuration to control Claude Code access"
-                ))
+                report.add_issue(
+                    Issue(
+                        severity=Severity.WARNING,
+                        message="settings.json missing 'permissions' field",
+                        suggestion="Add permissions configuration to control Claude Code access",
+                    )
+                )
         except json.JSONDecodeError as e:
-            report.add_issue(Issue(
-                severity=Severity.ERROR,
-                message=f"Invalid JSON in settings.json: {e}",
-                suggestion="Fix JSON syntax errors in .claude/settings.json"
-            ))
+            report.add_issue(
+                Issue(
+                    severity=Severity.ERROR,
+                    message=f"Invalid JSON in settings.json: {e}",
+                    suggestion="Fix JSON syntax errors in .claude/settings.json",
+                )
+            )
 
     def _check_commands(self, repo_path: Path, report: DiagnosticReport) -> None:
         """
@@ -247,21 +261,25 @@ class DoctorService:
         for cmd in essential_commands:
             cmd_path = commands_dir / cmd
             if not cmd_path.exists():
-                report.add_issue(Issue(
-                    severity=Severity.WARNING,
-                    message=f"Missing commonly used command: {cmd}",
-                    suggestion=f"Consider adding .claude/commands/{cmd} for better workflow"
-                ))
+                report.add_issue(
+                    Issue(
+                        severity=Severity.WARNING,
+                        message=f"Missing commonly used command: {cmd}",
+                        suggestion=f"Consider adding .claude/commands/{cmd} for better workflow",
+                    )
+                )
 
         # Check if there's at least one command
         try:
             md_files = list(commands_dir.glob("*.md"))
             if not md_files:
-                report.add_issue(Issue(
-                    severity=Severity.ERROR,
-                    message="No command files found in .claude/commands/",
-                    suggestion="Add at least one .md command file (e.g., prime.md, test.md)"
-                ))
+                report.add_issue(
+                    Issue(
+                        severity=Severity.ERROR,
+                        message="No command files found in .claude/commands/",
+                        suggestion="Add at least one .md command file (e.g., prime.md, test.md)",
+                    )
+                )
         except (PermissionError, OSError):
             pass
 
@@ -284,12 +302,14 @@ class DoctorService:
             hook_path = hooks_dir / hook
             if hook_path.exists():
                 if not os.access(hook_path, os.X_OK):
-                    report.add_issue(Issue(
-                        severity=Severity.WARNING,
-                        message=f"Hook not executable: {hook}",
-                        suggestion=f"Run: chmod +x .claude/hooks/{hook}",
-                        fix_fn=lambda p, h=hook: self._fix_make_executable(p, h)
-                    ))
+                    report.add_issue(
+                        Issue(
+                            severity=Severity.WARNING,
+                            message=f"Hook not executable: {hook}",
+                            suggestion=f"Run: chmod +x .claude/hooks/{hook}",
+                            fix_fn=lambda p, h=hook: self._fix_make_executable(p, h),
+                        )
+                    )
 
     def _check_adws(self, repo_path: Path, report: DiagnosticReport) -> None:
         """
@@ -308,25 +328,29 @@ class DoctorService:
         # Check for adw_modules
         modules_dir = adws_dir / "adw_modules"
         if not modules_dir.is_dir():
-            report.add_issue(Issue(
-                severity=Severity.WARNING,
-                message="Missing adws/adw_modules/ directory",
-                suggestion="Create adws/adw_modules/ for reusable ADW components",
-                fix_fn=lambda p: self._fix_create_dir(p, "adws/adw_modules")
-            ))
+            report.add_issue(
+                Issue(
+                    severity=Severity.WARNING,
+                    message="Missing adws/adw_modules/ directory",
+                    suggestion="Create adws/adw_modules/ for reusable ADW components",
+                    fix_fn=lambda p: self._fix_create_dir(p, "adws/adw_modules"),
+                )
+            )
 
         # Check for at least one workflow
         try:
             workflows = list(adws_dir.glob("adw_*.py"))
             if not workflows:
-                report.add_issue(Issue(
-                    severity=Severity.INFO,
-                    message="No ADW workflows found",
-                    suggestion=(
-                        "Consider adding adws/adw_sdlc_iso.py "
-                        "for automated development workflows"
+                report.add_issue(
+                    Issue(
+                        severity=Severity.INFO,
+                        message="No ADW workflows found",
+                        suggestion=(
+                            "Consider adding adws/adw_sdlc_iso.py "
+                            "for automated development workflows"
+                        ),
                     )
-                ))
+                )
         except (PermissionError, OSError):
             pass
 
@@ -341,14 +365,15 @@ class DoctorService:
         config_path = repo_path / "config.yml"
 
         if not config_path.exists():
-            report.add_issue(Issue(
-                severity=Severity.WARNING,
-                message="Missing config.yml",
-                suggestion=(
-                    "Create config.yml for idempotent regeneration "
-                    "and configuration management"
+            report.add_issue(
+                Issue(
+                    severity=Severity.WARNING,
+                    message="Missing config.yml",
+                    suggestion=(
+                        "Create config.yml for idempotent regeneration and configuration management"
+                    ),
                 )
-            ))
+            )
             return
 
         try:
@@ -356,28 +381,34 @@ class DoctorService:
                 config = yaml.safe_load(f)
 
             if config is None or not config:
-                report.add_issue(Issue(
-                    severity=Severity.ERROR,
-                    message="config.yml is empty",
-                    suggestion="Add project configuration to config.yml"
-                ))
+                report.add_issue(
+                    Issue(
+                        severity=Severity.ERROR,
+                        message="config.yml is empty",
+                        suggestion="Add project configuration to config.yml",
+                    )
+                )
                 return
 
             # Check required fields
             required_fields = ["project", "commands"]
             for field in required_fields:
                 if field not in config:
-                    report.add_issue(Issue(
-                        severity=Severity.ERROR,
-                        message=f"config.yml missing required field: {field}",
-                        suggestion=f"Add '{field}' section to config.yml"
-                    ))
+                    report.add_issue(
+                        Issue(
+                            severity=Severity.ERROR,
+                            message=f"config.yml missing required field: {field}",
+                            suggestion=f"Add '{field}' section to config.yml",
+                        )
+                    )
         except yaml.YAMLError as e:
-            report.add_issue(Issue(
-                severity=Severity.ERROR,
-                message=f"Invalid YAML in config.yml: {e}",
-                suggestion="Fix YAML syntax errors in config.yml"
-            ))
+            report.add_issue(
+                Issue(
+                    severity=Severity.ERROR,
+                    message=f"Invalid YAML in config.yml: {e}",
+                    suggestion="Fix YAML syntax errors in config.yml",
+                )
+            )
 
     def _fix_create_dir(self, repo_path: Path, dir_path: str) -> bool:
         """

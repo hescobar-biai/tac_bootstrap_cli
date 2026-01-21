@@ -86,9 +86,7 @@ class GitAdapter:
                 error=e.stderr.strip() if e.stderr else str(e),
             )
         except FileNotFoundError:
-            return GitResult(
-                success=False, error="Git is not installed or not in PATH"
-            )
+            return GitResult(success=False, error="Git is not installed or not in PATH")
 
     def is_repo(self) -> bool:
         """Check if the current path is a git repository.
@@ -203,9 +201,7 @@ class GitAdapter:
         args.append(branch)
         return self._run(*args)
 
-    def create_worktree(
-        self, path: Path, branch: str, create_branch: bool = True
-    ) -> GitResult:
+    def create_worktree(self, path: Path, branch: str, create_branch: bool = True) -> GitResult:
         """Create a new worktree.
 
         Args:

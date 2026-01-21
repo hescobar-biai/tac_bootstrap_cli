@@ -6,11 +6,7 @@
         "@playwright/mcp@latest",
         "--isolated",
         "--config",
-<<<<<<< HEAD
-        "/Volumes/MAc1/Celes/tac_bootstrap/trees/63d027f6/playwright-mcp-config.json"
-=======
-        "/Volumes/MAc1/Celes/tac_bootstrap/trees/073aa60c/playwright-mcp-config.json"
->>>>>>> feature-issue-43-adw-073aa60c-create-prepare-app-template
+        "/Volumes/MAc1/Celes/tac_bootstrap/trees/16866919/playwright-mcp-config.json"
       ]
     }
   }

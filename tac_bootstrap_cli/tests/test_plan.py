@@ -4,7 +4,6 @@ Comprehensive unit tests for ScaffoldPlan and related models,
 including fluent interface, filtering methods, and summary generation.
 """
 
-
 from tac_bootstrap.domain.plan import (
     DirectoryOperation,
     FileAction,
