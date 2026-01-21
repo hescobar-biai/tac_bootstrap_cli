@@ -247,54 +247,180 @@ def save_prompt(prompt: str, adw_id: str, agent_name: str = "ops") -> None:
         f.write(prompt)
 
 
+def get_retry_logger(adw_id: str) -> logging.Logger:
+    """Get or create a logger for retry operations."""
+    logger = logging.getLogger(f"adw.{adw_id}.retry")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(
+            '%(asctime)s - %(levelname)s - [%(name)s] %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        ))
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+    return logger
+
+
+def calculate_backoff_delay(
+    attempt: int,
+    base_delay: int = 5,
+    max_delay: int = 120,
+    retry_code: RetryCode = RetryCode.NONE
+) -> int:
+    """Calculate exponential backoff delay with jitter.
+
+    Args:
+        attempt: Current retry attempt number (1-based)
+        base_delay: Base delay in seconds
+        max_delay: Maximum delay cap in seconds
+        retry_code: The error type to adjust delays for
+
+    Returns:
+        Delay in seconds before next retry
+    """
+    import random
+
+    # For rate limiting, use longer base delays
+    if retry_code == RetryCode.RATE_LIMITED:
+        base_delay = 30  # Start with 30 seconds for rate limiting
+        max_delay = 300  # Cap at 5 minutes
+
+    # Exponential backoff: base * 2^attempt
+    delay = base_delay * (2 ** (attempt - 1))
+
+    # Add jitter (±20%) to prevent thundering herd
+    jitter = delay * 0.2 * (random.random() * 2 - 1)
+    delay = int(delay + jitter)
+
+    # Cap at max delay
+    return min(delay, max_delay)
+
+
+def is_rate_limited_error(error_msg: str) -> bool:
+    """Check if an error message indicates rate limiting."""
+    rate_limit_indicators = [
+        "overloaded",
+        "rate limit",
+        "rate_limit",
+        "429",
+        "too many requests",
+        "throttl",
+        "capacity",
+        "try again later",
+    ]
+    error_lower = error_msg.lower()
+    return any(indicator in error_lower for indicator in rate_limit_indicators)
+
+
+def is_connection_error(error_msg: str) -> bool:
+    """Check if an error message indicates a connection problem."""
+    connection_indicators = [
+        "connection",
+        "network",
+        "timeout",
+        "timed out",
+        "unreachable",
+        "dns",
+        "socket",
+        "econnrefused",
+        "econnreset",
+        "enotfound",
+    ]
+    error_lower = error_msg.lower()
+    return any(indicator in error_lower for indicator in connection_indicators)
+
+
 def prompt_claude_code_with_retry(
     request: AgentPromptRequest,
-    max_retries: int = 3,
-    retry_delays: List[int] = None,
+    max_retries: int = 5,
+    base_delay: int = 5,
 ) -> AgentPromptResponse:
-    """Execute Claude Code with retry logic for certain error types.
+    """Execute Claude Code with intelligent retry logic.
+
+    Features:
+    - Exponential backoff with jitter
+    - Longer delays for rate limiting (starts at 30s)
+    - Detailed logging during retries
+    - Configurable max retries and base delay
 
     Args:
         request: The prompt request configuration
-        max_retries: Maximum number of retry attempts (default: 3)
-        retry_delays: List of delays in seconds between retries (default: [1, 3, 5])
+        max_retries: Maximum number of retry attempts (default: 5)
+        base_delay: Base delay in seconds for exponential backoff (default: 5)
 
     Returns:
         AgentPromptResponse with output and retry code
     """
-    if retry_delays is None:
-        retry_delays = [1, 3, 5]
-
-    # Ensure we have enough delays for max_retries
-    while len(retry_delays) < max_retries:
-        retry_delays.append(retry_delays[-1] + 2)  # Add incrementing delays
-
+    logger = get_retry_logger(request.adw_id)
     last_response = None
+
+    # Retryable error codes
+    retryable_codes = [
+        RetryCode.CLAUDE_CODE_ERROR,
+        RetryCode.TIMEOUT_ERROR,
+        RetryCode.EXECUTION_ERROR,
+        RetryCode.ERROR_DURING_EXECUTION,
+        RetryCode.RATE_LIMITED,
+        RetryCode.CONNECTION_ERROR,
+        RetryCode.API_ERROR,
+    ]
 
     for attempt in range(max_retries + 1):  # +1 for initial attempt
         if attempt > 0:
-            # This is a retry
-            delay = retry_delays[attempt - 1]
-            time.sleep(delay)
+            # Calculate delay based on error type
+            delay = calculate_backoff_delay(
+                attempt,
+                base_delay,
+                retry_code=last_response.retry_code if last_response else RetryCode.NONE
+            )
+
+            logger.warning(
+                f"⏳ Retry {attempt}/{max_retries} in {delay}s - "
+                f"Previous error: {last_response.retry_code.value if last_response else 'unknown'}"
+            )
+
+            # Log progress during long waits
+            if delay > 30:
+                for waited in range(0, delay, 30):
+                    remaining = delay - waited
+                    if remaining > 30:
+                        logger.info(f"   Waiting... {remaining}s remaining")
+                        time.sleep(30)
+                    else:
+                        time.sleep(remaining)
+                        break
+            else:
+                time.sleep(delay)
+
+            logger.info(f"🔄 Retrying attempt {attempt + 1}...")
 
         response = prompt_claude_code(request)
         last_response = response
 
-        # Check if we should retry based on the retry code
-        if response.success or response.retry_code == RetryCode.NONE:
-            # Success or non-retryable error
+        # Success - return immediately
+        if response.success:
+            if attempt > 0:
+                logger.info(f"✅ Succeeded on retry attempt {attempt}")
+            return response
+
+        # Non-retryable error
+        if response.retry_code == RetryCode.NONE:
+            logger.error(f"❌ Non-retryable error: {response.output[:200]}")
             return response
 
         # Check if this is a retryable error
-        if response.retry_code in [
-            RetryCode.CLAUDE_CODE_ERROR,
-            RetryCode.TIMEOUT_ERROR,
-            RetryCode.EXECUTION_ERROR,
-            RetryCode.ERROR_DURING_EXECUTION,
-        ]:
+        if response.retry_code in retryable_codes:
             if attempt < max_retries:
+                logger.warning(
+                    f"⚠️ Retryable error ({response.retry_code.value}): "
+                    f"{response.output[:100]}..."
+                )
                 continue
             else:
+                logger.error(
+                    f"❌ Max retries ({max_retries}) exhausted. "
+                    f"Last error: {response.retry_code.value}"
+                )
                 return response
 
     # Should not reach here, but return last response just in case
@@ -345,6 +471,7 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
         # Open output file for streaming
         with open(request.output_file, "w") as output_f:
             # Execute Claude Code and stream output to file
+            # Use timeout from request (default 10 minutes)
             result = subprocess.run(
                 cmd,
                 stdout=output_f,  # Stream directly to file
@@ -352,6 +479,7 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
                 text=True,
                 env=env,
                 cwd=request.working_dir,  # Use working_dir if provided
+                timeout=request.timeout_seconds,  # Add timeout!
             )
 
         if result.returncode == 0:
@@ -482,29 +610,61 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
             else:
                 error_msg = f"Claude Code error: Command failed with exit code {result.returncode}"
 
+            # Determine the appropriate retry code based on error content
+            retry_code = RetryCode.CLAUDE_CODE_ERROR
+
+            # Check for rate limiting
+            if is_rate_limited_error(error_msg):
+                retry_code = RetryCode.RATE_LIMITED
+            # Check for connection errors
+            elif is_connection_error(error_msg):
+                retry_code = RetryCode.CONNECTION_ERROR
+            # Check for API errors
+            elif "api" in error_msg.lower() and "error" in error_msg.lower():
+                retry_code = RetryCode.API_ERROR
+
             # Always truncate error messages to prevent huge outputs
             return AgentPromptResponse(
                 output=truncate_output(error_msg, max_length=800),
                 success=False,
                 session_id=None,
-                retry_code=RetryCode.CLAUDE_CODE_ERROR,
+                retry_code=retry_code,
             )
 
     except subprocess.TimeoutExpired:
-        error_msg = "Error: Claude Code command timed out after 5 minutes"
+        timeout_mins = request.timeout_seconds // 60
+        error_msg = f"Error: Claude Code command timed out after {timeout_mins} minutes ({request.timeout_seconds}s)"
         return AgentPromptResponse(
             output=error_msg,
             success=False,
             session_id=None,
             retry_code=RetryCode.TIMEOUT_ERROR,
         )
-    except Exception as e:
-        error_msg = f"Error executing Claude Code: {e}"
+    except OSError as e:
+        # OSError often indicates connection/network issues
+        error_msg = f"OS/Network error executing Claude Code: {e}"
+        retry_code = RetryCode.CONNECTION_ERROR if is_connection_error(str(e)) else RetryCode.EXECUTION_ERROR
         return AgentPromptResponse(
             output=error_msg,
             success=False,
             session_id=None,
-            retry_code=RetryCode.EXECUTION_ERROR,
+            retry_code=retry_code,
+        )
+    except Exception as e:
+        error_msg = f"Error executing Claude Code: {e}"
+        # Try to classify the error
+        error_str = str(e)
+        if is_rate_limited_error(error_str):
+            retry_code = RetryCode.RATE_LIMITED
+        elif is_connection_error(error_str):
+            retry_code = RetryCode.CONNECTION_ERROR
+        else:
+            retry_code = RetryCode.EXECUTION_ERROR
+        return AgentPromptResponse(
+            output=error_msg,
+            success=False,
+            session_id=None,
+            retry_code=retry_code,
         )
 
 

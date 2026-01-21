@@ -14,6 +14,9 @@ class RetryCode(str, Enum):
     TIMEOUT_ERROR = "timeout_error"  # Command timed out
     EXECUTION_ERROR = "execution_error"  # Error during execution
     ERROR_DURING_EXECUTION = "error_during_execution"  # Agent encountered an error
+    RATE_LIMITED = "rate_limited"  # API rate limited (429) or overloaded
+    CONNECTION_ERROR = "connection_error"  # Network/connection issues
+    API_ERROR = "api_error"  # API returned an error response
     NONE = "none"  # No retry needed
 
 
@@ -154,6 +157,7 @@ class AgentPromptRequest(BaseModel):
     dangerously_skip_permissions: bool = False
     output_file: str
     working_dir: Optional[str] = None
+    timeout_seconds: int = 600  # Default 10 minutes, configurable per request
 
 
 class AgentPromptResponse(BaseModel):
