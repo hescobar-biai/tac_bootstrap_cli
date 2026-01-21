@@ -197,12 +197,25 @@ tac-bootstrap init my-java-app -l java -f spring -p maven --no-interactive
 ### For Existing Projects
 
 ```bash
-# Navigate to your project
+# Add Agentic Layer to existing repository
 cd your-existing-project
-
-# Interactive wizard (recommended) - auto-detects your stack
 tac-bootstrap add-agentic
 
+# This will:
+# - Auto-detect language, framework, package manager
+# - Create .claude/commands/ with 25+ slash commands
+# - Create .claude/hooks/ with automation hooks
+# - Create adws/ with AI Developer Workflows
+# - Create scripts/ with utility scripts
+# - Create config.yml with detected settings
+# - Create constitution.md with project principles
+
+# Safe for existing repos:
+# - Only creates files that don't exist
+# - Never overwrites your existing files
+# - Run multiple times safely (idempotent)
+
+# Other usage examples:
 # Add to specific path
 tac-bootstrap add-agentic /path/to/your/repo
 
