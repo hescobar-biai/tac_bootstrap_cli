@@ -315,3 +315,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender el patrón de verificación de templates ya implementados
     - Cuando trabajes con validación de templates Jinja2 en TAC Bootstrap
     - Cuando implementes edge case handling para comandos no configurados
+
+- app_docs/feature-738f7a43-install-template.md
+  - Conditions:
+    - Cuando trabajes con el template install.md.j2
+    - Cuando necesites entender cómo funciona el comando /install generado
+    - Cuando modifiques o extiendas la funcionalidad de instalación de dependencias
+    - Cuando agregues soporte para nuevos package managers en install
+    - Cuando trabajes con comandos slash de gestión de dependencias
+    - Cuando necesites referencia sobre diseño ligero vs comprehensive (install vs prepare_app)
+    - Cuando trabajes con error handling en templates de comandos
+    - Cuando necesites entender verificación post-instalación
+    - Cuando trabajes con templates de comandos idempotentes

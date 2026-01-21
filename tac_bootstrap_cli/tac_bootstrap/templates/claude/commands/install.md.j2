@@ -1,0 +1,97 @@
+# Install
+
+Install project dependencies using the configured package manager.
+
+## Instructions
+
+### 1. Install Dependencies
+
+{% if config.project.package_manager.value == "uv" %}
+```bash
+cd {{ config.paths.app_root }} && uv sync
+```
+{% elif config.project.package_manager.value == "poetry" %}
+```bash
+cd {{ config.paths.app_root }} && poetry install
+```
+{% elif config.project.package_manager.value == "pip" %}
+```bash
+cd {{ config.paths.app_root }} && pip install -r requirements.txt
+```
+{% elif config.project.package_manager.value == "pipenv" %}
+```bash
+cd {{ config.paths.app_root }} && pipenv install
+```
+{% elif config.project.package_manager.value == "pnpm" %}
+```bash
+cd {{ config.paths.app_root }} && pnpm install
+```
+{% elif config.project.package_manager.value == "npm" %}
+```bash
+cd {{ config.paths.app_root }} && npm install
+```
+{% elif config.project.package_manager.value == "yarn" %}
+```bash
+cd {{ config.paths.app_root }} && yarn install
+```
+{% elif config.project.package_manager.value == "bun" %}
+```bash
+cd {{ config.paths.app_root }} && bun install
+```
+{% elif config.project.package_manager.value == "go" %}
+```bash
+cd {{ config.paths.app_root }} && go mod download
+```
+{% elif config.project.package_manager.value == "cargo" %}
+```bash
+cd {{ config.paths.app_root }} && cargo build
+```
+{% elif config.project.package_manager.value == "maven" %}
+```bash
+cd {{ config.paths.app_root }} && mvn dependency:resolve
+```
+{% elif config.project.package_manager.value == "gradle" %}
+```bash
+cd {{ config.paths.app_root }} && gradle build --refresh-dependencies
+```
+{% endif %}
+
+### 2. Verify Installation
+
+Check installation completed successfully:
+- Exit code should be 0
+- Verify dependency artifacts exist (node_modules/, .venv/, target/, etc.)
+- Check for lock file creation/update
+
+### 3. Handle Common Errors
+
+If installation fails, check for:
+
+**Network Failures**
+- Registry unreachable or timeout
+- Solution: Check internet connection, try again, or configure alternate registry
+
+**Permission Errors**
+- Cannot write to cache directory or lock files
+- Solution: Check file permissions, run with appropriate user privileges
+
+**Version Conflicts**
+- Incompatible dependency versions
+- Solution: Review dependency constraints, update lock files, check for breaking changes
+
+**Missing Files**
+- No package manifest found (package.json, pyproject.toml, etc.)
+- Solution: Ensure you're in correct directory, verify manifest file exists
+
+## Report
+
+- Dependencies installed: (count or status)
+- Installation time: (approximate duration)
+- Warnings: (any non-critical issues)
+- Errors: (critical failures if any)
+
+## Notes
+
+- This command is idempotent - safe to run multiple times
+- Some package managers (cargo, gradle) run build as part of dependency resolution
+- For comprehensive environment setup, use `/prepare_app` instead
