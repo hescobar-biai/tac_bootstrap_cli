@@ -425,3 +425,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando debugees problemas de archivos no creados en repos existentes
     - Cuando trabajes con la lógica de apply_plan y verificación de existencia de archivos
     - Cuando modifiques tests relacionados con existing_repo flag
+
+- app_docs/feature-f24cb057-verify-add-agentic-fix-spec.md
+  - Conditions:
+    - Cuando trabajes en verificación del fix de add-agentic (issue #70)
+    - Cuando necesites referencia sobre el plan de verificación manual de archivos generados
+    - Cuando trabajes en testing de idempotencia del comando add-agentic
+    - Cuando necesites entender los criterios de éxito (45+ archivos generados)
+    - Cuando trabajes con validación de templates generados (comandos, hooks, workflows)
+    - Cuando debugees problemas de file generation en add-agentic
+    - Cuando necesites entender el comportamiento antes/después del fix (1 archivo vs 45+)
+    - Cuando trabajes con issues relacionados a #70 o #72
