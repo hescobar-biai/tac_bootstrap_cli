@@ -278,12 +278,29 @@ class DocumentationResult(BaseModel):
 
 class ADWExtractionResult(BaseModel):
     """Result from extracting ADW information from text."""
-    
+
     workflow_command: Optional[str] = None  # e.g., "adw_plan_iso" (without slash)
     adw_id: Optional[str] = None  # 8-character ADW ID
     model_set: Optional[ModelSet] = "base"  # Model set to use, defaults to "base"
-    
+
     @property
     def has_workflow(self) -> bool:
         """Check if a workflow command was extracted."""
         return self.workflow_command is not None
+
+
+class ClarificationQuestion(BaseModel):
+    """A single clarification question for ambiguous requirements."""
+
+    question: str
+    category: Literal["requirements", "technical_decision", "edge_case", "missing_info"]
+    severity: Literal["critical", "important", "nice_to_have"]
+
+
+class ClarificationResponse(BaseModel):
+    """Response from issue clarification analysis."""
+
+    has_ambiguities: bool
+    questions: List[ClarificationQuestion] = []
+    assumptions: List[str] = []
+    analysis: str
