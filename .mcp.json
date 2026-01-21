@@ -6,7 +6,7 @@
         "@playwright/mcp@latest",
         "--isolated",
         "--config",
-        "/Volumes/MAc1/Celes/tac_bootstrap/trees/63d027f6/playwright-mcp-config.json"
+        "/Volumes/MAc1/Celes/tac_bootstrap/trees/d450b40b/playwright-mcp-config.json"
       ]
     }
   }
