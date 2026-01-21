@@ -1,0 +1,81 @@
+# Install
+
+Install project dependencies.
+
+## Variables
+- $ARGUMENTS: Optional install arguments
+
+## Instructions
+
+1. Run the install command:
+{% if config.project.package_manager == "uv" %}
+   ```bash
+   uv sync $ARGUMENTS
+   ```
+{% elif config.project.package_manager == "poetry" %}
+   ```bash
+   poetry install $ARGUMENTS
+   ```
+{% elif config.project.package_manager == "pip" %}
+   ```bash
+   pip install -r requirements.txt $ARGUMENTS
+   ```
+{% elif config.project.package_manager == "pipenv" %}
+   ```bash
+   pipenv install $ARGUMENTS
+   ```
+{% elif config.project.package_manager == "npm" %}
+   ```bash
+   npm install $ARGUMENTS
+   ```
+{% elif config.project.package_manager == "pnpm" %}
+   ```bash
+   pnpm install $ARGUMENTS
+   ```
+{% elif config.project.package_manager == "yarn" %}
+   ```bash
+   yarn install $ARGUMENTS
+   ```
+{% elif config.project.package_manager == "bun" %}
+   ```bash
+   bun install $ARGUMENTS
+   ```
+{% elif config.project.package_manager == "go" %}
+   ```bash
+   go mod download $ARGUMENTS
+   ```
+{% elif config.project.package_manager == "cargo" %}
+   ```bash
+   cargo build $ARGUMENTS
+   ```
+{% elif config.project.package_manager == "maven" %}
+   ```bash
+   mvn install $ARGUMENTS
+   ```
+{% elif config.project.package_manager == "gradle" %}
+   ```bash
+   gradle build $ARGUMENTS
+   ```
+{% else %}
+   No package manager configured for this project.
+{% endif %}
+
+2. Handle common installation errors:
+   - **Network errors**: Check internet connectivity and retry
+   - **Permission errors**: Verify write permissions in project directory
+   - **Version conflicts**: Review lock files and dependency constraints
+   - **Missing lock files**: Check if lock file exists for the package manager
+
+3. Verify installation success:
+   - Check command exit code
+   - Verify dependencies were installed correctly
+   - Look for any warnings in the output
+
+4. Important: Do NOT modify any code files during installation
+
+## Report
+- Installation status: success/failed
+- Dependencies installed: (count if available)
+- Warnings: (list if any)
+- Errors: (list if any)
+- Verification result: (confirmed dependencies installed)
