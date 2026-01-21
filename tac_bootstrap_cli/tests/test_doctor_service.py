@@ -8,10 +8,7 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from tac_bootstrap.application.doctor_service import DoctorService, Severity
-
 
 # ============================================================================
 # TEST DIAGNOSE - EMPTY DIRECTORY
@@ -202,14 +199,14 @@ class TestDoctorServiceDiagnoseIssues:
 
             os.chmod(hook_file, stat.S_IRUSR | stat.S_IWUSR)
 
-            report = doctor.diagnose(tmp_path)
+            _report = doctor.diagnose(tmp_path)
 
             # Should report issue about non-executable hook
-            messages = [i.message for i in report.issues]
-            has_executable_issue = any(
-                "executable" in msg.lower() or "permission" in msg.lower() for msg in messages
-            )
             # Note: This check is optional since not all systems/tests may check executability
+            # messages = [i.message for i in report.issues]
+            # has_executable_issue = any(
+            #     "executable" in msg.lower() or "permission" in msg.lower() for msg in messages
+            # )
             # assert has_executable_issue
 
 
@@ -285,9 +282,9 @@ class TestDoctorServiceFix:
             doctor.fix(tmp_path, report)
 
             # Check if hook is now executable
-            st = os.stat(hook_file)
-            is_executable = bool(st.st_mode & stat.S_IXUSR)
             # Note: Fix may or may not make it executable depending on implementation
+            # st = os.stat(hook_file)
+            # is_executable = bool(st.st_mode & stat.S_IXUSR)
             # assert is_executable
 
     def test_fix_reports_success_count(self):

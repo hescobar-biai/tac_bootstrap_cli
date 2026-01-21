@@ -22,7 +22,6 @@ from tac_bootstrap.domain.models import (
     get_package_managers_for_language,
 )
 
-
 # ============================================================================
 # TEST PROJECT SPEC
 # ============================================================================
@@ -284,6 +283,13 @@ class TestHelperFunctions:
         assert "poetry run ruff" in commands["lint"]
         assert "poetry run mypy" in commands["typecheck"]
 
+    def test_default_commands_python_pip(self):
+        """Python + pip should have correct defaults."""
+        commands = get_default_commands(Language.PYTHON, PackageManager.PIP)
+        assert commands["test"] == "pytest"
+        assert commands["lint"] == "ruff check ."
+        assert commands["typecheck"] == "mypy ."
+
     def test_default_commands_typescript_pnpm(self):
         """TypeScript + pnpm should have correct defaults."""
         commands = get_default_commands(Language.TYPESCRIPT, PackageManager.PNPM)
@@ -298,6 +304,20 @@ class TestHelperFunctions:
         commands = get_default_commands(Language.TYPESCRIPT, PackageManager.NPM)
         assert commands["test"] == "npm test"
         assert commands["start"] == "npm run dev"
+
+    def test_default_commands_typescript_yarn(self):
+        """TypeScript + yarn should have correct defaults."""
+        commands = get_default_commands(Language.TYPESCRIPT, PackageManager.YARN)
+        assert commands["test"] == "yarn test"
+        assert commands["start"] == "yarn dev"
+        assert commands["build"] == "yarn build"
+
+    def test_default_commands_typescript_bun(self):
+        """TypeScript + bun should have correct defaults."""
+        commands = get_default_commands(Language.TYPESCRIPT, PackageManager.BUN)
+        assert commands["test"] == "bun test"
+        assert commands["start"] == "bun run dev"
+        assert commands["build"] == "bun run build"
 
     def test_default_commands_go(self):
         """Go should have correct defaults."""
@@ -321,6 +341,13 @@ class TestHelperFunctions:
         assert commands["test"] == "mvn test"
         assert commands["build"] == "mvn package"
         assert "mvn" in commands["start"]
+
+    def test_default_commands_java_gradle(self):
+        """Java + Gradle should have correct defaults."""
+        commands = get_default_commands(Language.JAVA, PackageManager.GRADLE)
+        assert commands["test"] == "gradle test"
+        assert commands["build"] == "gradle build"
+        assert commands["start"] == "gradle bootRun"
 
     def test_default_commands_all_have_required_keys(self):
         """All command dictionaries should have required keys."""

@@ -4,7 +4,6 @@ Comprehensive unit tests for ScaffoldPlan and related models,
 including fluent interface, filtering methods, and summary generation.
 """
 
-import pytest
 
 from tac_bootstrap.domain.plan import (
     DirectoryOperation,
@@ -12,7 +11,6 @@ from tac_bootstrap.domain.plan import (
     FileOperation,
     ScaffoldPlan,
 )
-
 
 # ============================================================================
 # TEST FILE OPERATION
@@ -289,7 +287,10 @@ class TestScaffoldPlan:
         """Should support adding file with static content."""
         plan = ScaffoldPlan()
         plan.add_file(
-            "readme.txt", FileAction.CREATE, content="# README\n\nProject description", reason="Docs"
+            "readme.txt",
+            FileAction.CREATE,
+            content="# README\n\nProject description",
+            reason="Docs",
         )
 
         assert plan.files[0].content == "# README\n\nProject description"
@@ -306,7 +307,9 @@ class TestScaffoldPlan:
             .add_directory("adws", "AI workflows")
             .add_directory("specs", "Specifications")
             # Files
-            .add_file(".claude/settings.json", FileAction.CREATE, template="claude/settings.json.j2")
+            .add_file(
+                ".claude/settings.json", FileAction.CREATE, template="claude/settings.json.j2"
+            )
             .add_file("config.yml", FileAction.CREATE, template="config.yml.j2")
             .add_file("README.md", FileAction.SKIP, reason="User may have custom README")
             .add_file(".gitignore", FileAction.PATCH, content="# TAC Bootstrap\nlogs/\n")

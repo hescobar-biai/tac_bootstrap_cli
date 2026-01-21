@@ -8,11 +8,8 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from tac_bootstrap.application.detect_service import DetectService
 from tac_bootstrap.domain.models import Framework, Language, PackageManager
-
 
 # ============================================================================
 # TEST LANGUAGE DETECTION

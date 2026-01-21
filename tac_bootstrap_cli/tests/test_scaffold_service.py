@@ -21,7 +21,6 @@ from tac_bootstrap.domain.models import (
 )
 from tac_bootstrap.domain.plan import FileAction
 
-
 # ============================================================================
 # FIXTURES
 # ============================================================================
@@ -333,7 +332,7 @@ class TestScaffoldServiceApplyPlan:
             # Modify a file
             config_file = tmp_path / "config.yml"
             if config_file.exists():
-                original_content = config_file.read_text()
+                config_file.read_text()  # Verify file exists and is readable
                 config_file.write_text("MODIFIED")
 
                 # Apply with force
