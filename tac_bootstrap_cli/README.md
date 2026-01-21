@@ -25,8 +25,9 @@ cd tac-cli-dist
 uv tool install .
 
 # Now works from ANY directory
-cd ~/my-projects
+cd ..
 tac-bootstrap --help  # ✅ Works everywhere
+uv run tac-bootstrap init my-awesome-app
 ```
 
 ### Option 2: Development Install (for contributing)
