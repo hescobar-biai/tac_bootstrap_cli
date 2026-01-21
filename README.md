@@ -262,6 +262,28 @@ git push origin main
 git subtree push --prefix=tac_bootstrap_cli tac-cli-dist main
 ```
 
+#### Crear un Release
+
+Después de sincronizar cambios importantes:
+
+```bash
+# 1. Actualizar versión en pyproject.toml (tac_bootstrap_cli/pyproject.toml)
+# version = "0.2.0"
+
+# 2. Commit y sincronizar
+git add . && git commit -m "chore: bump version to 0.2.0"
+git push origin main
+git subtree push --prefix=tac_bootstrap_cli tac-cli-dist main
+
+# 3. Crear release en GitHub
+gh release create v0.2.0 \
+  --repo celes-app/tac-cli-dist \
+  --title "v0.2.0" \
+  --notes "Release notes aquí"
+```
+
+> **Nota**: El tag en el README del CLI (`git clone --branch v0.1.0`) debe actualizarse cuando se crea un nuevo release.
+
 #### Repositorios
 
 | Repositorio | URL | Contenido |
