@@ -296,3 +296,12 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender cómo usar make para operaciones CLI comunes
     - Cuando modifiques comandos de linting, formatting o type checking
     - Cuando trabajes con comandos de build o clean
+
+- app_docs/feature-e2c9e980-makefile-documentation.md
+  - Conditions:
+    - Cuando necesites referencia sobre la documentación del Makefile en README
+    - Cuando actualices o modifiques la sección de Development en README.md
+    - Cuando agregues nuevos comandos make y necesites documentarlos
+    - Cuando trabajes en mejoras de documentación para contribuidores
+    - Cuando necesites entender el desarrollo workflow documentado para TAC Bootstrap CLI
+    - Cuando modifiques la estructura de directorios y necesites actualizar notas sobre dónde ejecutar comandos make
