@@ -340,3 +340,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con el sistema dual de tablas (Agentic KPIs + ADW KPIs)
     - Cuando necesites referencia sobre comandos complejos multi-paso en templates
     - Cuando trabajes con análisis de git diff y métricas de código
+
+- app_docs/feature-7be851a4-complete-cli-tests.md
+  - Conditions:
+    - Cuando trabajes con tests de CLI en tests/test_cli.py
+    - Cuando necesites entender cómo probar comandos CLI con CliRunner de Typer
+    - Cuando implementes nuevos tests de comandos CLI (init, add-agentic, doctor, render, version)
+    - Cuando trabajes con tests de dry-run mode o preview mode
+    - Cuando necesites referencia sobre testing patterns para CLI integration tests
+    - Cuando uses tmp_path fixture para crear estructuras de proyecto temporales
+    - Cuando trabajes con validación de exit codes y output de comandos
+    - Cuando necesites entender cómo crear setups de test realistas (pyproject.toml, config.yml, settings.json)
+    - Cuando implementes tests que verifican filesystem safety (dry-run no modifica archivos)
+    - Cuando extiendas el test suite con edge cases o error scenarios
