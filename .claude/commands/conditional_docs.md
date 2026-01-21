@@ -266,3 +266,11 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando modifiques características del proyecto que deben reflejarse en README
     - Cuando trabajes en mejoras de documentación o user guides
     - Cuando necesites ejemplo de cómo documentar features del CLI
+
+- app_docs/feature-42-adw-63d027f6-lint-template.md
+  - Conditions:
+    - Cuando trabajes con el template de comando /lint
+    - Cuando necesites entender cómo se implementó lint.md.j2
+    - Cuando modifiques o extiendas el template de lint
+    - Cuando trabajes con templates de comandos slash en general y necesites referencia
+    - Cuando trabajes en features que requieran conditional rendering de comandos
