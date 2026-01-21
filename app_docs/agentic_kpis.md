@@ -6,15 +6,15 @@ Performance metrics for the AI Developer Workflow (ADW) system.
 
 Summary metrics across all ADW runs.
 
-| Metric            | Value          | Last Updated             |
-| ----------------- | -------------- | ------------------------ |
-| Current Streak    | 21             | Wed Jan 21 09:32:41 2026 |
-| Longest Streak    | 21             | Wed Jan 21 09:32:41 2026 |
-| Total Plan Size   | 4026 lines     | Wed Jan 21 09:32:41 2026 |
-| Largest Plan Size | 421 lines      | Wed Jan 21 09:32:41 2026 |
-| Total Diff Size   | 15976 lines    | Wed Jan 21 09:32:41 2026 |
-| Largest Diff Size | 1323 lines     | Wed Jan 21 09:32:41 2026 |
-| Average Presence  | 1.00           | Wed Jan 21 09:32:41 2026 |
+| Metric            | Value          | Last Updated         |
+| ----------------- | -------------- | -------------------- |
+| Current Streak    | 22             | Wed Jan 21 09:46:00 2026 |
+| Longest Streak    | 22             | Wed Jan 21 09:46:00 2026 |
+| Total Plan Size   | 4215 lines     | Wed Jan 21 09:46:00 2026 |
+| Largest Plan Size | 421 lines      | Wed Jan 21 09:46:00 2026 |
+| Total Diff Size   | 15980 lines    | Wed Jan 21 09:46:00 2026 |
+| Largest Diff Size | 1323 lines     | Wed Jan 21 09:46:00 2026 |
+| Average Presence  | 1.00           | Wed Jan 21 09:46:00 2026 |
 
 ## ADW KPIs
 
@@ -43,3 +43,4 @@ Detailed metrics for individual ADW workflow runs.
 | Wed Jan 21 2026  | 16866919 | 49           | /chore      | 1        | 103               | 484/113/12                      | Wed Jan 21 09:11:01 2026 | -       |
 | Wed Jan 21 2026  | e2c9e980 | 51           | /chore      | 1        | 72                | 246/2/6                         | Wed Jan 21 09:21:23 2026 | -       |
 | Wed Jan 21 2026  | e43f8346 | 42           | /feature    | 1        | 115               | 193/2/5                         | Wed Jan 21 09:32:41 2026 | -       |
+| Wed Jan 21 2026  | 6a6da82b | 43           | /feature    | 1        | 189               | 2/2/2                           | Wed Jan 21 09:46:00 2026 | -       |
