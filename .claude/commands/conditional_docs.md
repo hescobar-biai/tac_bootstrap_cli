@@ -353,3 +353,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender cómo crear setups de test realistas (pyproject.toml, config.yml, settings.json)
     - Cuando implementes tests que verifican filesystem safety (dry-run no modifica archivos)
     - Cuando extiendas el test suite con edge cases o error scenarios
+
+- app_docs/feature-f3a4daef-wizard-tests.md
+  - Conditions:
+    - Cuando trabajes con tests del wizard en tests/test_wizard.py
+    - Cuando necesites entender cómo testear funciones interactivas con Rich
+    - Cuando implementes nuevos tests del wizard (select_from_enum, run_init_wizard, run_add_agentic_wizard)
+    - Cuando trabajes con mocking de Rich components (Console, Prompt, Confirm)
+    - Cuando necesites referencia sobre testing patterns para wizards interactivos
+    - Cuando uses fixtures para mockear user input y terminal output
+    - Cuando trabajes con pytest.raises para validar excepciones (SystemExit)
+    - Cuando necesites entender cómo simular side_effect para secuencias de prompts
+    - Cuando implementes tests de enum selection, filtering, o edge cases
+    - Cuando trabajes con tests de wizard cancellation o default value handling
