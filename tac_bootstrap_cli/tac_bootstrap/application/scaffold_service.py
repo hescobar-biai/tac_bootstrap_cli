@@ -301,6 +301,14 @@ class ScaffoldService:
             reason="MCP server configuration",
         )
 
+        # playwright-mcp-config.json
+        plan.add_file(
+            "playwright-mcp-config.json",
+            action=action,
+            template="config/playwright-mcp-config.json.j2",
+            reason="Playwright MCP browser configuration",
+        )
+
         # .gitignore - append if exists
         plan.add_file(
             ".gitignore",

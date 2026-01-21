@@ -364,3 +364,222 @@ class TestScaffoldServiceApplyPlan:
             assert isinstance(result.success, bool)
             assert isinstance(result.directories_created, int)
             assert isinstance(result.files_created, int)
+
+
+# ============================================================================
+# TEST ADW COMPLETENESS
+# ============================================================================
+
+
+class TestScaffoldServiceADWCompleteness:
+    """Tests to verify all ADW modules and workflows are included."""
+
+    def test_build_plan_includes_all_adw_modules(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """build_plan should include all 10 ADW modules."""
+        plan = service.build_plan(config)
+        file_paths = [f.path for f in plan.files]
+
+        expected_modules = [
+            "adws/adw_modules/__init__.py",
+            "adws/adw_modules/agent.py",
+            "adws/adw_modules/state.py",
+            "adws/adw_modules/git_ops.py",
+            "adws/adw_modules/workflow_ops.py",
+            "adws/adw_modules/data_types.py",
+            "adws/adw_modules/github.py",
+            "adws/adw_modules/utils.py",
+            "adws/adw_modules/worktree_ops.py",
+            "adws/adw_modules/r2_uploader.py",
+        ]
+
+        for module in expected_modules:
+            assert module in file_paths, f"Missing ADW module: {module}"
+
+    def test_build_plan_includes_all_adw_workflows(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """build_plan should include all 14 ADW workflows."""
+        plan = service.build_plan(config)
+        file_paths = [f.path for f in plan.files]
+
+        expected_workflows = [
+            # Core orchestration
+            "adws/adw_sdlc_iso.py",
+            "adws/adw_sdlc_zte_iso.py",
+            "adws/adw_patch_iso.py",
+            # Individual phases
+            "adws/adw_plan_iso.py",
+            "adws/adw_build_iso.py",
+            "adws/adw_test_iso.py",
+            "adws/adw_review_iso.py",
+            "adws/adw_document_iso.py",
+            "adws/adw_ship_iso.py",
+            # Compositional workflows
+            "adws/adw_plan_build_iso.py",
+            "adws/adw_plan_build_test_iso.py",
+            "adws/adw_plan_build_test_review_iso.py",
+            "adws/adw_plan_build_review_iso.py",
+            "adws/adw_plan_build_document_iso.py",
+        ]
+
+        for workflow in expected_workflows:
+            assert workflow in file_paths, f"Missing ADW workflow: {workflow}"
+
+    def test_build_plan_includes_adw_triggers(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """build_plan should include ADW triggers."""
+        plan = service.build_plan(config)
+        file_paths = [f.path for f in plan.files]
+
+        expected_triggers = [
+            "adws/adw_triggers/__init__.py",
+            "adws/adw_triggers/trigger_cron.py",
+        ]
+
+        for trigger in expected_triggers:
+            assert trigger in file_paths, f"Missing ADW trigger: {trigger}"
+
+    def test_build_plan_includes_playwright_config(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """build_plan should include playwright-mcp-config.json."""
+        plan = service.build_plan(config)
+        file_paths = [f.path for f in plan.files]
+
+        assert "playwright-mcp-config.json" in file_paths
+        assert ".mcp.json" in file_paths
+
+    def test_adw_workflows_are_executable(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """All ADW workflow files should be marked executable."""
+        plan = service.build_plan(config)
+
+        workflow_files = [
+            f for f in plan.files
+            if f.path.startswith("adws/adw_")
+            and f.path.endswith(".py")
+            and "/adw_modules/" not in f.path
+            and "/adw_triggers/" not in f.path
+        ]
+
+        assert len(workflow_files) >= 14, "Should have at least 14 workflow files"
+
+        for workflow in workflow_files:
+            assert workflow.executable, f"{workflow.path} should be executable"
+
+    def test_adw_trigger_cron_is_executable(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """trigger_cron.py should be marked executable."""
+        plan = service.build_plan(config)
+
+        trigger_file = next(
+            (f for f in plan.files if f.path == "adws/adw_triggers/trigger_cron.py"),
+            None
+        )
+
+        assert trigger_file is not None, "trigger_cron.py should exist"
+        assert trigger_file.executable, "trigger_cron.py should be executable"
+
+    def test_apply_plan_creates_all_adw_files(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """apply_plan should create all ADW files on disk."""
+        plan = service.build_plan(config)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result = service.apply_plan(plan, tmp_path, config)
+
+            assert result.success
+
+            # Verify modules exist
+            modules_dir = tmp_path / "adws" / "adw_modules"
+            assert modules_dir.is_dir()
+            assert (modules_dir / "__init__.py").is_file()
+            assert (modules_dir / "agent.py").is_file()
+            assert (modules_dir / "data_types.py").is_file()
+            assert (modules_dir / "github.py").is_file()
+
+            # Verify workflows exist
+            adws_dir = tmp_path / "adws"
+            assert (adws_dir / "adw_sdlc_iso.py").is_file()
+            assert (adws_dir / "adw_plan_iso.py").is_file()
+            assert (adws_dir / "adw_build_iso.py").is_file()
+            assert (adws_dir / "adw_ship_iso.py").is_file()
+
+            # Verify triggers exist
+            triggers_dir = tmp_path / "adws" / "adw_triggers"
+            assert triggers_dir.is_dir()
+            assert (triggers_dir / "trigger_cron.py").is_file()
+
+            # Verify playwright config
+            assert (tmp_path / "playwright-mcp-config.json").is_file()
+
+    def test_apply_plan_renders_adw_modules_correctly(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """ADW modules should render with valid Python content."""
+        plan = service.build_plan(config)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result = service.apply_plan(plan, tmp_path, config)
+
+            assert result.success
+
+            # Check data_types.py has expected content
+            data_types = tmp_path / "adws" / "adw_modules" / "data_types.py"
+            content = data_types.read_text()
+            assert "from dataclasses import" in content or "from pydantic import" in content
+            assert "class" in content  # Should have class definitions
+
+            # Check github.py has expected content
+            github_module = tmp_path / "adws" / "adw_modules" / "github.py"
+            content = github_module.read_text()
+            assert "def" in content  # Should have function definitions
+
+    def test_apply_plan_renders_workflows_correctly(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """ADW workflows should render with valid shebang and content."""
+        plan = service.build_plan(config)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result = service.apply_plan(plan, tmp_path, config)
+
+            assert result.success
+
+            # Check workflow has shebang
+            workflow = tmp_path / "adws" / "adw_sdlc_iso.py"
+            content = workflow.read_text()
+            assert content.startswith("#!/usr/bin/env")
+            assert "def main" in content
+
+    def test_apply_plan_renders_playwright_config_correctly(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """playwright-mcp-config.json should render with valid JSON."""
+        import json
+
+        plan = service.build_plan(config)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result = service.apply_plan(plan, tmp_path, config)
+
+            assert result.success
+
+            # Check playwright config is valid JSON
+            playwright_config = tmp_path / "playwright-mcp-config.json"
+            content = playwright_config.read_text()
+            parsed = json.loads(content)  # Should not raise
+
+            assert "browser" in parsed
+            assert parsed["browser"]["browserName"] == "chromium"
+            assert "contextOptions" in parsed["browser"]
