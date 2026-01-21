@@ -267,7 +267,6 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes en mejoras de documentación o user guides
     - Cuando necesites ejemplo de cómo documentar features del CLI
 
-<<<<<<< HEAD
 - app_docs/feature-42-adw-63d027f6-lint-template.md
   - Conditions:
     - Cuando trabajes con el template de comando /lint
@@ -275,7 +274,7 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando modifiques o extiendas el template de lint
     - Cuando trabajes con templates de comandos slash en general y necesites referencia
     - Cuando trabajes en features que requieran conditional rendering de comandos
-=======
+
 - app_docs/feature-073aa60c-prepare-app-template.md
   - Conditions:
     - Cuando trabajes con el template prepare_app.md.j2
@@ -286,4 +285,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites referencia sobre preparación framework-specific (migraciones Django, builds Next.js)
     - Cuando trabajes con templates de comandos slash parametricos
     - Cuando necesites entender diseño idempotente en templates de comandos
->>>>>>> feature-issue-43-adw-073aa60c-create-prepare-app-template
+
+- app_docs/feature-16866919-makefile-development-commands.md
+  - Conditions:
+    - Cuando trabajes con el Makefile de desarrollo del CLI
+    - Cuando necesites entender los comandos make disponibles (install, lint, test, build, clean)
+    - Cuando agregues nuevos comandos de desarrollo al Makefile
+    - Cuando necesites referencia sobre comandos de testing (test, test-v, test-cov, test-watch)
+    - Cuando trabajes con configuración de desarrollo workflow
+    - Cuando necesites entender cómo usar make para operaciones CLI comunes
+    - Cuando modifiques comandos de linting, formatting o type checking
+    - Cuando trabajes con comandos de build o clean
