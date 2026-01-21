@@ -436,3 +436,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando debugees problemas de file generation en add-agentic
     - Cuando necesites entender el comportamiento antes/después del fix (1 archivo vs 45+)
     - Cuando trabajes con issues relacionados a #70 o #72
+
+- app_docs/feature-1a250086-update-unit-tests-add-agentic.md
+  - Conditions:
+    - Cuando trabajes con tests unitarios de ScaffoldService para el escenario add-agentic
+    - Cuando necesites entender cómo verificar que existing_repo=True usa FileAction.CREATE
+    - Cuando trabajes con tests de no-sobrescritura de archivos existentes
+    - Cuando modifiques o extiendas test_apply_plan_create_does_not_overwrite_existing
+    - Cuando necesites entender la cobertura de tests para el workflow add-agentic
+    - Cuando trabajes con verificación de .claude/ files en tests de build_plan
+    - Cuando debugues comportamiento de FileAction.CREATE en apply_plan
+    - Cuando trabajes en issues relacionados con testing de existing repos (issue #74)
