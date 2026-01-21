@@ -49,11 +49,13 @@ Si los cambios son en `tac_bootstrap_cli/`:
 
 ## Report
 
+Después de completar la validación, generar DOS outputs:
+
+### 1. JSON Report (compatible con versión anterior)
+
 - IMPORTANTE: Retornar resultados exclusivamente como JSON array.
 - `success` debe ser `true` si NO hay issues BLOCKING
 - `success` debe ser `false` SOLO si hay issues BLOCKING
-
-### Output Structure
 
 ```json
 {
@@ -76,3 +78,74 @@ Si los cambios son en `tac_bootstrap_cli/`:
     ]
 }
 ```
+
+### 2. Validation Checklist (NUEVO)
+
+Generar un archivo markdown de checklist de validación y guardarlo junto al archivo spec.
+
+**Instrucciones para Generar el Checklist:**
+
+1. Parsear el archivo spec para extraer:
+   - Nombre/título del feature desde el primer encabezado
+   - Todos los ítems de la sección `## Acceptance Criteria` (líneas que empiezan con `- [ ]`)
+   - Todos los comandos de la sección `## Validation Commands`
+   - Nombre del branch git actual
+   - Fecha actual
+
+2. Mapear `validation_results` a ítems del checklist con estados apropiados:
+   - `passed` → `- [x] <nombre del check> - PASSED`
+   - `failed` → `- [ ] <nombre del check> - FAILED`
+
+3. Generar checklist markdown en este formato exacto:
+
+```markdown
+# Validation Checklist: <Nombre del Feature>
+
+**Spec:** `<ruta_del_archivo_spec>`
+**Branch:** `<branch_actual>`
+**Review ID:** `<adw_id>`
+**Date:** `<fecha_actual>`
+
+## Automated Technical Validations
+
+- [x] Syntax and type checking - <PASSED|FAILED>
+- [x] Linting - <PASSED|FAILED>
+- [x] Unit tests - <PASSED|FAILED>
+- [x] Application smoke test - <PASSED|FAILED>
+
+## Acceptance Criteria
+
+<!-- Extraído de la sección "## Acceptance Criteria" del spec -->
+<copiar todas las líneas que empiezan con "- [ ]" de la sección Acceptance Criteria del spec>
+
+## Validation Commands Executed
+
+```bash
+<copiar todos los comandos de la sección "## Validation Commands" del spec>
+```
+
+## Review Summary
+
+<review_summary del output JSON>
+
+## Review Issues
+
+<formatear todos los issues del array review_issues con su severidad>
+
+---
+*Generado por el comando `/review` - TAC Bootstrap CLI*
+```
+
+4. Guardar el checklist en:
+   - Ruta del archivo: `<directorio_del_spec>/<nombre_base_del_spec>-checklist.md`
+   - Ejemplo: si el spec es `specs/issue-64-adw-xyz-feature.md`, guardar en `specs/issue-64-adw-xyz-feature-checklist.md`
+
+5. Reportar al usuario:
+   - "Validation checklist guardado en: `<ruta_del_archivo_checklist>`"
+   - "Puedes copiar este checklist en comentarios de GitHub PR"
+
+**Casos Edge:**
+- Si el spec no tiene sección "## Acceptance Criteria", usar lista vacía o notar "No se encontraron criterios de aceptación en el spec"
+- Si falta la sección de comandos de validación, notar "No se especificaron comandos de validación"
+- Asegurar escapado apropiado de markdown para caracteres especiales en el texto de criterios
+- Preservar el formato exacto de los criterios de aceptación del spec

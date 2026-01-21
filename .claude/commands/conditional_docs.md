@@ -378,3 +378,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender el fix del template context en scaffold_service.py
     - Cuando trabajes con validación de permisos ejecutables en scripts generados
     - Cuando necesites referencia sobre tests de integración que usan tempfile
+
+- app_docs/feature-81e73873-review-validation-checklist.md
+  - Conditions:
+    - Cuando trabajes con el template review.md.j2 o el comando /review
+    - Cuando necesites entender cómo funciona la generación de validation checklists
+    - Cuando modifiques o extiendas la funcionalidad de review con checklists
+    - Cuando trabajes con parsing de spec files para extraer acceptance criteria
+    - Cuando necesites entender el mapeo de validation_results a checklist items
+    - Cuando trabajes con formato de checklists compatible con GitHub markdown
+    - Cuando implementes features que generen outputs duales (JSON + markdown)
+    - Cuando necesites referencia sobre edge case handling en parsing de specs
+    - Cuando trabajes con templates de comandos que leen y procesan archivos markdown
