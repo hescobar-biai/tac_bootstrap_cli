@@ -36,14 +36,48 @@ Prepare the {{ config.project.name }} development environment for tests or revie
 {% endif %}
    ```
 
-2. **Verify application works**
+{% if config.project.framework and config.project.framework.value == "django" %}
+2. **Run migrations**
+   ```bash
+{% if config.project.package_manager.value in ["uv", "poetry", "pipenv"] %}
+   {{ config.project.package_manager.value }} run python manage.py migrate
+{% else %}
+   python manage.py migrate
+{% endif %}
+   ```
+{% endif %}
+
+{% if config.commands.build %}
+{% if config.project.framework and config.project.framework.value == "django" %}
+3. **Build Application**
+{% else %}
+2. **Build Application**
+{% endif %}
+   ```bash
+   {{ config.commands.build }}
+   ```
+{% endif %}
+
+{% if config.project.framework and config.project.framework.value == "django" %}
+4. **Validate Application Can Start**
+{% elif config.commands.build %}
+3. **Validate Application Can Start**
+{% else %}
+2. **Validate Application Can Start**
+{% endif %}
    ```bash
 {% if config.commands.start %}
    {{ config.commands.start }} --help
 {% endif %}
    ```
 
+{% if config.project.framework and config.project.framework.value == "django" %}
+5. **Run quick tests**
+{% elif config.commands.build %}
+4. **Run quick tests**
+{% else %}
 3. **Run quick tests**
+{% endif %}
    ```bash
 {% if config.commands.test %}
    {{ config.commands.test }} -x --tb=short
@@ -59,6 +93,16 @@ Prepare the {{ config.project.name }} development environment for tests or revie
 
 2. **Suggest next step**
    - Follow setup instructions in {{ config.paths.specs_dir }}/ to create the application
+
+## Report
+
+After running the above steps, report:
+
+1. **Dependencies status**: All dependencies synchronized successfully
+2. **{% if config.project.framework and config.project.framework.value == "django" %}Migrations status{% endif %}**: {% if config.project.framework and config.project.framework.value == "django" %}All migrations applied successfully{% endif %}
+3. **{% if config.commands.build %}Build status{% endif %}**: {% if config.commands.build %}Application built successfully{% endif %}
+4. **Application validation**: Application can start (verified with --help)
+5. **Test status**: Quick tests passed
 
 ## Notes
 
