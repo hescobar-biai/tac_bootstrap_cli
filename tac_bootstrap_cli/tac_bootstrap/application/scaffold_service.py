@@ -140,6 +140,21 @@ class ScaffoldService:
             "prepare_app",
             "install",
             "track_agentic_kpis",
+            # ADW workflow commands
+            "classify_adw",
+            "classify_issue",
+            "cleanup_worktrees",
+            "generate_branch_name",
+            "install_worktree",
+            # Test resolution commands
+            "resolve_failed_test",
+            "resolve_failed_e2e_test",
+            "test_e2e",
+            # Utility commands
+            "tools",
+            "in_loop_review",
+            "github_check",
+            "conditional_docs",
         ]
 
         for cmd in commands:
@@ -155,6 +170,10 @@ class ScaffoldService:
             ("pre_tool_use.py", "Pre-execution validation"),
             ("post_tool_use.py", "Post-execution logging"),
             ("stop.py", "Session cleanup"),
+            ("notification.py", "Notification logging"),
+            ("pre_compact.py", "Pre-compact logging"),
+            ("subagent_stop.py", "Subagent stop handler"),
+            ("user_prompt_submit.py", "User prompt validation and logging"),
         ]
 
         for hook, reason in hooks:

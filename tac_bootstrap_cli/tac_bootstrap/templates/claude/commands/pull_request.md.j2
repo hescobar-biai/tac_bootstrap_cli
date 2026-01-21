@@ -1,46 +1,67 @@
-# Pull Request
+# Create Pull Request
 
-Create a GitHub pull request.
+Based on the `Instructions` below, take the `Variables` follow the `Run` section to create a pull request. Then follow the `Report` section to report the results of your work.
 
 ## Variables
-- $ARGUMENTS: Optional PR title/description
+
+branch_name: $ARGUMENT
+issue: $ARGUMENT
+plan_file: $ARGUMENT
+adw_id: $ARGUMENT
 
 ## Instructions
 
-1. **Ensure Branch is Ready**
-   - Verify all commits are made
-   - Ensure tests pass
-   - Check that branch is pushed to remote
+- Generate a pull request title in the format: `<issue_type>: #<issue_number> - <issue_title>`
+- The PR body should include:
+  - A summary section with the issue context
+  - Link to the implementation `plan_file` if it exists
+  - Reference to the issue (Closes #<issue_number>)
+  - ADW tracking ID
+  - A checklist of what was done
+  - A summary of key changes made
+- Extract issue number, type, and title from the issue JSON
+- Examples of PR titles:
+  - `feat: #123 - Add user authentication`
+  - `bug: #456 - Fix login validation error`
+  - `chore: #789 - Update dependencies`
+  - `test: #1011 - Test xyz`
+- Don't mention Claude Code in the PR body - let the author get credit for this.
 
-2. **Gather Context**
-   - Review commit history on this branch
-   - Identify the main changes
-   - List any related issues
+## Run
 
-3. **Create PR**
-   Use GitHub CLI or provide instructions:
-   ```bash
-   gh pr create --title "Title" --body "Description"
-   ```
+1. Run `git diff origin/main...HEAD --stat` to see a summary of changed files
+2. Run `git log origin/main..HEAD --oneline` to see the commits that will be included
+3. Run `git diff origin/main...HEAD --name-only` to get a list of changed files
+4. Run `git push -u origin <branch_name>` to push the branch
+5. Set GH_TOKEN environment variable from GITHUB_PAT if available, then run `gh pr create --title "<pr_title>" --body "<pr_body>" --base main` to create the PR
+6. Capture the PR URL from the output
 
-4. **PR Description Format**
-   ```markdown
-   ## Summary
-   [Brief description of changes]
+## PR Body Format
 
-   ## Changes
-   - Change 1
-   - Change 2
+```markdown
+## Summary
+<2-3 sentences describing the change>
 
-   ## Testing
-   - [ ] Tests pass
-   - [ ] Manual testing completed
+## Implementation
+- Plan file: `<plan_file>`
+- ADW ID: `<adw_id>`
 
-   ## Related Issues
-   Closes #123
-   ```
+## Changes
+<list key changes based on git diff>
+
+## Testing
+- [ ] Tests pass: `{{ config.commands.test }}`
+{% if config.commands.lint %}
+- [ ] Lint passes: `{{ config.commands.lint }}`
+{% endif %}
+{% if config.commands.build %}
+- [ ] Build succeeds: `{{ config.commands.build }}`
+{% endif %}
+
+## Related Issues
+Closes #<issue_number>
+```
 
 ## Report
-- PR created: yes/no
-- PR URL: [url]
-- Title: [title]
+
+Return ONLY the PR URL that was created (no other text)

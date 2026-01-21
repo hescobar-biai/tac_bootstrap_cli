@@ -1,52 +1,83 @@
 # Review
 
-Review implementation against the plan/spec.
+Review work done against a specification file ({{ config.paths.specs_dir }}/*.md) to ensure the implementation meets requirements.
 
 ## Variables
-- $1: Path to the plan/spec file
+
+adw_id: $ARGUMENT
+spec_file: $ARGUMENT
+agent_name: $ARGUMENT if provided, otherwise use 'review_agent'
+review_image_dir: `<absolute path to codebase>/agents/<adw_id>/<agent_name>/review_img/`
 
 ## Instructions
 
-1. **Load the Spec**
-   Read the plan file from $1
+- Verify current branch with `git branch` to understand context
+- Run `git diff origin/main` to see changes made in current branch
+- Find spec file by searching {{ config.paths.specs_dir }}/*.md that matches the branch
+- Read the spec file to understand requirements
 
-2. **Verify Completion**
-   For each item in the plan:
-   - Check if implemented correctly
-   - Verify tests exist
-   - Note any deviations
+### Validation Steps
 
-3. **Run Validation**
-   - Tests: `{{ config.commands.test }}`
+1. **Verify syntax and types**
+{% if config.commands.typecheck %}
+   ```bash
+   {{ config.commands.typecheck }}
+   ```
+{% endif %}
+
+2. **Verify linting**
 {% if config.commands.lint %}
-   - Lint: `{{ config.commands.lint }}`
+   ```bash
+   {{ config.commands.lint }}
+   ```
 {% endif %}
-{% if config.commands.build %}
-   - Build: `{{ config.commands.build }}`
+
+3. **Run tests**
+{% if config.commands.test %}
+   ```bash
+   {{ config.commands.test }}
+   ```
 {% endif %}
 
-4. **Check Quality**
-   - Code follows {{ config.project.architecture.value }} patterns
-   - No hardcoded values
-   - Error handling present
-   - No security issues
+4. **Verify application works**
+{% if config.commands.start %}
+   ```bash
+   {{ config.commands.start }} --help
+   ```
+{% endif %}
 
-5. **Generate Report**
+### Issue Severity
 
-## Report Format
-```markdown
-# Review: [Plan Name]
+- `skippable` - Does not block release but is a problem
+- `tech_debt` - Does not block release but will create technical debt
+- `blocker` - Blocks release, must be resolved immediately
 
-## Checklist
-- [ ] All tasks from plan completed
-- [ ] Tests pass
-- [ ] Lint passes
-- [ ] Build succeeds
-- [ ] Code quality acceptable
+## Report
 
-## Issues Found
-- (list any issues)
+- IMPORTANT: Return results exclusively as JSON array.
+- `success` must be `true` if there are NO BLOCKING issues
+- `success` must be `false` ONLY if there are BLOCKING issues
 
-## Verdict
-- APPROVED / NEEDS_CHANGES
+### Output Structure
+
+```json
+{
+    "success": "boolean - true if no BLOCKING issues",
+    "review_summary": "string - 2-4 sentences describing what was built and if it meets the spec",
+    "validation_results": {
+        "syntax_check": "passed|failed",
+        "type_check": "passed|failed",
+        "linting": "passed|failed",
+        "tests": "passed|failed",
+        "app_smoke": "passed|failed"
+    },
+    "review_issues": [
+        {
+            "review_issue_number": "number",
+            "issue_description": "string",
+            "issue_resolution": "string",
+            "issue_severity": "skippable|tech_debt|blocker"
+        }
+    ]
+}
 ```

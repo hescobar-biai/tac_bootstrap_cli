@@ -1,38 +1,75 @@
 # Prime
 
-Prepare the agent with project context.
+Prepare context for {{ config.project.name }}.
 
-## Variables
-- $ARGUMENTS: Optional focus area
+## Run
+```bash
+git ls-files
+```
 
-## Instructions
+## Read
+- README.md
+- CLAUDE.md
+- config.yml
+{% if config.paths.adws_dir %}
+- {{ config.paths.adws_dir }}/README.md
+{% endif %}
 
-1. Read and understand the project structure:
-   - Project: {{ config.project.name }}
-   - Language: {{ config.project.language.value }}
-   - Framework: {{ config.project.framework.value if config.project.framework else 'none' }}
-   - Architecture: {{ config.project.architecture.value }}
+## Read Conditional
+Use `.claude/commands/conditional_docs.md` to determine additional documentation.
 
-2. Key directories:
-   - App code: `{{ config.paths.app_root }}/`
-   - Specs: `{{ config.paths.specs_dir }}/`
-   - ADWs: `{{ config.paths.adws_dir }}/`
-   - Scripts: `{{ config.paths.scripts_dir }}/`
+## Understand
 
-3. Available commands:
-   - Start: `{{ config.commands.start }}`
-   - Test: `{{ config.commands.test }}`
+### Project: {{ config.project.name }}
+- **Language**: {{ config.project.language.value }}
+{% if config.project.framework %}
+- **Framework**: {{ config.project.framework.value }}
+{% endif %}
+- **Architecture**: {{ config.project.architecture.value }}
+- **Package Manager**: {{ config.project.package_manager.value }}
+
+### Main Structure
+```
+{{ config.project.name }}/
+├── .claude/commands/       # Slash commands
+├── .claude/hooks/          # Automation hooks
+{% if config.paths.adws_dir %}
+├── {{ config.paths.adws_dir }}/                   # AI Developer Workflows
+{% endif %}
+{% if config.paths.scripts_dir %}
+├── {{ config.paths.scripts_dir }}/                # Utility scripts
+{% endif %}
+├── {{ config.paths.specs_dir }}/                  # Specifications
+├── config.yml              # Project configuration
+{% if config.paths.app_root %}
+└── {{ config.paths.app_root }}/              # Application source code
+{% endif %}
+```
+
+### Development Commands
+```bash
+# Available commands
+{% if config.commands.start %}
+{{ config.commands.start }}           # Start application
+{% endif %}
+{% if config.commands.test %}
+{{ config.commands.test }}            # Run tests
+{% endif %}
 {% if config.commands.lint %}
-   - Lint: `{{ config.commands.lint }}`
+{{ config.commands.lint }}            # Linting
 {% endif %}
 {% if config.commands.build %}
-   - Build: `{{ config.commands.build }}`
+{{ config.commands.build }}           # Build
 {% endif %}
 
-4. Rules:
-   - Never modify files in: {{ config.agentic.safety.forbidden_paths | join(', ') }}
-   - Always run tests before completing work
-   - Follow {{ config.project.architecture.value }} architecture patterns
+{% if config.paths.adws_dir %}
+# ADW Workflows
+uv run {{ config.paths.adws_dir }}/adw_sdlc_iso.py --issue <num>
+{% endif %}
+```
 
 ## Report
-Confirm you understand the project context and are ready to work.
+- Summary of {{ config.project.name }}
+- Current development state
+- Next task to implement
+- Key files for current task

@@ -1,38 +1,82 @@
 # Health Check
 
-Validate the project setup and agentic layer.
+Verify the development environment state for {{ config.project.name }}.
+
+## Variables
+
+TEST_COMMAND_TIMEOUT: 2 minutes
 
 ## Instructions
 
-1. **Check Structure**
-   Verify these directories exist:
-   - `.claude/commands/`
-   - `{{ config.paths.adws_dir }}/`
-   - `{{ config.paths.specs_dir }}/`
-   - `{{ config.paths.scripts_dir }}/`
+Execute development environment verifications for {{ config.project.name }}.
 
-2. **Check Configuration**
-   - `.claude/settings.json` is valid JSON
-   - `config.yml` exists and is valid
+{% if config.paths.app_root %}
+### If {{ config.paths.app_root }}/ exists:
 
-3. **Check Commands**
-   Verify these work:
-   - Start: `{{ config.commands.start }}`
-   - Test: `{{ config.commands.test }}`
+1. **Verify application structure**
+   - Command: `ls -la {{ config.paths.app_root }}/`
+   - Must exist: source files, configuration
 
-4. **Check Git**
-   - Is a git repository
-   - Has remote configured (optional)
+2. **Verify dependencies installed**
+{% if config.project.package_manager.value == "uv" %}
+   - Command: `cd {{ config.paths.app_root }} && uv sync --dry-run`
+{% elif config.project.package_manager.value == "poetry" %}
+   - Command: `cd {{ config.paths.app_root }} && poetry check`
+{% elif config.project.package_manager.value == "npm" %}
+   - Command: `cd {{ config.paths.app_root }} && npm ls --depth=0`
+{% elif config.project.package_manager.value == "pnpm" %}
+   - Command: `cd {{ config.paths.app_root }} && pnpm ls --depth=0`
+{% elif config.project.package_manager.value == "yarn" %}
+   - Command: `cd {{ config.paths.app_root }} && yarn list --depth=0`
+{% elif config.project.package_manager.value == "bun" %}
+   - Command: `cd {{ config.paths.app_root }} && bun pm ls`
+{% endif %}
+   - If missing dependencies, report
 
-## Report Format
-```
-Health Check Results
-====================
-Structure:    [PASS/FAIL]
-Config:       [PASS/FAIL]
-Commands:     [PASS/FAIL]
-Git:          [PASS/FAIL]
+3. **Verify application works**
+{% if config.commands.start %}
+   - Command: `{{ config.commands.start }} --help`
+{% endif %}
+   - Must show help or respond
 
-Issues:
-- (list any issues found)
+4. **Verify syntax**
+{% if config.project.language.value == "python" %}
+   - Command: `cd {{ config.paths.app_root }} && {{ config.project.package_manager.value }} run python -m py_compile **/*.py`
+{% elif config.project.language.value == "typescript" %}
+   - Command: `cd {{ config.paths.app_root }} && npx tsc --noEmit`
+{% endif %}
+   - No syntax errors
+
+5. **Verify config.yml**
+   - Read config.yml and validate it's valid YAML
+   - Verify required fields: project.name, project.language
+{% endif %}
+
+### If {{ config.paths.app_root }}/ does NOT exist:
+
+1. **Verify base configuration files**
+   - Command: `ls config.yml CLAUDE.md`
+   - These files must exist
+
+2. **Inform state**
+   - The application has not been created yet
+   - Next step: Follow setup instructions in {{ config.paths.specs_dir }}/
+
+## Report
+
+Report results as JSON:
+
+```json
+{
+  "status": "healthy|warning|error",
+  "app_exists": boolean,
+  "checks": [
+    {
+      "name": "string",
+      "passed": boolean,
+      "message": "string"
+    }
+  ],
+  "next_steps": ["string"]
+}
 ```

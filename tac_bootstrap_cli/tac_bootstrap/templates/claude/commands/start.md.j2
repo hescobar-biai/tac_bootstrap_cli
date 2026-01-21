@@ -1,18 +1,77 @@
 # Start
 
-Start the application.
+Start {{ config.project.name }} in development mode.
 
-## Instructions
+## Variables
+{% if config.project.framework.value in ['django', 'flask', 'fastapi', 'express', 'nextjs'] %}
+- PORT: Check config or use default port
+{% else %}
+- PORT: Not applicable (CLI or library)
+{% endif %}
 
-1. Ensure dependencies are installed
-2. Run the start command:
+## Check
+Verify application exists:
+```bash
+{% if config.paths.app_root %}
+ls {{ config.paths.app_root }}/
+{% else %}
+ls .
+{% endif %}
+```
+
+## Workflow
+
+### If application exists:
+
+1. Verify dependencies:
    ```bash
-   {{ config.commands.start }}
+{% if config.project.package_manager.value == "uv" %}
+   cd {{ config.paths.app_root }} && uv sync
+{% elif config.project.package_manager.value == "poetry" %}
+   cd {{ config.paths.app_root }} && poetry install
+{% elif config.project.package_manager.value == "npm" %}
+   cd {{ config.paths.app_root }} && npm install
+{% elif config.project.package_manager.value == "pnpm" %}
+   cd {{ config.paths.app_root }} && pnpm install
+{% elif config.project.package_manager.value == "yarn" %}
+   cd {{ config.paths.app_root }} && yarn install
+{% elif config.project.package_manager.value == "bun" %}
+   cd {{ config.paths.app_root }} && bun install
+{% elif config.project.package_manager.value == "cargo" %}
+   cd {{ config.paths.app_root }} && cargo build
+{% elif config.project.package_manager.value == "go" %}
+   cd {{ config.paths.app_root }} && go mod download
+{% endif %}
    ```
-3. Verify the application is running
-4. Report the URL/port if applicable
+
+2. Start application:
+   ```bash
+{% if config.commands.start %}
+   {{ config.commands.start }}
+{% else %}
+   # No start command configured
+{% endif %}
+   ```
+
+3. Verify running:
+{% if config.commands.start %}
+   - Check for successful startup messages
+   - Verify no errors in output
+{% endif %}
+
+### If application does NOT exist:
+
+1. Inform user that the application has not been created yet
+2. Show instructions:
+   ```
+   The application for {{ config.project.name }} does not exist yet.
+
+   To create it, check the specs directory for setup instructions:
+   1. Read {{ config.paths.specs_dir }}/
+   2. Follow the setup guide
+   ```
 
 ## Report
-- Status: running/failed
-- URL: (if applicable)
-- Notes: any issues encountered
+- Application state (running/pending)
+- Available commands (if running)
+- Next steps

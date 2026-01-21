@@ -1,127 +1,67 @@
 # Prepare Application
 
-Prepare the application environment for execution by verifying dependencies, configuring environment, and validating the setup.
+Prepare the {{ config.project.name }} development environment for tests or reviews.
 
 ## Instructions
 
-### 1. Install Dependencies
+{% if config.paths.app_root %}
+### If {{ config.paths.app_root }}/ exists:
 
+1. **Sync dependencies**
+   ```bash
 {% if config.project.package_manager.value == "uv" %}
-```bash
-cd {{ config.paths.app_root }} && uv sync
-```
+   cd {{ config.paths.app_root }} && uv sync
 {% elif config.project.package_manager.value == "poetry" %}
-```bash
-cd {{ config.paths.app_root }} && poetry install
-```
+   cd {{ config.paths.app_root }} && poetry install
 {% elif config.project.package_manager.value == "pip" %}
-```bash
-cd {{ config.paths.app_root }} && pip install -r requirements.txt
-```
+   cd {{ config.paths.app_root }} && pip install -r requirements.txt
 {% elif config.project.package_manager.value == "pipenv" %}
-```bash
-cd {{ config.paths.app_root }} && pipenv install
-```
+   cd {{ config.paths.app_root }} && pipenv install
 {% elif config.project.package_manager.value == "pnpm" %}
-```bash
-cd {{ config.paths.app_root }} && pnpm install
-```
+   cd {{ config.paths.app_root }} && pnpm install
 {% elif config.project.package_manager.value == "npm" %}
-```bash
-cd {{ config.paths.app_root }} && npm install
-```
+   cd {{ config.paths.app_root }} && npm install
 {% elif config.project.package_manager.value == "yarn" %}
-```bash
-cd {{ config.paths.app_root }} && yarn install
-```
+   cd {{ config.paths.app_root }} && yarn install
 {% elif config.project.package_manager.value == "bun" %}
-```bash
-cd {{ config.paths.app_root }} && bun install
-```
+   cd {{ config.paths.app_root }} && bun install
 {% elif config.project.package_manager.value == "go" %}
-```bash
-cd {{ config.paths.app_root }} && go mod download
-```
+   cd {{ config.paths.app_root }} && go mod download
 {% elif config.project.package_manager.value == "cargo" %}
-```bash
-cd {{ config.paths.app_root }} && cargo build
-```
+   cd {{ config.paths.app_root }} && cargo build
 {% elif config.project.package_manager.value == "maven" %}
-```bash
-cd {{ config.paths.app_root }} && mvn dependency:resolve
-```
+   cd {{ config.paths.app_root }} && mvn dependency:resolve
 {% elif config.project.package_manager.value == "gradle" %}
-```bash
-cd {{ config.paths.app_root }} && gradle build --refresh-dependencies
-```
+   cd {{ config.paths.app_root }} && gradle build --refresh-dependencies
 {% endif %}
+   ```
 
-### 2. Verify Environment Configuration
-
-Check for required environment files:
-```bash
-cd {{ config.paths.app_root }} && ls -la .env* 2>/dev/null || echo "No .env files found - may need configuration"
-```
-
-{% if config.project.framework.value in ["django", "flask", "fastapi"] %}
-### 3. Run Database Migrations
-
-{% if config.project.framework.value == "django" %}
-```bash
-cd {{ config.paths.app_root }} && {{ config.commands.start | replace('runserver', 'migrate') | replace('python -m app', 'python manage.py migrate') }}
-```
-{% elif config.project.framework.value in ["flask", "fastapi"] %}
-If using database migrations (Alembic), run:
-```bash
-cd {{ config.paths.app_root }} && alembic upgrade head
-```
+2. **Verify application works**
+   ```bash
+{% if config.commands.start %}
+   {{ config.commands.start }} --help
 {% endif %}
-{% endif %}
+   ```
 
-{% if config.commands.build %}
-### 4. Build the Application
-
-```bash
-cd {{ config.paths.app_root }} && {{ config.commands.build }}
-```
-{% endif %}
-
-### {{ 5 if config.commands.build else 4 }}. Validate Application Can Start
-
-Perform a quick validation that the application can start:
-```bash
-cd {{ config.paths.app_root }} && timeout 10s {{ config.commands.start }} || echo "Validation complete - check output for errors"
-```
-
-**Note:** This command will start the application and automatically stop after 10 seconds. Review the output to ensure no critical errors occurred during startup.
-
-### {{ 6 if config.commands.build else 5 }}. Run Quick Tests (Optional)
-
+3. **Run quick tests**
+   ```bash
 {% if config.commands.test %}
-Optionally run a quick test to verify everything is working:
-```bash
-cd {{ config.paths.app_root }} && {{ config.commands.test }} -x --tb=short
-```
-{% else %}
-No test command configured for this project.
+   {{ config.commands.test }} -x --tb=short
+{% endif %}
+   ```
 {% endif %}
 
-## Report
+### If {{ config.paths.app_root }}/ does NOT exist:
 
-- Dependencies: installed/failed
-- Environment: configured/missing files
-{% if config.project.framework.value in ["django", "flask", "fastapi"] %}
-- Migrations: applied/skipped/failed
-{% endif %}
-{% if config.commands.build %}
-- Build: success/failed
-{% endif %}
-- Application validation: passed/failed
-- Tests: passed/failed/skipped
-- Notes: any issues encountered
+1. **Inform state**
+   - The application has not been created yet
+   - Cannot prepare the development environment
+
+2. **Suggest next step**
+   - Follow setup instructions in {{ config.paths.specs_dir }}/ to create the application
 
 ## Notes
 
-- This command is idempotent - safe to run multiple times
-- If validation fails, review error messages before attempting fixes
-- For production deployment, additional steps may be required
+- This command prepares the environment for application development
+- For example app tests (if applicable), use scripts in `{{ config.paths.scripts_dir }}/`
+- Read documentation in {{ config.paths.specs_dir }}/ to understand current project state

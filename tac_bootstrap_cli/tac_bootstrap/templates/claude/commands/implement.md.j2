@@ -1,38 +1,32 @@
-# Implement
+# Implement the following plan
 
-Execute a plan file.
-
-## Variables
-- $1: Path to the plan file (e.g., `{{ config.paths.specs_dir }}/feature-auth.md`)
+Follow the `Instructions` to implement the `Plan` then `Report` the completed work.
 
 ## Instructions
 
-1. **Read the Plan**
-   - Load and parse the plan file from $1
-   - Understand all tasks and their order
-   - Note the definition of done
+- Read the plan, think hard about the plan and implement the plan.
+- Follow {{ config.project.architecture.value }} architecture patterns if applicable.
+- Run validation commands after implementation.
 
-2. **Execute Tasks**
-   For each task in the plan:
-   - Mark task as in-progress
-   - Implement the change
-   - Verify it works
-   - Mark task as complete
+## Plan
 
-3. **Validate**
-   - Run tests: `{{ config.commands.test }}`
+$ARGUMENTS
+
+## Validation
+
+After implementing, validate your work:
+
+{% if config.commands.test %}
+- `{{ config.commands.test }}` - Run tests
+{% endif %}
 {% if config.commands.lint %}
-   - Run linter: `{{ config.commands.lint }}`
+- `{{ config.commands.lint }}` - Run linter
 {% endif %}
 {% if config.commands.typecheck %}
-   - Run typecheck: `{{ config.commands.typecheck }}`
+- `{{ config.commands.typecheck }}` - Run type checker
 {% endif %}
 
-4. **Report Results**
-   Update the plan file with completion status
-
 ## Report
-- Plan: $1
-- Tasks completed: X/Y
-- Tests: pass/fail
-- Ready for review: yes/no
+
+- Summarize the work you've just done in a concise bullet point list.
+- Report the files and total lines changed with `git diff --stat`

@@ -1,0 +1,41 @@
+# In-Loop Review
+
+Quick checkout and review workflow for agent work validation.
+
+## Variables
+
+branch: $ARGUMENTS
+
+## Workflow
+
+IMPORTANT: If no branch is provided, stop execution and report that the branch argument is required.
+
+### Step 1: Pull and Checkout Branch
+- Run `git fetch origin` to get remote changes
+- Run `git checkout {branch}` to switch to target branch
+
+### Step 2: Prepare Environment
+
+**Install dependencies:**
+- Run `{{ config.commands.install }}` to sync dependencies
+
+**Verify application:**
+{% if config.commands.start %}
+- Run `{{ config.commands.start }} --help` or equivalent to verify app works
+{% endif %}
+
+### Step 3: Run Validation
+{% if config.commands.test %}
+- Run `{{ config.commands.test }}` to run tests
+{% endif %}
+{% if config.commands.lint %}
+- Run `{{ config.commands.lint }}` to verify linting
+{% endif %}
+
+### Step 4: Manual Review
+- The application is ready for manual review
+- The engineer can test commands directly
+
+## Report
+
+Report steps taken to prepare the environment for review.

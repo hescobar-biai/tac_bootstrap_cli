@@ -1,57 +1,118 @@
 # Bug Planning
 
-Plan a bug fix.
+Create a plan to resolve a bug in {{ config.project.name }} using the specified format.
 
 ## Variables
-- $ARGUMENTS: Bug description or issue reference
+issue_number: $1
+adw_id: $2
+issue_json: $3
 
 ## Instructions
 
-1. **Understand the Bug**
-   - Parse the bug description from $ARGUMENTS
-   - Identify expected vs actual behavior
-   - Determine reproduction steps if not provided
+- IMPORTANT: You are writing a plan to resolve a bug in {{ config.project.name }}.
+- The plan must be precise to fix the root cause and prevent regressions.
+- Create the plan in `{{ config.paths.specs_dir }}/` with filename: `issue-{issue_number}-adw-{adw_id}-bug_planner-{descriptive-name}.md`
+- Investigate the codebase to understand the bug, reproduce it, and create a fix plan.
+- IMPORTANT: Replace each <placeholder> in the format with real values.
+- Use the reasoning model: think carefully about the root cause.
+- IMPORTANT: Be surgical - solve the specific bug without deviating.
+- IMPORTANT: Minimum number of changes to resolve the bug.
+- Keep it simple.
+- If you need a new library, use `{{ config.commands.install }}` and report it in Notes.
 
-2. **Investigate**
-   - Find the relevant code
-   - Identify the root cause
-   - Check for related issues
+## Relevant Files
 
-3. **Plan the Fix**
-   - Determine the minimal fix
-   - Identify any side effects
-   - Plan regression tests
+Key files for {{ config.project.name }}:
 
-4. **Create the Plan**
-   Write a plan file to `{{ config.paths.specs_dir }}/`
+- `CLAUDE.md` - Agent guide
+- `config.yml` - Project configuration
+{% if config.paths.app_root %}
+- `{{ config.paths.app_root }}/` - Application source code
+{% endif %}
+
+Read `.claude/commands/conditional_docs.md` for additional documentation.
 
 ## Plan Format
-```markdown
-# Bug: [Title]
 
-## Description
-[What is broken]
+```md
+# Bug: <bug name>
 
-## Root Cause
-[Why it's broken]
+## Metadata
+issue_number: `{issue_number}`
+adw_id: `{adw_id}`
+issue_json: `{issue_json}`
 
-## Fix
-[How to fix it]
+## Bug Description
+<describe the bug in detail, including symptoms and expected vs actual behavior>
 
-## Files to Modify
-- `path/to/file.py` - [what changes]
+## Problem Statement
+<clearly define the specific problem to solve>
 
-## Test Cases
-- [ ] Test that reproduces the bug
-- [ ] Test for regression
+## Solution Statement
+<describe the proposed approach to fix the bug>
 
-## Definition of Done
-- [ ] Bug is fixed
-- [ ] Tests pass
-- [ ] No regression introduced
+## Steps to Reproduce
+<list exact steps to reproduce the bug>
+
+## Root Cause Analysis
+<analyze and explain the root cause of the bug>
+
+## Relevant Files
+Files to fix the bug:
+
+<list relevant files with description of why they are relevant>
+
+### New Files
+<list new files if required>
+
+## Step by Step Tasks
+IMPORTANT: Execute each step in order.
+
+### Task 1: <name>
+- <detail>
+
+### Task 2: <name>
+- <detail>
+
+<The last step should execute Validation Commands>
+
+## Validation Commands
+Run all commands to validate the fix with zero regressions:
+
+{% if config.commands.test %}
+- `{{ config.commands.test }}` - Run tests
+{% endif %}
+{% if config.commands.lint %}
+- `{{ config.commands.lint }}` - Linting
+{% endif %}
+{% if config.commands.typecheck %}
+- `{{ config.commands.typecheck }}` - Type check
+{% endif %}
+
+## Notes
+<additional notes or relevant context>
 ```
 
+## Bug
+Extract bug details from the `issue_json` variable (parse JSON and use title and body fields).
+
 ## Report
-- Plan file created: `{{ config.paths.specs_dir }}/bug-[name].md`
-- Root cause identified: yes/no
-- Ready for implementation: yes/no
+
+CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
+
+1. First, check if a plan file already exists in `{{ config.paths.specs_dir }}/` matching pattern: `issue-{issue_number}-adw-{adw_id}-*.md`
+2. If plan file EXISTS: Return ONLY the relative path, nothing else
+3. If plan file does NOT exist: Create it following the Plan Format, then return ONLY the path
+
+YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the path like:
+```
+{{ config.paths.specs_dir }}/issue-37-adw-e4dc9574-bug_planner-bug-name.md
+```
+
+DO NOT include:
+- Any explanation or commentary
+- Phrases like "Perfect!", "I found...", "The plan file is at..."
+- Markdown formatting around the path
+- Multiple lines
+
+ONLY output the bare path. This is machine-parsed.

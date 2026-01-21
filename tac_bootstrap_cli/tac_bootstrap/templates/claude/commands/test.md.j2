@@ -1,26 +1,156 @@
-# Test
+# Application Validation Test Suite
 
-Run the test suite.
+Run comprehensive tests for {{ config.project.name }}, returning results in JSON format.
+
+## Purpose
+
+Validate the application before making changes:
+- Detect syntax and type errors
+- Identify broken tests
+- Verify build works
+- Ensure code quality
 
 ## Variables
-- $ARGUMENTS: Optional test path or pattern
+
+TEST_COMMAND_TIMEOUT: 5 minutes
 
 ## Instructions
 
-1. Run tests:
-   ```bash
-   {{ config.commands.test }} $ARGUMENTS
-   ```
+- Execute each test in sequence
+- Capture result (passed/failed) and error messages
+- IMPORTANT: Return ONLY the JSON array with results
+- If a test passes, omit the error field
+- If a test fails, include error message
+- Execute all tests even if some fail
+- Command timeout: `TEST_COMMAND_TIMEOUT`
 
-2. If tests fail:
-   - Analyze the failure output
-   - Identify the root cause
-   - Do NOT attempt to fix unless explicitly asked
+## Test Execution Sequence
 
-3. Report results
+{% if config.paths.app_root %}
+**If {{ config.paths.app_root }}/ exists:**
+
+{% if config.project.language.value == "python" %}
+1. **Python Syntax Check**
+   - Command: `cd {{ config.paths.app_root }} && {{ config.project.package_manager.value }} run python -m py_compile **/*.py`
+   - test_name: "python_syntax_check"
+   - test_purpose: "Validate Python syntax by compiling source files"
+
+2. **Code Quality Check**
+{% if config.commands.lint %}
+   - Command: `{{ config.commands.lint }}`
+{% else %}
+   - Command: `cd {{ config.paths.app_root }} && {{ config.project.package_manager.value }} run ruff check .`
+{% endif %}
+   - test_name: "backend_linting"
+   - test_purpose: "Validate Python code quality"
+
+3. **Type Check**
+{% if config.commands.typecheck %}
+   - Command: `{{ config.commands.typecheck }}`
+{% else %}
+   - Command: `cd {{ config.paths.app_root }} && {{ config.project.package_manager.value }} run mypy . --ignore-missing-imports`
+{% endif %}
+   - test_name: "type_check"
+   - test_purpose: "Validate types with mypy"
+
+4. **Unit Tests**
+{% if config.commands.test %}
+   - Command: `{{ config.commands.test }}`
+{% else %}
+   - Command: `cd {{ config.paths.app_root }} && {{ config.project.package_manager.value }} run pytest tests/ -v --tb=short`
+{% endif %}
+   - test_name: "unit_tests"
+   - test_purpose: "Execute all unit tests"
+
+5. **Application Smoke Test**
+{% if config.commands.start %}
+   - Command: `{{ config.commands.start }} --help`
+{% endif %}
+   - test_name: "app_smoke_test"
+   - test_purpose: "Verify application starts correctly"
+{% endif %}
+
+{% if config.project.language.value in ["typescript", "javascript"] %}
+1. **Type Check**
+{% if config.commands.typecheck %}
+   - Command: `{{ config.commands.typecheck }}`
+{% else %}
+   - Command: `cd {{ config.paths.app_root }} && npx tsc --noEmit`
+{% endif %}
+   - test_name: "type_check"
+   - test_purpose: "Validate TypeScript types"
+
+2. **Linting**
+{% if config.commands.lint %}
+   - Command: `{{ config.commands.lint }}`
+{% else %}
+   - Command: `cd {{ config.paths.app_root }} && npx eslint .`
+{% endif %}
+   - test_name: "linting"
+   - test_purpose: "Validate code quality"
+
+3. **Unit Tests**
+{% if config.commands.test %}
+   - Command: `{{ config.commands.test }}`
+{% else %}
+   - Command: `cd {{ config.paths.app_root }} && npm test`
+{% endif %}
+   - test_name: "unit_tests"
+   - test_purpose: "Execute all unit tests"
+
+{% if config.commands.build %}
+4. **Build**
+   - Command: `{{ config.commands.build }}`
+   - test_name: "build"
+   - test_purpose: "Verify build succeeds"
+{% endif %}
+{% endif %}
+{% endif %}
+
+**If {{ config.paths.app_root }}/ does NOT exist:**
+
+1. **Structure Check**
+   - Command: `ls {{ config.paths.app_root }}/`
+   - test_name: "structure_check"
+   - test_purpose: "Verify application structure exists"
+   - Note: This test will fail indicating the application does not exist yet
 
 ## Report
-- Total tests: X
-- Passed: X
-- Failed: X
-- Failures: (list if any)
+
+- IMPORTANT: Return results as JSON array
+- Order with failed tests first
+- Include all tests in output
+
+### Output Structure
+
+```json
+[
+  {
+    "test_name": "string",
+    "passed": boolean,
+    "execution_command": "string",
+    "test_purpose": "string",
+    "error": "optional string"
+  }
+]
+```
+
+### Example Output
+
+```json
+[
+  {
+    "test_name": "unit_tests",
+    "passed": false,
+    "execution_command": "{{ config.commands.test }}",
+    "test_purpose": "Execute all unit tests",
+    "error": "AssertionError: Expected X but got Y"
+  },
+  {
+    "test_name": "python_syntax_check",
+    "passed": true,
+    "execution_command": "cd {{ config.paths.app_root }} && python -m py_compile **/*.py",
+    "test_purpose": "Validate Python syntax by compiling source files"
+  }
+]
+```

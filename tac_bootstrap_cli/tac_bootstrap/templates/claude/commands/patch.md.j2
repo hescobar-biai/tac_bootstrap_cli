@@ -1,34 +1,106 @@
-# Patch
+# Patch Plan
 
-Quick patch for urgent fixes.
+Create a **focused patch plan** to resolve a specific issue in {{ config.project.name }} based on the `review_change_request`.
 
 ## Variables
-- $ARGUMENTS: Issue number or description
+
+adw_id: $1
+review_change_request: $2
+spec_path: $3 if provided, otherwise leave blank
+agent_name: $4 if provided, otherwise use 'patch_agent'
+issue_screenshots: $5 (optional) - list of paths to screenshots separated by comma
 
 ## Instructions
 
-1. **Understand the Issue**
-   - Parse $ARGUMENTS for issue reference or description
-   - Identify the minimal fix needed
-   - Determine urgency and scope
+- IMPORTANT: You are creating a patch plan to fix a specific issue. Keep changes small and focused.
+- Read the original specification (spec) at `spec_path` if provided.
+- IMPORTANT: Use `review_change_request` to understand exactly what needs to be fixed.
+- If `issue_screenshots` are provided, examine them to understand the visual context.
+- Create the patch plan in `{{ config.paths.specs_dir }}/patch/` with filename: `patch-adw-{adw_id}-{descriptive-name}.md`
+- IMPORTANT: This is a PATCH - keep scope minimal. Only fix what is described in `review_change_request`.
+- Run `git diff --stat` to understand existing changes.
+- Think about the most efficient way to implement with minimal changes.
+- Base validation on the validation steps from `spec_path` if provided.
+- Replace each <placeholder> in the format with specific details.
 
-2. **Implement Quick Fix**
-   - Make minimal changes to fix the issue
-   - Avoid refactoring or improvements
-   - Focus on fixing the immediate problem
+## Relevant Files
 
-3. **Validate**
-   - Run tests: `{{ config.commands.test }}`
-   - Verify the fix works
-   - Check for obvious side effects
+Key files for {{ config.project.name }}:
 
-4. **Document**
-   - Add comment explaining the patch
-   - Reference issue number if applicable
-   - Note any technical debt created
+- `CLAUDE.md` - Agent guide
+- `config.yml` - Project configuration
+{% if config.paths.app_root %}
+- `{{ config.paths.app_root }}/` - Application source code
+{% endif %}
+
+Read `.claude/commands/conditional_docs.md` for additional documentation.
+
+## Plan Format
+
+```md
+# Patch: <concise patch title>
+
+## Metadata
+adw_id: `{adw_id}`
+review_change_request: `{review_change_request}`
+
+## Issue Summary
+**Original Spec:** <spec_path>
+**Issue:** <brief description of the issue based on `review_change_request`>
+**Solution:** <brief description of the approach based on `review_change_request`>
+
+## Files to Modify
+Files to modify to implement the patch:
+
+<list only the files that need changes - be specific and minimal>
+
+## Implementation Steps
+IMPORTANT: Execute each step in order.
+
+<list 2-5 focused steps. Each step should be a concrete action.>
+
+### Step 1: <specific action>
+- <implementation detail>
+- <implementation detail>
+
+### Step 2: <specific action>
+- <implementation detail>
+
+<continue as needed, but keep it minimal>
+
+## Validation
+Run commands to validate the patch with zero regressions:
+
+{% if config.commands.test %}
+- `{{ config.commands.test }}` - Run tests
+{% endif %}
+{% if config.commands.lint %}
+- `{{ config.commands.lint }}` - Linting
+{% endif %}
+
+## Patch Scope
+**Lines of code to change:** <estimate>
+**Risk level:** <low|medium|high>
+**Testing required:** <brief description>
+```
 
 ## Report
-- Issue fixed: yes/no
-- Files modified: (list)
-- Tests: pass/fail
-- Technical debt: (if any)
+
+CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
+
+1. First, check if a patch plan file already exists in `{{ config.paths.specs_dir }}/patch/` matching pattern: `patch-adw-{adw_id}-*.md`
+2. If plan file EXISTS: Return ONLY the relative path, nothing else
+3. If plan file does NOT exist: Create it following the Plan Format, then return ONLY the path
+
+YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the path like:
+```
+{{ config.paths.specs_dir }}/patch/patch-adw-e4dc9574-patch-name.md
+```
+
+DO NOT include:
+- Any explanation or commentary
+- Phrases like "Perfect!", "I found...", "The plan file is at..."
+- Markdown formatting around the path
+- Multiple lines
+
+ONLY output the bare path. This is machine-parsed.

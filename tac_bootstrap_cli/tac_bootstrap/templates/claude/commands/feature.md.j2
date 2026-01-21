@@ -1,62 +1,139 @@
 # Feature Planning
 
-Plan a new feature implementation.
+Create a plan to implement a new feature in {{ config.project.name }} following the specified format.
 
 ## Variables
-- $ARGUMENTS: Feature description or issue reference
+issue_number: $1
+adw_id: $2
+issue_json: $3
 
 ## Instructions
 
-1. **Understand the Request**
-   - Parse the feature description from $ARGUMENTS
-   - Identify acceptance criteria
-   - List any ambiguities to clarify
+- IMPORTANT: You are creating a plan to implement a new feature for {{ config.project.name }}.
+- The plan will be used to guide implementation with agentic coding.
+- Create the plan in `{{ config.paths.specs_dir }}/` with filename: `issue-{issue_number}-adw-{adw_id}-feature_planner-{descriptive-name}.md`
+- Investigate the codebase to understand existing patterns before planning.
+- IMPORTANT: Replace each <placeholder> in the format with real values.
+- Use the reasoning model: think carefully about requirements and approach.
+- Follow existing patterns and conventions in the project.
+- If you need a new library, use `{{ config.commands.install }}` and report it in Notes.
+- Keep it simple - don't use unnecessary decorators.
 
-2. **Research the Codebase**
-   - Find related existing code
-   - Identify files that need modification
-   - Note any patterns to follow
+## Relevant Files
 
-3. **Design the Solution**
-   - Break down into discrete tasks
-   - Identify dependencies between tasks
-   - Consider edge cases and error handling
+Key files for {{ config.project.name }}:
 
-4. **Create the Plan**
-   Write a plan file to `{{ config.paths.specs_dir }}/` with:
-   - Summary of the feature
-   - List of files to modify/create
-   - Step-by-step implementation tasks
-   - Test cases to add
-   - Definition of done
+- `CLAUDE.md` - Agent guide
+- `config.yml` - Project configuration
+{% if config.paths.app_root %}
+- `{{ config.paths.app_root }}/` - Application source code
+{% endif %}
+
+Read `.claude/commands/conditional_docs.md` for additional documentation.
 
 ## Plan Format
-```markdown
-# Feature: [Name]
 
-## Summary
-[1-2 sentence description]
+```md
+# Feature: <feature name>
 
-## Files to Modify
-- `path/to/file.py` - [what changes]
-- `path/to/new_file.py` - [create new]
+## Metadata
+issue_number: `{issue_number}`
+adw_id: `{adw_id}`
+issue_json: `{issue_json}`
 
-## Implementation Steps
-1. [ ] Step one
-2. [ ] Step two
-...
+## Feature Description
+<describe the feature in detail, its purpose and value>
 
-## Test Cases
-- [ ] Test case 1
-- [ ] Test case 2
+## User Story
+As a <user type>
+I want to <action/goal>
+So that <benefit/value>
 
-## Definition of Done
-- [ ] All tests pass
-- [ ] Code follows {{ config.project.architecture.value }} patterns
-- [ ] No linting errors
+## Problem Statement
+<clearly define the problem or opportunity this feature addresses>
+
+## Solution Statement
+<describe the proposed approach and how it solves the problem>
+
+## Relevant Files
+Files needed to implement the feature:
+
+<list relevant files with description of why they are relevant>
+
+### New Files
+<list new files to be created>
+
+## Implementation Plan
+
+### Phase 1: Foundation
+<foundational work before implementing the main feature>
+
+### Phase 2: Core Implementation
+<main feature implementation>
+
+### Phase 3: Integration
+<integration with existing functionality>
+
+## Step by Step Tasks
+IMPORTANT: Execute each step in order.
+
+### Task 1: <name>
+- <detail>
+- <detail>
+
+### Task 2: <name>
+- <detail>
+
+<The last step should execute Validation Commands>
+
+## Testing Strategy
+
+### Unit Tests
+<required unit tests>
+
+### Edge Cases
+<edge cases to test>
+
+## Acceptance Criteria
+<specific and measurable criteria to consider the feature complete>
+
+## Validation Commands
+Run all commands to validate with zero regressions:
+
+{% if config.commands.test %}
+- `{{ config.commands.test }}` - Run tests
+{% endif %}
+{% if config.commands.lint %}
+- `{{ config.commands.lint }}` - Linting
+{% endif %}
+{% if config.commands.typecheck %}
+- `{{ config.commands.typecheck }}` - Type check
+{% endif %}
+
+## Notes
+<additional notes, future considerations, or relevant context>
 ```
 
+## Feature
+Extract feature details from the `issue_json` variable (parse JSON and use title and body fields).
+
 ## Report
-- Plan file created: `{{ config.paths.specs_dir }}/feature-[name].md`
-- Ready for implementation: yes/no
-- Questions/blockers: (if any)
+
+CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
+
+1. First, check if a plan file already exists in `{{ config.paths.specs_dir }}/` matching pattern: `issue-{issue_number}-adw-{adw_id}-*.md`
+2. If plan file EXISTS: Return ONLY the relative path, nothing else
+3. If plan file does NOT exist: Create it following the Plan Format, then return ONLY the path
+
+YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the path like:
+```
+{{ config.paths.specs_dir }}/issue-37-adw-e4dc9574-feature_planner-feature-name.md
+```
+
+DO NOT include:
+- Any explanation or commentary
+- Phrases like "Perfect!", "I can see that...", "The plan file is at..."
+- Markdown formatting around the path
+- Multiple lines
+
+ONLY output the bare path. This is machine-parsed.

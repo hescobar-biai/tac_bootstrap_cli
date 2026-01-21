@@ -1,39 +1,97 @@
-# Document
+# Document Feature
 
-Generate documentation for recent changes.
+Generate markdown documentation for implemented features in {{ config.project.name }} by analyzing code changes and specifications.
 
 ## Variables
-- $ARGUMENTS: Feature/component to document
+
+adw_id: $1
+spec_path: $2 if provided, otherwise leave blank
+documentation_screenshots_dir: $3 if provided, otherwise leave blank
 
 ## Instructions
 
-1. **Identify What to Document**
-   - Parse $ARGUMENTS for the target
-   - Find related code and specs
+### 1. Analyze Changes
+- Run `git diff origin/main --stat` to see changed files
+- Run `git diff origin/main --name-only` for list of files
+- For significant changes (>50 lines), run `git diff origin/main <file>`
 
-2. **Generate Documentation**
-   Create/update docs in `app_docs/`:
-   - Overview of the feature
-   - Usage examples
-   - API reference (if applicable)
-   - Configuration options
+### 2. Read Specification (if provided)
+- If `spec_path` is provided, read to understand:
+  - Original requirements and objectives
+  - Expected functionality
+  - Success criteria
 
-3. **Documentation Format**
-   ```markdown
-   # [Feature Name]
+### 3. Generate Documentation
+- Create file in `{{ config.paths.app_docs_dir | default('app_docs') }}/` with name: `feature-{adw_id}-{descriptive-name}.md`
+- Follow the documentation format below
+- Focus on:
+  - What was built (based on git diff)
+  - How it works (technical implementation)
+  - How to use it (user perspective)
+  - Required configuration or setup
 
-   ## Overview
-   [What it does]
+### 4. Update Conditional Documentation
+- After creating the file, read `.claude/commands/conditional_docs.md`
+- Add entry for the new file with appropriate conditions
 
-   ## Usage
-   [How to use it]
+## Documentation Format
 
-   ## Examples
-   [Code examples]
+```md
+# <Feature Title>
 
-   ## Configuration
-   [Any config options]
-   ```
+**ADW ID:** <adw_id>
+**Date:** <current date>
+**Specification:** <spec_path or "N/A">
+
+## Overview
+
+<2-3 sentences summarizing what was built and why>
+
+## What Was Built
+
+<List components/features implemented based on git diff analysis>
+
+- <Component/feature 1>
+- <Component/feature 2>
+
+## Technical Implementation
+
+### Files Modified
+
+<List key files changed with description>
+
+- `{{ config.paths.app_root }}/<path>`: <what was changed/added>
+
+### Key Changes
+
+<Describe most important technical changes in 3-5 bullet points>
+
+## How to Use
+
+<Step by step instructions to use the new feature>
+
+1. <Step 1>
+2. <Step 2>
+
+## Configuration
+
+<Configuration options, environment variables, or settings>
+
+## Testing
+
+<Description of how to test the feature>
+
+{% if config.commands.test %}
+```bash
+{{ config.commands.test }}
+```
+{% endif %}
+
+## Notes
+
+<Additional context, limitations, or future considerations>
+```
 
 ## Report
-- Documentation created: `app_docs/[name].md`
+
+- IMPORTANT: Return exclusively the path to the documentation file created.

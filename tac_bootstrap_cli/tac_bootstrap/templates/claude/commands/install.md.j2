@@ -1,97 +1,76 @@
-# Install
+# Install & Prime
 
-Install project dependencies using the configured package manager.
+Install dependencies and prepare the development environment for {{ config.project.name }}.
 
-## Instructions
+## Read
+- README.md
+- CLAUDE.md
+- config.yml
 
-### 1. Install Dependencies
-
-{% if config.project.package_manager.value == "uv" %}
-```bash
-cd {{ config.paths.app_root }} && uv sync
+## Check Structure
+Verify the application structure exists:
 ```
-{% elif config.project.package_manager.value == "poetry" %}
-```bash
-cd {{ config.paths.app_root }} && poetry install
-```
-{% elif config.project.package_manager.value == "pip" %}
-```bash
-cd {{ config.paths.app_root }} && pip install -r requirements.txt
-```
-{% elif config.project.package_manager.value == "pipenv" %}
-```bash
-cd {{ config.paths.app_root }} && pipenv install
-```
-{% elif config.project.package_manager.value == "pnpm" %}
-```bash
-cd {{ config.paths.app_root }} && pnpm install
-```
-{% elif config.project.package_manager.value == "npm" %}
-```bash
-cd {{ config.paths.app_root }} && npm install
-```
-{% elif config.project.package_manager.value == "yarn" %}
-```bash
-cd {{ config.paths.app_root }} && yarn install
-```
-{% elif config.project.package_manager.value == "bun" %}
-```bash
-cd {{ config.paths.app_root }} && bun install
-```
-{% elif config.project.package_manager.value == "go" %}
-```bash
-cd {{ config.paths.app_root }} && go mod download
-```
-{% elif config.project.package_manager.value == "cargo" %}
-```bash
-cd {{ config.paths.app_root }} && cargo build
-```
-{% elif config.project.package_manager.value == "maven" %}
-```bash
-cd {{ config.paths.app_root }} && mvn dependency:resolve
-```
-{% elif config.project.package_manager.value == "gradle" %}
-```bash
-cd {{ config.paths.app_root }} && gradle build --refresh-dependencies
-```
+{% if config.paths.app_root %}
+{{ config.paths.app_root }}/
+├── (package manifest: pyproject.toml, package.json, Cargo.toml, etc.)
+└── (source code)
 {% endif %}
+```
 
-### 2. Verify Installation
+If it doesn't exist, inform the user they need to create the application first.
 
-Check installation completed successfully:
-- Exit code should be 0
-- Verify dependency artifacts exist (node_modules/, .venv/, target/, etc.)
-- Check for lock file creation/update
+## Run (if {{ config.paths.app_root }} exists)
 
-### 3. Handle Common Errors
+1. Install dependencies:
+   ```bash
+{% if config.project.package_manager.value == "uv" %}
+   cd {{ config.paths.app_root }} && uv sync
+{% elif config.project.package_manager.value == "poetry" %}
+   cd {{ config.paths.app_root }} && poetry install
+{% elif config.project.package_manager.value == "pip" %}
+   cd {{ config.paths.app_root }} && pip install -r requirements.txt
+{% elif config.project.package_manager.value == "pipenv" %}
+   cd {{ config.paths.app_root }} && pipenv install
+{% elif config.project.package_manager.value == "pnpm" %}
+   cd {{ config.paths.app_root }} && pnpm install
+{% elif config.project.package_manager.value == "npm" %}
+   cd {{ config.paths.app_root }} && npm install
+{% elif config.project.package_manager.value == "yarn" %}
+   cd {{ config.paths.app_root }} && yarn install
+{% elif config.project.package_manager.value == "bun" %}
+   cd {{ config.paths.app_root }} && bun install
+{% elif config.project.package_manager.value == "go" %}
+   cd {{ config.paths.app_root }} && go mod download
+{% elif config.project.package_manager.value == "cargo" %}
+   cd {{ config.paths.app_root }} && cargo build
+{% elif config.project.package_manager.value == "maven" %}
+   cd {{ config.paths.app_root }} && mvn dependency:resolve
+{% elif config.project.package_manager.value == "gradle" %}
+   cd {{ config.paths.app_root }} && gradle build --refresh-dependencies
+{% endif %}
+   ```
 
-If installation fails, check for:
+2. Verify installation:
+   ```bash
+{% if config.commands.start %}
+   {{ config.commands.start }} --help
+{% endif %}
+   ```
 
-**Network Failures**
-- Registry unreachable or timeout
-- Solution: Check internet connection, try again, or configure alternate registry
+## Run (if {{ config.paths.app_root }} does NOT exist)
 
-**Permission Errors**
-- Cannot write to cache directory or lock files
-- Solution: Check file permissions, run with appropriate user privileges
+1. Inform that the application has not been created yet
+2. Suggest checking {{ config.paths.specs_dir }}/ for setup instructions
 
-**Version Conflicts**
-- Incompatible dependency versions
-- Solution: Review dependency constraints, update lock files, check for breaking changes
-
-**Missing Files**
-- No package manifest found (package.json, pyproject.toml, etc.)
-- Solution: Ensure you're in correct directory, verify manifest file exists
+## Read and Execute
+.claude/commands/prime.md
 
 ## Report
-
-- Dependencies installed: (count or status)
-- Installation time: (approximate duration)
-- Warnings: (any non-critical issues)
-- Errors: (critical failures if any)
-
-## Notes
-
-- This command is idempotent - safe to run multiple times
-- Some package managers (cargo, gradle) run build as part of dependency resolution
-- For comprehensive environment setup, use `/prepare_app` instead
+- Installation state (successful/pending)
+- Installed version (if applicable)
+- Next steps
+- Available commands:
+  - `/prime` - Prepare context
+  - `/feature` - Plan feature
+  - `/implement <plan>` - Execute plan
+  - `/test` - Run tests
