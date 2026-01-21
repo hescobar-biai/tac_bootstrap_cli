@@ -22,6 +22,7 @@ git clone --branch v0.1.0 --depth 1 https://github.com/celes-app/tac-cli-dist.gi
 cd tac-cli-dist
 
 # Install globally with uv tool
+export CLAUDE_CODE_PATH=$(which claude)
 uv tool install .
 
 # Now works from ANY directory
