@@ -67,7 +67,7 @@ cli-help:  ## Show CLI help
 	$(CLI) --help
 
 cli-version:  ## Show CLI version
-	$(CLI) --version
+	$(CLI) version
 
 cli-init-dry:  ## Example: Run init command with dry-run
 	@echo "Example dry-run of init command:"

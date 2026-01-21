@@ -14,24 +14,48 @@ Transform any repository into an AI-assisted development environment in minutes.
 
 ## Installation
 
+### Option 1: Global Install from Source (Recommended)
+
 ```bash
-# With UV (recommended)
+# Clone the release
+git clone --branch v0.1.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
+cd tac-cli-dist
+
+# Install globally with uv tool
+uv tool install .
+
+# Now works from ANY directory
+cd ~/my-projects
+tac-bootstrap --help  # ✅ Works everywhere
+```
+
+### Option 2: Development Install (for contributing)
+
+```bash
+git clone --branch v0.1.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
+cd tac-cli-dist
+make install-dev
+
+# Only works inside tac-cli-dist directory with "uv run"
+uv run tac-bootstrap --help  # ✅ Works
+cd ..
+uv run tac-bootstrap --help  # ❌ Fails - must be in project dir
+```
+
+### Option 3: From PyPI (when published)
+
+```bash
+# With uv tool (recommended)
 uv tool install tac-bootstrap
+
+# With pipx
+pipx install tac-bootstrap
 
 # With pip
 pip install tac-bootstrap
-
-# From source (latest release)
-git clone --branch v0.1.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
-cd tac-cli-dist
-uv pip install -e . --link-mode=copy
-
-# Run commands with uv run (required for source installs)
-uv run tac-bootstrap --help
 ```
 
-> **Note**: When installed from source, always use `uv run tac-bootstrap` instead of `tac-bootstrap` directly.
-> Check [releases](https://github.com/celes-app/tac-cli-dist/releases) for the latest version.
+> **Note**: Check [releases](https://github.com/celes-app/tac-cli-dist/releases) for the latest version.
 
 ## Environment Setup
 
@@ -108,17 +132,20 @@ make cli-doctor         # Example doctor command
 
 ## Quick Start
 
+> **Note**: If you installed globally with `uv tool install .`, use `tac-bootstrap` directly.
+> If you installed with `make install-dev`, use `uv run tac-bootstrap` from the project directory.
+
 ### For New Projects
 
 ```bash
 # Interactive wizard (recommended)
-uv run tac-bootstrap init my-awesome-app
+tac-bootstrap init my-awesome-app
 
 # Preview what will be created (dry-run)
-uv run tac-bootstrap init my-app --dry-run
+tac-bootstrap init my-app --dry-run
 
 # Non-interactive with all options
-uv run tac-bootstrap init my-api \
+tac-bootstrap init my-api \
   --language python \
   --framework fastapi \
   --package-manager uv \
@@ -143,25 +170,25 @@ uv run tac-bootstrap init my-api \
 
 ```bash
 # Python + FastAPI + UV + DDD
-uv run tac-bootstrap init my-api -l python -f fastapi -p uv -a ddd --no-interactive
+tac-bootstrap init my-api -l python -f fastapi -p uv -a ddd --no-interactive
 
 # Python + Django + Poetry
-uv run tac-bootstrap init my-webapp -l python -f django -p poetry --no-interactive
+tac-bootstrap init my-webapp -l python -f django -p poetry --no-interactive
 
 # TypeScript + Next.js + pnpm
-uv run tac-bootstrap init my-frontend -l typescript -f nextjs -p pnpm --no-interactive
+tac-bootstrap init my-frontend -l typescript -f nextjs -p pnpm --no-interactive
 
 # TypeScript + NestJS + npm
-uv run tac-bootstrap init my-backend -l typescript -f nestjs -p npm --no-interactive
+tac-bootstrap init my-backend -l typescript -f nestjs -p npm --no-interactive
 
 # Go + Gin
-uv run tac-bootstrap init my-service -l go -f gin --no-interactive
+tac-bootstrap init my-service -l go -f gin --no-interactive
 
 # Rust + Axum
-uv run tac-bootstrap init my-rust-api -l rust -f axum --no-interactive
+tac-bootstrap init my-rust-api -l rust -f axum --no-interactive
 
 # Java + Spring + Maven
-uv run tac-bootstrap init my-java-app -l java -f spring -p maven --no-interactive
+tac-bootstrap init my-java-app -l java -f spring -p maven --no-interactive
 ```
 
 ### For Existing Projects
@@ -171,22 +198,22 @@ uv run tac-bootstrap init my-java-app -l java -f spring -p maven --no-interactiv
 cd your-existing-project
 
 # Interactive wizard (recommended) - auto-detects your stack
-uv run tac-bootstrap add-agentic
+tac-bootstrap add-agentic
 
 # Add to specific path
-uv run tac-bootstrap add-agentic /path/to/your/repo
+tac-bootstrap add-agentic /path/to/your/repo
 
 # Preview changes without applying (dry-run)
-uv run tac-bootstrap add-agentic --dry-run
+tac-bootstrap add-agentic --dry-run
 
 # Force overwrite existing agentic files
-uv run tac-bootstrap add-agentic --force
+tac-bootstrap add-agentic --force
 
 # Non-interactive with auto-detection
-uv run tac-bootstrap add-agentic --no-interactive
+tac-bootstrap add-agentic --no-interactive
 
 # Combine options
-uv run tac-bootstrap add-agentic /path/to/repo --force --no-interactive
+tac-bootstrap add-agentic /path/to/repo --force --no-interactive
 ```
 
 #### Available Options for `add-agentic`
@@ -202,19 +229,19 @@ uv run tac-bootstrap add-agentic /path/to/repo --force --no-interactive
 
 ```bash
 # Validate your agentic setup
-uv run tac-bootstrap doctor /path/to/repo
+tac-bootstrap doctor /path/to/repo
 
 # Auto-fix common issues
-uv run tac-bootstrap doctor /path/to/repo --fix
+tac-bootstrap doctor /path/to/repo --fix
 
 # Regenerate from config.yml
-uv run tac-bootstrap render config.yml --output ./my-project
+tac-bootstrap render config.yml --output ./my-project
 
 # Regenerate with force overwrite
-uv run tac-bootstrap render config.yml --force --dry-run
+tac-bootstrap render config.yml --force --dry-run
 
 # Show version
-uv run tac-bootstrap version
+tac-bootstrap version
 ```
 
 ## Commands
@@ -224,7 +251,7 @@ uv run tac-bootstrap version
 Create a new project with Agentic Layer.
 
 ```bash
-uv run tac-bootstrap init <name> [options]
+tac-bootstrap init <name> [options]
 
 Options:
   -l, --language          Programming language (python, typescript, go, rust, java)
@@ -241,7 +268,7 @@ Options:
 Inject Agentic Layer into existing repository.
 
 ```bash
-uv run tac-bootstrap add-agentic [path] [options]
+tac-bootstrap add-agentic [path] [options]
 
 Options:
   -i/-I, --interactive    Enable/disable interactive wizard
@@ -254,7 +281,7 @@ Options:
 Validate Agentic Layer setup.
 
 ```bash
-uv run tac-bootstrap doctor [path] [options]
+tac-bootstrap doctor [path] [options]
 
 Options:
   --fix                   Attempt to fix issues automatically
@@ -265,7 +292,7 @@ Options:
 Regenerate Agentic Layer from config.yml.
 
 ```bash
-uv run tac-bootstrap render [config.yml] [options]
+tac-bootstrap render [config.yml] [options]
 
 Options:
   -o, --output            Output directory
@@ -275,7 +302,7 @@ Options:
 
 ## Generated Structure
 
-After running `uv run tac-bootstrap`, your project will have:
+After running `tac-bootstrap`, your project will have:
 
 ```
 project/
