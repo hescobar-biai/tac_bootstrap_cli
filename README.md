@@ -235,6 +235,40 @@ uv run tac-bootstrap doctor
 
 **Nota:** Los comandos `make` deben ejecutarse desde el directorio `tac_bootstrap_cli/` o usando `make -C tac_bootstrap_cli <target>` desde la raíz del repositorio.
 
+### Publicar CLI al Repositorio de Distribución
+
+El CLI se distribuye en un repositorio separado usando **git subtree**. Esto permite mantener el desarrollo en el monorepo pero publicar solo el CLI.
+
+#### Configuración Inicial (ya realizada)
+
+```bash
+# Remote de distribución
+git remote add tac-cli-dist https://github.com/celes-app/tac-cli-dist.git
+```
+
+#### Publicar Cambios
+
+Después de hacer cambios en `tac_bootstrap_cli/`:
+
+```bash
+# 1. Commit tus cambios normalmente
+git add .
+git commit -m "feat: descripcion del cambio"
+
+# 2. Push al monorepo (origin)
+git push origin main
+
+# 3. Sincronizar al repo de distribución
+git subtree push --prefix=tac_bootstrap_cli tac-cli-dist main
+```
+
+#### Repositorios
+
+| Repositorio | URL | Contenido |
+|-------------|-----|-----------|
+| Monorepo (desarrollo) | `hescobar-biai/tac_bootstrap_cli` | Todo el proyecto |
+| Distribución (público) | `celes-app/tac-cli-dist` | Solo `tac_bootstrap_cli/` |
+
 ---
 
 ## Arquitectura Interna
