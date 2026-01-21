@@ -285,14 +285,72 @@ project/
 │   └── hooks/            # Execution hooks
 ├── adws/
 │   ├── adw_modules/      # Shared workflow modules
-│   ├── adw_sdlc_iso.py   # SDLC workflow
-│   └── adw_patch_iso.py  # Quick patch workflow
+│   ├── adw_triggers/     # Webhook and cron triggers
+│   └── adw_*_iso.py      # Isolated workflow scripts
 ├── scripts/              # Utility scripts
 ├── specs/                # Feature/bug specifications
+├── ai_docs/              # AI reference documentation
+├── app_docs/             # Application documentation
 ├── logs/                 # Execution logs
 ├── config.yml            # TAC configuration
-└── .mcp.json            # MCP server config
+└── .mcp.json             # MCP server config
 ```
+
+## ADW (AI Developer Workflows)
+
+The `adws/` directory contains isolated workflow scripts that automate the software development lifecycle. Each workflow runs in an isolated git worktree for parallel execution.
+
+### Core Workflows (Single Phase)
+
+| Workflow | Description | Usage |
+|----------|-------------|-------|
+| `adw_plan_iso.py` | Planning phase: fetch issue, classify type, create branch, generate implementation plan | `uv run adws/adw_plan_iso.py <issue> [adw-id]` |
+| `adw_build_iso.py` | Build phase: implement solution based on plan, commit changes | `uv run adws/adw_build_iso.py <issue> <adw-id>` |
+| `adw_test_iso.py` | Test phase: run unit and E2E tests, report results | `uv run adws/adw_test_iso.py <issue> <adw-id> [--skip-e2e]` |
+| `adw_review_iso.py` | Review phase: review implementation against spec, capture screenshots, resolve issues | `uv run adws/adw_review_iso.py <issue> <adw-id> [--skip-resolution]` |
+| `adw_document_iso.py` | Documentation phase: analyze changes, generate feature docs | `uv run adws/adw_document_iso.py <issue> <adw-id>` |
+| `adw_ship_iso.py` | Ship phase: validate state, merge PR to main | `uv run adws/adw_ship_iso.py <issue> <adw-id>` |
+| `adw_patch_iso.py` | Quick patch: create worktree, implement patch from issue comment with `adw_patch` keyword | `uv run adws/adw_patch_iso.py <issue> [adw-id]` |
+
+### Composite Workflows (Multi-Phase)
+
+| Workflow | Phases | Usage |
+|----------|--------|-------|
+| `adw_plan_build_iso.py` | Plan → Build | `uv run adws/adw_plan_build_iso.py <issue> [adw-id]` |
+| `adw_plan_build_test_iso.py` | Plan → Build → Test | `uv run adws/adw_plan_build_test_iso.py <issue> [adw-id] [--skip-e2e]` |
+| `adw_plan_build_review_iso.py` | Plan → Build → Review | `uv run adws/adw_plan_build_review_iso.py <issue> [adw-id] [--skip-resolution]` |
+| `adw_plan_build_test_review_iso.py` | Plan → Build → Test → Review | `uv run adws/adw_plan_build_test_review_iso.py <issue> [adw-id] [--skip-e2e] [--skip-resolution]` |
+| `adw_plan_build_document_iso.py` | Plan → Build → Document | `uv run adws/adw_plan_build_document_iso.py <issue> [adw-id]` |
+| `adw_sdlc_iso.py` | Plan → Build → Test → Review → Document (full SDLC) | `uv run adws/adw_sdlc_iso.py <issue> [adw-id] [--skip-e2e] [--skip-resolution]` |
+| `adw_sdlc_zte_iso.py` | Plan → Build → Test → Review → Document → Ship (Zero Touch Execution) | `uv run adws/adw_sdlc_zte_iso.py <issue> [adw-id] [--skip-e2e] [--skip-resolution]` |
+
+### Shared Modules (`adw_modules/`)
+
+| Module | Description |
+|--------|-------------|
+| `agent.py` | Agent execution and template management |
+| `data_types.py` | Pydantic models for ADW state and configuration |
+| `git_ops.py` | Git operations (commit, push, branch) |
+| `github.py` | GitHub API integration (issues, PRs, comments) |
+| `r2_uploader.py` | Cloudflare R2 upload for screenshots |
+| `state.py` | Persistent ADW state management (`adw_state.json`) |
+| `utils.py` | Common utilities and helpers |
+| `workflow_ops.py` | Workflow orchestration utilities |
+| `worktree_ops.py` | Git worktree management for isolation |
+
+### Triggers (`adw_triggers/`)
+
+| Trigger | Description |
+|---------|-------------|
+| `trigger_webhook.py` | HTTP webhook server for GitHub events |
+| `trigger_cron.py` | Scheduled execution via cron |
+
+### Key Concepts
+
+- **Isolation**: Each workflow runs in a dedicated git worktree under `trees/<adw-id>/`
+- **State**: Workflows share state via `adw_state.json` for multi-phase execution
+- **Ports**: Isolated port allocation (9100-9114 backend, 9200-9214 frontend) to avoid conflicts
+- **Parallel**: Multiple workflows can run simultaneously on different issues
 
 ## Configuration
 
