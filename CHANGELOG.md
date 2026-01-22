@@ -1,6 +1,29 @@
 # Changelog
 
-## [0.2.0] - 2025-XX-XX
+## [0.2.1] - 2026-01-22
+
+### Added
+- `resolve_clarifications()` function for auto-resolving ambiguity questions
+- ADW workflows now auto-resolve clarifications instead of pausing
+
+### Changed
+- Workflows continue automatically with AI-generated decisions
+- Clarification responses posted to GitHub issues for transparency
+
+### Removed
+- Port management from ADW workflows (not applicable to all app types)
+- `--clarify-continue` flag (replaced by auto-resolution)
+- `backend_port` and `frontend_port` from state management
+
+### Technical
+- Updated `workflow_ops.py` and `workflow_ops.py.j2`
+- Updated `adw_plan_iso.py` and `adw_plan_iso.py.j2`
+- Removed port functions from `worktree_ops.py`
+- Cleaned up `data_types.py` and `state.py`
+
+---
+
+## [0.2.0] - 2026-01-21
 
 ### Added
 - `tac-bootstrap upgrade` command for updating existing projects
