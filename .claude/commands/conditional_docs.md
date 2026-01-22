@@ -549,3 +549,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con validación de mensajes de usuario y exit codes
     - Cuando necesites ejemplos de testing patterns para comandos CLI interactivos
     - Cuando modifiques la cobertura de tests del CLI layer para upgrades
+
+- app_docs/feature-e69c669b-upgrade-command-documentation.md
+  - Conditions:
+    - Cuando trabajes con documentación del comando upgrade
+    - Cuando necesites entender qué se documentó sobre el upgrade command en README files
+    - Cuando modifiques o extiendas la documentación del comando upgrade
+    - Cuando trabajes con ejemplos de uso del upgrade command
+    - Cuando necesites referencia sobre qué archivos se actualizan vs preservan
+    - Cuando trabajes con documentación de backups y safety features
+    - Cuando modifiques README.md o tac_bootstrap_cli/README.md relacionado a upgrades
+    - Cuando necesites ejemplo de cómo documentar comandos CLI en ambos READMEs

@@ -260,6 +260,44 @@ tac-bootstrap render config.yml --force --dry-run
 tac-bootstrap version
 ```
 
+## Upgrading Projects
+
+If you have a project created with an older version of TAC Bootstrap, you can upgrade it to the latest templates:
+
+```bash
+# Check what would be upgraded
+tac-bootstrap upgrade --dry-run
+
+# Upgrade with backup (default)
+tac-bootstrap upgrade
+
+# Upgrade without backup
+tac-bootstrap upgrade --no-backup
+
+# Force upgrade even if versions match
+tac-bootstrap upgrade --force
+
+# Upgrade specific project
+tac-bootstrap upgrade ./path/to/project
+```
+
+### What Gets Upgraded
+
+The upgrade command updates:
+- `adws/` - AI Developer Workflows
+- `.claude/` - Claude Code configuration
+- `scripts/` - Utility scripts
+
+It preserves:
+- `src/` - Your application code
+- `config.yml` - Your configuration (only version is updated)
+- Any custom files you've added
+
+### Backup
+
+By default, a backup is created at `.tac-backup-{timestamp}/` before upgrading.
+Delete it manually after confirming the upgrade works correctly.
+
 ## Commands
 
 ### `init`
@@ -314,6 +352,19 @@ Options:
   -o, --output            Output directory
   -f, --force             Overwrite existing files
   --dry-run               Preview without creating files
+```
+
+### `upgrade`
+
+Upgrade an existing project to the latest TAC Bootstrap templates.
+
+```bash
+tac-bootstrap upgrade [path] [options]
+
+Options:
+  --dry-run               Preview changes without applying
+  --no-backup             Skip creating backup before upgrade
+  --force                 Force upgrade even if versions match
 ```
 
 ## Generated Structure
