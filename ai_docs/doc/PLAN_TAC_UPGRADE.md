@@ -1,8 +1,8 @@
-# Plan: Implementar `tac upgrade` - Sistema de Actualización de Agentic Layer
+# Plan: Implementar `tac-bootstrap upgrade` - Sistema de Actualización de Agentic Layer
 
 ## Resumen
 
-Implementar un comando `tac upgrade` que permita a usuarios actualizar sus proyectos generados con versiones anteriores de TAC Bootstrap a la última versión, preservando sus configuraciones personalizadas.
+Implementar un comando `tac-bootstrap upgrade` que permita a usuarios actualizar sus proyectos generados con versiones anteriores de TAC Bootstrap a la última versión, preservando sus configuraciones personalizadas.
 
 ---
 
@@ -10,7 +10,7 @@ Implementar un comando `tac upgrade` que permita a usuarios actualizar sus proye
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     tac upgrade flow                            │
+│                   tac-bootstrap upgrade flow                    │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  1. Leer config.yml existente                                   │
@@ -137,7 +137,7 @@ def version_callback(value: bool):
 
 **Criterios de Aceptación**:
 - [ ] `__version__` definida en `__init__.py`
-- [ ] CLI muestra versión con `tac --version`
+- [ ] CLI muestra versión con `tac-bootstrap --version`
 - [ ] `TACConfig.version` usa `__version__` como default
 - [ ] Un solo lugar para actualizar versión
 
@@ -348,7 +348,7 @@ class UpgradeService:
 
 ---
 
-### TAREA 4: Crear comando CLI `tac upgrade`
+### TAREA 4: Crear comando CLI `tac-bootstrap upgrade`
 
 **Archivo**: `tac_bootstrap_cli/tac_bootstrap/interfaces/cli.py`
 
@@ -392,10 +392,10 @@ def upgrade(
     to the latest templates while preserving your project configuration.
 
     Examples:
-        tac upgrade                    # Upgrade current directory
-        tac upgrade ./my-project       # Upgrade specific project
-        tac upgrade --dry-run          # Preview changes
-        tac upgrade --no-backup        # Upgrade without backup
+        tac-bootstrap upgrade                    # Upgrade current directory
+        tac-bootstrap upgrade ./my-project       # Upgrade specific project
+        tac-bootstrap upgrade --dry-run          # Preview changes
+        tac-bootstrap upgrade --no-backup        # Upgrade without backup
     """
     project_path = path.resolve()
 
@@ -446,7 +446,7 @@ def upgrade(
 ```
 
 **Criterios de Aceptación**:
-- [ ] Comando `tac upgrade` disponible
+- [ ] Comando `tac-bootstrap upgrade` disponible
 - [ ] `--dry-run` muestra cambios sin aplicar
 - [ ] `--no-backup` desactiva backup
 - [ ] `--force` fuerza upgrade aunque versiones coincidan
@@ -746,7 +746,7 @@ def mock_project(tmp_path):
 
 
 class TestCliUpgrade:
-    """Tests for tac upgrade command."""
+    """Tests for tac-bootstrap upgrade command."""
 
     def test_upgrade_dry_run(self, mock_project):
         """Test --dry-run shows changes without applying."""
@@ -827,19 +827,19 @@ you can upgrade it to the latest templates:
 
 ```bash
 # Check what would be upgraded
-tac upgrade --dry-run
+tac-bootstrap upgrade --dry-run
 
 # Upgrade with backup (default)
-tac upgrade
+tac-bootstrap upgrade
 
 # Upgrade without backup
-tac upgrade --no-backup
+tac-bootstrap upgrade --no-backup
 
 # Force upgrade even if versions match
-tac upgrade --force
+tac-bootstrap upgrade --force
 
 # Upgrade specific project
-tac upgrade ./path/to/project
+tac-bootstrap upgrade ./path/to/project
 ```
 
 ### What Gets Upgraded
@@ -882,7 +882,7 @@ Delete it manually after confirming the upgrade works correctly.
 ## [0.2.0] - 2025-XX-XX
 
 ### Added
-- `tac upgrade` command for updating existing projects
+- `tac-bootstrap upgrade` command for updating existing projects
 - Version tracking in `config.yml`
 - `target_branch` configuration in `config.yml`
 - `--version` flag for CLI
@@ -899,7 +899,7 @@ Delete it manually after confirming the upgrade works correctly.
 ### Upgrade Notes
 Projects created with v0.1.0 can upgrade using:
 ```bash
-tac upgrade
+tac-bootstrap upgrade
 ```
 
 This will update adws/, .claude/, and scripts/ while preserving your code.
@@ -936,14 +936,14 @@ __version__ → Model  → deps  → Service → CLI    → Tests  → CLI    �
 cd tac_bootstrap_cli && uv run pytest tests/ -v
 
 # 2. Verificar CLI funciona
-uv run tac --version
-uv run tac upgrade --help
+uv run tac-bootstrap --version
+uv run tac-bootstrap upgrade --help
 
 # 3. Test manual con proyecto real
 mkdir /tmp/test-upgrade
 cd /tmp/test-upgrade
 # Crear config.yml con version: "0.1.0"
-# Ejecutar: tac upgrade --dry-run
+# Ejecutar: tac-bootstrap upgrade --dry-run
 
 # 4. Release
 gh release create v0.2.0 --repo celes-app/tac-cli-dist --title "v0.2.0" --notes-file CHANGELOG.md
