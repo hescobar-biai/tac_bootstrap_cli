@@ -28,6 +28,8 @@ from typing import Dict, List
 
 from pydantic import BaseModel, Field, field_validator
 
+from tac_bootstrap import __version__
+
 # ============================================================================
 # ENUMS - Configuration Option Types
 # ============================================================================
@@ -422,7 +424,7 @@ class TACConfig(BaseModel):
     """
 
     version: str = Field(
-        default="0.2.0",
+        default=__version__,
         description="TAC Bootstrap version used to generate this project"
     )
     schema_version: int = Field(default=1, description="Configuration schema version")

@@ -36,8 +36,25 @@ app = typer.Typer(
 )
 
 
+def version_callback(value: bool) -> None:
+    """Callback for --version flag."""
+    if value:
+        console.print(f"TAC Bootstrap v{__version__}")
+        raise typer.Exit()
+
+
 @app.callback(invoke_without_command=True)
-def main(ctx: typer.Context) -> None:
+def main(
+    ctx: typer.Context,
+    version: bool = typer.Option(
+        None,
+        "--version",
+        "-v",
+        callback=version_callback,
+        is_eager=True,
+        help="Show version and exit",
+    ),
+) -> None:
     """
     Bootstrap Agentic Layer for Claude Code with TAC patterns.
 

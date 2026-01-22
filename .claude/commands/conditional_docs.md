@@ -469,3 +469,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con tests de version field (test_models.py, test_scaffold_service.py)
     - Cuando necesites referencia sobre el formato de versiones (semantic versioning)
     - Cuando trabajes en issues relacionados con version tracking o upgrades
+
+- app_docs/feature-7a8b363e-centralized-version-constant.md
+  - Conditions:
+    - Cuando trabajes con la constante __version__ centralizada en tac_bootstrap/__init__.py
+    - Cuando necesites entender cómo actualizar la versión del CLI en un solo lugar
+    - Cuando modifiques referencias a la versión en el código (CLI, TACConfig, tests)
+    - Cuando trabajes con el flag --version del CLI
+    - Cuando necesites entender la diferencia entre --version (output simple) y version command (Rich panel)
+    - Cuando trabajes con imports de __version__ en el proyecto
+    - Cuando implementes features que requieran acceso a la versión actual
+    - Cuando actualices la versión para un nuevo release
+    - Cuando trabajes en issues relacionados con version management o centralization
