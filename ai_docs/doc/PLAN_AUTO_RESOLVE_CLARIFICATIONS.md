@@ -12,18 +12,39 @@ Actualmente cuando el workflow detecta ambigüedades en un issue:
 
 ---
 
+## Estructura del Proyecto
+
+Este proyecto tiene DOS lugares donde vive el código:
+
+| Ubicación | Propósito |
+|-----------|-----------|
+| `adws/` | Código base que se usa en ESTE repo |
+| `tac_bootstrap_cli/tac_bootstrap/templates/adws/` | Templates Jinja2 que generan código para OTROS proyectos |
+
+**IMPORTANTE**: Cada tarea DEBE modificar AMBOS lugares para mantener sincronía.
+
+---
+
 ## Tareas
 
-### Tarea 1: Agregar función `resolve_clarifications()` en workflow_ops.py
+### Tarea 1: Agregar función `resolve_clarifications()` en workflow_ops
 
-**Archivo**: `adws/adw_modules/workflow_ops.py`
+**Archivos a modificar**:
+1. `adws/adw_modules/workflow_ops.py` (base)
+2. `tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_modules/workflow_ops.py.j2` (template)
 
 **Prompt para el agente**:
 
 ```
+Vas a agregar la función resolve_clarifications() en DOS archivos.
+
+## ARCHIVO 1: adws/adw_modules/workflow_ops.py
+
 Abre el archivo adws/adw_modules/workflow_ops.py
 
-Después de la función `clarify_issue()` (línea 266), agrega la siguiente función:
+Busca el final de la función clarify_issue() (la línea que dice "return None, error_msg" dentro del except).
+
+Después de esa función, agrega:
 
 def resolve_clarifications(
     issue: GitHubIssue,
@@ -84,7 +105,6 @@ Return JSON:
             return None, response.output
 
         output = response.output.strip()
-        # Remove markdown if present
         if output.startswith("```"):
             lines = output.split("\n")
             start_idx, end_idx = 0, len(lines)
@@ -111,99 +131,14 @@ Return JSON:
     except Exception as e:
         return None, f"Error auto-resolving: {str(e)}"
 
-Verifica que la función esté correctamente indentada y que los imports necesarios estén disponibles (GitHubIssue, ClarificationResponse, Tuple, Optional, logging ya están importados en el archivo).
-```
 
----
+## ARCHIVO 2: tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_modules/workflow_ops.py.j2
 
-### Tarea 2: Modificar adw_plan_iso.py para auto-resolver en lugar de pausar
-
-**Archivo**: `adws/adw_plan_iso.py`
-
-**Prompt para el agente**:
-
-```
-Abre el archivo adws/adw_plan_iso.py
-
-Busca el bloque de código entre las líneas 180-202 que contiene:
-
-if not clarify_continue:
-    # Pause workflow - exit with code 2 (paused, not error)
-    logger.info("Workflow paused - awaiting user clarifications")
-    make_issue_comment(
-        issue_number,
-        format_issue_message(
-            adw_id, "ops",
-            "⏸️ Workflow paused - awaiting clarifications.\n\n"
-            "Please answer the questions above, then re-run this workflow to continue."
-        ),
-    )
-    # Exit code 2 = paused (distinguishes from 0=success, 1=error)
-    sys.exit(2)
-else:
-    # Continue mode - document assumptions
-    logger.info("Continuing with documented assumptions")
-    make_issue_comment(
-        issue_number,
-        format_issue_message(
-            adw_id, "ops",
-            "✅ Ambiguities detected, continuing with documented assumptions"
-        ),
-    )
-
-Reemplázalo con:
-
-# Auto-resolve clarifications instead of pausing
-from adw_modules.workflow_ops import resolve_clarifications
-
-resolved_text, resolve_error = resolve_clarifications(
-    issue, clarification_response, adw_id, logger, working_dir=None
-)
-
-if resolve_error:
-    logger.warning(f"Auto-resolution failed: {resolve_error}")
-    make_issue_comment(
-        issue_number,
-        format_issue_message(adw_id, "ops",
-            f"⚠️ Auto-resolution failed, using assumptions: {resolve_error}"),
-    )
-    # Use original assumptions as fallback
-    clarification_text = f"## Assumptions\n\n" + "\n".join([
-        f"- {a}" for a in clarification_response.assumptions
-    ])
-else:
-    clarification_text = resolved_text
-    make_issue_comment(
-        issue_number,
-        format_issue_message(adw_id, "ops",
-            "🤖 Auto-resolved clarifications:\n\n" + resolved_text),
-    )
-
-logger.info("Continuing with auto-resolved decisions")
-
-IMPORTANTE: Elimina la opción --clarify-continue del argparser ya que ya no es necesaria (el workflow siempre auto-resuelve).
-```
-
----
-
-### Tarea 3: Actualizar template workflow_ops.py.j2
-
-**Archivo**: `tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_modules/workflow_ops.py.j2`
-
-**Prompt para el agente**:
-
-```
 Abre el archivo tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_modules/workflow_ops.py.j2
 
-Este es un template Jinja2 que genera workflow_ops.py para proyectos nuevos.
+Agrega la MISMA función en el mismo lugar, pero con esta diferencia para el prompt (escapar llaves para Jinja2):
 
-Después de la función clarify_issue() (busca la línea que contiene "return None, error_msg" al final de clarify_issue), agrega la misma función resolve_clarifications() que agregaste en la Tarea 1.
-
-IMPORTANTE: Como es un template Jinja2, las llaves dobles {{ }} en el prompt de Python deben escaparse como {{ "{{" }} y {{ "}}" }} o usar {% raw %}...{% endraw %}.
-
-El prompt dentro de la función debe verse así:
-
-prompt = f"""You are a senior software architect making implementation decisions.
+    prompt = f"""You are a senior software architect making implementation decisions.
 
 ## Issue
 Title: {issue.title}
@@ -224,61 +159,86 @@ Return JSON:
   "summary": "brief overall approach"
 }}{% endraw %}"""
 
-Verifica que el template sea válido ejecutando: uv run pytest tac_bootstrap_cli/tests/
+El resto de la función es idéntico al archivo base.
+
+## Verificación
+
+Ejecuta: uv run pytest
+Todos los tests deben pasar.
 ```
 
 ---
 
-### Tarea 4: Actualizar template adw_plan_iso.py.j2
+### Tarea 2: Modificar adw_plan_iso para auto-resolver en lugar de pausar
 
-**Archivo**: `tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_plan_iso.py.j2`
+**Archivos a modificar**:
+1. `adws/adw_plan_iso.py` (base)
+2. `tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_plan_iso.py.j2` (template)
 
 **Prompt para el agente**:
 
 ```
+Vas a modificar el flujo de clarificaciones en DOS archivos.
+
+## ARCHIVO 1: adws/adw_plan_iso.py
+
+Abre el archivo adws/adw_plan_iso.py
+
+Busca el bloque que contiene "if not clarify_continue:" seguido de sys.exit(2).
+Este bloque está aproximadamente entre las líneas 180-202.
+
+REEMPLAZA todo ese bloque (desde "if not clarify_continue:" hasta el final del else) con:
+
+            # Auto-resolve clarifications instead of pausing
+            from adw_modules.workflow_ops import resolve_clarifications
+
+            resolved_text, resolve_error = resolve_clarifications(
+                issue, clarification_response, adw_id, logger, working_dir=None
+            )
+
+            if resolve_error:
+                logger.warning(f"Auto-resolution failed: {resolve_error}")
+                make_issue_comment(
+                    issue_number,
+                    format_issue_message(adw_id, "ops",
+                        f"⚠️ Auto-resolution failed, using assumptions: {resolve_error}"),
+                )
+                clarification_text = f"## Assumptions\n\n" + "\n".join([
+                    f"- {a}" for a in clarification_response.assumptions
+                ])
+            else:
+                clarification_text = resolved_text
+                make_issue_comment(
+                    issue_number,
+                    format_issue_message(adw_id, "ops",
+                        "🤖 Auto-resolved clarifications:\n\n" + resolved_text),
+                )
+
+            logger.info("Continuing with auto-resolved decisions")
+
+TAMBIÉN elimina:
+1. El argumento --clarify-continue del argparser (si existe)
+2. La variable clarify_continue y su uso
+3. El import de sys.exit(2) relacionado con clarificaciones
+
+
+## ARCHIVO 2: tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_plan_iso.py.j2
+
 Abre el archivo tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_plan_iso.py.j2
 
-Aplica los mismos cambios que en la Tarea 2:
+Aplica EXACTAMENTE los mismos cambios que en el archivo base.
+El código es idéntico (no hay variables Jinja2 en esta sección).
 
-1. Busca el bloque que contiene "if not clarify_continue:" y el sys.exit(2)
 
-2. Reemplázalo con el código de auto-resolución:
+## Verificación
 
-# Auto-resolve clarifications instead of pausing
-from adw_modules.workflow_ops import resolve_clarifications
-
-resolved_text, resolve_error = resolve_clarifications(
-    issue, clarification_response, adw_id, logger, working_dir=None
-)
-
-if resolve_error:
-    logger.warning(f"Auto-resolution failed: {resolve_error}")
-    make_issue_comment(
-        issue_number,
-        format_issue_message(adw_id, "ops",
-            f"⚠️ Auto-resolution failed, using assumptions: {resolve_error}"),
-    )
-    clarification_text = f"## Assumptions\n\n" + "\n".join([
-        f"- {a}" for a in clarification_response.assumptions
-    ])
-else:
-    clarification_text = resolved_text
-    make_issue_comment(
-        issue_number,
-        format_issue_message(adw_id, "ops",
-            "🤖 Auto-resolved clarifications:\n\n" + resolved_text),
-    )
-
-logger.info("Continuing with auto-resolved decisions")
-
-3. Elimina el argumento --clarify-continue del argparser si existe.
-
-Verifica que el template sea válido ejecutando: uv run pytest tac_bootstrap_cli/tests/
+Ejecuta: uv run pytest
+Todos los tests deben pasar.
 ```
 
 ---
 
-### Tarea 5: Ejecutar tests y verificar
+### Tarea 3: Ejecutar tests y verificar
 
 **Prompt para el agente**:
 
@@ -288,17 +248,23 @@ Ejecuta los tests del proyecto para verificar que los cambios no rompieron nada:
 uv run pytest
 
 Si hay errores:
-1. Lee el mensaje de error
+1. Lee el mensaje de error completo
 2. Identifica el archivo y línea con el problema
-3. Corrige el error
+3. Corrige el error en AMBOS archivos (base y template) si aplica
 4. Vuelve a ejecutar los tests
 
 Todos los tests deben pasar antes de continuar.
+
+Verifica también que los archivos base y template estén sincronizados:
+- adws/adw_modules/workflow_ops.py debe tener resolve_clarifications()
+- tac_bootstrap_cli/.../workflow_ops.py.j2 debe tener la misma función (con {% raw %} en el JSON)
+- adws/adw_plan_iso.py NO debe tener sys.exit(2) para clarificaciones
+- tac_bootstrap_cli/.../adw_plan_iso.py.j2 debe tener los mismos cambios
 ```
 
 ---
 
-### Tarea 6: Prueba manual del flujo
+### Tarea 4: Prueba manual del flujo
 
 **Prompt para el agente**:
 
@@ -329,9 +295,10 @@ Realiza una prueba manual del nuevo flujo:
 
 Después de completar todas las tareas:
 
-- [ ] `resolve_clarifications()` existe en `workflow_ops.py`
-- [ ] `adw_plan_iso.py` llama a `resolve_clarifications()` en lugar de pausar
-- [ ] Templates actualizados con los mismos cambios
+- [ ] `resolve_clarifications()` existe en `adws/adw_modules/workflow_ops.py`
+- [ ] `resolve_clarifications()` existe en `templates/.../workflow_ops.py.j2` (con {% raw %})
+- [ ] `adws/adw_plan_iso.py` usa auto-resolve (no sys.exit(2))
+- [ ] `templates/.../adw_plan_iso.py.j2` usa auto-resolve (no sys.exit(2))
 - [ ] Todos los tests pasan
 - [ ] Prueba manual exitosa
 
@@ -365,3 +332,18 @@ Después de completar todas las tareas:
 │   build_plan    │ ──► Continúa sin pausar
 └─────────────────┘
 ```
+
+---
+
+## Respuestas a Ambigüedades
+
+| Pregunta | Respuesta |
+|----------|-----------|
+| ¿Manejar `questions` vacío? | No. Si `has_ambiguities=True`, siempre hay questions. |
+| ¿JSON malformado? | El try-except captura y retorna error. Fallback a assumptions. |
+| ¿Retry si falla? | No. Simplicidad sobre robustez. |
+| ¿parse_json() falla? | Excepción capturada, retorna error message. |
+| ¿Validar decisions == questions? | No. Confiar en el AI output. |
+| ¿Línea 266 no existe? | Buscar "return None, error_msg" al final de clarify_issue(). |
+| ¿Crear directorio output_file? | execute_prompt ya lo maneja. |
+| ¿Límite de prompt? | No. Claude soporta 200k tokens. |
