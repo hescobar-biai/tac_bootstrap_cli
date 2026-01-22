@@ -398,6 +398,21 @@ class ScaffoldService:
                 "structure/ai_docs/uv-scripts.md.j2",
                 "UV scripts guide",
             ),
+            (
+                "ai_docs/ddd.md",
+                "structure/ai_docs/ddd.md.j2",
+                "Domain-Driven Design reference",
+            ),
+            (
+                "ai_docs/design_patterns.md",
+                "structure/ai_docs/design_patterns.md.j2",
+                "Design patterns reference",
+            ),
+            (
+                "ai_docs/solid.md",
+                "structure/ai_docs/solid.md.j2",
+                "SOLID principles reference",
+            ),
         ]
 
         for path, template, reason in ai_docs_files:
