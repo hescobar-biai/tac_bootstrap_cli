@@ -34,7 +34,7 @@ class ADWState:
     def update(self, **kwargs):
         """Update state with new key-value pairs."""
         # Filter to only our core fields
-        core_fields = {"adw_id", "issue_number", "branch_name", "plan_file", "issue_class", "worktree_path", "backend_port", "frontend_port", "model_set", "all_adws"}
+        core_fields = {"adw_id", "issue_number", "branch_name", "plan_file", "issue_class", "worktree_path", "model_set", "all_adws"}
         for key, value in kwargs.items():
             if key in core_fields:
                 self.data[key] = value
@@ -85,8 +85,6 @@ class ADWState:
             plan_file=self.data.get("plan_file"),
             issue_class=self.data.get("issue_class"),
             worktree_path=self.data.get("worktree_path"),
-            backend_port=self.data.get("backend_port"),
-            frontend_port=self.data.get("frontend_port"),
             model_set=self.data.get("model_set", "base"),
             all_adws=self.data.get("all_adws", []),
         )
@@ -165,8 +163,6 @@ class ADWState:
             "plan_file": self.data.get("plan_file"),
             "issue_class": self.data.get("issue_class"),
             "worktree_path": self.data.get("worktree_path"),
-            "backend_port": self.data.get("backend_port"),
-            "frontend_port": self.data.get("frontend_port"),
             "all_adws": self.data.get("all_adws", []),
         }
         print(json.dumps(output_data, indent=2))

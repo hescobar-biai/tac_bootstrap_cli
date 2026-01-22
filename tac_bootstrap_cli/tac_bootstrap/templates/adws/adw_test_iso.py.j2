@@ -243,11 +243,7 @@ def post_comprehensive_test_summary(
 
 
 def run_e2e_tests(adw_id: str, logger: logging.Logger, working_dir: Optional[str] = None) -> AgentPromptResponse:
-    """Run the E2E test suite using the /test_e2e command.
-    
-    Note: The test_e2e command will automatically detect and use ports from .ports.env
-    in the working directory if it exists.
-    """
+    """Run the E2E test suite using the /test_e2e command."""
     test_template_request = AgentTemplateRequest(
         agent_name=AGENT_E2E_TESTER,
         slash_command="/test_e2e",
@@ -547,7 +543,7 @@ def run_e2e_tests_with_resolution(
         attempt += 1
         logger.info(f"\n=== E2E Test Run Attempt {attempt}/{max_attempts} ===")
 
-        # Run E2E tests (will auto-detect ports from .ports.env in worktree)
+        # Run E2E tests
         e2e_response = run_e2e_tests(adw_id, logger, worktree_path)
 
         if not e2e_response.success:
@@ -711,16 +707,11 @@ def main():
     # Get worktree path for explicit context
     worktree_path = state.get("worktree_path")
     logger.info(f"Using worktree at: {worktree_path}")
-    
-    # Get port information for display
-    backend_port = state.get("backend_port", "9100")
-    frontend_port = state.get("frontend_port", "9200")
-    
+
     make_issue_comment(
-        issue_number, 
+        issue_number,
         format_issue_message(adw_id, "ops", f"✅ Starting isolated testing phase\n"
                            f"🏠 Worktree: {worktree_path}\n"
-                           f"🔌 Ports - Backend: {backend_port}, Frontend: {frontend_port}\n"
                            f"🧪 E2E Tests: {'Skipped' if skip_e2e else 'Enabled'}")
     )
     

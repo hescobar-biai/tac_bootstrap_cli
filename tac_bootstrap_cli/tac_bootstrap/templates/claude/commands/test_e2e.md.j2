@@ -13,15 +13,11 @@ Run end-to-end (E2E) tests using Playwright browser automation (MCP Server).
 adw_id: $ARGUMENT if provided, otherwise generate 8-character hex string
 agent_name: $ARGUMENT if provided, otherwise use 'test_e2e'
 e2e_test_file: $ARGUMENT
-application_url: $ARGUMENT if provided, otherwise determine from port configuration:
-  - If `.ports.env` exists, use http://localhost:${FRONTEND_PORT}
-  - Otherwise use default http://localhost:5173
+application_url: $ARGUMENT if provided, otherwise use default http://localhost:5173
 
 ## Instructions
 
-- If `application_url` is not provided, check `.ports.env`:
-  - If exists, use http://localhost:${FRONTEND_PORT}
-  - Otherwise use default http://localhost:5173
+- If `application_url` is not provided, use default http://localhost:5173
 - Read the `e2e_test_file`
 - Digest the `User Story` to understand what is being validated
 - IMPORTANT: Execute the `Test Steps` detailed in `e2e_test_file` using Playwright

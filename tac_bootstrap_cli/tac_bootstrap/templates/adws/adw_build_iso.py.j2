@@ -147,16 +147,11 @@ def main():
     # Get the plan file from state
     plan_file = state.get("plan_file")
     logger.info(f"Using plan file: {plan_file}")
-    
-    # Get port information for display
-    backend_port = state.get("backend_port", "9100")
-    frontend_port = state.get("frontend_port", "9200")
-    
+
     make_issue_comment(
-        issue_number, 
+        issue_number,
         format_issue_message(adw_id, "ops", f"✅ Starting isolated implementation phase\n"
-                           f"🏠 Worktree: {worktree_path}\n"
-                           f"🔌 Ports - Backend: {backend_port}, Frontend: {frontend_port}")
+                           f"🏠 Worktree: {worktree_path}")
     )
     
     # Implement the plan (executing in worktree)

@@ -11,13 +11,12 @@ Usage:
 
 Workflow:
 1. Create/validate isolated worktree
-2. Allocate dedicated ports (9100-9114 backend, 9200-9214 frontend)
-3. Fetch GitHub issue details
-4. Check for 'adw_patch' keyword in comments or issue body
-5. Create patch plan based on content containing 'adw_patch'
-6. Implement the patch plan
-7. Commit changes
-8. Push and create/update PR
+2. Fetch GitHub issue details
+3. Check for 'adw_patch' keyword in comments or issue body
+4. Create patch plan based on content containing 'adw_patch'
+5. Implement the patch plan
+6. Commit changes
+7. Push and create/update PR
 
 This workflow requires 'adw_patch' keyword to be present either in:
 - A comment on the issue (uses latest comment containing keyword)
@@ -25,7 +24,6 @@ This workflow requires 'adw_patch' keyword to be present either in:
 
 Key features:
 - Runs in isolated git worktree under trees/<adw_id>/
-- Uses dedicated ports to avoid conflicts
 - Passes working_dir to all agent and git operations
 - Enables parallel execution of multiple patches
 """
@@ -58,10 +56,6 @@ from adw_modules.workflow_ops import (
 from adw_modules.worktree_ops import (
     create_worktree,
     validate_worktree,
-    get_ports_for_adw,
-    is_port_available,
-    find_next_available_ports,
-    setup_worktree_environment,
 )
 from adw_modules.utils import setup_logger, check_env_vars
 from adw_modules.data_types import (
@@ -253,8 +247,6 @@ def main():
     worktree_path = state.get("worktree_path")
     if worktree_path and os.path.exists(worktree_path):
         logger.info(f"Using existing worktree: {worktree_path}")
-        backend_port = state.get("backend_port", 9100)
-        frontend_port = state.get("frontend_port", 9200)
     else:
         # Create isolated worktree
         logger.info("Creating isolated worktree")
@@ -270,29 +262,8 @@ def main():
             )
             sys.exit(1)
 
-        # Get deterministic ports for this ADW ID
-        backend_port, frontend_port = get_ports_for_adw(adw_id)
-
-        # Check if ports are available, find alternatives if not
-        if not is_port_available(backend_port) or not is_port_available(frontend_port):
-            logger.warning(
-                f"Preferred ports {backend_port}/{frontend_port} not available, finding alternatives"
-            )
-            backend_port, frontend_port = find_next_available_ports(adw_id)
-
-        logger.info(
-            f"Allocated ports - Backend: {backend_port}, Frontend: {frontend_port}"
-        )
-
-        # Set up worktree environment (copy files, create .ports.env)
-        setup_worktree_environment(worktree_path, backend_port, frontend_port, logger)
-
         # Update state with worktree info
-        state.update(
-            worktree_path=worktree_path,
-            backend_port=backend_port,
-            frontend_port=frontend_port,
-        )
+        state.update(worktree_path=worktree_path)
         state.save("adw_patch_iso")
 
     make_issue_comment(
@@ -301,8 +272,7 @@ def main():
             adw_id,
             "ops",
             f"✅ Using isolated worktree\n"
-            f"🏠 Path: {worktree_path}\n"
-            f"🔌 Ports - Backend: {backend_port}, Frontend: {frontend_port}",
+            f"🏠 Path: {worktree_path}",
         ),
     )
 
