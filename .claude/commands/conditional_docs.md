@@ -585,3 +585,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con manejo de errores en funciones que usan agentes LLM
     - Cuando necesites entender la estrategia de fallback a assumptions
     - Cuando trabajes con adw_plan_iso.py y la fase de clarificación
+
+- app_docs/feature-46eb5097-auto-resolve-clarifications.md
+  - Conditions:
+    - Cuando trabajes con el workflow de planificación aislada (adw_plan_iso.py)
+    - Cuando necesites entender el cambio de pause workflow a auto-resolve workflow
+    - Cuando modifiques la integración de resolve_clarifications en adw_plan_iso
+    - Cuando trabajes con eliminación de flags CLI relacionados a clarificaciones (--clarify-continue)
+    - Cuando necesites entender el comportamiento de fallback a assumptions cuando auto-resolve falla
+    - Cuando trabajes con sincronización de cambios entre archivos base y templates Jinja2
+    - Cuando necesites referencia sobre workflows de continuous execution sin pauses
+    - Cuando trabajes con issue comments automatizados de auto-resolución
+    - Cuando modifiques templates de ADW workflows (adw_plan_iso.py.j2)
+    - Cuando trabajes en features relacionadas a Zero Touch Execution de clarificaciones
