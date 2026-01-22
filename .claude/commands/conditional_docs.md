@@ -560,3 +560,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con documentación de backups y safety features
     - Cuando modifiques README.md o tac_bootstrap_cli/README.md relacionado a upgrades
     - Cuando necesites ejemplo de cómo documentar comandos CLI en ambos READMEs
+
+- app_docs/feature-816b4f02-changelog-document.md
+  - Conditions:
+    - Cuando trabajes con CHANGELOG.md del proyecto
+    - Cuando necesites entender el formato Keep a Changelog usado
+    - Cuando documentes nuevas versiones o releases
+    - Cuando necesites referencia sobre qué cambios se documentaron en v0.2.0
+    - Cuando trabajes con upgrade notes para usuarios
+    - Cuando necesites entender la estrategia de OVERWRITE para directorios de templates
+    - Cuando trabajes con preservación de código durante upgrades
+    - Cuando necesites ejemplo de documentación de versiones del CLI
