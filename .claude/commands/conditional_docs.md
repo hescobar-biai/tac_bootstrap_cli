@@ -610,3 +610,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con validation checklists y spec files
     - Cuando necesites referencia sobre el proceso de verificar funciones en base vs templates
     - Cuando trabajes con worktree path configuration en specs
+
+- app_docs/feature-b196fe8e-fix-config-version-field.md
+  - Conditions:
+    - Cuando trabajes con el campo version en config.yml.j2 template
+    - Cuando necesites entender el fix del nombre de campo tac_version → version
+    - Cuando trabajes con inconsistencias entre templates y modelos Pydantic
+    - Cuando modifiques config.yml.j2 o TACConfig model
+    - Cuando debugees schema mismatches en config files generados
+    - Cuando trabajes con tests que validen campos de versión (test_scaffold_service.py, test_upgrade_service.py)
+    - Cuando necesites referencia sobre el fix de issue #104
+    - Cuando trabajes con synchronization de nombres de campos entre templates y domain models
+    - Cuando implementes fixes similares para field name consistency
