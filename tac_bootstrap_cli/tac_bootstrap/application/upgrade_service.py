@@ -91,6 +91,12 @@ class UpgradeService:
             with open(self.config_path) as f:
                 config_data = yaml.safe_load(f)
 
+            # Normalize legacy field names for compatibility
+            if "tac_version" in config_data:
+                if "version" not in config_data:
+                    config_data["version"] = config_data["tac_version"]
+                config_data.pop("tac_version")
+
             # Actualizar version al target
             config_data["version"] = self.get_target_version()
 
