@@ -69,14 +69,12 @@ def main():
     parser.add_argument("issue_number", help="GitHub issue number")
     parser.add_argument("adw_id", nargs="?", default=None, help="ADW ID (optional, will be generated if not provided)")
     parser.add_argument("--skip-clarify", action="store_true", help="Skip clarification phase")
-    parser.add_argument("--clarify-continue", action="store_true", help="Continue with assumptions if ambiguities found (don't pause)")
 
     args = parser.parse_args()
 
     issue_number = args.issue_number
     adw_id = args.adw_id
     skip_clarify = args.skip_clarify
-    clarify_continue = args.clarify_continue
 
     # Ensure ADW ID exists with initialized state
     temp_logger = setup_logger(adw_id, "adw_plan_iso") if adw_id else None
@@ -170,36 +168,36 @@ def main():
             # Save clarification to state
             state.update(
                 clarification=clarification_response.model_dump(),
-                awaiting_clarification=not clarify_continue,
+                awaiting_clarification=False,
             )
             state.save("adw_plan_iso")
 
-            # Prepare clarification text for planning
-            clarification_text = f"## Clarifications & Assumptions\n\n{questions_md}"
+            # Auto-resolve clarifications instead of pausing
+            from adw_modules.workflow_ops import resolve_clarifications
 
-            if not clarify_continue:
-                # Pause workflow - exit with code 2 (paused, not error)
-                logger.info("Workflow paused - awaiting user clarifications")
+            resolved_text, resolve_error = resolve_clarifications(
+                issue, clarification_response, adw_id, logger, working_dir=None
+            )
+
+            if resolve_error:
+                logger.warning(f"Auto-resolution failed: {resolve_error}")
                 make_issue_comment(
                     issue_number,
-                    format_issue_message(
-                        adw_id, "ops",
-                        "⏸️ Workflow paused - awaiting clarifications.\n\n"
-                        "Please answer the questions above, then re-run this workflow to continue."
-                    ),
+                    format_issue_message(adw_id, "ops",
+                        f"⚠️ Auto-resolution failed, using assumptions: {resolve_error}"),
                 )
-                # Exit code 2 = paused (distinguishes from 0=success, 1=error)
-                sys.exit(2)
+                clarification_text = f"## Assumptions\n\n" + "\n".join([
+                    f"- {a}" for a in clarification_response.assumptions
+                ])
             else:
-                # Continue mode - document assumptions
-                logger.info("Continuing with documented assumptions")
+                clarification_text = resolved_text
                 make_issue_comment(
                     issue_number,
-                    format_issue_message(
-                        adw_id, "ops",
-                        "✅ Ambiguities detected, continuing with documented assumptions"
-                    ),
+                    format_issue_message(adw_id, "ops",
+                        "🤖 Auto-resolved clarifications:\n\n" + resolved_text),
                 )
+
+            logger.info("Continuing with auto-resolved decisions")
         else:
             logger.info("No ambiguities detected - issue is sufficiently clear")
             make_issue_comment(
