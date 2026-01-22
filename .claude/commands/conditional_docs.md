@@ -598,3 +598,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con issue comments automatizados de auto-resolución
     - Cuando modifiques templates de ADW workflows (adw_plan_iso.py.j2)
     - Cuando trabajes en features relacionadas a Zero Touch Execution de clarificaciones
+
+- app_docs/feature-761d34ed-run-tests-verify.md
+  - Conditions:
+    - Cuando necesites entender el proceso de verificación de tests y sincronización
+    - Cuando trabajes con validación de base-template synchronization
+    - Cuando ejecutes tareas de chore relacionadas con testing y verificación
+    - Cuando necesites referencia sobre comandos de validación (grep patterns, pytest)
+    - Cuando trabajes con sincronización de archivos base y templates Jinja2
+    - Cuando necesites entender criterios de aceptación para verification tasks
+    - Cuando trabajes con validation checklists y spec files
+    - Cuando necesites referencia sobre el proceso de verificar funciones en base vs templates
+    - Cuando trabajes con worktree path configuration en specs
