@@ -176,6 +176,7 @@ class TestRunInitWizard:
             default_cmds.get("start", ""),  # Start command (return default)
             default_cmds.get("test", ""),  # Test command (return default)
             default_cmds.get("lint", ""),  # Lint command (return default)
+            "main",  # Target branch (default)
         ]
         mock_confirm.side_effect = [
             True,  # Enable worktrees
@@ -198,6 +199,9 @@ class TestRunInitWizard:
         # Verify worktrees enabled
         assert config.agentic.worktrees.enabled is True
 
+        # Verify target branch
+        assert config.agentic.target_branch == "main"
+
     def test_wizard_with_custom_values(self, mock_console, mock_prompt, mock_confirm):
         """Test wizard with custom user selections."""
         # Mock prompts for TypeScript + React + npm + LAYERED
@@ -209,6 +213,7 @@ class TestRunInitWizard:
             "npm run dev",  # Custom start command
             "npm test",  # Custom test command
             "npm run lint",  # Custom lint command
+            "develop",  # Custom target branch
         ]
         mock_confirm.side_effect = [
             False,  # Disable worktrees
@@ -225,6 +230,7 @@ class TestRunInitWizard:
         assert config.commands.test == "npm test"
         assert config.commands.lint == "npm run lint"
         assert config.agentic.worktrees.enabled is False
+        assert config.agentic.target_branch == "develop"
 
     def test_wizard_with_preset_language(self, mock_console, mock_prompt, mock_confirm):
         """Test wizard when language is already provided."""
@@ -236,6 +242,7 @@ class TestRunInitWizard:
             "",  # Start command
             "",  # Test command
             "",  # Lint command
+            "main",  # Target branch
         ]
         mock_confirm.side_effect = [True, True]
 
@@ -246,7 +253,7 @@ class TestRunInitWizard:
 
     def test_wizard_cancellation(self, mock_console, mock_prompt, mock_confirm):
         """Test wizard when user cancels at confirmation."""
-        mock_prompt.side_effect = ["1", "1", "1", "1", "", "", ""]
+        mock_prompt.side_effect = ["1", "1", "1", "1", "", "", "", "main"]
         mock_confirm.side_effect = [
             True,  # Enable worktrees
             False,  # Cancel at final confirmation
@@ -282,6 +289,7 @@ class TestRunAddAgenticWizard:
             "uv run pytest",  # Test command (return detected value)
             "uv run ruff check .",  # Lint command (return detected value)
             "uv build",  # Build command (return detected value)
+            "main",  # Target branch
         ]
         mock_confirm.side_effect = [
             True,  # Enable worktrees
@@ -321,6 +329,7 @@ class TestRunAddAgenticWizard:
             "pnpm test",  # Custom test command
             "pnpm lint",  # Custom lint command
             "pnpm build",  # Custom build command
+            "master",  # Custom target branch
         ]
         mock_confirm.side_effect = [False, True]
 
@@ -336,7 +345,7 @@ class TestRunAddAgenticWizard:
         self, mock_console, mock_prompt, mock_confirm, sample_detected_project
     ):
         """Test add agentic wizard when user cancels."""
-        mock_prompt.side_effect = ["1", "1", "1", "", "", "", ""]
+        mock_prompt.side_effect = ["1", "1", "1", "", "", "", "", "main"]
         mock_confirm.side_effect = [
             True,  # Enable worktrees
             False,  # Cancel at final confirmation
@@ -372,6 +381,7 @@ class TestWizardEdgeCases:
             "",  # Start command (empty)
             "",  # Test command (empty)
             "",  # Lint command (empty)
+            "main",  # Target branch
         ]
         mock_confirm.side_effect = [True, True]
 
@@ -392,6 +402,7 @@ class TestWizardEdgeCases:
             "",  # Start command
             "",  # Test command
             "",  # Lint command
+            "main",  # Target branch
         ]
         mock_confirm.side_effect = [True, True]
 
@@ -408,4 +419,4 @@ class TestWizardEdgeCases:
         assert config.project.package_manager == PackageManager.CARGO
 
         # Verify fewer prompts were called (no language/framework/pm selection)
-        assert mock_prompt.call_count == 4  # Only arch + 3 commands
+        assert mock_prompt.call_count == 5  # Only arch + 3 commands + target_branch

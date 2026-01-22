@@ -21,6 +21,7 @@ class RetryCode(str, Enum):
 
 
 # Supported slash commands for issue classification
+# These should align with your custom slash commands in .claude/commands that you want to run
 IssueClassSlashCommand = Literal["/chore", "/bug", "/feature"]
 
 # Model set types for ADW workflows
@@ -28,27 +29,30 @@ ModelSet = Literal["base", "heavy"]
 
 # ADW workflow types (all isolated now)
 ADWWorkflow = Literal[
-    "adw_plan_iso",
-    "adw_patch_iso",
-    "adw_build_iso",
-    "adw_test_iso",
-    "adw_review_iso",
-    "adw_document_iso",
-    "adw_ship_iso",
-    "adw_sdlc_ZTE_iso",
-    "adw_plan_build_iso",
-    "adw_plan_build_test_iso",
-    "adw_plan_build_test_review_iso",
-    "adw_plan_build_document_iso",
-    "adw_plan_build_review_iso",
-    "adw_sdlc_iso",
+    "adw_plan_iso",  # Planning only
+    "adw_patch_iso",  # Direct patch from issue
+    "adw_build_iso",  # Building only (dependent workflow)
+    "adw_test_iso",  # Testing only (dependent workflow)
+    "adw_review_iso",  # Review only (dependent workflow)
+    "adw_document_iso",  # Documentation only (dependent workflow)
+    "adw_ship_iso",  # Ship/deployment workflow
+    "adw_sdlc_ZTE_iso",  # Zero Touch Execution - full SDLC with auto-merge
+    "adw_plan_build_iso",  # Plan + Build
+    "adw_plan_build_test_iso",  # Plan + Build + Test
+    "adw_plan_build_test_review_iso",  # Plan + Build + Test + Review
+    "adw_plan_build_document_iso",  # Plan + Build + Document
+    "adw_plan_build_review_iso",  # Plan + Build + Review
+    "adw_sdlc_iso",  # Complete SDLC: Plan + Build + Test + Review + Document
 ]
 
 # All slash commands used in the ADW system
+# Includes issue classification commands and ADW-specific commands
 SlashCommand = Literal[
+    # Issue classification commands
     "/chore",
     "/bug",
     "/feature",
+    # ADW workflow commands
     "/classify_issue",
     "/classify_adw",
     "/generate_branch_name",
@@ -63,6 +67,7 @@ SlashCommand = Literal[
     "/patch",
     "/document",
     "/track_agentic_kpis",
+    # Installation/setup commands
     "/install_worktree",
 ]
 
@@ -70,7 +75,7 @@ SlashCommand = Literal[
 class GitHubUser(BaseModel):
     """GitHub user model."""
 
-    id: Optional[str] = None
+    id: Optional[str] = None  # Not always returned by GitHub API
     login: str
     name: Optional[str] = None
     is_bot: bool = Field(default=False, alias="is_bot")
@@ -102,7 +107,9 @@ class GitHubComment(BaseModel):
     author: GitHubUser
     body: str
     created_at: datetime = Field(alias="createdAt")
-    updated_at: Optional[datetime] = Field(None, alias="updatedAt")
+    updated_at: Optional[datetime] = Field(
+        None, alias="updatedAt"
+    )  # Not always returned
 
 
 class GitHubIssueListItem(BaseModel):
@@ -150,7 +157,7 @@ class AgentPromptRequest(BaseModel):
     dangerously_skip_permissions: bool = False
     output_file: str
     working_dir: Optional[str] = None
-    timeout_seconds: int = 600
+    timeout_seconds: int = 600  # Default 10 minutes, configurable per request
 
 
 class AgentPromptResponse(BaseModel):
@@ -202,7 +209,7 @@ class E2ETestResult(BaseModel):
 
     test_name: str
     status: Literal["passed", "failed"]
-    test_path: str
+    test_path: str  # Path to the test file for re-execution
     screenshots: List[str] = []
     error: Optional[str] = None
 
@@ -213,7 +220,11 @@ class E2ETestResult(BaseModel):
 
 
 class ADWStateData(BaseModel):
-    """Minimal persistent state for ADW workflow."""
+    """Minimal persistent state for ADW workflow.
+
+    Stored in agents/{adw_id}/adw_state.json
+    Contains only essential identifiers to connect workflow steps.
+    """
 
     adw_id: str
     issue_number: Optional[str] = None
@@ -221,7 +232,9 @@ class ADWStateData(BaseModel):
     plan_file: Optional[str] = None
     issue_class: Optional[IssueClassSlashCommand] = None
     worktree_path: Optional[str] = None
-    model_set: Optional[ModelSet] = "base"
+    backend_port: Optional[int] = None
+    frontend_port: Optional[int] = None
+    model_set: Optional[ModelSet] = "base"  # Default to "base" model set
     all_adws: List[str] = Field(default_factory=list)
 
 
@@ -229,8 +242,10 @@ class ReviewIssue(BaseModel):
     """Individual review issue found during spec verification."""
 
     review_issue_number: int
-    screenshot_path: str
-    screenshot_url: Optional[str] = None
+    screenshot_path: str  # Local file path to screenshot (e.g., "agents/ADW-123/reviewer/review_img/error.png")
+    screenshot_url: Optional[str] = (
+        None  # Public URL after upload (e.g., "https://domain.com/adw/ADW-123/review/error.png")
+    )
     issue_description: str
     issue_resolution: str
     issue_severity: Literal["skippable", "tech_debt", "blocker"]
@@ -240,10 +255,16 @@ class ReviewResult(BaseModel):
     """Result from reviewing implementation against specification."""
 
     success: bool
-    review_summary: str
+    review_summary: (
+        str  # 2-4 sentences describing what was built and whether it matches the spec
+    )
     review_issues: List[ReviewIssue] = []
-    screenshots: List[str] = []
-    screenshot_urls: List[str] = []
+    screenshots: List[str] = (
+        []
+    )  # Local file paths (e.g., ["agents/ADW-123/reviewer/review_img/ui.png"])
+    screenshot_urls: List[str] = (
+        []
+    )  # Public URLs after upload, indexed-aligned with screenshots
 
 
 class DocumentationResult(BaseModel):
@@ -258,9 +279,9 @@ class DocumentationResult(BaseModel):
 class ADWExtractionResult(BaseModel):
     """Result from extracting ADW information from text."""
 
-    workflow_command: Optional[str] = None
-    adw_id: Optional[str] = None
-    model_set: Optional[ModelSet] = "base"
+    workflow_command: Optional[str] = None  # e.g., "adw_plan_iso" (without slash)
+    adw_id: Optional[str] = None  # 8-character ADW ID
+    model_set: Optional[ModelSet] = "base"  # Model set to use, defaults to "base"
 
     @property
     def has_workflow(self) -> bool:
@@ -269,7 +290,7 @@ class ADWExtractionResult(BaseModel):
 
 
 class ClarificationQuestion(BaseModel):
-    """A specific question about an ambiguous aspect of an issue."""
+    """A single clarification question for ambiguous requirements."""
 
     question: str
     category: Literal["requirements", "technical_decision", "edge_case", "missing_info"]
@@ -277,7 +298,7 @@ class ClarificationQuestion(BaseModel):
 
 
 class ClarificationResponse(BaseModel):
-    """Analysis result from clarification phase."""
+    """Response from issue clarification analysis."""
 
     has_ambiguities: bool
     questions: List[ClarificationQuestion] = []

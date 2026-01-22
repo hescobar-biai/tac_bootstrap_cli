@@ -43,6 +43,7 @@ commands:
 
 agentic:
   provider: "{{ config.agentic.provider.value }}"
+  target_branch: "{{ config.agentic.target_branch | default('main') }}"
   model_policy:
     default: "{{ config.agentic.model_policy.default }}"
     heavy: "{{ config.agentic.model_policy.heavy }}"

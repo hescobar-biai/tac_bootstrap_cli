@@ -17,6 +17,28 @@ def make_adw_id() -> str:
     return str(uuid.uuid4())[:8]
 
 
+def get_target_branch(config_path: str = None) -> str:
+    """Get target branch from config.yml, default to 'main'.
+
+    Args:
+        config_path: Path to config.yml file. If None, searches in project root.
+
+    Returns:
+        Target branch name (e.g., 'main', 'master', 'develop')
+    """
+    try:
+        import yaml
+        if config_path is None:
+            # Find config.yml in project root (parent of adws/adw_modules/)
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            config_path = os.path.join(project_root, "config.yml")
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+            return config.get("agentic", {}).get("target_branch", "main")
+    except Exception:
+        return "main"
+
+
 def setup_logger(adw_id: str, trigger_type: str = "adw_plan_build") -> logging.Logger:
     """Set up logger that writes to both console and file using adw_id.
     

@@ -32,6 +32,7 @@ format: "uv run ruff format ."
 build: "uv build"
 agentic:
   provider: "claude_code"
+  target_branch: main  # Rama destino para merge/push (main, master, develop, etc.)
   model_policy:
     default: "sonnet"
     heavy: "opus"

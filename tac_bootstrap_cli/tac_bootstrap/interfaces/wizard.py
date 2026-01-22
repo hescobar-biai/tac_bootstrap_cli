@@ -202,6 +202,13 @@ def run_init_wizard(
         default=True,
     )
 
+    # Step 7: Target Branch
+    target_branch = Prompt.ask(
+        "Target branch for merge/push (main, master, develop)",
+        default="main",
+    )
+    console.print(f"  [green]✓[/green] Target Branch: {target_branch}")
+
     # Build configuration object
     config = TACConfig(
         project=ProjectSpec(
@@ -221,6 +228,7 @@ def run_init_wizard(
             lint=lint_cmd,
         ),
         agentic=AgenticSpec(
+            target_branch=target_branch,
             worktrees=WorktreeConfig(enabled=use_worktrees, max_parallel=5),
         ),
         claude=ClaudeConfig(
@@ -330,6 +338,13 @@ def run_add_agentic_wizard(
         default=True,
     )
 
+    # Step 6: Target Branch
+    target_branch = Prompt.ask(
+        "Target branch for merge/push (main, master, develop)",
+        default="main",
+    )
+    console.print(f"  [green]✓[/green] Target Branch: {target_branch}")
+
     # Build configuration object
     config = TACConfig(
         project=ProjectSpec(
@@ -350,6 +365,7 @@ def run_add_agentic_wizard(
             build=build_cmd,
         ),
         agentic=AgenticSpec(
+            target_branch=target_branch,
             worktrees=WorktreeConfig(enabled=use_worktrees, max_parallel=5),
         ),
         claude=ClaudeConfig(
@@ -388,6 +404,7 @@ def _show_config_summary(config: TACConfig) -> None:
     table.add_row("Architecture", config.project.architecture.value)
     table.add_row("Start Command", config.commands.start)
     table.add_row("Test Command", config.commands.test)
+    table.add_row("Target Branch", config.agentic.target_branch)
     table.add_row("Worktrees Enabled", str(config.agentic.worktrees.enabled))
 
     console.print(table)

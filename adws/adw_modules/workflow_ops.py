@@ -19,7 +19,7 @@ from adw_modules.data_types import (
 from adw_modules.agent import execute_template
 from adw_modules.github import get_repo_url, extract_repo_path, ADW_BOT_IDENTIFIER
 from adw_modules.state import ADWState
-from adw_modules.utils import parse_json
+from adw_modules.utils import parse_json, get_target_branch
 
 
 # Agent name constants
@@ -709,9 +709,10 @@ def find_spec_file(state: ADWState, logger: logging.Logger) -> Optional[str]:
             return spec_file
 
     # Otherwise, try to find it from git diff
-    logger.info("Looking for spec file in git diff")
+    target_branch = get_target_branch()
+    logger.info(f"Looking for spec file in git diff against origin/{target_branch}")
     result = subprocess.run(
-        ["git", "diff", "origin/main", "--name-only"],
+        ["git", "diff", f"origin/{target_branch}", "--name-only"],
         capture_output=True,
         text=True,
         cwd=worktree_path,

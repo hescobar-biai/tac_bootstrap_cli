@@ -43,7 +43,7 @@ from adw_modules.workflow_ops import (
     format_issue_message,
     find_spec_file,
 )
-from adw_modules.utils import setup_logger, check_env_vars
+from adw_modules.utils import setup_logger, check_env_vars, get_target_branch
 from adw_modules.data_types import (
     GitHubIssue,
     GitHubUser,
@@ -61,7 +61,7 @@ DOCS_PATH = "app_docs/"
 
 
 def check_for_changes(logger: logging.Logger, cwd: Optional[str] = None) -> bool:
-    """Check if there are any changes between current branch and origin/main.
+    """Check if there are any changes between current branch and origin/{target_branch}.
 
     Args:
         logger: Logger instance
@@ -70,10 +70,11 @@ def check_for_changes(logger: logging.Logger, cwd: Optional[str] = None) -> bool
     Returns:
         bool: True if changes exist, False if no changes
     """
+    target_branch = get_target_branch()
     try:
-        # Check for changes against origin/main
+        # Check for changes against origin/{target_branch}
         result = subprocess.run(
-            ["git", "diff", "origin/main", "--stat"],
+            ["git", "diff", f"origin/{target_branch}", "--stat"],
             capture_output=True,
             text=True,
             check=True,
@@ -84,7 +85,7 @@ def check_for_changes(logger: logging.Logger, cwd: Optional[str] = None) -> bool
         has_changes = bool(result.stdout.strip())
 
         if not has_changes:
-            logger.info("No changes detected between current branch and origin/main")
+            logger.info(f"No changes detected between current branch and origin/{target_branch}")
         else:
             logger.info(f"Found changes:\n{result.stdout}")
 
@@ -371,13 +372,14 @@ def main():
 
     # Check if there are any changes to document (in worktree)
     if not check_for_changes(logger, cwd=worktree_path):
+        target_branch = get_target_branch()
         logger.info("No changes to document - skipping documentation generation")
         make_issue_comment(
             issue_number,
             format_issue_message(
                 adw_id,
                 "ops",
-                "ℹ️ No changes detected between current branch and origin/main - skipping documentation",
+                f"ℹ️ No changes detected between current branch and origin/{target_branch} - skipping documentation",
             ),
         )
         return

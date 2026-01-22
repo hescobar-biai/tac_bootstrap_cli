@@ -10,6 +10,7 @@ from typing import Optional, Tuple
 
 # Import GitHub functions from existing module
 from adw_modules.github import get_repo_url, extract_repo_path, make_issue_comment
+from adw_modules.utils import get_target_branch
 
 
 def get_current_branch(cwd: Optional[str] = None) -> str:
@@ -253,18 +254,19 @@ def finalize_git_operations(
     state: "ADWState", logger: logging.Logger, cwd: Optional[str] = None
 ) -> None:
     """Standard git finalization: push branch and create/update PR."""
+    target_branch = get_target_branch()
     branch_name = state.get("branch_name")
     if not branch_name:
-        # Fallback: use current git branch if not main
+        # Fallback: use current git branch if not target branch
         current_branch = get_current_branch(cwd=cwd)
-        if current_branch and current_branch != "main":
+        if current_branch and current_branch != target_branch:
             logger.warning(
                 f"No branch name in state, using current branch: {current_branch}"
             )
             branch_name = current_branch
         else:
             logger.error(
-                "No branch name in state and current branch is main, skipping git operations"
+                f"No branch name in state and current branch is {target_branch}, skipping git operations"
             )
             return
 

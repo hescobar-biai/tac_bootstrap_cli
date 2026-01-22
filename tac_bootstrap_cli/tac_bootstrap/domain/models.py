@@ -298,6 +298,10 @@ class AgenticSpec(BaseModel):
     provider: AgenticProvider = Field(
         default=AgenticProvider.CLAUDE_CODE, description="Agentic provider"
     )
+    target_branch: str = Field(
+        default="main",
+        description="Target branch for merge/push operations (main, master, develop, etc.)",
+    )
     model_policy: ModelPolicy = Field(default=ModelPolicy(), description="Model selection policy")
     worktrees: WorktreeConfig = Field(
         default=WorktreeConfig(), description="Git worktree configuration"

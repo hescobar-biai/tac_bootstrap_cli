@@ -641,6 +641,28 @@ Each workflow run gets a unique 8-character ID (e.g., `a1b2c3d4`) that appears i
 - Output files: `agents/a1b2c3d4/sdlc_planner/raw_output.jsonl`
 - Git commits and PRs
 
+### Target Branch
+
+By default, ADW workflows merge to `main`. To change the target branch:
+
+1. Edit `config.yml`:
+   ```yaml
+   agentic:
+     target_branch: develop  # or master, trunk, etc.
+   ```
+
+2. All workflows will now use the configured branch for:
+   - Creating worktrees (branching from `origin/{target_branch}`)
+   - Comparing changes (`git diff origin/{target_branch}`)
+   - Merging (`merge to {target_branch}`)
+   - Pushing (`push to origin/{target_branch}`)
+
+**Supported branches:**
+- `main` (default)
+- `master`
+- `develop`
+- Any valid branch name
+
 ### Model Selection
 
 ADW supports dynamic model selection based on workflow complexity. Users can specify whether to use a "base" model set (optimized for speed and cost) or a "heavy" model set (optimized for complex tasks).

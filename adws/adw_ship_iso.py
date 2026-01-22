@@ -49,26 +49,44 @@ from adw_modules.data_types import ADWStateData
 AGENT_SHIPPER = "shipper"
 
 
+def get_target_branch() -> str:
+    """Get target branch from config.yml, default to 'main'.
+
+    Returns:
+        Target branch name (e.g., 'main', 'master', 'develop')
+    """
+    try:
+        import yaml
+        config_path = os.path.join(get_main_repo_root(), "config.yml")
+        with open(config_path, "r") as f:
+            config = yaml.safe_load(f)
+            return config.get("agentic", {}).get("target_branch", "main")
+    except Exception:
+        return "main"
+
+
 def get_main_repo_root() -> str:
     """Get the main repository root directory (parent of adws)."""
     # This script is in adws/, so go up one level to get repo root
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def manual_merge_to_main(branch_name: str, logger: logging.Logger) -> Tuple[bool, Optional[str]]:
-    """Manually merge a branch to main using git commands.
-    
+def manual_merge_to_target(branch_name: str, logger: logging.Logger) -> Tuple[bool, Optional[str]]:
+    """Manually merge a branch to target branch using git commands.
+
     This runs in the main repository root, not in a worktree.
-    
+
     Args:
         branch_name: The feature branch to merge
         logger: Logger instance
-        
+
     Returns:
         Tuple of (success, error_message)
     """
     repo_root = get_main_repo_root()
+    target_branch = get_target_branch()
     logger.info(f"Performing manual merge in main repository: {repo_root}")
+    logger.info(f"Target branch: {target_branch}")
     
     try:
         # Save current branch to restore later
@@ -88,25 +106,25 @@ def manual_merge_to_main(branch_name: str, logger: logging.Logger) -> Tuple[bool
         if result.returncode != 0:
             return False, f"Failed to fetch from origin: {result.stderr}"
         
-        # Step 2: Checkout main
-        logger.info("Checking out main branch...")
+        # Step 2: Checkout target branch
+        logger.info(f"Checking out {target_branch} branch...")
         result = subprocess.run(
-            ["git", "checkout", "main"],
+            ["git", "checkout", target_branch],
             capture_output=True, text=True, cwd=repo_root
         )
         if result.returncode != 0:
-            return False, f"Failed to checkout main: {result.stderr}"
-        
-        # Step 3: Pull latest main
-        logger.info("Pulling latest main...")
+            return False, f"Failed to checkout {target_branch}: {result.stderr}"
+
+        # Step 3: Pull latest target branch
+        logger.info(f"Pulling latest {target_branch}...")
         result = subprocess.run(
-            ["git", "pull", "origin", "main"],
+            ["git", "pull", "origin", target_branch],
             capture_output=True, text=True, cwd=repo_root
         )
         if result.returncode != 0:
             # Try to restore original branch
             subprocess.run(["git", "checkout", original_branch], cwd=repo_root)
-            return False, f"Failed to pull latest main: {result.stderr}"
+            return False, f"Failed to pull latest {target_branch}: {result.stderr}"
         
         # Step 4: Merge the feature branch (no-ff to preserve all commits)
         logger.info(f"Merging branch {branch_name} (no-ff to preserve all commits)...")
@@ -119,22 +137,22 @@ def manual_merge_to_main(branch_name: str, logger: logging.Logger) -> Tuple[bool
             subprocess.run(["git", "checkout", original_branch], cwd=repo_root)
             return False, f"Failed to merge {branch_name}: {result.stderr}"
         
-        # Step 5: Push to origin/main
-        logger.info("Pushing to origin/main...")
+        # Step 5: Push to origin/target_branch
+        logger.info(f"Pushing to origin/{target_branch}...")
         result = subprocess.run(
-            ["git", "push", "origin", "main"],
+            ["git", "push", "origin", target_branch],
             capture_output=True, text=True, cwd=repo_root
         )
         if result.returncode != 0:
             # Try to restore original branch
             subprocess.run(["git", "checkout", original_branch], cwd=repo_root)
-            return False, f"Failed to push to origin/main: {result.stderr}"
-        
+            return False, f"Failed to push to origin/{target_branch}: {result.stderr}"
+
         # Step 6: Restore original branch
         logger.info(f"Restoring original branch: {original_branch}")
         subprocess.run(["git", "checkout", original_branch], cwd=repo_root)
-        
-        logger.info("✅ Successfully merged and pushed to main!")
+
+        logger.info(f"✅ Successfully merged and pushed to {target_branch}!")
         return True, None
         
     except Exception as e:
@@ -271,14 +289,15 @@ def main():
     )
     
     # Step 4: Perform manual merge
-    logger.info(f"Starting manual merge of {branch_name} to main...")
+    target_branch = get_target_branch()
+    logger.info(f"Starting manual merge of {branch_name} to {target_branch}...")
     make_issue_comment(
         issue_number,
-        format_issue_message(adw_id, AGENT_SHIPPER, f"🔀 Merging {branch_name} to main...\n"
+        format_issue_message(adw_id, AGENT_SHIPPER, f"🔀 Merging {branch_name} to {target_branch}...\n"
                            "Using manual git operations in main repository")
     )
-    
-    success, error = manual_merge_to_main(branch_name, logger)
+
+    success, error = manual_merge_to_target(branch_name, logger)
     
     if not success:
         logger.error(f"Failed to merge: {error}")
@@ -288,16 +307,16 @@ def main():
         )
         sys.exit(1)
     
-    logger.info(f"✅ Successfully merged {branch_name} to main")
-    
+    logger.info(f"✅ Successfully merged {branch_name} to {target_branch}")
+
     # Step 5: Post success message
     make_issue_comment(
         issue_number,
-        format_issue_message(adw_id, AGENT_SHIPPER, 
+        format_issue_message(adw_id, AGENT_SHIPPER,
                            f"🎉 **Successfully shipped!**\n\n"
                            f"✅ Validated all state fields\n"
-                           f"✅ Merged branch `{branch_name}` to main\n"
-                           f"✅ Pushed to origin/main\n\n"
+                           f"✅ Merged branch `{branch_name}` to {target_branch}\n"
+                           f"✅ Pushed to origin/{target_branch}\n\n"
                            f"🚢 Code has been deployed to production!")
     )
     

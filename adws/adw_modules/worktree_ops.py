@@ -10,6 +10,7 @@ import logging
 import socket
 from typing import Tuple, Optional
 from adw_modules.state import ADWState
+from adw_modules.utils import get_target_branch
 
 
 def create_worktree(adw_id: str, branch_name: str, logger: logging.Logger) -> Tuple[str, Optional[str]]:
@@ -41,20 +42,24 @@ def create_worktree(adw_id: str, branch_name: str, logger: logging.Logger) -> Tu
         logger.warning(f"Worktree already exists at {worktree_path}")
         return worktree_path, None
     
+    # Get target branch from config
+    target_branch = get_target_branch()
+
     # First, fetch latest changes from origin
     logger.info("Fetching latest changes from origin")
     fetch_result = subprocess.run(
-        ["git", "fetch", "origin"], 
-        capture_output=True, 
-        text=True, 
+        ["git", "fetch", "origin"],
+        capture_output=True,
+        text=True,
         cwd=project_root
     )
     if fetch_result.returncode != 0:
         logger.warning(f"Failed to fetch from origin: {fetch_result.stderr}")
-    
-    # Create the worktree using git, branching from origin/main
+
+    # Create the worktree using git, branching from origin/{target_branch}
     # Use -b to create the branch as part of worktree creation
-    cmd = ["git", "worktree", "add", "-b", branch_name, worktree_path, "origin/main"]
+    logger.info(f"Creating worktree from origin/{target_branch}")
+    cmd = ["git", "worktree", "add", "-b", branch_name, worktree_path, f"origin/{target_branch}"]
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=project_root)
     
     if result.returncode != 0:
