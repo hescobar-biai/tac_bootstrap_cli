@@ -634,3 +634,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con tests de normalization scenarios (legacy, modern, mixed)
     - Cuando necesites referencia sobre el fix de issue #106
     - Cuando trabajes con config field compatibility o migration patterns
+
+- app_docs/feature-1162a497-add-word-to-readme.md
+  - Conditions:
+    - Cuando necesites entender el proceso de testing de webhooks en TAC Bootstrap
+    - Cuando trabajes con validación de workflows ADW end-to-end
+    - Cuando necesites referencia sobre el pipeline completo (webhook → planner → implementor → reviewer)
+    - Cuando debugues problemas de integración webhook/ADW
+    - Cuando necesites entender la ejecución de tareas simples de mantenimiento
+    - Cuando trabajes con worktree isolation en adws/
+    - Cuando necesites ejemplo de tarea de prueba para verificar automatización
