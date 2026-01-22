@@ -535,3 +535,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando modifiques la cobertura de tests del upgrade system
     - Cuando necesites ejemplos de testing patterns para servicios complejos
     - Cuando trabajes con tests de preservación de código usuario
+
+- app_docs/feature-6d8f1a54-cli-upgrade-tests.md
+  - Conditions:
+    - Cuando trabajes con tests del comando CLI upgrade en test_upgrade_cli.py
+    - Cuando necesites entender la estrategia de testing para CLI upgrade command
+    - Cuando modifiques o extiendas tests de integración del CLI upgrade
+    - Cuando trabajes con mocking de UpgradeService en tests de CLI
+    - Cuando necesites referencia sobre tests de user interaction (confirmaciones, cancelación)
+    - Cuando implementes tests de CLI flags (--dry-run, --force, --no-backup)
+    - Cuando trabajes con CliRunner de Typer para simular invocaciones CLI
+    - Cuando necesites entender tests de edge cases (versión de proyecto más nueva, downgrade prevention)
+    - Cuando trabajes con validación de mensajes de usuario y exit codes
+    - Cuando necesites ejemplos de testing patterns para comandos CLI interactivos
+    - Cuando modifiques la cobertura de tests del CLI layer para upgrades

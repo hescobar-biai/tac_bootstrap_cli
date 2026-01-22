@@ -162,3 +162,22 @@ def test_upgrade_command_failure(tmp_path: Path) -> None:
 
         assert result.exit_code == 1
         assert "Upgrade failed: some error" in result.stdout
+
+
+def test_upgrade_newer_project_version(tmp_path: Path) -> None:
+    """Test upgrade when project version is newer than CLI version (downgrade not supported)."""
+    # Create a config.yml with a version newer than CLI
+    config_file = tmp_path / "config.yml"
+    config_file.write_text("version: 0.9.0\nproject:\n  name: test\n")
+
+    with patch("tac_bootstrap.interfaces.cli.UpgradeService") as mock_service:
+        mock_instance = MagicMock()
+        # Simulate project version (0.9.0) > CLI version (0.2.0)
+        mock_instance.needs_upgrade.return_value = (False, "0.9.0", "0.2.0")
+        mock_service.return_value = mock_instance
+
+        result = runner.invoke(app, ["upgrade", str(tmp_path)])
+
+        assert result.exit_code == 0
+        assert "already up to date" in result.stdout
+        mock_instance.perform_upgrade.assert_not_called()
