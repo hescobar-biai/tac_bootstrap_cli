@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.2] - 2026-01-22
+
+### Fixed
+- `tac-bootstrap upgrade` now works with projects using legacy `tac_version` field
+- Config field normalized from `tac_version` to `version` for consistency
+
+### Changed
+- Template `config.yml.j2` now generates `version` instead of `tac_version`
+- Upgrade service normalizes legacy field names automatically
+
+
 ## [0.2.1] - 2026-01-22
 
 ### Added
