@@ -122,7 +122,7 @@ class TestTACConfig:
             commands=CommandsSpec(start="echo start", test="echo test"),
             claude=ClaudeConfig(settings=ClaudeSettings(project_name="test")),
         )
-        assert config.version == 1
+        assert config.schema_version == 1
         assert config.paths.adws_dir == "adws"
         assert config.paths.specs_dir == "specs"
         assert config.paths.prompts_dir == "prompts"
@@ -140,6 +140,62 @@ class TestTACConfig:
             claude=ClaudeConfig(settings=ClaudeSettings(project_name="test")),
         )
         assert config.agentic.provider.value == "claude_code"
+
+    def test_version_default(self):
+        """Version field should default to 0.2.0."""
+        config = TACConfig(
+            project=ProjectSpec(
+                name="test",
+                language=Language.PYTHON,
+                package_manager=PackageManager.UV,
+            ),
+            commands=CommandsSpec(start="echo start", test="echo test"),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="test")),
+        )
+        assert config.version == "0.2.0"
+        assert isinstance(config.version, str)
+
+    def test_version_custom(self):
+        """Should accept custom version string."""
+        config = TACConfig(
+            version="1.5.0",
+            project=ProjectSpec(
+                name="test",
+                language=Language.PYTHON,
+                package_manager=PackageManager.UV,
+            ),
+            commands=CommandsSpec(start="echo start", test="echo test"),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="test")),
+        )
+        assert config.version == "1.5.0"
+
+    def test_version_type(self):
+        """Version should be string type."""
+        config = TACConfig(
+            project=ProjectSpec(
+                name="test",
+                language=Language.PYTHON,
+                package_manager=PackageManager.UV,
+            ),
+            commands=CommandsSpec(start="echo start", test="echo test"),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="test")),
+        )
+        assert isinstance(config.version, str)
+
+    def test_version_in_model_dump(self):
+        """Version should appear in model_dump() output."""
+        config = TACConfig(
+            project=ProjectSpec(
+                name="test",
+                language=Language.PYTHON,
+                package_manager=PackageManager.UV,
+            ),
+            commands=CommandsSpec(start="echo start", test="echo test"),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="test")),
+        )
+        dump = config.model_dump()
+        assert "version" in dump
+        assert dump["version"] == "0.2.0"
 
     def test_custom_paths(self):
         """Should allow custom paths configuration."""

@@ -457,3 +457,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes en actualizaciones de documentación del CLI
     - Cuando agregues nuevos archivos a la generación del agentic layer y necesites actualizar docs
     - Cuando trabajes en issues relacionados con documentación de add-agentic (issue #76)
+
+- app_docs/feature-5c88eed7-version-field-schema.md
+  - Conditions:
+    - Cuando trabajes con el campo version en TACConfig o config.yml
+    - Cuando necesites entender la diferencia entre version (TAC Bootstrap release) y schema_version (config schema)
+    - Cuando modifiques el modelo TACConfig relacionado a versioning
+    - Cuando trabajes con templates que renderizan version fields (config.yml.j2)
+    - Cuando implementes upgrade/migration workflows que dependen de version tracking
+    - Cuando necesites entender backward compatibility para proyectos v0.1.0 sin campo version
+    - Cuando trabajes con tests de version field (test_models.py, test_scaffold_service.py)
+    - Cuando necesites referencia sobre el formato de versiones (semantic versioning)
+    - Cuando trabajes en issues relacionados con version tracking o upgrades

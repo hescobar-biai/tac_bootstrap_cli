@@ -6,15 +6,15 @@ Performance metrics for the AI Developer Workflow (ADW) system.
 
 Summary metrics across all ADW runs.
 
-| Metric            | Value          | Last Updated                 |
-| ----------------- | -------------- | ---------------------------- |
-| Current Streak    | 33             | Wed Jan 21 17:05:57 -05 2026 |
-| Longest Streak    | 33             | Wed Jan 21 17:05:57 -05 2026 |
-| Total Plan Size   | 6187 lines     | Wed Jan 21 17:05:57 -05 2026 |
-| Largest Plan Size | 421 lines      | Wed Jan 21 17:05:57 -05 2026 |
-| Total Diff Size   | 22363 lines    | Wed Jan 21 17:05:57 -05 2026 |
-| Largest Diff Size | 1427 lines     | Wed Jan 21 17:05:57 -05 2026 |
-| Average Presence  | 1.00           | Wed Jan 21 17:05:57 -05 2026 |
+| Metric            | Value          | Last Updated         |
+| ----------------- | -------------- | -------------------- |
+| Current Streak    | 34             | 2026-01-21 19:52:17  |
+| Longest Streak    | 34             | 2026-01-21 19:52:17  |
+| Total Plan Size   | 6371 lines     | 2026-01-21 19:52:17  |
+| Largest Plan Size | 421 lines      | 2026-01-21 19:52:17  |
+| Total Diff Size   | 23926 lines    | 2026-01-21 19:52:17  |
+| Largest Diff Size | 1563 lines     | 2026-01-21 19:52:17  |
+| Average Presence  | 1.00           | 2026-01-21 19:52:17  |
 
 ## ADW KPIs
 
@@ -55,3 +55,4 @@ Detailed metrics for individual ADW workflow runs.
 | Wed Jan 21 2026  | f24cb057 | 72           | /chore      | 1        | 116               | 298/2/6                         | Wed Jan 21 16:41:31 -05 2026 | -       |
 | Wed Jan 21 2026  | 1a250086 | 74           | /chore      | 1        | 79                | 287/2/7                         | Wed Jan 21 16:55:03 -05 2026 | -       |
 | Wed Jan 21 2026  | 60574393 | 76           | /chore      | 1        | 53                | 194/5/7                         | Wed Jan 21 17:05:57 -05 2026 | -       |
+| Wed Jan 21 2026  | 5c88eed7 | 79           | /feature    | 1        | 184               | 542/1021/17                     | 2026-01-21 19:52:17          | -       |

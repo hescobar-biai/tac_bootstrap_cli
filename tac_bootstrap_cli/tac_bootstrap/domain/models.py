@@ -400,6 +400,8 @@ class TACConfig(BaseModel):
 
     Example:
         config = TACConfig(
+            version="0.2.0",
+            schema_version=1,
             project=ProjectSpec(
                 name="my-app",
                 language=Language.PYTHON,
@@ -419,7 +421,11 @@ class TACConfig(BaseModel):
         )
     """
 
-    version: int = Field(default=1, description="Configuration schema version")
+    version: str = Field(
+        default="0.2.0",
+        description="TAC Bootstrap version used to generate this project"
+    )
+    schema_version: int = Field(default=1, description="Configuration schema version")
     project: ProjectSpec = Field(..., description="Project metadata and settings")
     paths: PathsSpec = Field(
         default_factory=lambda: PathsSpec(
