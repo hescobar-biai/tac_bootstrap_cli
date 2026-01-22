@@ -57,12 +57,11 @@ forbidden_paths:
 - ".env"
 - "secrets/"
 workflows:
-    default: "sdlc_iso"
-    available:
-- "sdlc_iso"
-- "patch_iso"
-- "plan_implement"
-claude:
+  default: "sdlc_iso"
+  available:
+    - "sdlc_iso"
+    - "patch_iso"
+    - "plan_implement"
   settings:
     project_name: "tac-bootstrap"
     preferred_style: "concise"

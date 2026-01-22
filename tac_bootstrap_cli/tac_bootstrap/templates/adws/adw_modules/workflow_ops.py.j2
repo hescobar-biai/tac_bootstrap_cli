@@ -191,14 +191,14 @@ Rate severity as: "critical", "important", or "nice_to_have"
 If NO ambiguities are found, explain why the issue is sufficiently clear.
 
 Return your analysis as JSON:
-{% raw %}{
+{% raw %}{{
   "has_ambiguities": boolean,
   "questions": [
-    {"question": "...", "category": "...", "severity": "..."}
+    {{"question": "...", "category": "...", "severity": "..."}}
   ],
   "assumptions": ["assumption if continuing without answer"],
   "analysis": "brief explanation"
-}{% endraw %}
+}}{% endraw %}
 
 IMPORTANT: Return ONLY the JSON object, no markdown formatting or code blocks."""
 
