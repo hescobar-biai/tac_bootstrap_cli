@@ -213,6 +213,107 @@ class TestUpgradeService:
             # Version should be updated to target
             assert config.version == "0.3.0"
 
+    def test_load_existing_config_normalizes_legacy_tac_version(self, tmp_path: Path) -> None:
+        """load_existing_config should normalize legacy 'tac_version' to 'version'."""
+        # Create config with legacy tac_version field
+        config_file = tmp_path / "config.yml"
+        config_data = {
+            "tac_version": "0.1.0",
+            "schema_version": 1,
+            "project": {
+                "name": "legacy-project",
+                "language": "python",
+                "package_manager": "uv",
+            },
+            "commands": {
+                "start": "python main.py",
+                "test": "pytest",
+            },
+            "claude": {
+                "settings": {
+                    "project_name": "legacy-project",
+                }
+            },
+        }
+        with open(config_file, "w") as f:
+            yaml.dump(config_data, f)
+
+        service = UpgradeService(tmp_path)
+        config = service.load_existing_config()
+
+        assert config is not None
+        assert isinstance(config, TACConfig)
+        assert config.project.name == "legacy-project"
+        # Version should be updated to target (not legacy value)
+        assert config.version == __version__
+
+    def test_load_existing_config_preserves_existing_version(self, tmp_path: Path) -> None:
+        """load_existing_config should preserve existing 'version' field."""
+        # Create config with modern version field
+        config_file = tmp_path / "config.yml"
+        config_data = {
+            "version": "0.1.5",
+            "schema_version": 1,
+            "project": {
+                "name": "modern-project",
+                "language": "python",
+                "package_manager": "uv",
+            },
+            "commands": {
+                "start": "python main.py",
+                "test": "pytest",
+            },
+            "claude": {
+                "settings": {
+                    "project_name": "modern-project",
+                }
+            },
+        }
+        with open(config_file, "w") as f:
+            yaml.dump(config_data, f)
+
+        service = UpgradeService(tmp_path)
+        config = service.load_existing_config()
+
+        assert config is not None
+        assert isinstance(config, TACConfig)
+        # Version should be updated to target
+        assert config.version == __version__
+
+    def test_load_existing_config_handles_both_fields(self, tmp_path: Path) -> None:
+        """load_existing_config should keep 'version' when both fields present."""
+        # Create config with both tac_version and version (migration in progress)
+        config_file = tmp_path / "config.yml"
+        config_data = {
+            "tac_version": "0.0.9",  # Old field
+            "version": "0.1.0",      # New field (should take precedence)
+            "schema_version": 1,
+            "project": {
+                "name": "migrating-project",
+                "language": "python",
+                "package_manager": "uv",
+            },
+            "commands": {
+                "start": "python main.py",
+                "test": "pytest",
+            },
+            "claude": {
+                "settings": {
+                    "project_name": "migrating-project",
+                }
+            },
+        }
+        with open(config_file, "w") as f:
+            yaml.dump(config_data, f)
+
+        service = UpgradeService(tmp_path)
+        config = service.load_existing_config()
+
+        assert config is not None
+        assert isinstance(config, TACConfig)
+        # Version should be updated to target (not legacy value)
+        assert config.version == __version__
+
     # ============================================================================
     # TEST SUCCESSFUL UPGRADE
     # ============================================================================
