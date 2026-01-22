@@ -19,6 +19,7 @@ import subprocess
 import sys
 import os
 
+# Add the parent directory to Python path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from adw_modules.workflow_ops import ensure_adw_id
 
@@ -35,11 +36,14 @@ def main():
     issue_number = sys.argv[1]
     adw_id = sys.argv[2] if len(sys.argv) > 2 else None
 
+    # Ensure ADW ID exists with initialized state
     adw_id = ensure_adw_id(issue_number, adw_id)
     print(f"Using ADW ID: {adw_id}")
 
+    # Get the directory where this script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
+    # Run isolated plan with the ADW ID
     plan_cmd = [
         "uv",
         "run",
@@ -50,10 +54,17 @@ def main():
     print(f"\n=== ISOLATED PLAN PHASE ===")
     print(f"Running: {' '.join(plan_cmd)}")
     plan = subprocess.run(plan_cmd)
-    if plan.returncode != 0:
+    if plan.returncode == 2:
+        # Exit code 2 = paused for clarifications
+        print("⏸️  Plan phase paused - awaiting user clarifications")
+        print("Please answer the clarification questions on the GitHub issue,")
+        print("then re-run this workflow to continue.")
+        sys.exit(2)  # Propagate paused state
+    elif plan.returncode != 0:
         print("Isolated plan phase failed")
         sys.exit(1)
 
+    # Run isolated build with the ADW ID
     build_cmd = [
         "uv",
         "run",

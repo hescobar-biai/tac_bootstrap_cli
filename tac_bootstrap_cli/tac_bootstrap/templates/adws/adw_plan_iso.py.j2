@@ -198,7 +198,7 @@ def main():
             clarification_text = f"## Clarifications & Assumptions\n\n{questions_md}"
 
             if not clarify_continue:
-                # Pause workflow - exit successfully
+                # Pause workflow - exit with code 2 (paused, not error)
                 logger.info("Workflow paused - awaiting user clarifications")
                 make_issue_comment(
                     issue_number,
@@ -208,7 +208,8 @@ def main():
                         "Please answer the questions above, then re-run this workflow to continue."
                     ),
                 )
-                sys.exit(0)
+                # Exit code 2 = paused (distinguishes from 0=success, 1=error)
+                sys.exit(2)
             else:
                 # Continue mode - document assumptions
                 logger.info("Continuing with documented assumptions")

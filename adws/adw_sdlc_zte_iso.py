@@ -100,7 +100,22 @@ def main():
     print(f"\n=== ISOLATED PLAN PHASE ===")
     print(f"Running: {' '.join(plan_cmd)}")
     plan = subprocess.run(plan_cmd)
-    if plan.returncode != 0:
+    if plan.returncode == 2:
+        # Exit code 2 = paused for clarifications
+        print("⏸️  Plan phase paused - awaiting user clarifications")
+        print("Please answer the clarification questions on the GitHub issue,")
+        print("then re-run this workflow to continue.")
+        try:
+            make_issue_comment(
+                issue_number,
+                f"{adw_id}_ops: ⏸️ **ZTE Paused** - Awaiting clarifications\n\n"
+                "The planning phase found ambiguities that need user input.\n"
+                "Please answer the questions above, then re-run the workflow.",
+            )
+        except:
+            pass
+        sys.exit(2)  # Propagate paused state
+    elif plan.returncode != 0:
         print("Isolated plan phase failed")
         sys.exit(1)
 
