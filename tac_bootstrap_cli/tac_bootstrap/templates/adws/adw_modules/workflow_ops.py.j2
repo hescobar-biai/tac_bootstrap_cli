@@ -266,6 +266,93 @@ IMPORTANT: Return ONLY the JSON object, no markdown formatting or code blocks.""
         return None, error_msg
 
 
+def resolve_clarifications(
+    issue: GitHubIssue,
+    clarification: ClarificationResponse,
+    adw_id: str,
+    logger: logging.Logger,
+    working_dir: Optional[str] = None,
+) -> Tuple[Optional[str], Optional[str]]:
+    """Auto-resolve clarification questions using AI.
+
+    Returns (resolved_text, error_message) tuple.
+    """
+    logger.info("Auto-resolving clarifications...")
+
+    questions_text = "\n".join([
+        f"- [{q.category}] {q.question} (severity: {q.severity})"
+        for q in clarification.questions
+    ])
+    assumptions_text = "\n".join([f"- {a}" for a in clarification.assumptions])
+
+    prompt = f"""You are a senior software architect making implementation decisions.
+
+## Issue
+Title: {issue.title}
+Body: {issue.body}
+
+## Questions to Resolve
+{questions_text}
+
+## Current Assumptions
+{assumptions_text}
+
+For EACH question: make a clear decision with brief rationale.
+Choose the simplest reasonable approach.
+
+Return JSON:
+{% raw %}{{
+  "decisions": [{{"question": "...", "decision": "...", "rationale": "..."}}],
+  "summary": "brief overall approach"
+}}{% endraw %}"""
+
+    from adw_modules.agent import execute_prompt
+    from adw_modules.data_types import AgentPromptRequest
+
+    request = AgentPromptRequest(
+        prompt=prompt,
+        adw_id=adw_id,
+        agent_name="resolver",
+        model="sonnet",
+        dangerously_skip_permissions=False,
+        output_file=f"agents/{adw_id}/resolver/decisions.txt",
+        working_dir=working_dir,
+    )
+
+    try:
+        response = execute_prompt(request, logger)
+        if not response.success:
+            return None, response.output
+
+        output = response.output.strip()
+        # Remove markdown if present
+        if output.startswith("```"):
+            lines = output.split("\n")
+            start_idx, end_idx = 0, len(lines)
+            for i, line in enumerate(lines):
+                if line.startswith("```"):
+                    if start_idx == 0:
+                        start_idx = i + 1
+                    else:
+                        end_idx = i
+                        break
+            output = "\n".join(lines[start_idx:end_idx])
+
+        data = parse_json(output, dict)
+
+        resolved_md = "## Auto-Resolved Clarifications\n\n"
+        resolved_md += f"**Summary:** {data.get('summary', 'N/A')}\n\n"
+        for d in data.get("decisions", []):
+            resolved_md += f"**Q:** {d.get('question', 'N/A')}\n"
+            resolved_md += f"**A:** {d.get('decision', 'N/A')}\n"
+            resolved_md += f"*{d.get('rationale', 'N/A')}*\n\n"
+
+        logger.info(f"Auto-resolved {len(data.get('decisions', []))} clarifications")
+        return resolved_md, None
+    except Exception as e:
+        return None, f"Error auto-resolving: {str(e)}"
+
+
 def build_plan(
     issue: GitHubIssue,
     command: str,
