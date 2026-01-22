@@ -142,7 +142,9 @@ class TestTACConfig:
         assert config.agentic.provider.value == "claude_code"
 
     def test_version_default(self):
-        """Version field should default to 0.2.0."""
+        """Version field should default to current __version__."""
+        from tac_bootstrap import __version__
+
         config = TACConfig(
             project=ProjectSpec(
                 name="test",
@@ -152,7 +154,7 @@ class TestTACConfig:
             commands=CommandsSpec(start="echo start", test="echo test"),
             claude=ClaudeConfig(settings=ClaudeSettings(project_name="test")),
         )
-        assert config.version == "0.2.0"
+        assert config.version == __version__
         assert isinstance(config.version, str)
 
     def test_version_custom(self):
@@ -184,6 +186,8 @@ class TestTACConfig:
 
     def test_version_in_model_dump(self):
         """Version should appear in model_dump() output."""
+        from tac_bootstrap import __version__
+
         config = TACConfig(
             project=ProjectSpec(
                 name="test",
@@ -195,7 +199,7 @@ class TestTACConfig:
         )
         dump = config.model_dump()
         assert "version" in dump
-        assert dump["version"] == "0.2.0"
+        assert dump["version"] == __version__
 
     def test_custom_paths(self):
         """Should allow custom paths configuration."""
