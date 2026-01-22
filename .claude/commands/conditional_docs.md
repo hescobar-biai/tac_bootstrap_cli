@@ -481,3 +481,20 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features que requieran acceso a la versión actual
     - Cuando actualices la versión para un nuevo release
     - Cuando trabajes en issues relacionados con version management o centralization
+
+- app_docs/feature-c928f831-upgrade-service.md
+  - Conditions:
+    - Cuando trabajes con el servicio UpgradeService en application/upgrade_service.py
+    - Cuando necesites entender el sistema de upgrade de proyectos TAC Bootstrap
+    - Cuando trabajes con detección y comparación de versiones de proyectos
+    - Cuando implementes el comando CLI tac-bootstrap upgrade (TAREA 5)
+    - Cuando trabajes con tests del UpgradeService (TAREA 4)
+    - Cuando necesites entender el sistema de backup y restauración automática
+    - Cuando trabajes con regeneración selectiva de Agentic Layer (.claude/, adws/, scripts/)
+    - Cuando necesites referencia sobre preservación de configuración durante upgrades
+    - Cuando modifiques o extiendas la funcionalidad de upgrade
+    - Cuando trabajes con get_current_version, needs_upgrade, perform_upgrade, create_backup
+    - Cuando necesites entender el uso de packaging.version para comparación semántica
+    - Cuando trabajes con integración entre UpgradeService y ScaffoldService
+    - Cuando implementes features que requieran dry-run o preview de cambios (get_changes_preview)
+    - Cuando trabajes en issues relacionados con project upgrades o migrations
