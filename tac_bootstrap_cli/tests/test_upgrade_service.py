@@ -278,7 +278,6 @@ class TestUpgradeService:
                     config_file = path / "config.yml"
                     config_data = {
                         "version": config.version,
-                        "tac_version": config.version,
                         "project": {"name": config.project.name},
                     }
                     with open(config_file, "w") as f:

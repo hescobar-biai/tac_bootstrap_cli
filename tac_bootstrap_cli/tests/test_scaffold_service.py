@@ -642,11 +642,11 @@ class TestScaffoldServiceADWCompleteness:
             parsed = yaml.safe_load(content)
 
             # Verify version fields are present
-            assert "tac_version" in parsed, "tac_version field should be in config.yml"
+            assert "version" in parsed, "version field should be in config.yml"
             assert "schema_version" in parsed, "schema_version field should be in config.yml"
 
             # Verify values match config
-            assert parsed["tac_version"] == "0.2.0", "tac_version should default to 0.2.0"
+            assert parsed["version"] == "0.2.0", "version should default to 0.2.0"
             assert parsed["schema_version"] == 1, "schema_version should default to 1"
 
             # Verify header comment contains TAC version
