@@ -145,7 +145,7 @@ def version_callback(value: bool):
 
 ### TAREA 3: Crear servicio `UpgradeService`
 
-**Archivo**: `tac_bootstrap_cli/tac_bootstrap/application/upgrade_service.py`
+*Archivo**: `tac_bootstrap_cli/tac_bootstrap/application/upgrade_service.py`
 
 **Descripción**: Servicio que maneja la lógica de actualización de proyectos.
 
@@ -203,7 +203,7 @@ class UpgradeService:
         try:
             with open(self.config_path) as f:
                 config_data = yaml.safe_load(f)
-                return config_data.get("version", "0.1.0")  # Default for old projects
+               * return config_data.get("version", "0.1.0")  # Default for old projects
         except Exception:
             return None
 
