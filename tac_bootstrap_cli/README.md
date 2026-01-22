@@ -35,7 +35,7 @@ tac-bootstrap init my-awesome-app
 ### Option 2: Development Install (for contributing)
 
 ```bash
-git clone --branch v0.1.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
+git clone --branch v0.2.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
 make install-dev
 
