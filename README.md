@@ -51,7 +51,48 @@ tac-bootstrap doctor --repo .
 
 # Re-generar desde config.yml
 tac-bootstrap render --config config.yml
+
+# Actualizar proyecto existente a la última versión
+tac-bootstrap upgrade
 ```
+
+## Actualizar Proyectos Existentes
+
+Si tienes un proyecto creado con una versión anterior de TAC Bootstrap, puedes actualizarlo a los templates más recientes:
+
+```bash
+# Verificar qué se actualizaría
+tac-bootstrap upgrade --dry-run
+
+# Actualizar con backup (por defecto)
+tac-bootstrap upgrade
+
+# Actualizar sin backup
+tac-bootstrap upgrade --no-backup
+
+# Forzar actualización aunque las versiones coincidan
+tac-bootstrap upgrade --force
+
+# Actualizar proyecto específico
+tac-bootstrap upgrade ./path/to/project
+```
+
+### Qué se Actualiza
+
+El comando upgrade actualiza:
+- `adws/` - AI Developer Workflows
+- `.claude/` - Configuración de Claude Code
+- `scripts/` - Scripts de utilidad
+
+Se preserva:
+- `src/` - Tu código de aplicación
+- `config.yml` - Tu configuración (solo se actualiza la versión)
+- Cualquier archivo personalizado que hayas agregado
+
+### Backup
+
+Por defecto, se crea un backup en `.tac-backup-{timestamp}/` antes de actualizar.
+Elimínalo manualmente después de confirmar que la actualización funciona correctamente.
 
 ## Flujo de Usuario
 
