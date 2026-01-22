@@ -571,3 +571,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender la estrategia de OVERWRITE para directorios de templates
     - Cuando trabajes con preservación de código durante upgrades
     - Cuando necesites ejemplo de documentación de versiones del CLI
+
+- app_docs/feature-81ea2c63-resolve-clarifications-function.md
+  - Conditions:
+    - Cuando trabajes con la función resolve_clarifications() en workflow_ops.py
+    - Cuando necesites entender auto-resolución de clarificaciones usando AI
+    - Cuando modifiques o extiendas la funcionalidad de resolve_clarifications
+    - Cuando trabajes con workflows ADW de Zero Touch Execution (ZTE)
+    - Cuando necesites entender la integración de agentes LLM para toma de decisiones
+    - Cuando trabajes con parsing de respuestas JSON de agentes
+    - Cuando necesites referencia sobre formato de decisiones en markdown
+    - Cuando implementes features de auto-resolución en otros contextos
+    - Cuando trabajes con manejo de errores en funciones que usan agentes LLM
+    - Cuando necesites entender la estrategia de fallback a assumptions
+    - Cuando trabajes con adw_plan_iso.py y la fase de clarificación
