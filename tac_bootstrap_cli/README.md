@@ -439,6 +439,38 @@ The `adws/` directory contains isolated workflow scripts that automate the softw
 | `trigger_webhook.py` | HTTP webhook server for GitHub events |
 | `trigger_cron.py` | Scheduled execution via cron |
 
+#### Webhook Trigger Setup
+
+The webhook trigger receives GitHub issue/comment events and launches ADW workflows automatically.
+
+**Prerequisites:**
+
+- GitHub CLI (`gh`) authenticated: `gh auth login`
+- GitHub CLI webhook extension:
+  ```bash
+  gh extension install cli/gh-webhook
+  ```
+
+**Running locally (no public IP required):**
+
+1. Start the webhook server:
+   ```bash
+   uv run adws/adw_triggers/trigger_webhook.py
+   ```
+
+2. In another terminal, forward GitHub events to your local server:
+   ```bash
+   gh webhook forward \
+     --repo=<owner>/<repo> \
+     --events=issues,issue_comment \
+     --url=http://localhost:8001/gh-webhook \
+     --secret=<your-secret>
+   ```
+
+The `gh webhook forward` command creates a WebSocket tunnel to GitHub, so your machine doesn't need a public IP or tools like ngrok.
+
+> **Note**: The forward only works while the command is running. For persistent production setups, configure a webhook in GitHub repo Settings with a publicly accessible URL.
+
 ### Key Concepts
 
 - **Isolation**: Each workflow runs in a dedicated git worktree under `trees/<adw-id>/`
