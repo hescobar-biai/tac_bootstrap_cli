@@ -498,3 +498,12 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con integración entre UpgradeService y ScaffoldService
     - Cuando implementes features que requieran dry-run o preview de cambios (get_changes_preview)
     - Cuando trabajes en issues relacionados con project upgrades o migrations
+
+- app_docs/feature-e326b973-add-packaging-dependency.md
+  - Conditions:
+    - Cuando trabajes con la dependencia packaging en pyproject.toml
+    - Cuando necesites entender por qué packaging está instalada
+    - Cuando trabajes con comparación semántica de versiones usando packaging.version
+    - Cuando modifiques dependencias del proyecto relacionadas con version comparison
+    - Cuando necesites referencia sobre dependencias de producción vs dev
+    - Cuando trabajes con UpgradeService y necesites entender la dependencia de packaging
