@@ -18,7 +18,7 @@ Transform any repository into an AI-assisted development environment in minutes.
 
 ```bash
 # Clone the release
-git clone --branch v0.2.1 --depth 1 https://github.com/celes-app/tac-cli-dist.git
+git clone --branch v0.2.2 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
 make install-dev
 
@@ -35,7 +35,7 @@ tac-bootstrap init my-awesome-app
 ### Option 2: Development Install (for contributing)
 
 ```bash
-git clone --branch v0.2.1 --depth 1 https://github.com/celes-app/tac-cli-dist.git
+git clone --branch v0.2.2 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
 make install-dev
 
@@ -108,7 +108,7 @@ See [.env.example](.env.example) for the complete list with documentation.
 
 ```bash
 # 1. Clone latest release and install
-git clone --branch v0.2.1 --depth 1 https://github.com/celes-app/tac-cli-dist.git
+git clone --branch v0.2.2 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
 make install-dev
 
