@@ -27,7 +27,7 @@ Este proyecto tiene DOS lugares donde vive el código:
 
 ## Tareas
 
-### Tarea 1: Agregar función `resolve_clarifications()` en workflow_ops
+### Tarea 1: Agregar función `resolve_clarifications()` en workflow_ops `/feature`
 
 **Archivos a modificar**:
 1. `adws/adw_modules/workflow_ops.py` (base)
@@ -169,7 +169,7 @@ Todos los tests deben pasar.
 
 ---
 
-### Tarea 2: Modificar adw_plan_iso para auto-resolver en lugar de pausar
+### Tarea 2: Modificar adw_plan_iso para auto-resolver en lugar de pausar `/feature`
 
 **Archivos a modificar**:
 1. `adws/adw_plan_iso.py` (base)
@@ -238,7 +238,7 @@ Todos los tests deben pasar.
 
 ---
 
-### Tarea 3: Ejecutar tests y verificar
+### Tarea 3: Ejecutar tests y verificar `/chore`
 
 **Prompt para el agente**:
 
@@ -264,7 +264,7 @@ Verifica también que los archivos base y template estén sincronizados:
 
 ---
 
-### Tarea 4: Prueba manual del flujo
+### Tarea 4: Prueba manual del flujo `/chore`
 
 **Prompt para el agente**:
 
