@@ -622,3 +622,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites referencia sobre el fix de issue #104
     - Cuando trabajes con synchronization de nombres de campos entre templates y domain models
     - Cuando implementes fixes similares para field name consistency
+
+- app_docs/feature-da2e1199-upgrade-config-normalization.md
+  - Conditions:
+    - Cuando trabajes con backward compatibility en UpgradeService
+    - Cuando necesites entender la normalización de campo legacy tac_version
+    - Cuando modifiques load_existing_config() en upgrade_service.py
+    - Cuando trabajes con migración automática de configs legacy (pre-0.2.0)
+    - Cuando debugues problemas de upgrade con proyectos viejos
+    - Cuando implementes normalization logic para otros campos legacy
+    - Cuando trabajes con tests de normalization scenarios (legacy, modern, mixed)
+    - Cuando necesites referencia sobre el fix de issue #106
+    - Cuando trabajes con config field compatibility o migration patterns
