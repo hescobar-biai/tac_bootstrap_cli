@@ -1,28 +1,26 @@
 # AI Developer Workflow (ADW) System - Isolated Workflows
 
-ADW automates software development using isolated git worktrees. The `_iso` suffix stands for "isolated" - these workflows run in separate git worktrees, enabling multiple agents to run at the same time in their own respective directories. Each workflow gets its own complete copy of the repository with dedicated ports and filesystem isolation.
+ADW automates software development using isolated git worktrees. The `_iso` suffix stands for "isolated" - these workflows run in separate git worktrees, enabling multiple agents to run at the same time in their own respective directories. Each workflow gets its own complete copy of the repository with filesystem isolation.
 
 ## Key Concepts
 
 ### Isolated Execution
 Every ADW workflow runs in an isolated git worktree under `trees/<adw_id>/` with:
 - Complete filesystem isolation
-- Dedicated port ranges (backend: 9100-9114, frontend: 9200-9214)
 - Independent git branches
-- Support for 15 concurrent instances
+- Support for concurrent instances
 
 ### ADW ID
 Each workflow run is assigned a unique 8-character identifier (e.g., `a1b2c3d4`). This ID:
 - Tracks all phases of a workflow (plan → build → test → review → document)
 - Appears in GitHub comments, commits, and PR titles
 - Creates an isolated worktree at `trees/{adw_id}/`
-- Allocates unique ports deterministically
 - Enables resuming workflows and debugging
 
 ### State Management
 ADW uses persistent state files (`agents/{adw_id}/adw_state.json`) to:
 - Share data between workflow phases
-- Track worktree locations and port assignments
+- Track worktree locations
 - Enable workflow composition and chaining
 - Track essential workflow data:
   - `adw_id`: Unique workflow identifier
@@ -31,8 +29,6 @@ ADW uses persistent state files (`agents/{adw_id}/adw_state.json`) to:
   - `plan_file`: Path to implementation plan
   - `issue_class`: Issue type (`/chore`, `/bug`, `/feature`)
   - `worktree_path`: Absolute path to isolated worktree
-  - `backend_port`: Allocated backend port (9100-9114)
-  - `frontend_port`: Allocated frontend port (9200-9214)
 
 ## Quick Start
 
@@ -120,13 +116,11 @@ uv run adw_plan_iso.py <issue-number> [adw-id]
 
 **What it does:**
 1. Creates isolated git worktree at `trees/<adw_id>/`
-2. Allocates unique ports (backend: 9100-9114, frontend: 9200-9214)
-3. Sets up environment with `.ports.env`
-4. Fetches issue details and classifies type
-5. Creates feature branch in worktree
-6. Generates implementation plan in isolation
-7. Commits and pushes from worktree
-8. Creates/updates pull request
+2. Fetches issue details and classifies type
+3. Creates feature branch in worktree
+4. Generates implementation plan in isolation
+5. Commits and pushes from worktree
+6. Creates/updates pull request
 
 #### adw_patch_iso.py - Isolated Patch Workflow
 Quick patches in isolated environment triggered by 'adw_patch' keyword.
@@ -138,7 +132,7 @@ uv run adw_patch_iso.py <issue-number> [adw-id]
 
 **What it does:**
 1. Searches for 'adw_patch' in issue/comments
-2. Creates isolated worktree with unique ports
+2. Creates isolated worktree
 3. Creates targeted patch plan in isolation
 4. Implements specific changes
 5. Commits and creates PR from worktree
@@ -311,7 +305,6 @@ uv run adw_ship_iso.py <issue-number> <adw-id>
 - `plan_file` was created
 - `issue_class` was determined
 - `worktree_path` exists
-- `backend_port` and `frontend_port` allocated
 
 #### adw_sdlc_zte_iso.py - Zero Touch Execution
 Complete SDLC with automatic shipping - no human intervention required.
@@ -507,7 +500,6 @@ trees/
 ├── abc12345/              # Complete repo copy for ADW abc12345
 │   ├── .git/              # Worktree git directory
 │   ├── .env               # Copied from main repo
-│   ├── .ports.env         # Port configuration
 │   ├── app/               # Application code
 │   ├── adws/              # ADW scripts
 │   └── ...
@@ -521,37 +513,12 @@ agents/                    # Shared state location (not in worktree)
     └── adw_state.json
 ```
 
-### Port Allocation
-
-Each isolated instance gets unique ports:
-- Backend: 9100-9114 (15 ports)
-- Frontend: 9200-9214 (15 ports)
-- Deterministic assignment based on ADW ID hash
-- Automatic fallback if preferred ports are busy
-
-**Port Assignment Algorithm:**
-```python
-def get_ports_for_adw(adw_id: str) -> Tuple[int, int]:
-    """Deterministically assign ports based on ADW ID."""
-    index = int(adw_id[:8], 36) % 15
-    backend_port = 9100 + index
-    frontend_port = 9200 + index
-    return backend_port, frontend_port
-```
-
-**Example Allocations:**
-```
-ADW abc12345: Backend 9107, Frontend 9207
-ADW def67890: Backend 9103, Frontend 9203
-```
-
 ### Benefits of Isolated Workflows
 
-1. **Parallel Execution**: Run up to 15 ADWs simultaneously
+1. **Parallel Execution**: Run multiple ADWs simultaneously
 2. **No Interference**: Each instance has its own:
    - Git worktree and branch
    - Filesystem (complete repo copy)
-   - Backend and frontend ports
    - Environment configuration
 3. **Clean Isolation**: Changes in one instance don't affect others
 4. **Easy Cleanup**: Remove worktree to clean everything

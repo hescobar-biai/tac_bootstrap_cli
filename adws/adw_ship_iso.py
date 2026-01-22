@@ -179,8 +179,6 @@ def validate_state_completeness(state: ADWState, logger: logging.Logger) -> tupl
         "plan_file",
         "issue_class",
         "worktree_path",
-        "backend_port",
-        "frontend_port",
     }
     
     missing_fields = []

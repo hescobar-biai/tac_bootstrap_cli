@@ -12,13 +12,11 @@ Usage:
 Workflow:
 1. Fetch GitHub issue details
 2. Check/create worktree for isolated execution
-3. Allocate unique ports for services
-4. Setup worktree environment
-5. Classify issue type (/chore, /bug, /feature)
-6. Create feature branch in worktree
-7. Generate implementation plan in worktree
-8. Commit plan in worktree
-9. Push and create/update PR
+3. Classify issue type (/chore, /bug, /feature)
+4. Create feature branch in worktree
+5. Generate implementation plan in worktree
+6. Commit plan in worktree
+7. Push and create/update PR
 
 This workflow creates an isolated git worktree under trees/<adw_id>/ for
 parallel execution without interference.
@@ -55,10 +53,6 @@ from adw_modules.agent import execute_template
 from adw_modules.worktree_ops import (
     create_worktree,
     validate_worktree,
-    get_ports_for_adw,
-    is_port_available,
-    find_next_available_ports,
-    setup_worktree_environment,
 )
 
 
@@ -118,20 +112,6 @@ def main():
     if valid:
         logger.info(f"Using existing worktree for {adw_id}")
         worktree_path = state.get("worktree_path")
-        backend_port = state.get("backend_port")
-        frontend_port = state.get("frontend_port")
-    else:
-        # Allocate ports for this instance
-        backend_port, frontend_port = get_ports_for_adw(adw_id)
-        
-        # Check port availability
-        if not (is_port_available(backend_port) and is_port_available(frontend_port)):
-            logger.warning(f"Deterministic ports {backend_port}/{frontend_port} are in use, finding alternatives")
-            backend_port, frontend_port = find_next_available_ports(adw_id)
-        
-        logger.info(f"Allocated ports - Backend: {backend_port}, Frontend: {frontend_port}")
-        state.update(backend_port=backend_port, frontend_port=frontend_port)
-        state.save("adw_plan_iso")
 
     # Fetch issue details
     issue: GitHubIssue = fetch_issue(issue_number, repo_path)
@@ -281,20 +261,17 @@ def main():
         state.update(worktree_path=worktree_path)
         state.save("adw_plan_iso")
         logger.info(f"Created worktree at {worktree_path}")
-        
-        # Setup worktree environment (create .ports.env)
-        setup_worktree_environment(worktree_path, backend_port, frontend_port, logger)
-        
+
         # Run install_worktree command to set up the isolated environment
-        logger.info("Setting up isolated environment with custom ports")
+        logger.info("Setting up isolated environment")
         install_request = AgentTemplateRequest(
             agent_name="ops",
             slash_command="/install_worktree",
-            args=[worktree_path, str(backend_port), str(frontend_port)],
+            args=[worktree_path],
             adw_id=adw_id,
             working_dir=worktree_path,  # Execute in worktree
         )
-        
+
         install_response = execute_template(install_request)
         if not install_response.success:
             logger.error(f"Error setting up worktree: {install_response.output}")
@@ -303,13 +280,12 @@ def main():
                 format_issue_message(adw_id, "ops", f"❌ Error setting up worktree: {install_response.output}"),
             )
             sys.exit(1)
-        
+
         logger.info("Worktree environment setup complete")
 
     make_issue_comment(
         issue_number,
-        format_issue_message(adw_id, "ops", f"✅ Working in isolated worktree: {worktree_path}\n"
-                           f"🔌 Ports - Backend: {backend_port}, Frontend: {frontend_port}"),
+        format_issue_message(adw_id, "ops", f"✅ Working in isolated worktree: {worktree_path}"),
     )
 
     # Build the implementation plan (now executing in worktree)
