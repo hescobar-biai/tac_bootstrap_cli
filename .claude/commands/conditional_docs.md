@@ -520,3 +520,18 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender la integración CLI con UpgradeService
     - Cuando trabajes con manejo de confirmaciones, previews, o mensajes de usuario en upgrades
     - Cuando modifiques el welcome panel o help text del CLI
+
+- app_docs/feature-566c67fe-upgrade-service-tests.md
+  - Conditions:
+    - Cuando trabajes con tests del UpgradeService en test_upgrade_service.py
+    - Cuando necesites entender la estrategia de testing para UpgradeService
+    - Cuando modifiques o extiendas los tests de UpgradeService
+    - Cuando trabajes con fixtures para proyectos mock (mock_project)
+    - Cuando necesites referencia sobre tests de version detection, backup, upgrade flow
+    - Cuando implementes tests de edge cases (corrupt config, missing dirs, rollback)
+    - Cuando trabajes con tests críticos (config version update, rollback on failure, abort on backup failure)
+    - Cuando necesites entender el uso de mocks para ScaffoldService en tests
+    - Cuando trabajes con pytest fixtures y tmp_path para filesystem testing
+    - Cuando modifiques la cobertura de tests del upgrade system
+    - Cuando necesites ejemplos de testing patterns para servicios complejos
+    - Cuando trabajes con tests de preservación de código usuario
