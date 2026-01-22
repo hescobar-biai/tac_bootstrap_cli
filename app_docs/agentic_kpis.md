@@ -6,15 +6,15 @@ Performance metrics for the AI Developer Workflow (ADW) system.
 
 Summary metrics across all ADW runs.
 
-| Metric            | Value          | Last Updated         |
-| ----------------- | -------------- | -------------------- |
-| Current Streak    | 37             | 2026-01-21 20:59:01  |
-| Longest Streak    | 37             | 2026-01-21 20:59:01  |
-| Total Plan Size   | 6736 lines     | 2026-01-21 20:59:01  |
-| Largest Plan Size | 421 lines      | 2026-01-21 20:59:01  |
-| Total Diff Size   | 25057 lines    | 2026-01-21 20:59:01  |
-| Largest Diff Size | 1563 lines     | 2026-01-21 20:59:01  |
-| Average Presence  | 1.00           | 2026-01-21 20:59:01  |
+| Metric            | Value          | Last Updated        |
+| ----------------- | -------------- | ------------------- |
+| Current Streak    | 38             | 2026-01-21 21:32:16 |
+| Longest Streak    | 38             | 2026-01-21 21:32:16 |
+| Total Plan Size   | 6983 lines     | 2026-01-21 21:32:16 |
+| Largest Plan Size | 421 lines      | 2026-01-21 21:32:16 |
+| Total Diff Size   | 25823 lines    | 2026-01-21 21:32:16 |
+| Largest Diff Size | 1563 lines     | 2026-01-21 21:32:16 |
+| Average Presence  | 1.00           | 2026-01-21 21:32:16 |
 
 ## ADW KPIs
 
@@ -59,3 +59,4 @@ Detailed metrics for individual ADW workflow runs.
 | Wed Jan 21 2026  | 7a8b363e | 81           | /chore      | 1        | 70                | 256/6/10                        | Wed Jan 21 20:28:56 -05 2026 | -       |
 | Tue Jan 21 2026  | c928f831 | 82           | /feature    | 1        | 244               | 682/2/7                         | 2026-01-21 20:42:30          | -       |
 | Wed Jan 21 2026  | e326b973 | 86           | /chore      | 1        | 51                | 183/2/8                         | Wed Jan 21 20:59:01 -05 2026 | -       |
+| Wed Jan 21 2026  | d181e409 | 85           | /feature    | 1        | 247               | 764/2/8                         | 2026-01-21 21:32:16          | -       |

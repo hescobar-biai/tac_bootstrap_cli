@@ -507,3 +507,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando modifiques dependencias del proyecto relacionadas con version comparison
     - Cuando necesites referencia sobre dependencias de producción vs dev
     - Cuando trabajes con UpgradeService y necesites entender la dependencia de packaging
+
+- app_docs/feature-d181e409-cli-upgrade-command.md
+  - Conditions:
+    - Cuando trabajes con el comando CLI tac-bootstrap upgrade
+    - Cuando necesites entender la implementación del comando upgrade en cli.py
+    - Cuando modifiques o extiendas la funcionalidad del comando upgrade
+    - Cuando trabajes con argumentos y opciones del upgrade command (path, dry-run, backup, force)
+    - Cuando necesites entender el flujo completo del upgrade workflow
+    - Cuando trabajes con tests del comando upgrade (test_upgrade_cli.py)
+    - Cuando implementes nuevos comandos CLI y necesites referencia sobre patrones
+    - Cuando necesites entender la integración CLI con UpgradeService
+    - Cuando trabajes con manejo de confirmaciones, previews, o mensajes de usuario en upgrades
+    - Cuando modifiques el welcome panel o help text del CLI

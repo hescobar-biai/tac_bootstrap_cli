@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 from tac_bootstrap import __version__
+from tac_bootstrap.application.upgrade_service import UpgradeService
 from tac_bootstrap.domain.models import (
     Architecture,
     ClaudeConfig,
@@ -72,6 +73,7 @@ Bootstrap Agentic Layer for Claude Code with TAC patterns.
   [green]add-agentic[/green]  Inject Agentic Layer into existing repo
   [green]doctor[/green]       Validate existing setup
   [green]render[/green]       Regenerate from config.yml
+  [green]upgrade[/green]      Upgrade to latest TAC Bootstrap version
   [green]version[/green]      Show version
 
 Use [cyan]tac-bootstrap --help[/cyan] for more information.
@@ -616,6 +618,92 @@ All files have been regenerated from {config_file.name}
 
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@app.command()
+def upgrade(
+    path: Path = typer.Argument(
+        Path("."),
+        help="Path to project to upgrade",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        "-n",
+        help="Show what would be changed without making changes",
+    ),
+    backup: bool = typer.Option(
+        True,
+        "--backup/--no-backup",
+        help="Create backup before upgrading (default: enabled)",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Force upgrade even if versions match",
+    ),
+) -> None:
+    """Upgrade agentic layer to latest TAC Bootstrap version.
+
+    This command updates the adws/, .claude/, and scripts/ directories
+    to the latest templates while preserving your project configuration.
+
+    Examples:
+        tac-bootstrap upgrade                    # Upgrade current directory
+        tac-bootstrap upgrade ./my-project       # Upgrade specific project
+        tac-bootstrap upgrade --dry-run          # Preview changes
+        tac-bootstrap upgrade --no-backup        # Upgrade without backup
+    """
+    project_path = path.resolve()
+
+    # Verify it's a TAC project
+    config_file = project_path / "config.yml"
+    if not config_file.exists():
+        console.print("[red]Error: No config.yml found. Is this a TAC Bootstrap project?[/red]")
+        raise typer.Exit(1)
+
+    service = UpgradeService(project_path)
+
+    # Check versions
+    needs_upgrade, current_ver, target_ver = service.needs_upgrade()
+
+    console.print("\n[bold]TAC Bootstrap Upgrade[/bold]")
+    console.print(f"  Current version: [yellow]{current_ver}[/yellow]")
+    console.print(f"  Target version:  [green]{target_ver}[/green]")
+
+    if not needs_upgrade and not force:
+        console.print("\n[green]Project is already up to date![/green]")
+        raise typer.Exit(0)
+
+    # Show changes preview
+    console.print("\n[bold]Changes to be made:[/bold]")
+    for change in service.get_changes_preview():
+        console.print(f"  • {change}")
+
+    if dry_run:
+        console.print("\n[yellow]Dry run - no changes made[/yellow]")
+        raise typer.Exit(0)
+
+    # Confirm upgrade
+    if not typer.confirm("\nProceed with upgrade?", default=True):
+        console.print("[yellow]Upgrade cancelled[/yellow]")
+        raise typer.Exit(0)
+
+    # Perform upgrade
+    console.print("\n[bold]Upgrading...[/bold]")
+    success, message = service.perform_upgrade(backup=backup)
+
+    if success:
+        console.print(f"\n[green]✓ {message}[/green]")
+        if backup:
+            console.print("[dim]Backup preserved. Delete manually when confirmed working.[/dim]")
+    else:
+        console.print(f"\n[red]✗ {message}[/red]")
         raise typer.Exit(1)
 
 
