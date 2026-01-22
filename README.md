@@ -396,3 +396,6 @@ Ver [ai_docs/doc/](ai_docs/doc/) para documentacion completa del curso.
 ## Licencia
 
 MIT
+
+
+crea un archivo con las tares del plan en md aca /Volumes/MAc1/Celes/tac_bootstrap/ai_docs/doc recuerda que debes crear tare por tarea buen espesifica sin ambuguedades determinar si es un bug un chore o un feature al inicio de la tarae modificar el archivo raiz y ademas el archivo en tempalte /Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates y al final una tarae que actulice el chanlog con a nueva version en  /Volumes/MAc1/Celes/tac_bootstrap/CHANGELOG.md
