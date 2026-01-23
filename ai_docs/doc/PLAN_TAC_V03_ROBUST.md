@@ -46,11 +46,72 @@ Evolucionar `tac_bootstrap_cli` de un generador de estructura agentic a una herr
 ### Excepcion: Templates de capabilities (crud_basic, crud_authorized)
 Los templates de `capabilities/` NO se renderizan automaticamente en la raiz. Solo se generan cuando el usuario ejecuta `tac-bootstrap generate entity <name>`. Por eso no tienen archivo en raiz.
 
+### Contexto: config.yml de ESTE proyecto
+
+El archivo `/Volumes/MAc1/Celes/tac_bootstrap/config.yml` contiene la configuracion real de este proyecto. Los templates usan estas variables con la sintaxis `{{ config.project.name }}`, `{{ config.paths.app_root }}`, etc.
+
+**Valores actuales relevantes para renderizado:**
+```yaml
+project:
+  name: "tac-bootstrap"
+  language: "python"
+  framework: "none"         # NOTA: no es FastAPI, pero architecture=ddd
+  architecture: "ddd"
+  package_manager: "uv"
+
+paths:
+  app_root: "tac_bootstrap_cli"   # Codigo del CLI vive aqui
+  scripts_dir: "scripts"
+  adws_dir: "adws"
+
+commands:
+  test: "uv run pytest"
+  lint: "uv run ruff check ."
+```
+
+**IMPORTANTE - Consideracion de framework:**
+- Este proyecto tiene `framework: "none"` (no es una app FastAPI, es un CLI)
+- Las base classes (Fase 1) son templates para proyectos FastAPI que el CLI GENERA
+- Para la dual creation en la raiz: renderizar los templates como **ejemplo/referencia** usando los valores de config.yml, pero los imports de FastAPI/SQLAlchemy son de referencia (no se ejecutan en este proyecto)
+- Los scripts de Fase 6 SI son funcionales en este proyecto (Python, language=python)
+
 ### Como implementar la dual creation:
-1. Crear el template `.j2` con variables Jinja2
-2. Renderizar el template con los valores del proyecto actual (tac_bootstrap)
+1. Crear el template `.j2` con variables Jinja2 (`{{ config.project.name }}`, etc.)
+2. Para renderizar el archivo en raiz, usar los valores de `config.yml`:
+   - `config.project.name` → `"tac-bootstrap"`
+   - `config.project.language` → `"python"`
+   - `config.paths.app_root` → `"tac_bootstrap_cli"`
+   - `config.commands.test` → `"uv run pytest"`
 3. Guardar el resultado en la ruta correspondiente de la raiz
 4. Verificar que AMBOS archivos existen y son consistentes
+
+### Ejemplo concreto de renderizado:
+
+**Template** (`templates/scripts/run_generators.sh.j2`):
+```bash
+REPO_ROOT="{{ config.paths.app_root | default('.') }}"
+```
+
+**Renderizado en raiz** (`scripts/run_generators.sh`):
+```bash
+REPO_ROOT="tac_bootstrap_cli"
+```
+
+**Template** (`templates/config/canonical_idk.yml.j2`):
+```yaml
+# Canonical IDK Vocabulary for {{ config.project.name }}
+{% if config.project.language == "python" %}
+  backend:
+    - api-gateway, routing, ...
+{% endif %}
+```
+
+**Renderizado en raiz** (`canonical_idk.yml`):
+```yaml
+# Canonical IDK Vocabulary for tac-bootstrap
+  backend:
+    - api-gateway, routing, ...
+```
 
 ---
 
