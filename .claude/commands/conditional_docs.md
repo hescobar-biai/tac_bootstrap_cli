@@ -679,3 +679,24 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites referencia sobre exclusión de audit fields en Create/Update (security)
     - Cuando trabajes con campo state como string vs enum específico de entidad
     - Cuando necesites entender el patrón dogfooding (template usado por tac_bootstrap mismo)
+
+- app_docs/feature-bad795f3-base-service-template.md
+  - Conditions:
+    - Cuando trabajes con el template base_service.py.j2 o la clase base de servicios genéricos
+    - Cuando necesites entender la arquitectura de service layer con operaciones CRUD
+    - Cuando modifiques o extiendas BaseService[TCreate, TUpdate, TResponse, TModel, TDomain]
+    - Cuando implementes servicios específicos de entidad heredando de BaseService
+    - Cuando trabajes con operaciones CRUD (create, get_by_id, get_all, update, delete, hard_delete)
+    - Cuando necesites referencia sobre audit trail management (created_by, updated_by)
+    - Cuando trabajes con soft delete pattern (state=2) vs hard delete
+    - Cuando implementes version control y optimistic locking en updates
+    - Cuando trabajes con PaginatedResponse[T] para list endpoints
+    - Cuando necesites entender pagination con filtering y sorting
+    - Cuando trabajes con error handling (HTTPException 404, 400)
+    - Cuando implementes dependency injection de repository en servicios
+    - Cuando necesites referencia sobre separación de concerns (service vs repository vs routes)
+    - Cuando trabajes con generics tipados y type safety en Python
+    - Cuando modifiques src/shared/application/base_service.py o su template
+    - Cuando implementes features de CRUD que requieran business logic layer
+    - Cuando necesites entender integration con FastAPI routes y repository pattern
+    - Cuando trabajes con IDK documentation pattern en service methods
