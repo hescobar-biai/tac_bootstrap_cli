@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
-from tac_bootstrap.domain.models import TACConfig
+from tac_bootstrap.domain.models import Architecture, Framework, TACConfig
 from tac_bootstrap.domain.plan import (
     FileAction,
     ScaffoldPlan,
@@ -67,6 +67,12 @@ class ScaffoldService:
         # Add directory structure
         self._add_directories(plan, config)
 
+        # Add shared infrastructure for DDD-style architectures with FastAPI
+        ddd_architectures = [Architecture.DDD, Architecture.CLEAN, Architecture.HEXAGONAL]
+        if config.project.architecture in ddd_architectures:
+            if config.project.framework == Framework.FASTAPI:
+                self._add_shared_infrastructure(plan, config)
+
         # Add Claude configuration files
         self._add_claude_files(plan, config, existing_repo)
 
@@ -107,6 +113,107 @@ class ScaffoldService:
 
         for path, reason in directories:
             plan.add_directory(path, reason)
+
+    def _add_shared_infrastructure(self, plan: ScaffoldPlan, config: TACConfig) -> None:
+        """Add shared infrastructure base classes for DDD/Clean/Hexagonal architectures."""
+        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
+
+        # Add directory structure
+        directories = [
+            ("src/shared", "Shared infrastructure"),
+            ("src/shared/domain", "Domain base classes"),
+            ("src/shared/application", "Application base classes"),
+            ("src/shared/infrastructure", "Infrastructure base classes"),
+            ("src/shared/api", "Shared API utilities"),
+        ]
+
+        for path, reason in directories:
+            plan.add_directory(path, reason)
+
+        # Add __init__.py files
+        init_files = [
+            "src/shared/__init__.py",
+            "src/shared/domain/__init__.py",
+            "src/shared/application/__init__.py",
+            "src/shared/infrastructure/__init__.py",
+            "src/shared/api/__init__.py",
+        ]
+
+        for init_file in init_files:
+            plan.add_file(
+                init_file,
+                action=action,
+                content="",
+                reason="Python package marker",
+            )
+
+        # Add domain base classes
+        plan.add_file(
+            "src/shared/domain/base_entity.py",
+            action=action,
+            template="shared/base_entity.py.j2",
+            reason="Base entity for domain models",
+        )
+        plan.add_file(
+            "src/shared/domain/base_schema.py",
+            action=action,
+            template="shared/base_schema.py.j2",
+            reason="Base schema for API models",
+        )
+
+        # Add application base class
+        plan.add_file(
+            "src/shared/application/base_service.py",
+            action=action,
+            template="shared/base_service.py.j2",
+            reason="Base service for business logic",
+        )
+
+        # Add infrastructure base classes
+        plan.add_file(
+            "src/shared/infrastructure/base_repository.py",
+            action=action,
+            template="shared/base_repository.py.j2",
+            reason="Base repository (synchronous)",
+        )
+        plan.add_file(
+            "src/shared/infrastructure/base_repository_async.py",
+            action=action,
+            template="shared/base_repository_async.py.j2",
+            reason="Base repository (asynchronous)",
+        )
+        plan.add_file(
+            "src/shared/infrastructure/database.py",
+            action=action,
+            template="shared/database.py.j2",
+            reason="Database configuration and session",
+        )
+        plan.add_file(
+            "src/shared/infrastructure/exceptions.py",
+            action=action,
+            template="shared/exceptions.py.j2",
+            reason="Standard exception hierarchy",
+        )
+        plan.add_file(
+            "src/shared/infrastructure/responses.py",
+            action=action,
+            template="shared/responses.py.j2",
+            reason="Standard API response models",
+        )
+        plan.add_file(
+            "src/shared/infrastructure/dependencies.py",
+            action=action,
+            template="shared/dependencies.py.j2",
+            reason="FastAPI dependency injection",
+        )
+
+        # Add API utilities
+        plan.add_file(
+            "src/shared/api/health.py",
+            action=action,
+            template="shared/health.py.j2",
+            reason="Health check endpoint",
+        )
 
     def _add_claude_files(self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool) -> None:
         """Add .claude/ configuration files."""
