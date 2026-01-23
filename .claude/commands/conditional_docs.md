@@ -700,3 +700,25 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features de CRUD que requieran business logic layer
     - Cuando necesites entender integration con FastAPI routes y repository pattern
     - Cuando trabajes con IDK documentation pattern en service methods
+
+- app_docs/feature-285fb401-template-base-repository.md
+  - Conditions:
+    - Cuando trabajes con el template base_repository.py.j2 o la clase base de repositorios genéricos
+    - Cuando necesites entender la arquitectura de repository layer con abstracción de SQLAlchemy
+    - Cuando modifiques o extiendas BaseRepository[TModel]
+    - Cuando implementes repositorios específicos de entidad heredando de BaseRepository
+    - Cuando trabajes con operaciones CRUD de datos (get_by_id, get_all, create, update, delete, hard_delete, exists, count)
+    - Cuando necesites referencia sobre soft-delete enforcement (state != 2)
+    - Cuando trabajes con transaction management (commit/rollback)
+    - Cuando implementes dynamic filtering con Dict[str, Any] y equality operators
+    - Cuando trabajes con pagination (offset/limit con total count)
+    - Cuando necesites entender sort validation y SQL injection prevention
+    - Cuando trabajes con error handling en repository layer
+    - Cuando implementes soft delete (state=2) vs physical deletion
+    - Cuando necesites referencia sobre separación de concerns (repository vs service)
+    - Cuando trabajes con generics tipados usando TypeVar para type safety
+    - Cuando modifiques src/shared/infrastructure/base_repository.py o su template
+    - Cuando implementes features de CRUD que requieran data access layer
+    - Cuando necesites entender integration con SQLAlchemy Session y ORM models
+    - Cuando trabajes con IDK documentation pattern en repository methods
+    - Cuando necesites referencia sobre dual creation pattern (template + reference implementation)
