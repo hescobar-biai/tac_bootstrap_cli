@@ -413,6 +413,16 @@ class ScaffoldService:
                 "structure/ai_docs/solid.md.j2",
                 "SOLID principles reference",
             ),
+            (
+                "ai_docs/ddd_lite.md",
+                "structure/ai_docs/ddd_lite.md.j2",
+                "DDD Lite vertical slice architecture reference",
+            ),
+            (
+                "ai_docs/fractal_docs.md",
+                "structure/ai_docs/fractal_docs.md.j2",
+                "Fractal documentation system reference",
+            ),
         ]
 
         for path, template, reason in ai_docs_files:
