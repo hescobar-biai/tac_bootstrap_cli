@@ -1,0 +1,179 @@
+"""
+{{ entity_spec.name }} API Routes
+
+Auto-generated FastAPI routes for {{ entity_spec.capability }} capability.
+"""
+
+from typing import List
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from domain.{{ entity_spec.capability.replace('-', '_') }}.schemas.{{ entity_spec.snake_name }}_schemas import (
+    {{ entity_spec.name }}Create,
+    {{ entity_spec.name }}Response,
+    {{ entity_spec.name }}Update,
+)
+from application.{{ entity_spec.capability.replace('-', '_') }}.services.{{ entity_spec.snake_name }}_service import {{ entity_spec.name }}Service
+
+{% if entity_spec.authorized %}
+from shared.auth.decorators import requires_auth
+{% endif %}
+
+router = APIRouter(
+    prefix="/{{ entity_spec.plural_name }}",
+    tags=["{{ entity_spec.plural_name }}"],
+)
+
+
+def get_{{ entity_spec.snake_name }}_service() -> {{ entity_spec.name }}Service:
+    """
+    Dependency to get {{ entity_spec.name }} service instance.
+
+    Returns:
+        {{ entity_spec.name }}Service instance
+    """
+    # TODO: Implement dependency injection
+    # This is a placeholder - replace with actual DI container
+    raise NotImplementedError("Dependency injection not configured")
+
+
+@router.post(
+    "/",
+    response_model={{ entity_spec.name }}Response,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create {{ entity_spec.snake_name }}",
+)
+{% if entity_spec.authorized %}@requires_auth
+{% endif %}{% if entity_spec.async_mode %}async {% endif %}def create_{{ entity_spec.snake_name }}(
+    data: {{ entity_spec.name }}Create,
+    service: {{ entity_spec.name }}Service = Depends(get_{{ entity_spec.snake_name }}_service),
+) -> {{ entity_spec.name }}Response:
+    """
+    Create a new {{ entity_spec.snake_name }}.
+
+    Args:
+        data: {{ entity_spec.name }} creation data
+        service: {{ entity_spec.name }} service instance
+
+    Returns:
+        Created {{ entity_spec.snake_name }}
+    """
+    return {% if entity_spec.async_mode %}await {% endif %}service.create(data)
+
+
+@router.get(
+    "/{id}",
+    response_model={{ entity_spec.name }}Response,
+    summary="Get {{ entity_spec.snake_name }} by ID",
+)
+{% if entity_spec.async_mode %}async {% endif %}def get_{{ entity_spec.snake_name }}(
+    id: UUID,
+    service: {{ entity_spec.name }}Service = Depends(get_{{ entity_spec.snake_name }}_service),
+) -> {{ entity_spec.name }}Response:
+    """
+    Get {{ entity_spec.snake_name }} by ID.
+
+    Args:
+        id: {{ entity_spec.name }} ID
+        service: {{ entity_spec.name }} service instance
+
+    Returns:
+        {{ entity_spec.name }} details
+
+    Raises:
+        HTTPException: If {{ entity_spec.snake_name }} not found
+    """
+    result = {% if entity_spec.async_mode %}await {% endif %}service.get_by_id(id)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{{ entity_spec.name }} with id {id} not found",
+        )
+    return result
+
+
+@router.get(
+    "/",
+    response_model=List[{{ entity_spec.name }}Response],
+    summary="List {{ entity_spec.plural_name }}",
+)
+{% if entity_spec.async_mode %}async {% endif %}def list_{{ entity_spec.plural_name }}(
+    skip: int = 0,
+    limit: int = 100,
+    service: {{ entity_spec.name }}Service = Depends(get_{{ entity_spec.snake_name }}_service),
+) -> List[{{ entity_spec.name }}Response]:
+    """
+    List all {{ entity_spec.plural_name }}.
+
+    Args:
+        skip: Number of records to skip
+        limit: Maximum number of records to return
+        service: {{ entity_spec.name }} service instance
+
+    Returns:
+        List of {{ entity_spec.plural_name }}
+    """
+    return {% if entity_spec.async_mode %}await {% endif %}service.list_all(skip=skip, limit=limit)
+
+
+@router.put(
+    "/{id}",
+    response_model={{ entity_spec.name }}Response,
+    summary="Update {{ entity_spec.snake_name }}",
+)
+{% if entity_spec.authorized %}@requires_auth
+{% endif %}{% if entity_spec.async_mode %}async {% endif %}def update_{{ entity_spec.snake_name }}(
+    id: UUID,
+    data: {{ entity_spec.name }}Update,
+    service: {{ entity_spec.name }}Service = Depends(get_{{ entity_spec.snake_name }}_service),
+) -> {{ entity_spec.name }}Response:
+    """
+    Update {{ entity_spec.snake_name }}.
+
+    Args:
+        id: {{ entity_spec.name }} ID
+        data: Update data
+        service: {{ entity_spec.name }} service instance
+
+    Returns:
+        Updated {{ entity_spec.snake_name }}
+
+    Raises:
+        HTTPException: If {{ entity_spec.snake_name }} not found
+    """
+    result = {% if entity_spec.async_mode %}await {% endif %}service.update(id, data)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{{ entity_spec.name }} with id {id} not found",
+        )
+    return result
+
+
+@router.delete(
+    "/{id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete {{ entity_spec.snake_name }}",
+)
+{% if entity_spec.authorized %}@requires_auth
+{% endif %}{% if entity_spec.async_mode %}async {% endif %}def delete_{{ entity_spec.snake_name }}(
+    id: UUID,
+    service: {{ entity_spec.name }}Service = Depends(get_{{ entity_spec.snake_name }}_service),
+) -> None:
+    """
+    Delete {{ entity_spec.snake_name }}.
+
+    Args:
+        id: {{ entity_spec.name }} ID
+        service: {{ entity_spec.name }} service instance
+
+    Raises:
+        HTTPException: If {{ entity_spec.snake_name }} not found
+    """
+    deleted = {% if entity_spec.async_mode %}await {% endif %}service.delete(id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{{ entity_spec.name }} with id {id} not found",
+        )

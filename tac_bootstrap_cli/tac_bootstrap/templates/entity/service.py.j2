@@ -1,0 +1,118 @@
+"""
+{{ entity_spec.name }} Service
+
+Auto-generated service layer for {{ entity_spec.capability }} capability.
+"""
+
+from typing import List, Optional
+from uuid import UUID
+
+from shared.application.base_service import BaseService
+
+from domain.{{ entity_spec.capability.replace('-', '_') }}.entities.{{ entity_spec.snake_name }} import {{ entity_spec.name }}
+from domain.{{ entity_spec.capability.replace('-', '_') }}.schemas.{{ entity_spec.snake_name }}_schemas import (
+    {{ entity_spec.name }}Create,
+    {{ entity_spec.name }}Response,
+    {{ entity_spec.name }}Update,
+)
+from infrastructure.{{ entity_spec.capability.replace('-', '_') }}.repositories.{{ entity_spec.snake_name }}_repository import {{ entity_spec.name }}Repository
+
+
+class {{ entity_spec.name }}Service(BaseService[{{ entity_spec.name }}, {{ entity_spec.name }}Create, {{ entity_spec.name }}Update, {{ entity_spec.name }}Response]):
+    """
+    Service for {{ entity_spec.name }} business logic.
+
+    Orchestrates operations on {{ entity_spec.snake_name }} entities.
+    """
+
+    def __init__(self, repository: {{ entity_spec.name }}Repository):
+        """
+        Initialize service with repository.
+
+        Args:
+            repository: {{ entity_spec.name }} repository instance
+        """
+        super().__init__(repository)
+        self.repository = repository
+
+    {% if entity_spec.async_mode %}async {% endif %}def create(self, data: {{ entity_spec.name }}Create) -> {{ entity_spec.name }}Response:
+        """
+        Create a new {{ entity_spec.snake_name }}.
+
+        Args:
+            data: {{ entity_spec.name }} creation data
+
+        Returns:
+            Created {{ entity_spec.snake_name }} response
+        """
+        entity = {{ entity_spec.name }}(**data.model_dump())
+        created = {% if entity_spec.async_mode %}await {% endif %}self.repository.create(entity)
+        return {{ entity_spec.name }}Response.model_validate(created)
+
+    {% if entity_spec.async_mode %}async {% endif %}def get_by_id(self, id: UUID) -> Optional[{{ entity_spec.name }}Response]:
+        """
+        Get {{ entity_spec.snake_name }} by ID.
+
+        Args:
+            id: {{ entity_spec.name }} ID
+
+        Returns:
+            {{ entity_spec.name }} response or None if not found
+        """
+        entity = {% if entity_spec.async_mode %}await {% endif %}self.repository.get_by_id(id)
+        if not entity:
+            return None
+        return {{ entity_spec.name }}Response.model_validate(entity)
+
+    {% if entity_spec.async_mode %}async {% endif %}def list_all(self, skip: int = 0, limit: int = 100) -> List[{{ entity_spec.name }}Response]:
+        """
+        List all {{ entity_spec.plural_name }}.
+
+        Args:
+            skip: Number of records to skip
+            limit: Maximum number of records to return
+
+        Returns:
+            List of {{ entity_spec.snake_name }} responses
+        """
+        entities = {% if entity_spec.async_mode %}await {% endif %}self.repository.list_all(skip=skip, limit=limit)
+        return [{{ entity_spec.name }}Response.model_validate(e) for e in entities]
+
+    {% if entity_spec.async_mode %}async {% endif %}def update(self, id: UUID, data: {{ entity_spec.name }}Update) -> Optional[{{ entity_spec.name }}Response]:
+        """
+        Update {{ entity_spec.snake_name }}.
+
+        Args:
+            id: {{ entity_spec.name }} ID
+            data: Update data
+
+        Returns:
+            Updated {{ entity_spec.snake_name }} response or None if not found
+        """
+        entity = {% if entity_spec.async_mode %}await {% endif %}self.repository.get_by_id(id)
+        if not entity:
+            return None
+
+        # Update fields
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(entity, field, value)
+
+        updated = {% if entity_spec.async_mode %}await {% endif %}self.repository.update(entity)
+        return {{ entity_spec.name }}Response.model_validate(updated)
+
+    {% if entity_spec.async_mode %}async {% endif %}def delete(self, id: UUID) -> bool:
+        """
+        Delete {{ entity_spec.snake_name }}.
+
+        Args:
+            id: {{ entity_spec.name }} ID
+
+        Returns:
+            True if deleted, False if not found
+        """
+        entity = {% if entity_spec.async_mode %}await {% endif %}self.repository.get_by_id(id)
+        if not entity:
+            return False
+
+        {% if entity_spec.async_mode %}await {% endif %}self.repository.delete(entity)
+        return True

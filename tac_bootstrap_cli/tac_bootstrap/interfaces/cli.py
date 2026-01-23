@@ -1,7 +1,8 @@
 """CLI interface for TAC Bootstrap."""
 
+import re
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
 import typer
 import yaml
@@ -10,6 +11,7 @@ from rich.panel import Panel
 
 from tac_bootstrap import __version__
 from tac_bootstrap.application.upgrade_service import UpgradeService
+from tac_bootstrap.domain.entity_config import EntitySpec, FieldSpec, FieldType
 from tac_bootstrap.domain.models import (
     Architecture,
     ClaudeConfig,
@@ -71,6 +73,7 @@ Bootstrap Agentic Layer for Claude Code with TAC patterns.
 [bold]Available Commands:[/bold]
   [green]init[/green]         Create new project with Agentic Layer
   [green]add-agentic[/green]  Inject Agentic Layer into existing repo
+  [green]generate[/green]     Generate code artifacts (entities, etc.)
   [green]doctor[/green]       Validate existing setup
   [green]render[/green]       Regenerate from config.yml
   [green]upgrade[/green]      Upgrade to latest TAC Bootstrap version
@@ -618,6 +621,228 @@ All files have been regenerated from {config_file.name}
 
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@app.command()
+def generate(
+    subcommand: str = typer.Argument(..., help="Subcommand (currently only 'entity' is supported)"),
+    name: str = typer.Argument(..., help="Entity name in PascalCase (e.g., Product, UserProfile)"),
+    capability: Annotated[Optional[str], typer.Option("--capability", "-c")] = None,
+    fields: Annotated[Optional[str], typer.Option("--fields", "-f")] = None,
+    authorized: Annotated[bool, typer.Option("--authorized")] = False,
+    async_mode: Annotated[bool, typer.Option("--async")] = False,
+    with_events: Annotated[bool, typer.Option("--with-events")] = False,
+    interactive: Annotated[bool, typer.Option("--interactive/--no-interactive")] = True,
+    dry_run: Annotated[bool, typer.Option("--dry-run")] = False,
+    force: Annotated[bool, typer.Option("--force")] = False,
+) -> None:
+    """
+    Generate code artifacts from specifications.
+
+    Currently supports generating CRUD entities with complete vertical slices
+    (domain model, schemas, service, repository, routes).
+
+    Examples:
+        # Interactive mode (default) - launches wizard
+        $ tac-bootstrap generate entity Product
+
+        # Non-interactive with fields
+        $ tac-bootstrap generate entity Product -c catalog --no-interactive \\
+          --fields "name:str:required,price:float:required,description:text"
+
+        # Preview without creating files
+        $ tac-bootstrap generate entity Product --dry-run
+
+        # With async repository and domain events
+        $ tac-bootstrap generate entity Product --async --with-events
+
+        # With authorization on create/update/delete endpoints
+        $ tac-bootstrap generate entity Product --authorized
+    """
+    try:
+        # Validate subcommand
+        if subcommand != "entity":
+            console.print(
+                f"[red]Error:[/red] Unknown subcommand '{subcommand}'. "
+                "Currently only 'entity' is supported."
+            )
+            console.print(
+                "\n[yellow]Example:[/yellow] tac-bootstrap generate entity Product"
+            )
+            raise typer.Exit(1)
+
+        # Auto-generate capability from entity name if not provided
+        if capability is None:
+            # Convert PascalCase to kebab-case: ProductCategory -> product-category
+            capability = re.sub(r'(?<!^)(?=[A-Z])', '-', name).lower()
+            console.print(f"[dim]Auto-generated capability: {capability}[/dim]")
+
+        # Parse fields or launch wizard
+        field_specs: list[FieldSpec] = []
+
+        if fields:
+            # Non-interactive mode: parse fields string
+            # Format: "name:type:required,name:type"
+            try:
+                for field_def in fields.split(','):
+                    parts = field_def.strip().split(':')
+                    if len(parts) < 2:
+                        console.print(
+                            f"[red]Error:[/red] Invalid field definition '{field_def}'. "
+                            "Expected format: name:type or name:type:required"
+                        )
+                        raise typer.Exit(1)
+
+                    field_name = parts[0].strip()
+                    field_type_str = parts[1].strip()
+                    is_required = parts[2].strip().lower() == 'required' if len(parts) > 2 else True
+
+                    # Map string type to FieldType
+                    type_mapping = {
+                        'str': FieldType.STRING,
+                        'int': FieldType.INTEGER,
+                        'float': FieldType.FLOAT,
+                        'bool': FieldType.BOOLEAN,
+                        'datetime': FieldType.DATETIME,
+                        'uuid': FieldType.UUID,
+                        'text': FieldType.TEXT,
+                        'decimal': FieldType.DECIMAL,
+                        'json': FieldType.JSON,
+                    }
+
+                    if field_type_str not in type_mapping:
+                        console.print(
+                            f"[red]Error:[/red] Unknown field type '{field_type_str}'. "
+                            f"Supported types: {', '.join(type_mapping.keys())}"
+                        )
+                        raise typer.Exit(1)
+
+                    field_specs.append(
+                        FieldSpec(
+                            name=field_name,
+                            field_type=type_mapping[field_type_str],
+                            required=is_required,
+                        )
+                    )
+
+            except ValueError as e:
+                console.print(f"[red]Error parsing fields:[/red] {e}")
+                raise typer.Exit(1)
+
+        elif interactive:
+            # Interactive mode: launch wizard
+            from tac_bootstrap.interfaces.entity_wizard import run_entity_field_wizard
+
+            try:
+                field_specs = run_entity_field_wizard()
+            except (SystemExit, ValueError) as e:
+                console.print(f"[yellow]Wizard cancelled or failed: {e}[/yellow]")
+                raise typer.Exit(1)
+
+        else:
+            # Non-interactive mode without fields - error
+            console.print(
+                "[red]Error:[/red] --fields is required in non-interactive mode"
+            )
+            console.print(
+                "\n[yellow]Example:[/yellow] tac-bootstrap generate entity Product "
+                '--no-interactive --fields "name:str:required,price:float"'
+            )
+            raise typer.Exit(1)
+
+        # Build EntitySpec
+        try:
+            entity_spec = EntitySpec(
+                name=name,
+                capability=capability,
+                fields=field_specs,
+                authorized=authorized,
+                async_mode=async_mode,
+                with_events=with_events,
+            )
+        except ValueError as e:
+            console.print(f"[red]Invalid entity specification:[/red] {e}")
+            raise typer.Exit(1)
+
+        # Generate entity using EntityGeneratorService
+        from tac_bootstrap.application.entity_generator_service import EntityGeneratorService
+
+        service = EntityGeneratorService()
+        target_dir = Path.cwd()
+
+        try:
+            result = service.generate(
+                entity_spec=entity_spec,
+                target_dir=target_dir,
+                dry_run=dry_run,
+                force=force,
+            )
+
+            if dry_run:
+                # Show preview
+                preview_text = f"""[bold]Dry Run - Preview[/bold]
+
+[cyan]Entity:[/cyan] {entity_spec.name}
+[cyan]Capability:[/cyan] {entity_spec.capability}
+[cyan]Fields:[/cyan] {len(entity_spec.fields)}
+[cyan]Async Mode:[/cyan] {entity_spec.async_mode}
+[cyan]With Events:[/cyan] {entity_spec.with_events}
+[cyan]Authorized:[/cyan] {entity_spec.authorized}
+
+[bold]Would create:[/bold]
+"""
+                console.print(Panel(preview_text, border_style="yellow", title="Preview"))
+
+                for file_path in result.files_created:
+                    console.print(f"  📄 {file_path}")
+
+                console.print("\n[dim]Run without --dry-run to create the files[/dim]")
+                return
+
+            # Show success
+            success_text = f"""[bold green]✓ Entity generated successfully![/bold green]
+
+[cyan]Entity:[/cyan] {entity_spec.name}
+[cyan]Capability:[/cyan] {entity_spec.capability}
+[cyan]Files Created:[/cyan] {len(result.files_created)}
+
+[bold]Created Files:[/bold]
+"""
+            for file_path in result.files_created:
+                success_text += f"  📄 {file_path}\n"
+
+            success_text += """
+[bold]Next Steps:[/bold]
+  1. Register router in main.py:
+     [dim]from interfaces.api.{capability}.{snake_name}_routes import router
+     app.include_router(router)[/dim]
+
+  2. Run database migrations (if using a database)
+     [dim]alembic revision --autogenerate -m "Add {name}"
+     alembic upgrade head[/dim]
+"""
+
+            if entity_spec.with_events:
+                success_text += """
+  3. Import and register domain events (if using event bus)
+     [dim]from domain.{capability}.events.{snake_name}_events import *[/dim]
+"""
+
+            success_text = success_text.format(
+                capability=entity_spec.capability.replace('-', '_'),
+                snake_name=entity_spec.snake_name,
+                name=entity_spec.name,
+            )
+
+            console.print(Panel(success_text, border_style="green", title="Success"))
+
+        except ValueError as e:
+            console.print(f"[red]Error:[/red] {e}")
+            raise typer.Exit(1)
+
+    except Exception as e:
+        console.print(f"[red]Unexpected error:[/red] {e}")
         raise typer.Exit(1)
 
 
