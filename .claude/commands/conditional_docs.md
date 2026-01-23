@@ -865,6 +865,41 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features que requieran scaffold service extension patterns
     - Cuando trabajes con integration de tareas 1.1-1.10 (base classes templates) en el CLI
 
+- app_docs/feature-2_3-generate-service.md
+  - Conditions:
+    - Cuando trabajes con GenerateService o entity generation orchestration
+    - Cuando necesites entender cómo se generan entidades CRUD siguiendo vertical slice architecture
+    - Cuando modifiques o extiendas application/generate_service.py
+    - Cuando trabajes con EntitySpec model (name, capability, fields)
+    - Cuando implementes el comando CLI generate entity (fase 2.4+)
+    - Cuando necesites referencia sobre validation-first approach en servicios
+    - Cuando trabajes con all-or-nothing file checking (force=False behavior)
+    - Cuando implementes templates de entidades (domain.py.j2, schemas.py.j2, service.py.j2, repository.py.j2, models.py.j2, routes.py.j2)
+    - Cuando necesites entender precondiciones de base classes (shared/domain/base_entity.py, etc.)
+    - Cuando trabajes con GenerateResult model y metadata de generación
+    - Cuando implementes custom exceptions (ValidationError, PreconditionError, FileSystemError)
+    - Cuando debugees problemas de entity generation o template rendering
+    - Cuando trabajes con tests de GenerateService (test_generate_service.py)
+    - Cuando necesites entender el patrón de mkdir -p behavior para app_root
+    - Cuando trabajes con snake_case property en EntitySpec
+    - Cuando implementes features relacionadas con FASE 2 (Comando generate entity)
+- app_docs/feature-issue-142-crud-templates-capability.md
+  - Conditions:
+    - Cuando trabajes con templates de generación de entidades CRUD
+    - Cuando necesites entender los templates en tac_bootstrap_cli/tac_bootstrap/templates/capabilities/crud_basic/
+    - Cuando modifiques o extiendas templates de vertical slice (domain_entity, schemas, orm_model, repository, service, routes)
+    - Cuando trabajes con EntitySpec y FieldSpec models en domain/models.py
+    - Cuando implementes generación de código desde especificaciones de entidad
+    - Cuando trabajes con mapeo de FieldType a tipos Python y SQLAlchemy
+    - Cuando necesites referencia sobre generación condicional (indexed fields, nullable, max_length)
+    - Cuando trabajes con templates de repository con métodos dinámicos (get_by_X, search)
+    - Cuando implementes features de CRUD code generation
+    - Cuando necesites entender el sistema de templates Jinja2 para vertical slices
+    - Cuando trabajes con tests de templates CRUD en tests/test_crud_templates.py
+    - Cuando debugees problemas de rendering de templates de entidades
+    - Cuando implementes la fase 2 del roadmap TAC Bootstrap (GenerateService, CLI command)
+    - Cuando trabajes con tipo discriminators y base class inheritance en entidades
+    - Cuando necesites referencia sobre IDK documentation pattern en código generado
 - app_docs/feature-feature_2_1-entity-spec-domain-model.md
   - Conditions:
     - Cuando trabajes con modelos de dominio para generación de entidades (EntitySpec, FieldSpec, FieldType)
