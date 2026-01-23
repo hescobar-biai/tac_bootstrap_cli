@@ -644,3 +644,20 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender la ejecución de tareas simples de mantenimiento
     - Cuando trabajes con worktree isolation en adws/
     - Cuando necesites ejemplo de tarea de prueba para verificar automatización
+
+- app_docs/feature-a1a5289c-base-entity-template.md
+  - Conditions:
+    - Cuando trabajes con el template base_entity.py.j2 o la entidad base compartida
+    - Cuando necesites entender la arquitectura de entidades de dominio con audit trail
+    - Cuando modifiques o extiendas el template de Entity base class
+    - Cuando trabajes con EntityState enum y state machine (INACTIVE, ACTIVE, DELETED)
+    - Cuando implementes nuevas entidades que hereden de Entity
+    - Cuando necesites referencia sobre campos de audit trail (created_at, created_by, updated_at, updated_by)
+    - Cuando trabajes con soft delete y lifecycle methods (activate, deactivate, delete, restore)
+    - Cuando implementes optimistic locking con version field
+    - Cuando trabajes con multi-tenancy usando organization_id y project_id
+    - Cuando necesites entender el patrón de documentación IDK en entidades
+    - Cuando modifiques src/shared/domain/base_entity.py o su template
+    - Cuando trabajes con Pydantic BaseModel y validators para entidades
+    - Cuando implementes features de CRUD que requieran base entity functionality
+    - Cuando necesites referencia sobre testing de state transitions y version management
