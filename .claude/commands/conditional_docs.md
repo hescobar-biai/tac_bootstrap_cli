@@ -883,3 +883,24 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con integration de EntitySpec con template generation system
     - Cuando implementes features de vertical slice architecture generation
     - Cuando trabajes con tests de entity configuration models (test_entity_config.py)
+
+- app_docs/feature-2_4-generate-entity-command.md
+  - Conditions:
+    - Cuando trabajes con el comando CLI tac-bootstrap generate entity
+    - Cuando necesites entender la generación completa de vertical slices CRUD
+    - Cuando implementes o modifiques EntityGeneratorService en application layer
+    - Cuando trabajes con el wizard interactivo de entity field definition
+    - Cuando necesites referencia sobre templates de entity (entity.py.j2, schemas.py.j2, service.py.j2, repository.py.j2, routes.py.j2, events.py.j2)
+    - Cuando trabajes con modos de operación: interactive vs non-interactive
+    - Cuando necesites entender flags del comando (--async, --with-events, --authorized, --dry-run, --force)
+    - Cuando trabajes con auto-generación de capability names (PascalCase → kebab-case)
+    - Cuando necesites referencia sobre field type support (str, int, float, bool, datetime, UUID, text, decimal, json)
+    - Cuando trabajes con validación de project configuration (architecture=ddd)
+    - Cuando implementes features de code generation con Jinja2 templates
+    - Cuando necesites entender conflict detection y file overwrite logic
+    - Cuando trabajes con tests de entity generation (test_entity_generator_service.py, test_entity_wizard.py, test_cli_generate.py)
+    - Cuando modifiques entity_wizard.py o entity_generator_service.py
+    - Cuando necesites entender el sistema de generation plans y dry-run previews
+    - Cuando trabajes con estructura de archivos generados (domain/{capability}/entities, schemas, services, repositories, routes, events)
+    - Cuando implementes features similares de code generation para otros artifacts
+    - Cuando necesites referencia sobre next-steps guidance post-generation (router registration, migrations, events)
