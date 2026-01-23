@@ -6,11 +6,7 @@
         "@playwright/mcp@latest",
         "--isolated",
         "--config",
-<<<<<<< HEAD
-        "/Volumes/MAc1/Celes/tac_bootstrap/trees/86bf2b0c/playwright-mcp-config.json"
-=======
-        "/Volumes/MAc1/Celes/tac_bootstrap/trees/6d93eca6/playwright-mcp-config.json"
->>>>>>> feature-issue-127-adw-6d93eca6-template-dependencies-py
+        "/Volumes/MAc1/Celes/tac_bootstrap/trees/5e760945/playwright-mcp-config.json"
       ]
     }
   }

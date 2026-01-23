@@ -780,7 +780,6 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes database initialization o table creation en startup
     - Cuando necesites entender SQLite vs PostgreSQL configuration patterns
 
-<<<<<<< HEAD
 - app_docs/feature-5dcdd7ea-template-responses-py.md
   - Conditions:
     - Cuando trabajes con el template responses.py.j2 o modelos de respuesta API estandarizados
@@ -801,7 +800,7 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender Generic[T] type safety para response data
     - Cuando trabajes con dual creation pattern (template + reference implementation)
     - Cuando modifiques ErrorDetail types o details field structure
-=======
+
 - app_docs/feature-6d93eca6-template-dependencies-removal.md
   - Conditions:
     - Cuando necesites entender qué templates fueron removidos del CLI (dependencies.py, exceptions.py, responses.py)
@@ -814,4 +813,3 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando busques referencia de patrones de FastAPI que ya no están auto-generados
     - Cuando actualices conditional documentation después de template removal
     - Cuando trabajes con migration de proyectos que usaban los templates removidos
->>>>>>> feature-issue-127-adw-6d93eca6-template-dependencies-py
