@@ -1,0 +1,140 @@
+"""
+IDK: pydantic-schemas, {{ config.entity.snake_name }}, dto
+
+Module: {{ config.entity.snake_name }}_schemas
+
+Responsibility:
+- Define Pydantic schemas for {{ config.entity.name }} entity
+- Provide Create, Update, and Response DTOs
+- Handle serialization and validation
+
+Key Components:
+- {{ config.entity.name }}Create: Schema for creating new {{ config.entity.snake_name }}
+- {{ config.entity.name }}Update: Schema for updating existing {{ config.entity.snake_name }}
+- {{ config.entity.name }}Response: Schema for API responses
+
+Related Docs:
+- docs/{{ config.entity.capability }}/schemas/{{ config.entity.snake_name }}.md
+"""
+
+from pydantic import BaseModel, Field
+{% set has_uuid = config.entity.fields | selectattr('type', 'equalto', 'uuid') | list | length > 0 %}
+{% set has_datetime = config.entity.fields | selectattr('type', 'equalto', 'datetime') | list | length > 0 %}
+{% set has_decimal = config.entity.fields | selectattr('type', 'equalto', 'decimal') | list | length > 0 %}
+{% set has_json = config.entity.fields | selectattr('type', 'equalto', 'json') | list | length > 0 %}
+{% if has_uuid %}
+from uuid import UUID
+{% endif %}
+{% if has_datetime %}
+from datetime import datetime
+{% endif %}
+{% if has_decimal %}
+from decimal import Decimal
+{% endif %}
+{% if has_json %}
+from typing import Dict, Any, Optional
+{% else %}
+from typing import Optional
+{% endif %}
+from {{ config.config.project.name | replace("-", "_") }}.shared.schemas.base_schema import BaseCreate, BaseUpdate, BaseResponse
+
+
+class {{ config.entity.name }}Create(BaseCreate):
+    """
+    IDK: create-schema, {{ config.entity.snake_name }}, validation
+
+    Responsibility:
+    - Validate data for creating new {{ config.entity.name }}
+    - Define required and optional fields
+
+    Invariants:
+{% for field in config.entity.fields %}
+{% if not field.nullable %}
+    - {{ field.name }} is required
+{% endif %}
+{% endfor %}
+
+    Related Docs:
+    - docs/{{ config.entity.capability }}/schemas/{{ config.entity.snake_name }}-create.md
+    """
+
+{% set type_map = {
+    'str': 'str',
+    'int': 'int',
+    'float': 'float',
+    'bool': 'bool',
+    'datetime': 'datetime',
+    'uuid': 'UUID',
+    'text': 'str',
+    'decimal': 'Decimal',
+    'json': 'Dict[str, Any]'
+} %}
+{% for field in config.entity.fields %}
+    {{ field.name }}: {{ type_map[field.type] }}{% if field.nullable %} | None{% endif %} = Field(
+{% if field.nullable %}
+        default=None,
+{% elif field.default is not none %}
+        default={{ field.default }},
+{% else %}
+        ...,
+{% endif %}
+{% if field.max_length and field.type == 'str' %}
+        max_length={{ field.max_length }},
+{% endif %}
+        description="{{ field.name | replace('_', ' ') | title }}"
+    )
+{% endfor %}
+
+
+class {{ config.entity.name }}Update(BaseUpdate):
+    """
+    IDK: update-schema, {{ config.entity.snake_name }}, partial-update
+
+    Responsibility:
+    - Validate data for updating {{ config.entity.name }}
+    - Allow partial updates (all fields optional)
+
+    Invariants:
+    - All fields are optional
+    - Only provided fields will be updated
+
+    Related Docs:
+    - docs/{{ config.entity.capability }}/schemas/{{ config.entity.snake_name }}-update.md
+    """
+
+{% for field in config.entity.fields %}
+    {{ field.name }}: Optional[{{ type_map[field.type] }}] = Field(
+        default=None,
+{% if field.max_length and field.type == 'str' %}
+        max_length={{ field.max_length }},
+{% endif %}
+        description="{{ field.name | replace('_', ' ') | title }}"
+    )
+{% endfor %}
+
+
+class {{ config.entity.name }}Response(BaseResponse):
+    """
+    IDK: response-schema, {{ config.entity.snake_name }}, serialization
+
+    Responsibility:
+    - Serialize {{ config.entity.name }} for API responses
+    - Include all entity fields and inherited base fields
+
+    Invariants:
+    - Includes id, created_at, updated_at from BaseResponse
+    - Includes all {{ config.entity.name }}-specific fields
+
+    Related Docs:
+    - docs/{{ config.entity.capability }}/schemas/{{ config.entity.snake_name }}-response.md
+    """
+
+{% for field in config.entity.fields %}
+    {{ field.name }}: {{ type_map[field.type] }}{% if field.nullable %} | None{% endif %} = Field(
+        ...,
+{% if field.max_length and field.type == 'str' %}
+        max_length={{ field.max_length }},
+{% endif %}
+        description="{{ field.name | replace('_', ' ') | title }}"
+    )
+{% endfor %}
