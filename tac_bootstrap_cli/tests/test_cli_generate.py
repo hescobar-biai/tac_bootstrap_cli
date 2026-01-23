@@ -8,17 +8,6 @@ import yaml
 from typer.testing import CliRunner
 
 from tac_bootstrap.domain.entity_config import FieldSpec, FieldType
-from tac_bootstrap.domain.models import (
-    Architecture,
-    ClaudeConfig,
-    ClaudeSettings,
-    CommandsSpec,
-    Language,
-    PackageManager,
-    PathsSpec,
-    ProjectSpec,
-    TACConfig,
-)
 from tac_bootstrap.interfaces.cli import app
 
 runner = CliRunner()

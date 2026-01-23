@@ -10,14 +10,6 @@ from tac_bootstrap.application.entity_generator_service import EntityGeneratorSe
 from tac_bootstrap.domain.entity_config import EntitySpec, FieldSpec, FieldType
 from tac_bootstrap.domain.models import (
     Architecture,
-    ClaudeConfig,
-    ClaudeSettings,
-    CommandsSpec,
-    Language,
-    PackageManager,
-    PathsSpec,
-    ProjectSpec,
-    TACConfig,
 )
 
 

@@ -1,6 +1,6 @@
 """Tests for entity field wizard."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
