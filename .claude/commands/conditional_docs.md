@@ -743,3 +743,21 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender integration con AsyncSession y async ORM patterns
     - Cuando trabajes con dependency injection de async repositories en FastAPI
     - Cuando necesites referencia sobre batch processing eficiente con bulk operations
+
+- app_docs/feature-86bf2b0c-template-exceptions.md
+  - Conditions:
+    - Cuando trabajes con el template exceptions.py.j2 o el sistema de excepciones tipadas
+    - Cuando necesites entender el sistema de exception handling para FastAPI applications
+    - Cuando modifiques o extiendas las clases de excepciones (EntityNotFoundError, DuplicateEntityError, ValidationError, UnauthorizedError, ForbiddenError, BusinessRuleError)
+    - Cuando implementes exception handlers que retornen JSON responses consistentes
+    - Cuando trabajes con la función register_exception_handlers() para registrar handlers en FastAPI
+    - Cuando necesites referencia sobre mapeo de excepciones a HTTP status codes (404, 409, 422, 401, 403, 400)
+    - Cuando trabajes con la clase base AppError y su estructura de message/details
+    - Cuando implementes catch-all handler para excepciones genéricas (500 errors)
+    - Cuando necesites entender structured logging para excepciones (WARNING para 4xx, ERROR para 5xx)
+    - Cuando trabajes con formato de error JSON: {"error": {"type": "...", "message": "...", "details": {...}}}
+    - Cuando modifiques src/shared/infrastructure/exceptions.py o su template
+    - Cuando implementes error handling en domain/application layers usando excepciones tipadas
+    - Cuando trabajes con security considerations (prevención de stack trace leaks)
+    - Cuando necesites referencia sobre Dual Creation Pattern (template + reference implementation)
+    - Cuando trabajes con IDK documentation pattern en exception handlers
