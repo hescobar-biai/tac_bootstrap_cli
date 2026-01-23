@@ -808,7 +808,28 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando investigues por qué dependencies.py, exceptions.py o responses.py templates no están en el codebase
     - Cuando necesites histórico de templates removidos y razones de su eliminación
     - Cuando trabajes con template consolidation o simplification
-    - Cuando necesites entender el scope del CLI (agentic layers vs full application scaffolding)
+    - Cuando necesites entender el scope del CLI (agentic layers vs full application scaffolling)
     - Cuando busques referencia de patrones de FastAPI que ya no están auto-generados
     - Cuando actualices conditional documentation después de template removal
     - Cuando trabajes con migration de proyectos que usaban los templates removidos
+
+- app_docs/feature-8e6abce7-health-endpoint-template.md
+  - Conditions:
+    - Cuando trabajes con el template health.py.j2 o endpoints de health check
+    - Cuando necesites entender la arquitectura de health endpoints para monitoreo y observabilidad
+    - Cuando modifiques o extiendas el template de health check
+    - Cuando trabajes con health endpoints en FastAPI con database connectivity checks
+    - Cuando implementes endpoints para load balancers, Kubernetes probes o monitoring systems
+    - Cuando necesites referencia sobre SELECT 1 database check pattern
+    - Cuando trabajes con dual-mode templates (async/sync SQLAlchemy patterns)
+    - Cuando implementes status responses ('healthy'/'degraded') con HTTP 200
+    - Cuando modifiques src/shared/api/health.py o su template
+    - Cuando trabajes con dependency injection de database sessions (get_db)
+    - Cuando necesites entender monitoring integration patterns (Kubernetes, AWS ALB, Docker, Datadog)
+    - Cuando implementes health endpoints con audit requirements (<100ms response time)
+    - Cuando trabajes con security considerations (no exposición de información sensible)
+    - Cuando necesites referencia sobre standardized JSON health response format
+    - Cuando trabajes con integration de health endpoints con FastAPI routers
+    - Cuando implementes features de observabilidad o SRE readiness
+    - Cuando necesites entender el patrón de dual creation (template + reference implementation)
+    - Cuando trabajes con graceful degradation (service up, database down scenarios)
