@@ -1,0 +1,599 @@
+# Testing Templates
+
+Templates for unit and integration tests following pytest conventions.
+
+## Directory Structure
+
+```
+tests/
+├── conftest.py                    # Shared fixtures
+├── unit/
+│   └── {capability}/
+│       ├── test_service.py        # Service unit tests
+│       └── test_domain.py         # Domain model tests
+└── integration/
+    └── {capability}/
+        ├── test_routes.py         # API integration tests
+        └── test_repository.py     # Repository integration tests
+```
+
+## conftest.py (Shared Fixtures)
+
+```python
+"""
+IDK: test-fixtures, test-infrastructure, database-testing
+
+Module: conftest
+
+Responsibility:
+- Provide shared test fixtures
+- Configure test database (in-memory SQLite)
+- Override application dependencies
+- Support unit and integration testing
+
+Invariants:
+- Each test gets fresh database
+- Database cleaned up after each test
+- Dependency overrides cleared after tests
+- Test isolation guaranteed
+
+Related Docs:
+- docs/testing/fixtures.md
+- docs/testing/database-setup.md
+"""
+
+import pytest
+from typing import Generator, AsyncGenerator
+from unittest.mock import MagicMock, AsyncMock
+from datetime import datetime, UTC
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.pool import StaticPool
+from fastapi.testclient import TestClient
+from httpx import AsyncClient, ASGITransport
+
+from shared.infrastructure.database import Base
+from src.main import app
+
+
+# Sync test database
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+# Async test database
+ASYNC_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+async_engine = create_async_engine(
+    ASYNC_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+AsyncTestingSessionLocal = async_sessionmaker(
+    async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
+
+
+@pytest.fixture(scope="function")
+def db() -> Generator[Session, None, None]:
+    """Create a fresh database session for each test."""
+    Base.metadata.create_all(bind=engine)
+    session = TestingSessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+        Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture(scope="function")
+async def async_db() -> AsyncGenerator[AsyncSession, None]:
+    """Create a fresh async database session for each test."""
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async with AsyncTestingSessionLocal() as session:
+        yield session
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
+
+@pytest.fixture(scope="function")
+def client(db: Session) -> Generator[TestClient, None, None]:
+    """Create test client with database override."""
+    from shared.infrastructure.database import get_db
+
+    def override_get_db():
+        yield db
+
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="function")
+async def async_client(async_db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    """Create async test client."""
+    from shared.infrastructure.database_async import get_async_db
+
+    async def override_get_async_db():
+        yield async_db
+
+    app.dependency_overrides[get_async_db] = override_get_async_db
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        yield client
+
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def mock_repository() -> MagicMock:
+    """Create a mock repository."""
+    return MagicMock()
+
+
+@pytest.fixture
+def mock_async_repository() -> AsyncMock:
+    """Create an async mock repository."""
+    return AsyncMock()
+
+
+@pytest.fixture
+def sample_datetime() -> datetime:
+    """Fixed datetime for testing."""
+    return datetime(2024, 1, 15, 12, 0, 0, tzinfo=UTC)
+```
+
+---
+
+## Unit Test: Service
+
+**File**: `tests/unit/{capability}/test_service.py`
+
+```python
+"""{{EntityName}} service unit tests."""
+
+import pytest
+from unittest.mock import MagicMock, patch
+from datetime import datetime, UTC
+
+from {{capability}}.application.service import {{EntityName}}Service
+from {{capability}}.application.schemas import (
+    {{EntityName}}Create,
+    {{EntityName}}Update,
+    {{EntityName}}Response,
+)
+from {{capability}}.infrastructure.models import {{EntityName}}Model
+from shared.api.exceptions import EntityNotFoundError, DuplicateEntityError
+
+
+class Test{{EntityName}}Service:
+    """Test suite for {{EntityName}}Service."""
+
+    @pytest.fixture
+    def mock_repository(self):
+        """Create mock repository."""
+        return MagicMock()
+
+    @pytest.fixture
+    def service(self, mock_repository):
+        """Create service with mocked repository."""
+        return {{EntityName}}Service(repository=mock_repository)
+
+    @pytest.fixture
+    def sample_model(self):
+        """Create sample model for testing."""
+        return {{EntityName}}Model(
+            id="test-id-123",
+            code="TEST-001",
+            name="Test Entity",
+            description="Test description",
+            type="{{entity_name}}",
+            state=1,
+            version=1,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+            # Add entity-specific fields
+        )
+
+    def test_create_success(self, service, mock_repository, sample_model):
+        """Test successful entity creation."""
+        # Arrange
+        mock_repository.get_by_code.return_value = None
+        mock_repository.create.return_value = sample_model
+
+        create_data = {{EntityName}}Create(
+            code="TEST-001",
+            name="Test Entity",
+            description="Test description",
+        )
+
+        # Act
+        result = service.create(create_data)
+
+        # Assert
+        assert result.code == "TEST-001"
+        assert result.name == "Test Entity"
+        mock_repository.get_by_code.assert_called_once_with("TEST-001")
+        mock_repository.create.assert_called_once()
+
+    def test_create_duplicate_code_raises_error(self, service, mock_repository, sample_model):
+        """Test that duplicate code raises DuplicateEntityError."""
+        # Arrange
+        mock_repository.get_by_code.return_value = sample_model
+
+        create_data = {{EntityName}}Create(
+            code="TEST-001",
+            name="Test Entity",
+        )
+
+        # Act & Assert
+        with pytest.raises(DuplicateEntityError) as exc_info:
+            service.create(create_data)
+
+        assert "already exists" in str(exc_info.value)
+
+    def test_get_by_id_success(self, service, mock_repository, sample_model):
+        """Test successful get by ID."""
+        # Arrange
+        mock_repository.get_by_id.return_value = sample_model
+
+        # Act
+        result = service.get_by_id("test-id-123")
+
+        # Assert
+        assert result.id == "test-id-123"
+        mock_repository.get_by_id.assert_called_once_with("test-id-123")
+
+    def test_get_by_id_not_found_raises_error(self, service, mock_repository):
+        """Test that non-existent ID raises EntityNotFoundError."""
+        # Arrange
+        mock_repository.get_by_id.return_value = None
+
+        # Act & Assert
+        with pytest.raises(EntityNotFoundError) as exc_info:
+            service.get_by_id("non-existent-id")
+
+        assert "not found" in str(exc_info.value)
+
+    def test_get_all_with_pagination(self, service, mock_repository, sample_model):
+        """Test paginated list retrieval."""
+        # Arrange
+        mock_repository.get_all.return_value = ([sample_model], 1)
+
+        # Act
+        result = service.get_all(page=1, page_size=20)
+
+        # Assert
+        assert result.total == 1
+        assert result.page == 1
+        assert len(result.data) == 1
+
+    def test_update_success(self, service, mock_repository, sample_model):
+        """Test successful entity update."""
+        # Arrange
+        updated_model = {{EntityName}}Model(
+            **{**sample_model.__dict__, "name": "Updated Name"}
+        )
+        mock_repository.get_by_id.return_value = sample_model
+        mock_repository.update.return_value = updated_model
+
+        update_data = {{EntityName}}Update(name="Updated Name")
+
+        # Act
+        result = service.update("test-id-123", update_data)
+
+        # Assert
+        assert result.name == "Updated Name"
+        mock_repository.update.assert_called_once()
+
+    def test_delete_success(self, service, mock_repository, sample_model):
+        """Test successful soft delete."""
+        # Arrange
+        mock_repository.get_by_id.return_value = sample_model
+        mock_repository.update.return_value = sample_model
+
+        # Act
+        result = service.delete("test-id-123")
+
+        # Assert
+        assert result is True
+        mock_repository.update.assert_called_once()
+        # Verify state was set to 2 (deleted)
+        call_args = mock_repository.update.call_args
+        assert call_args[0][1]["state"] == 2
+
+    def test_delete_not_found_raises_error(self, service, mock_repository):
+        """Test that deleting non-existent entity raises error."""
+        # Arrange
+        mock_repository.get_by_id.return_value = None
+
+        # Act & Assert
+        with pytest.raises(EntityNotFoundError):
+            service.delete("non-existent-id")
+```
+
+---
+
+## Unit Test: Domain Model
+
+**File**: `tests/unit/{capability}/test_domain.py`
+
+```python
+"""{{EntityName}} domain model unit tests."""
+
+import pytest
+from datetime import datetime, UTC
+
+from {{capability}}.domain.{{entity_name}} import {{EntityName}}
+from shared.domain.base_entity import EntityState
+
+
+class Test{{EntityName}}Domain:
+    """Test suite for {{EntityName}} domain model."""
+
+    @pytest.fixture
+    def sample_entity(self):
+        """Create sample domain entity."""
+        return {{EntityName}}(
+            code="TEST-001",
+            name="Test Entity",
+            description="Test description",
+            # Add entity-specific fields
+        )
+
+    def test_create_entity_with_defaults(self, sample_entity):
+        """Test entity creation with default values."""
+        assert sample_entity.code == "TEST-001"
+        assert sample_entity.name == "Test Entity"
+        assert sample_entity.state == EntityState.ACTIVE
+        assert sample_entity.version == 1
+        assert sample_entity.id is not None
+
+    def test_entity_deactivate(self, sample_entity):
+        """Test entity deactivation."""
+        sample_entity.deactivate()
+
+        assert sample_entity.state == EntityState.INACTIVE
+        assert sample_entity.version == 2
+
+    def test_entity_activate(self, sample_entity):
+        """Test entity activation."""
+        sample_entity.deactivate()
+        sample_entity.activate()
+
+        assert sample_entity.state == EntityState.ACTIVE
+
+    def test_entity_soft_delete(self, sample_entity):
+        """Test entity soft delete."""
+        sample_entity.delete()
+
+        assert sample_entity.state == EntityState.DELETED
+        assert sample_entity.is_deleted()
+
+    def test_entity_is_active(self, sample_entity):
+        """Test is_active check."""
+        assert sample_entity.is_active()
+
+        sample_entity.deactivate()
+        assert not sample_entity.is_active()
+
+    def test_entity_mark_updated(self, sample_entity):
+        """Test mark_updated increments version."""
+        initial_version = sample_entity.version
+
+        sample_entity.mark_updated(user_id="user-123")
+
+        assert sample_entity.version == initial_version + 1
+        assert sample_entity.updated_by == "user-123"
+```
+
+---
+
+## Integration Test: Routes
+
+**File**: `tests/integration/{capability}/test_routes.py`
+
+```python
+"""{{EntityName}} API integration tests."""
+
+import pytest
+from fastapi import status
+
+
+class Test{{EntityName}}Routes:
+    """Integration tests for {{EntityName}} API endpoints."""
+
+    API_PREFIX = "/api/v1/{{entities}}"
+
+    @pytest.fixture
+    def sample_create_data(self):
+        """Sample data for creating entity."""
+        return {
+            "code": "TEST-001",
+            "name": "Test Entity",
+            "description": "Test description",
+            # Add entity-specific fields
+        }
+
+    def test_create_entity(self, client, sample_create_data):
+        """Test POST /{{entities}}/ creates entity."""
+        response = client.post(self.API_PREFIX + "/", json=sample_create_data)
+
+        assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()
+        assert data["code"] == "TEST-001"
+        assert data["name"] == "Test Entity"
+        assert "id" in data
+
+    def test_create_entity_duplicate_code(self, client, sample_create_data):
+        """Test POST /{{entities}}/ with duplicate code returns 409."""
+        # Create first entity
+        client.post(self.API_PREFIX + "/", json=sample_create_data)
+
+        # Try to create duplicate
+        response = client.post(self.API_PREFIX + "/", json=sample_create_data)
+
+        assert response.status_code == status.HTTP_409_CONFLICT
+
+    def test_create_entity_validation_error(self, client):
+        """Test POST /{{entities}}/ with invalid data returns 422."""
+        response = client.post(self.API_PREFIX + "/", json={"invalid": "data"})
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def test_get_entity_by_id(self, client, sample_create_data):
+        """Test GET /{{entities}}/{id} returns entity."""
+        # Create entity first
+        create_response = client.post(self.API_PREFIX + "/", json=sample_create_data)
+        entity_id = create_response.json()["id"]
+
+        # Get entity
+        response = client.get(f"{self.API_PREFIX}/{entity_id}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["id"] == entity_id
+
+    def test_get_entity_not_found(self, client):
+        """Test GET /{{entities}}/{id} with invalid ID returns 404."""
+        response = client.get(f"{self.API_PREFIX}/non-existent-id")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_list_entities(self, client, sample_create_data):
+        """Test GET /{{entities}}/ returns paginated list."""
+        # Create some entities
+        for i in range(3):
+            data = {**sample_create_data, "code": f"TEST-00{i}"}
+            client.post(self.API_PREFIX + "/", json=data)
+
+        # List entities
+        response = client.get(self.API_PREFIX + "/")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["total"] == 3
+        assert len(data["data"]) == 3
+
+    def test_list_entities_with_pagination(self, client, sample_create_data):
+        """Test GET /{{entities}}/ with pagination parameters."""
+        # Create entities
+        for i in range(5):
+            data = {**sample_create_data, "code": f"TEST-00{i}"}
+            client.post(self.API_PREFIX + "/", json=data)
+
+        # Get page 2 with page_size 2
+        response = client.get(f"{self.API_PREFIX}/?page=2&page_size=2")
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["page"] == 2
+        assert data["page_size"] == 2
+        assert len(data["data"]) == 2
+
+    def test_update_entity(self, client, sample_create_data):
+        """Test PUT /{{entities}}/{id} updates entity."""
+        # Create entity
+        create_response = client.post(self.API_PREFIX + "/", json=sample_create_data)
+        entity_id = create_response.json()["id"]
+
+        # Update entity
+        update_data = {"name": "Updated Name"}
+        response = client.put(f"{self.API_PREFIX}/{entity_id}", json=update_data)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["name"] == "Updated Name"
+
+    def test_update_entity_not_found(self, client):
+        """Test PUT /{{entities}}/{id} with invalid ID returns 404."""
+        response = client.put(
+            f"{self.API_PREFIX}/non-existent-id",
+            json={"name": "Updated"},
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_delete_entity(self, client, sample_create_data):
+        """Test DELETE /{{entities}}/{id} soft deletes entity."""
+        # Create entity
+        create_response = client.post(self.API_PREFIX + "/", json=sample_create_data)
+        entity_id = create_response.json()["id"]
+
+        # Delete entity
+        response = client.delete(f"{self.API_PREFIX}/{entity_id}")
+
+        assert response.status_code == status.HTTP_200_OK
+
+        # Verify entity is not in active list
+        list_response = client.get(self.API_PREFIX + "/")
+        ids = [item["id"] for item in list_response.json()["data"]]
+        assert entity_id not in ids
+
+    def test_delete_entity_not_found(self, client):
+        """Test DELETE /{{entities}}/{id} with invalid ID returns 404."""
+        response = client.delete(f"{self.API_PREFIX}/non-existent-id")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+```
+
+---
+
+## Running Tests
+
+```bash
+# Run all tests
+uv run pytest
+
+# Run with coverage
+uv run pytest --cov=src --cov-report=term-missing
+
+# Run specific test file
+uv run pytest tests/unit/product_catalog/test_service.py
+
+# Run specific test class
+uv run pytest tests/unit/product_catalog/test_service.py::TestProductService
+
+# Run specific test
+uv run pytest tests/unit/product_catalog/test_service.py::TestProductService::test_create_success
+
+# Run with verbose output
+uv run pytest -v
+
+# Run only unit tests
+uv run pytest tests/unit/
+
+# Run only integration tests
+uv run pytest tests/integration/
+```
+
+## pytest.ini Configuration
+
+```ini
+[pytest]
+testpaths = tests
+python_files = test_*.py
+python_classes = Test*
+python_functions = test_*
+asyncio_mode = auto
+addopts = -v --tb=short
+markers =
+    unit: Unit tests
+    integration: Integration tests
+    slow: Slow tests
+```

@@ -1,0 +1,565 @@
+# Routes Template
+
+Template for creating FastAPI CRUD endpoints.
+
+## Usage
+
+Replace placeholders:
+- `{{EntityName}}` - PascalCase entity name (e.g., `Product`)
+- `{{entity_name}}` - snake_case entity name (e.g., `product`)
+- `{{entities}}` - plural lowercase for URL (e.g., `products`)
+- `{{tag}}` - API tag name (e.g., `Products`)
+- `{{capability}}` - snake_case capability (e.g., `product_catalog`)
+
+## Template
+
+```python
+"""
+IDK: http-endpoint, rest-api, {{entity_name}}-routes
+
+Module: routes
+
+Responsibility:
+- Define HTTP endpoints for {{EntityName}} CRUD operations
+- Handle HTTP request/response serialization
+- Delegate business logic to service layer
+- Provide RESTful API interface
+
+Invariants:
+- All endpoints use dependency injection for services
+- Service layer handles all business logic
+- Responses use standardized DTOs
+- HTTP status codes follow REST conventions
+
+Related Docs:
+- docs/{{capability}}/api/routes.md
+- docs/{{capability}}/api/endpoints.md
+"""
+
+from fastapi import APIRouter, Depends, Query, status
+
+from shared.api.responses import PaginatedResponse, SuccessResponse
+from core.dependencies import get_{{entity_name}}_service
+
+from ..application.schemas import {{EntityName}}Create, {{EntityName}}Update, {{EntityName}}Response
+from ..application.service import {{EntityName}}Service
+
+router = APIRouter(prefix="/{{entities}}", tags=["{{tag}}"])
+
+
+@router.post(
+    "/",
+    response_model={{EntityName}}Response,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create {{EntityName}}"
+)
+async def create_{{entity_name}}(
+    data: {{EntityName}}Create,
+    service: {{EntityName}}Service = Depends(get_{{entity_name}}_service)
+) -> {{EntityName}}Response:
+    """
+    IDK: http-endpoint, create-operation, rest-api
+
+    Responsibility:
+    - Accept HTTP POST for {{EntityName}} creation
+    - Validate input via Pydantic schema
+    - Delegate to service layer
+    - Return created entity with 201 status
+
+    Inputs:
+    - data ({{EntityName}}Create): creation payload
+
+    Outputs:
+    - {{EntityName}}Response: created entity (201 Created)
+
+    Failure Modes:
+    - 400 Bad Request: validation error
+    - 409 Conflict: duplicate code
+    - 500 Internal Error: server error
+
+    Related Docs:
+    - docs/{{capability}}/api/create.md
+    """
+    return service.create(data)
+
+
+@router.get(
+    "/{{{entity_name}}_id}",
+    response_model={{EntityName}}Response,
+    summary="Get {{EntityName}} by ID"
+)
+async def get_{{entity_name}}(
+    {{entity_name}}_id: str,
+    service: {{EntityName}}Service = Depends(get_{{entity_name}}_service)
+) -> {{EntityName}}Response:
+    """
+    IDK: http-endpoint, read-operation, rest-api
+
+    Responsibility:
+    - Retrieve single {{EntityName}} by ID
+    - Return entity details
+
+    Inputs:
+    - {{entity_name}}_id (str): entity identifier
+
+    Outputs:
+    - {{EntityName}}Response: entity details (200 OK)
+
+    Failure Modes:
+    - 404 Not Found: entity doesn't exist
+    - 500 Internal Error: server error
+
+    Related Docs:
+    - docs/{{capability}}/api/read.md
+    """
+    return service.get_by_id({{entity_name}}_id)
+
+
+@router.get(
+    "/",
+    response_model=PaginatedResponse[{{EntityName}}Response],
+    summary="List {{EntityName}}s"
+)
+async def list_{{entity_name}}s(
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    sort_by: str | None = Query(None, description="Field to sort by"),
+    sort_order: str = Query("asc", pattern="^(asc|desc)$", description="Sort order"),
+    service: {{EntityName}}Service = Depends(get_{{entity_name}}_service)
+) -> PaginatedResponse[{{EntityName}}Response]:
+    """
+    IDK: http-endpoint, list-operation, pagination, rest-api
+
+    Responsibility:
+    - List {{EntityName}}s with pagination
+    - Support sorting by field
+    - Return paginated results
+
+    Inputs:
+    - page (int): page number (1-indexed, default: 1)
+    - page_size (int): items per page (1-100, default: 20)
+    - sort_by (str | None): field to sort by
+    - sort_order (str): 'asc' or 'desc' (default: 'asc')
+
+    Outputs:
+    - PaginatedResponse[{{EntityName}}Response]: paginated list (200 OK)
+
+    Failure Modes:
+    - 400 Bad Request: invalid parameters
+    - 500 Internal Error: server error
+
+    Related Docs:
+    - docs/{{capability}}/api/list.md
+    """
+    return service.get_all(
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_order=sort_order
+    )
+
+
+@router.put(
+    "/{{{entity_name}}_id}",
+    response_model={{EntityName}}Response,
+    summary="Update {{EntityName}}"
+)
+async def update_{{entity_name}}(
+    {{entity_name}}_id: str,
+    data: {{EntityName}}Update,
+    service: {{EntityName}}Service = Depends(get_{{entity_name}}_service)
+) -> {{EntityName}}Response:
+    """
+    IDK: http-endpoint, update-operation, rest-api
+
+    Responsibility:
+    - Update existing {{EntityName}}
+    - Support partial updates (PATCH-like)
+    - Return updated entity
+
+    Inputs:
+    - {{entity_name}}_id (str): entity identifier
+    - data ({{EntityName}}Update): update payload (partial)
+
+    Outputs:
+    - {{EntityName}}Response: updated entity (200 OK)
+
+    Failure Modes:
+    - 400 Bad Request: validation error
+    - 404 Not Found: entity doesn't exist
+    - 500 Internal Error: server error
+
+    Related Docs:
+    - docs/{{capability}}/api/update.md
+    """
+    return service.update({{entity_name}}_id, data)
+
+
+@router.delete(
+    "/{{{entity_name}}_id}",
+    response_model=SuccessResponse,
+    summary="Delete {{EntityName}}"
+)
+async def delete_{{entity_name}}(
+    {{entity_name}}_id: str,
+    service: {{EntityName}}Service = Depends(get_{{entity_name}}_service)
+) -> SuccessResponse:
+    """
+    IDK: http-endpoint, delete-operation, soft-delete, rest-api
+
+    Responsibility:
+    - Soft delete {{EntityName}} (sets state=2)
+    - Return success message
+    - Preserve entity data for audit
+
+    Inputs:
+    - {{entity_name}}_id (str): entity identifier
+
+    Outputs:
+    - SuccessResponse: success message (200 OK)
+
+    Failure Modes:
+    - 404 Not Found: entity doesn't exist
+    - 500 Internal Error: server error
+
+    Related Docs:
+    - docs/{{capability}}/api/delete.md
+    """
+    service.delete({{entity_name}}_id)
+    return SuccessResponse(message=f"{{EntityName}} {{{entity_name}}_id} deleted successfully")
+```
+
+## Example: Product Routes
+
+```python
+"""
+IDK: http-endpoint, rest-api, product-routes
+
+Module: routes
+
+Responsibility:
+- Define HTTP endpoints for Product CRUD
+- Handle product-specific queries (category, availability)
+- Provide inventory management endpoints
+- Expose RESTful product API
+
+Invariants:
+- Service layer handles all business logic
+- Responses use ProductResponse DTOs
+- Filtering parameters validated by FastAPI
+
+Related Docs:
+- docs/product_catalog/api/routes.md
+"""
+
+from fastapi import APIRouter, Depends, Query, status
+
+from shared.api.responses import PaginatedResponse, SuccessResponse
+from core.dependencies import get_product_service
+
+from ..application.schemas import ProductCreate, ProductUpdate, ProductResponse
+from ..application.service import ProductService
+
+router = APIRouter(prefix="/products", tags=["Products"])
+
+
+@router.post(
+    "/",
+    response_model=ProductResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create Product"
+)
+async def create_product(
+    data: ProductCreate,
+    service: ProductService = Depends(get_product_service)
+) -> ProductResponse:
+    """
+    IDK: http-endpoint, create-operation, product-creation
+
+    Responsibility:
+    - Create new product with validation
+    - Check duplicate SKU
+    - Return created product
+
+    Outputs:
+    - ProductResponse: 201 Created
+    """
+    return service.create(data)
+
+
+@router.get(
+    "/{product_id}",
+    response_model=ProductResponse,
+    summary="Get Product by ID"
+)
+async def get_product(
+    product_id: str,
+    service: ProductService = Depends(get_product_service)
+) -> ProductResponse:
+    """
+    IDK: http-endpoint, read-operation, product-retrieval
+
+    Responsibility:
+    - Retrieve product by ID
+    - Return product details
+
+    Outputs:
+    - ProductResponse: 200 OK
+    """
+    return service.get_by_id(product_id)
+
+
+@router.get(
+    "/",
+    response_model=PaginatedResponse[ProductResponse],
+    summary="List Products"
+)
+async def list_products(
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    category: str | None = Query(None, description="Filter by category"),
+    is_available: bool | None = Query(None, description="Filter by availability"),
+    sort_by: str | None = Query(None, description="Field to sort by"),
+    sort_order: str = Query("asc", pattern="^(asc|desc)$", description="Sort order"),
+    service: ProductService = Depends(get_product_service)
+) -> PaginatedResponse[ProductResponse]:
+    """
+    IDK: http-endpoint, list-operation, pagination, filtering
+
+    Responsibility:
+    - List products with pagination
+    - Filter by category and availability
+    - Support sorting
+    - Return paginated results
+
+    Inputs:
+    - page, page_size: pagination
+    - category: optional category filter
+    - is_available: optional availability filter
+    - sort_by, sort_order: sorting params
+
+    Outputs:
+    - PaginatedResponse[ProductResponse]: 200 OK
+    """
+    filters = {}
+    if category:
+        filters["category"] = category
+    if is_available is not None:
+        filters["is_available"] = is_available
+
+    return service.get_all(
+        page=page,
+        page_size=page_size,
+        filters=filters,
+        sort_by=sort_by,
+        sort_order=sort_order
+    )
+
+
+@router.put(
+    "/{product_id}",
+    response_model=ProductResponse,
+    summary="Update Product"
+)
+async def update_product(
+    product_id: str,
+    data: ProductUpdate,
+    service: ProductService = Depends(get_product_service)
+) -> ProductResponse:
+    """
+    IDK: http-endpoint, update-operation, product-update
+
+    Responsibility:
+    - Update product fields
+    - Support partial updates
+    - Return updated product
+
+    Outputs:
+    - ProductResponse: 200 OK
+    """
+    return service.update(product_id, data)
+
+
+@router.delete(
+    "/{product_id}",
+    response_model=SuccessResponse,
+    summary="Delete Product"
+)
+async def delete_product(
+    product_id: str,
+    service: ProductService = Depends(get_product_service)
+) -> SuccessResponse:
+    """
+    IDK: http-endpoint, delete-operation, soft-delete
+
+    Responsibility:
+    - Soft delete product (state=2)
+    - Return success message
+
+    Outputs:
+    - SuccessResponse: 200 OK
+    """
+    service.delete(product_id)
+    return SuccessResponse(message=f"Product {product_id} deleted successfully")
+
+
+# Custom endpoints
+
+@router.get(
+    "/available/all",
+    response_model=list[ProductResponse],
+    summary="List available Products"
+)
+async def list_available_products(
+    service: ProductService = Depends(get_product_service)
+) -> list[ProductResponse]:
+    """
+    IDK: http-endpoint, custom-query, product-availability
+
+    Responsibility:
+    - Get all available products
+    - Filter by is_available=True and state=1
+
+    Outputs:
+    - list[ProductResponse]: 200 OK
+    """
+    return service.get_available()
+
+
+@router.patch(
+    "/{product_id}/stock",
+    response_model=ProductResponse,
+    summary="Update Product stock"
+)
+async def update_product_stock(
+    product_id: str,
+    quantity: int = Query(..., ge=0, description="New stock quantity"),
+    service: ProductService = Depends(get_product_service)
+) -> ProductResponse:
+    """
+    IDK: http-endpoint, inventory-update, stock-management
+
+    Responsibility:
+    - Update product stock quantity
+    - Validate quantity >= 0
+    - Return updated product
+
+    Inputs:
+    - product_id: product identifier
+    - quantity: new stock quantity (>= 0)
+
+    Outputs:
+    - ProductResponse: 200 OK
+    """
+    return service.update_stock(product_id, quantity)
+```
+
+## HTTP Status Codes
+
+| Code | Method | Use Case |
+|------|--------|----------|
+| `201 Created` | POST | Successful creation |
+| `200 OK` | GET, PUT, DELETE | Successful operation |
+| `400 Bad Request` | All | Validation errors, invalid parameters |
+| `404 Not Found` | GET, PUT, DELETE | Entity doesn't exist |
+| `409 Conflict` | POST, PUT | Duplicate code/SKU |
+| `500 Internal Error` | All | Server error |
+
+## Best Practices
+
+1. **Use dependency injection** - Inject services via FastAPI Depends()
+2. **Let service handle logic** - Routes are thin HTTP adapters
+3. **Add docstrings** - Document with IDK keywords
+4. **Use response models** - Specify response_model for validation
+5. **Validate query params** - Use Query() with constraints
+6. **Return proper status codes** - 201 for POST, 200 for others
+7. **Custom endpoints** - Add domain-specific endpoints when needed
+
+## Anti-Patterns to Avoid
+
+**Don't put business logic in routes:**
+```python
+# BAD: Business logic in route
+@router.post("/")
+async def create_product(data: ProductCreate):
+    if repository.get_by_code(data.code):  # Logic in route!
+        raise HTTPException(409, "Duplicate")
+    return repository.create(data)
+
+# GOOD: Delegate to service
+@router.post("/")
+async def create_product(
+    data: ProductCreate,
+    service: ProductService = Depends(get_product_service)
+):
+    return service.create(data)  # Service handles logic
+```
+
+**Don't skip response models:**
+```python
+# BAD: No response validation
+@router.get("/{id}")
+async def get_product(id: str, service: ProductService = Depends(...)):
+    return service.get_by_id(id)  # Returns any dict
+
+# GOOD: Specify response model
+@router.get("/{id}", response_model=ProductResponse)
+async def get_product(id: str, service: ProductService = Depends(...)):
+    return service.get_by_id(id)  # Validated ProductResponse
+```
+
+## Testing Routes
+
+```python
+# tests/integration/{{capability}}/api/test_routes.py
+import pytest
+from fastapi.testclient import TestClient
+
+def test_create_entity(client: TestClient):
+    """Test POST /{{entities}}."""
+    response = client.post(
+        "/api/v1/{{entities}}/",
+        json={
+            "code": "TEST-001",
+            "name": "Test Entity",
+        }
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["code"] == "TEST-001"
+    assert "id" in data
+
+
+def test_get_entity(client: TestClient, sample_entity_id: str):
+    """Test GET /{{entities}}/{id}."""
+    response = client.get(f"/api/v1/{{entities}}/{sample_entity_id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == sample_entity_id
+
+
+def test_list_entities(client: TestClient):
+    """Test GET /{{entities}}."""
+    response = client.get("/api/v1/{{entities}}/", params={"page": 1, "page_size": 10})
+    assert response.status_code == 200
+    data = response.json()
+    assert "items" in data
+    assert "total" in data
+
+
+def test_update_entity(client: TestClient, sample_entity_id: str):
+    """Test PUT /{{entities}}/{id}."""
+    response = client.put(
+        f"/api/v1/{{entities}}/{sample_entity_id}",
+        json={"name": "Updated Name"}
+    )
+    assert response.status_code == 200
+    assert response.json()["name"] == "Updated Name"
+
+
+def test_delete_entity(client: TestClient, sample_entity_id: str):
+    """Test DELETE /{{entities}}/{id}."""
+    response = client.delete(f"/api/v1/{{entities}}/{sample_entity_id}")
+    assert response.status_code == 200
+    assert "deleted successfully" in response.json()["message"]
+```

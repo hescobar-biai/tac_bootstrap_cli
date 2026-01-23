@@ -1,0 +1,406 @@
+# Domain Entity Template
+
+Template for creating domain models that extend the base Entity class.
+
+## Usage
+
+Replace placeholders:
+- `{{EntityName}}` - PascalCase entity name (e.g., `Product`, `Supplier`)
+- `{{entity_type}}` - lowercase entity type string (e.g., `"product"`, `"supplier"`)
+- `{{capability}}` - snake_case capability name (e.g., `product_catalog`)
+- `{{fields}}` - Entity-specific field definitions
+
+## Template
+
+```python
+"""
+IDK: domain-entity, {{entity_type}}, aggregate-root
+
+Module: {{entity_type}}
+
+Responsibility:
+- Represent {{EntityName}} domain concept
+- Encapsulate {{EntityName}} business rules
+- Validate entity invariants
+- Provide domain behavior methods
+
+Invariants:
+- code is immutable after creation
+- state transitions: inactive(0) -> active(1) -> deleted(2)
+- version increments on each update
+- created_at and updated_at always populated
+
+State:
+- 0: inactive
+- 1: active (default)
+- 2: deleted (soft)
+
+Related Docs:
+- docs/{{capability}}/domain/{{entity_type}}.md
+"""
+
+from shared.domain.base_entity import Entity
+
+
+class {{EntityName}}(Entity):
+    """
+    IDK: domain-entity, {{entity_type}}, aggregate-root
+
+    Responsibility:
+    - Represent {{EntityName}} as domain model
+    - Enforce {{EntityName}} business rules
+    - Maintain entity state and invariants
+
+    Invariants:
+    - code is unique and immutable
+    - state follows allowed transitions
+    - type is always "{{entity_type}}"
+    - version starts at 1 and increments
+
+    Inherited Fields:
+    - id (str): unique identifier
+    - code (str): business identifier
+    - name (str): display name
+    - description (str | None): optional description
+    - type (str): entity type
+    - created_at (datetime): creation timestamp
+    - updated_at (datetime): last update timestamp
+    - created_by (str | None): creator user ID
+    - updated_by (str | None): last updater user ID
+    - state (int): 0=inactive, 1=active, 2=deleted
+    - status (str | None): custom status
+    - version (int): optimistic locking version
+    - organization_id (str | None): organization
+    - project_id (str | None): project
+    - owner (str | None): owner user ID
+
+    Related Docs:
+    - docs/{{capability}}/domain/{{entity_type}}.md
+    - docs/shared/domain/base-entity.md
+    """
+
+    type: str = "{{entity_type}}"
+
+    # Entity-specific fields
+    {{fields}}
+
+    # Domain methods (add business logic here)
+```
+
+## Example: Product Entity
+
+```python
+"""
+IDK: domain-entity, product, aggregate-root
+
+Module: product
+
+Responsibility:
+- Represent Product domain concept
+- Encapsulate product business rules
+- Validate product invariants
+- Provide product-specific behavior
+
+Invariants:
+- sku is unique and immutable
+- unit_price must be non-negative
+- stock_quantity must be non-negative
+- is_available controls product visibility
+- category and brand are optional attributes
+
+State:
+- 0: inactive (not shown in catalog)
+- 1: active (available for purchase)
+- 2: deleted (soft delete)
+
+Related Docs:
+- docs/product_catalog/domain/product.md
+"""
+
+from shared.domain.base_entity import Entity
+
+
+class Product(Entity):
+    """
+    IDK: domain-entity, product, aggregate-root
+
+    Responsibility:
+    - Represent Product as domain model
+    - Enforce product business rules
+    - Manage product lifecycle and inventory
+    - Provide product behavior methods
+
+    Invariants:
+    - code and sku are unique and immutable
+    - unit_price >= 0
+    - stock_quantity >= 0
+    - type is always "product"
+    - is_available controls catalog visibility
+
+    Fields:
+    - sku (str): stock keeping unit, unique identifier
+    - unit_price (float): price per unit, must be >= 0
+    - category (str | None): product category
+    - brand (str | None): product brand
+    - is_available (bool): availability flag
+    - stock_quantity (int): current inventory count
+    - tags (list[str]): product tags for search/filter
+
+    Inherited Fields:
+    - id, code, name, description, type
+    - created_at, updated_at, created_by, updated_by
+    - state, status, version
+    - organization_id, project_id, owner
+
+    Related Docs:
+    - docs/product_catalog/domain/product.md
+    - docs/shared/domain/base-entity.md
+    """
+
+    type: str = "product"
+
+    # Product-specific fields
+    sku: str
+    unit_price: float
+    category: str | None = None
+    brand: str | None = None
+    is_available: bool = True
+    stock_quantity: int = 0
+    tags: list[str] = []
+
+    def apply_discount(self, percentage: float) -> None:
+        """
+        IDK: business-rule, pricing, discount-calculation
+
+        Responsibility:
+        - Apply percentage discount to unit price
+        - Validate discount percentage range
+        - Update product price
+
+        Invariants:
+        - percentage must be between 0 and 100
+        - unit_price remains non-negative after discount
+        - entity marked as updated
+
+        Inputs:
+        - percentage (float): discount percentage (0-100)
+
+        Failure Modes:
+        - ValueError: percentage out of range
+
+        Related Docs:
+        - docs/product_catalog/domain/pricing.md
+        """
+        if percentage < 0 or percentage > 100:
+            raise ValueError("Discount must be between 0 and 100")
+        self.unit_price = self.unit_price * (1 - percentage / 100)
+        self.mark_updated()
+
+    def is_low_stock(self, threshold: int = 10) -> bool:
+        """
+        IDK: business-rule, inventory-check, stock-alert
+
+        Responsibility:
+        - Check if stock is below threshold
+        - Support inventory management
+        - Enable low stock alerts
+
+        Invariants:
+        - Returns boolean
+        - Does not modify state
+
+        Inputs:
+        - threshold (int): stock level threshold (default: 10)
+
+        Outputs:
+        - bool: True if stock_quantity < threshold
+
+        Related Docs:
+        - docs/product_catalog/domain/inventory.md
+        """
+        return self.stock_quantity < threshold
+
+    def adjust_stock(self, quantity: int) -> None:
+        """
+        IDK: business-rule, inventory-adjustment, stock-management
+
+        Responsibility:
+        - Adjust stock quantity by delta
+        - Prevent negative stock
+        - Mark entity as updated
+
+        Invariants:
+        - stock_quantity must remain >= 0
+        - entity version incremented
+
+        Inputs:
+        - quantity (int): quantity to add (positive) or remove (negative)
+
+        Failure Modes:
+        - ValueError: would result in negative stock
+
+        Related Docs:
+        - docs/product_catalog/domain/inventory.md
+        """
+        new_quantity = self.stock_quantity + quantity
+        if new_quantity < 0:
+            raise ValueError("Stock quantity cannot be negative")
+        self.stock_quantity = new_quantity
+        self.mark_updated()
+
+    def mark_unavailable(self) -> None:
+        """
+        IDK: business-rule, availability-control, catalog-visibility
+
+        Responsibility:
+        - Mark product as unavailable
+        - Hide from catalog
+        - Preserve product data
+
+        Invariants:
+        - is_available set to False
+        - Product remains in database
+        - Entity marked as updated
+
+        Related Docs:
+        - docs/product_catalog/domain/availability.md
+        """
+        self.is_available = False
+        self.mark_updated()
+```
+
+## Field Type Reference
+
+| Python Type | Use Case | Example |
+|-------------|----------|---------|
+| `str` | Text fields | `sku: str` |
+| `str \| None` | Optional text | `category: str \| None = None` |
+| `int` | Whole numbers | `stock_quantity: int = 0` |
+| `float` | Decimal numbers | `unit_price: float` |
+| `bool` | True/false flags | `is_available: bool = True` |
+| `list[str]` | String arrays | `tags: list[str] = []` |
+| `dict` | Key-value objects | `metadata: dict = {}` |
+| `datetime` | Timestamps | `expires_at: datetime \| None = None` |
+
+## Domain Methods Guidelines
+
+Domain methods should:
+
+1. **Encapsulate business rules** - Keep business logic in domain layer
+2. **Validate invariants** - Ensure entity state remains valid
+3. **Use IDK documentation** - Document with keywords, responsibility, invariants
+4. **Return None or raise** - Mutate state or raise exceptions
+5. **Call mark_updated()** - Trigger version increment and timestamp update
+6. **Be pure when possible** - Avoid side effects for query methods
+
+### Command Methods (Mutate State)
+
+```python
+def apply_discount(self, percentage: float) -> None:
+    """
+    IDK: business-rule, pricing, discount-calculation
+
+    Responsibility:
+    - Apply discount and update price
+    - Validate percentage range
+
+    Invariants:
+    - percentage between 0 and 100
+    - price remains non-negative
+    """
+    if percentage < 0 or percentage > 100:
+        raise ValueError("Discount must be between 0 and 100")
+    self.unit_price *= (1 - percentage / 100)
+    self.mark_updated()
+```
+
+### Query Methods (Read State)
+
+```python
+def is_low_stock(self, threshold: int = 10) -> bool:
+    """
+    IDK: business-rule, inventory-check, stock-alert
+
+    Responsibility:
+    - Check stock level against threshold
+    - Support inventory alerts
+
+    Invariants:
+    - Does not modify state
+    - Returns boolean
+    """
+    return self.stock_quantity < threshold
+```
+
+### Validation Methods
+
+```python
+def validate_price_change(self, new_price: float) -> None:
+    """
+    IDK: validation, business-rule, price-constraint
+
+    Responsibility:
+    - Validate price change business rules
+    - Prevent invalid price updates
+
+    Invariants:
+    - new_price must be >= 0
+    - price cannot decrease by more than 50%
+
+    Failure Modes:
+    - ValueError: price validation failed
+    """
+    if new_price < 0:
+        raise ValueError("Price cannot be negative")
+    if new_price < self.unit_price * 0.5:
+        raise ValueError("Price cannot decrease by more than 50%")
+```
+
+## Best Practices
+
+1. **Keep domain pure** - No framework dependencies (no SQLAlchemy, FastAPI)
+2. **Use type hints** - All fields and methods should be typed
+3. **Document invariants** - What must always be true about this entity
+4. **Validate in domain** - Business rules belong in domain layer
+5. **Immutable fields** - Don't change code, sku, or other identifiers
+6. **State transitions** - Document allowed state changes
+7. **Use mark_updated()** - Always call after mutations
+
+## Anti-Patterns to Avoid
+
+**Don't add infrastructure concerns:**
+```python
+# BAD: Database query in domain
+def get_related_products(self):
+    return db.query(Product).filter(...)
+
+# GOOD: Return IDs, let repository handle queries
+def get_related_product_ids(self) -> list[str]:
+    return self.related_product_ids
+```
+
+**Don't skip validation:**
+```python
+# BAD: No validation
+def set_price(self, price: float) -> None:
+    self.unit_price = price
+
+# GOOD: Validate business rules
+def set_price(self, price: float) -> None:
+    if price < 0:
+        raise ValueError("Price must be non-negative")
+    self.unit_price = price
+    self.mark_updated()
+```
+
+**Don't mutate without mark_updated():**
+```python
+# BAD: Changes state but doesn't update version/timestamp
+def adjust_stock(self, quantity: int) -> None:
+    self.stock_quantity += quantity
+
+# GOOD: Marks entity as updated
+def adjust_stock(self, quantity: int) -> None:
+    self.stock_quantity += quantity
+    self.mark_updated()
+```

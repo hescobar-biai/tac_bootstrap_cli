@@ -1,0 +1,717 @@
+# Repository Template (Authorized)
+
+Template for creating data access repositories **with authorization** that support:
+- Row-level access control (owner, group, organization filtering)
+- Access scope enforcement (OWNER, GROUP, ORGANIZATION)
+- Superuser bypass
+- Secure queries that prevent unauthorized data access
+
+## Usage
+
+Replace placeholders:
+- `{{EntityName}}` - PascalCase entity name (e.g., `Product`)
+- `{{entity_name}}` - snake_case entity name (e.g., `product`)
+
+## Template
+
+```python
+"""
+IDK: repository, data-access, {{entity_name}}-persistence, row-level-security
+
+Module: repository
+
+Responsibility:
+- CRUD operations for {{EntityName}} with authorization
+- Row-level access control based on ownership and scope
+- Secure queries that filter by user permissions
+- Custom queries respecting access boundaries
+
+Invariants:
+- All authorized queries filter by access scope
+- Superusers bypass access restrictions
+- Access scope determines visibility: OWNER < GROUP < ORGANIZATION
+- Soft-deleted entities (state=2) excluded by default
+
+Related Docs:
+- docs/{{capability}}/infrastructure/repository.md
+- docs/authorization/row-level-security.md
+"""
+
+from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_
+
+from shared.infrastructure.base_repository import BaseRepository
+from authorization.domain.enums import AccessScope
+from .models import {{EntityName}}Model
+
+
+class {{EntityName}}Repository(BaseRepository[{{EntityName}}Model]):
+    """
+    IDK: repository, data-access, {{entity_name}}-persistence, rbac
+
+    Responsibility:
+    - CRUD operations for {{EntityName}} entities
+    - Row-level access control enforcement
+    - Filter queries by ownership, group, or organization
+    - Custom {{EntityName}}-specific queries
+
+    Invariants:
+    - Authorized methods filter by access scope
+    - Superusers see all entities
+    - OWNER scope: user sees only their own entities
+    - GROUP scope: user sees entities in their groups
+    - ORGANIZATION scope: user sees all org entities
+    - Soft-deleted entities excluded unless explicitly requested
+
+    Collaborators:
+    - Session: database connection
+    - {{EntityName}}Model: ORM mapping
+
+    Related Docs:
+    - docs/{{capability}}/infrastructure/repository.md
+    """
+
+    def __init__(self, db: Session):
+        """
+        IDK: repository-initialization, dependency-injection
+
+        Responsibility:
+        - Initialize repository with database session
+        - Set model class for base repository operations
+
+        Invariants:
+        - Model class is {{EntityName}}Model
+        - Database session is valid
+
+        Inputs:
+        - db (Session): SQLAlchemy database session
+
+        Related Docs:
+        - docs/shared/infrastructure/base-repository.md
+        """
+        super().__init__({{EntityName}}Model, db)
+
+    def get_by_id_authorized(
+        self,
+        entity_id: str,
+        user_id: str,
+        organization_id: str,
+        group_paths: list[str],
+        access_scope: AccessScope,
+        is_superuser: bool = False,
+    ) -> {{EntityName}}Model | None:
+        """
+        IDK: authorized-query, row-level-security, single-entity
+
+        Responsibility:
+        - Retrieve single entity by ID with access control
+        - Filter by ownership, group, or organization based on scope
+        - Allow superusers to bypass restrictions
+
+        Invariants:
+        - Returns None if not found or access denied
+        - Superusers bypass all access checks
+        - Access scope determines visibility rules
+
+        Inputs:
+        - entity_id (str): unique identifier
+        - user_id (str): current user ID
+        - organization_id (str): user's organization ID
+        - group_paths (list[str]): user's group hierarchies
+        - access_scope (AccessScope): visibility scope (OWNER, GROUP, ORG)
+        - is_superuser (bool): bypass access control
+
+        Outputs:
+        - {{EntityName}}Model | None: entity if found and authorized, else None
+
+        Related Docs:
+        - docs/authorization/row-level-security.md
+        """
+        query = self.db.query(self.model).filter(self.model.id == entity_id)
+
+        # Apply access control unless superuser
+        if not is_superuser:
+            query = self._apply_access_filter(
+                query=query,
+                user_id=user_id,
+                organization_id=organization_id,
+                group_paths=group_paths,
+                access_scope=access_scope,
+            )
+
+        return query.first()
+
+    def get_all_authorized(
+        self,
+        user_id: str,
+        organization_id: str,
+        group_paths: list[str],
+        access_scope: AccessScope,
+        is_superuser: bool = False,
+        page: int = 1,
+        page_size: int = 20,
+        filters: dict | None = None,
+        sort_by: str | None = None,
+        sort_order: str = "asc",
+    ) -> tuple[list[{{EntityName}}Model], int]:
+        """
+        IDK: authorized-query, pagination, row-level-security
+
+        Responsibility:
+        - Retrieve paginated list with access control
+        - Filter by ownership, group, or organization
+        - Apply additional filters and sorting
+        - Return items and total count
+
+        Invariants:
+        - Returns only entities user can access
+        - Superusers see all entities
+        - Pagination is 1-indexed
+        - Total count includes all accessible items
+
+        Inputs:
+        - user_id (str): current user ID
+        - organization_id (str): user's organization ID
+        - group_paths (list[str]): user's group hierarchies
+        - access_scope (AccessScope): visibility scope
+        - is_superuser (bool): bypass access control
+        - page (int): page number (1-indexed)
+        - page_size (int): items per page
+        - filters (dict | None): additional field filters
+        - sort_by (str | None): field to sort by
+        - sort_order (str): 'asc' or 'desc'
+
+        Outputs:
+        - tuple[list[{{EntityName}}Model], int]: (items, total_count)
+
+        Related Docs:
+        - docs/authorization/row-level-security.md
+        - docs/shared/infrastructure/pagination.md
+        """
+        query = self.db.query(self.model)
+
+        # Apply access control unless superuser
+        if not is_superuser:
+            query = self._apply_access_filter(
+                query=query,
+                user_id=user_id,
+                organization_id=organization_id,
+                group_paths=group_paths,
+                access_scope=access_scope,
+            )
+
+        # Apply additional filters
+        if filters:
+            for key, value in filters.items():
+                if value is not None and hasattr(self.model, key):
+                    query = query.filter(getattr(self.model, key) == value)
+
+        # Get total count before pagination
+        total = query.count()
+
+        # Apply sorting
+        if sort_by and hasattr(self.model, sort_by):
+            from sqlalchemy import asc, desc
+            sort_column = getattr(self.model, sort_by)
+            if sort_order.lower() == "desc":
+                query = query.order_by(desc(sort_column))
+            else:
+                query = query.order_by(asc(sort_column))
+
+        # Apply pagination
+        offset = (page - 1) * page_size
+        items = query.offset(offset).limit(page_size).all()
+
+        return items, total
+
+    def _apply_access_filter(
+        self,
+        query,
+        user_id: str,
+        organization_id: str,
+        group_paths: list[str],
+        access_scope: AccessScope,
+    ):
+        """
+        IDK: access-filter, row-level-security, scope-enforcement
+
+        Responsibility:
+        - Apply access control filters to query
+        - Implement OWNER, GROUP, and ORGANIZATION scope logic
+        - Filter by ownership and group membership
+
+        Invariants:
+        - OWNER: only entities owned by user
+        - GROUP: entities owned by user or in user's groups
+        - ORGANIZATION: all entities in user's organization
+        - Always filters by organization_id
+
+        Inputs:
+        - query: SQLAlchemy query object
+        - user_id (str): current user ID
+        - organization_id (str): user's organization ID
+        - group_paths (list[str]): user's group hierarchies
+        - access_scope (AccessScope): visibility scope
+
+        Outputs:
+        - query: modified query with access filters
+
+        Related Docs:
+        - docs/authorization/access-scopes.md
+        """
+        # Always filter by organization
+        query = query.filter(self.model.organization_id == organization_id)
+
+        # Apply scope-based filtering
+        if access_scope == AccessScope.OWNER:
+            # User sees only their own entities
+            query = query.filter(self.model.owner == user_id)
+
+        elif access_scope == AccessScope.GROUP:
+            # User sees their own entities + entities in their groups
+            group_conditions = [
+                self.model.group_path.like(f"{path}%") for path in group_paths
+            ]
+            query = query.filter(
+                or_(
+                    self.model.owner == user_id,
+                    *group_conditions
+                )
+            )
+
+        # ORGANIZATION scope: all entities in org (no additional filter needed)
+
+        return query
+
+    # ================================================
+    # Standard Repository Methods (inherited from BaseRepository)
+    # ================================================
+    # - get_by_id(entity_id) -> Model | None
+    # - get_by_code(code) -> Model | None
+    # - get_all(page, page_size, filters, sort_by, sort_order) -> (list, int)
+    # - create(entity) -> Model
+    # - update(entity_id, data) -> Model | None
+    # - delete(entity_id) -> bool
+    # - soft_delete(entity_id) -> Model | None
+    # - exists(entity_id) -> bool
+    # - count(filters) -> int
+
+    # ================================================
+    # Custom Query Methods (add entity-specific queries below)
+    # ================================================
+
+    # Example: Get by custom field with authorization
+    # def get_by_sku_authorized(
+    #     self,
+    #     sku: str,
+    #     user_id: str,
+    #     organization_id: str,
+    #     group_paths: list[str],
+    #     access_scope: AccessScope,
+    #     is_superuser: bool = False,
+    # ) -> {{EntityName}}Model | None:
+    #     query = self.db.query(self.model).filter(self.model.sku == sku)
+    #     if not is_superuser:
+    #         query = self._apply_access_filter(query, user_id, organization_id, group_paths, access_scope)
+    #     return query.first()
+```
+
+## Example: Product Repository (Authorized)
+
+```python
+"""
+IDK: repository, data-access, product-persistence, row-level-security
+
+Module: repository
+
+Responsibility:
+- CRUD operations for Product with authorization
+- Row-level access control for product data
+- Product-specific queries with access enforcement
+- Ensure users only access authorized products
+
+Invariants:
+- Authorized queries filter by access scope
+- Superusers bypass restrictions
+- Products filtered by organization
+- Soft-deleted products excluded by default
+
+Related Docs:
+- docs/product_catalog/infrastructure/repository.md
+"""
+
+from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_
+
+from shared.infrastructure.base_repository import BaseRepository
+from authorization.domain.enums import AccessScope
+from .models import ProductModel
+
+
+class ProductRepository(BaseRepository[ProductModel]):
+    """
+    IDK: repository, data-access, product-persistence, rbac
+
+    Responsibility:
+    - CRUD operations for Product entities
+    - Row-level access control enforcement
+    - Product-specific queries (by SKU, category, availability)
+    - Inventory queries with authorization
+
+    Invariants:
+    - Authorized methods filter by access scope
+    - Products belong to organization
+    - Stock queries respect access control
+    - Low stock alerts filtered by ownership
+
+    Collaborators:
+    - Session: database connection
+    - ProductModel: ORM mapping
+
+    Related Docs:
+    - docs/product_catalog/infrastructure/repository.md
+    """
+
+    def __init__(self, db: Session):
+        super().__init__(ProductModel, db)
+
+    def get_by_id_authorized(
+        self,
+        entity_id: str,
+        user_id: str,
+        organization_id: str,
+        group_paths: list[str],
+        access_scope: AccessScope,
+        is_superuser: bool = False,
+    ) -> ProductModel | None:
+        """Get product by ID with access control."""
+        query = self.db.query(self.model).filter(self.model.id == entity_id)
+
+        if not is_superuser:
+            query = self._apply_access_filter(
+                query, user_id, organization_id, group_paths, access_scope
+            )
+
+        return query.first()
+
+    def get_all_authorized(
+        self,
+        user_id: str,
+        organization_id: str,
+        group_paths: list[str],
+        access_scope: AccessScope,
+        is_superuser: bool = False,
+        page: int = 1,
+        page_size: int = 20,
+        filters: dict | None = None,
+        sort_by: str | None = None,
+        sort_order: str = "asc",
+    ) -> tuple[list[ProductModel], int]:
+        """Get paginated products with access control."""
+        query = self.db.query(self.model)
+
+        if not is_superuser:
+            query = self._apply_access_filter(
+                query, user_id, organization_id, group_paths, access_scope
+            )
+
+        if filters:
+            for key, value in filters.items():
+                if value is not None and hasattr(self.model, key):
+                    query = query.filter(getattr(self.model, key) == value)
+
+        total = query.count()
+
+        if sort_by and hasattr(self.model, sort_by):
+            from sqlalchemy import asc, desc
+            sort_column = getattr(self.model, sort_by)
+            query = query.order_by(desc(sort_column) if sort_order.lower() == "desc" else asc(sort_column))
+
+        offset = (page - 1) * page_size
+        items = query.offset(offset).limit(page_size).all()
+
+        return items, total
+
+    def _apply_access_filter(
+        self,
+        query,
+        user_id: str,
+        organization_id: str,
+        group_paths: list[str],
+        access_scope: AccessScope,
+    ):
+        """Apply row-level access control filters."""
+        query = query.filter(self.model.organization_id == organization_id)
+
+        if access_scope == AccessScope.OWNER:
+            query = query.filter(self.model.owner == user_id)
+        elif access_scope == AccessScope.GROUP:
+            group_conditions = [
+                self.model.group_path.like(f"{path}%") for path in group_paths
+            ]
+            query = query.filter(or_(self.model.owner == user_id, *group_conditions))
+
+        return query
+
+    # ================================================
+    # Custom Product Queries (with authorization)
+    # ================================================
+
+    def get_by_sku_authorized(
+        self,
+        sku: str,
+        user_id: str,
+        organization_id: str,
+        group_paths: list[str],
+        access_scope: AccessScope,
+        is_superuser: bool = False,
+    ) -> ProductModel | None:
+        """
+        IDK: product-query, sku-lookup, row-level-security
+
+        Responsibility:
+        - Find product by SKU with access control
+        - Enforce ownership or group access
+
+        Inputs:
+        - sku (str): product SKU
+        - user_id, organization_id, group_paths, access_scope, is_superuser
+
+        Outputs:
+        - ProductModel | None: product if found and authorized
+        """
+        query = self.db.query(self.model).filter(self.model.sku == sku)
+
+        if not is_superuser:
+            query = self._apply_access_filter(
+                query, user_id, organization_id, group_paths, access_scope
+            )
+
+        return query.first()
+
+    def get_by_category_authorized(
+        self,
+        category: str,
+        user_id: str,
+        organization_id: str,
+        group_paths: list[str],
+        access_scope: AccessScope,
+        is_superuser: bool = False,
+    ) -> list[ProductModel]:
+        """
+        IDK: product-query, category-filter, row-level-security
+
+        Responsibility:
+        - Get all products in category with access control
+        - Filter by active state
+        - Respect ownership boundaries
+
+        Inputs:
+        - category (str): product category
+        - user_id, organization_id, group_paths, access_scope, is_superuser
+
+        Outputs:
+        - list[ProductModel]: accessible products in category
+        """
+        query = (
+            self.db.query(self.model)
+            .filter(self.model.category == category)
+            .filter(self.model.state == 1)  # Active only
+        )
+
+        if not is_superuser:
+            query = self._apply_access_filter(
+                query, user_id, organization_id, group_paths, access_scope
+            )
+
+        return query.all()
+
+    def get_low_stock_authorized(
+        self,
+        threshold: int,
+        user_id: str,
+        organization_id: str,
+        group_paths: list[str],
+        access_scope: AccessScope,
+        is_superuser: bool = False,
+    ) -> list[ProductModel]:
+        """
+        IDK: product-query, stock-alert, row-level-security
+
+        Responsibility:
+        - Find products below stock threshold
+        - Filter by availability and access control
+        - Support inventory management
+
+        Inputs:
+        - threshold (int): stock quantity threshold
+        - user_id, organization_id, group_paths, access_scope, is_superuser
+
+        Outputs:
+        - list[ProductModel]: low-stock products user can access
+        """
+        query = (
+            self.db.query(self.model)
+            .filter(self.model.stock_quantity < threshold)
+            .filter(self.model.is_available == True)
+            .filter(self.model.state == 1)
+        )
+
+        if not is_superuser:
+            query = self._apply_access_filter(
+                query, user_id, organization_id, group_paths, access_scope
+            )
+
+        return query.all()
+
+    def get_available_authorized(
+        self,
+        user_id: str,
+        organization_id: str,
+        group_paths: list[str],
+        access_scope: AccessScope,
+        is_superuser: bool = False,
+    ) -> list[ProductModel]:
+        """
+        IDK: product-query, availability-filter, row-level-security
+
+        Responsibility:
+        - Get all available products
+        - Filter by access control
+        - Exclude soft-deleted products
+
+        Inputs:
+        - user_id, organization_id, group_paths, access_scope, is_superuser
+
+        Outputs:
+        - list[ProductModel]: available products user can access
+        """
+        query = (
+            self.db.query(self.model)
+            .filter(self.model.is_available == True)
+            .filter(self.model.state == 1)
+        )
+
+        if not is_superuser:
+            query = self._apply_access_filter(
+                query, user_id, organization_id, group_paths, access_scope
+            )
+
+        return query.all()
+```
+
+## Access Scope Behavior
+
+| Scope | User Sees |
+|-------|-----------|
+| **OWNER** | Only entities where `owner == user_id` |
+| **GROUP** | Entities where `owner == user_id` OR `group_path` starts with user's group paths |
+| **ORGANIZATION** | All entities where `organization_id == user's org` |
+| **SUPERUSER** | All entities (no filtering) |
+
+## Group Path Pattern
+
+Group paths use hierarchical strings for nested group access:
+
+```
+/sales             → Top-level sales group
+/sales/west        → West sales team
+/sales/west/ca     → California sales team
+```
+
+User in `/sales/west` can access:
+- Their own entities (`owner == user_id`)
+- Entities in `/sales/west/*` (any subgroup)
+
+## Best Practices
+
+1. **Always filter by organization**: Prevent cross-org data leaks
+2. **Use _apply_access_filter**: Centralize access logic
+3. **Document access scope**: Specify in service layer
+4. **Test access boundaries**: Verify users can't access unauthorized data
+5. **Superuser bypass**: Only for admin operations
+6. **Audit access**: Log who accessed what
+
+## Testing Authorized Repositories
+
+```python
+# tests/unit/product_catalog/test_repository_authorized.py
+import pytest
+from authorization.domain.enums import AccessScope
+
+
+def test_get_by_id_owner_scope(db_session):
+    """Test owner scope filters to user's own products."""
+    # Create products with different owners
+    product1 = ProductModel(id="p1", code="P1", owner="user1", organization_id="org1")
+    product2 = ProductModel(id="p2", code="P2", owner="user2", organization_id="org1")
+    db_session.add_all([product1, product2])
+    db_session.commit()
+
+    repo = ProductRepository(db_session)
+
+    # User1 can see their own product
+    result = repo.get_by_id_authorized(
+        "p1", user_id="user1", organization_id="org1",
+        group_paths=[], access_scope=AccessScope.OWNER
+    )
+    assert result is not None
+    assert result.id == "p1"
+
+    # User1 cannot see user2's product
+    result = repo.get_by_id_authorized(
+        "p2", user_id="user1", organization_id="org1",
+        group_paths=[], access_scope=AccessScope.OWNER
+    )
+    assert result is None
+
+
+def test_get_all_group_scope(db_session):
+    """Test group scope includes user's groups."""
+    products = [
+        ProductModel(id="p1", code="P1", owner="user1", group_path="/sales/west", organization_id="org1"),
+        ProductModel(id="p2", code="P2", owner="user2", group_path="/sales/west/ca", organization_id="org1"),
+        ProductModel(id="p3", code="P3", owner="user3", group_path="/sales/east", organization_id="org1"),
+    ]
+    db_session.add_all(products)
+    db_session.commit()
+
+    repo = ProductRepository(db_session)
+
+    # User in /sales/west sees west and west/ca
+    items, total = repo.get_all_authorized(
+        user_id="user1",
+        organization_id="org1",
+        group_paths=["/sales/west"],
+        access_scope=AccessScope.GROUP,
+        page=1,
+        page_size=10
+    )
+
+    assert total == 2  # p1 (owned) and p2 (in subgroup)
+    assert {item.id for item in items} == {"p1", "p2"}
+
+
+def test_superuser_sees_all(db_session):
+    """Test superuser bypasses access control."""
+    products = [
+        ProductModel(id="p1", code="P1", owner="user1", organization_id="org1"),
+        ProductModel(id="p2", code="P2", owner="user2", organization_id="org2"),
+    ]
+    db_session.add_all(products)
+    db_session.commit()
+
+    repo = ProductRepository(db_session)
+
+    items, total = repo.get_all_authorized(
+        user_id="admin",
+        organization_id="org1",
+        group_paths=[],
+        access_scope=AccessScope.OWNER,
+        is_superuser=True,
+        page=1,
+        page_size=10
+    )
+
+    assert total == 2  # Sees all products across all orgs
+```
