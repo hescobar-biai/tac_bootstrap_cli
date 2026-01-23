@@ -6,7 +6,11 @@
     },
     "contextOptions": {
       "recordVideo": {
+<<<<<<< HEAD
         "dir": "/Volumes/MAc1/Celes/tac_bootstrap/trees/86bf2b0c/videos",
+=======
+        "dir": "/Volumes/MAc1/Celes/tac_bootstrap/trees/6d93eca6/videos",
+>>>>>>> feature-issue-127-adw-6d93eca6-template-dependencies-py
         "size": {
           "width": 1920,
           "height": 1080
