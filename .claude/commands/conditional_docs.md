@@ -743,3 +743,22 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender integration con AsyncSession y async ORM patterns
     - Cuando trabajes con dependency injection de async repositories en FastAPI
     - Cuando necesites referencia sobre batch processing eficiente con bulk operations
+
+- app_docs/feature-a84f13cc-database-template.md
+  - Conditions:
+    - Cuando trabajes con el template database.py.j2 o configuración de database session management
+    - Cuando necesites entender la arquitectura de database connection y session management centralizado
+    - Cuando modifiques o extiendas el template de database.py
+    - Cuando trabajes con configuración de SQLAlchemy engine (sync o async)
+    - Cuando implementes get_db() generator para FastAPI dependency injection
+    - Cuando necesites referencia sobre environment-first configuration (DATABASE_URL env var priority chain)
+    - Cuando trabajes con declarative_base() y Base para ORM model inheritance
+    - Cuando modifiques src/shared/infrastructure/database.py o su template
+    - Cuando trabajes con connection pool configuration (pool_size, max_overflow, pool_pre_ping)
+    - Cuando necesites entender conditional rendering de sync vs async SQLAlchemy
+    - Cuando implementes features que requieran database session lifecycle management
+    - Cuando trabajes con SessionLocal sessionmaker configuration
+    - Cuando necesites referencia sobre 12-factor app pattern para database configuration
+    - Cuando trabajes con integration de database.py con repositories, services y FastAPI routes
+    - Cuando implementes database initialization o table creation en startup
+    - Cuando necesites entender SQLite vs PostgreSQL configuration patterns
