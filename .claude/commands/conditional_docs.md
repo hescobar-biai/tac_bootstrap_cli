@@ -919,6 +919,25 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features de vertical slice architecture generation
     - Cuando trabajes con tests de entity configuration models (test_entity_config.py)
 
+- app_docs/feature-feature_2_5-wizard-interactive-entity-fields.md
+  - Conditions:
+    - Cuando trabajes con el wizard interactivo de entidades (run_entity_wizard)
+    - Cuando necesites entender cómo guiar a usuarios en la creación de EntitySpec
+    - Cuando modifiques o extiendas la funcionalidad del wizard en wizard.py
+    - Cuando trabajes con helpers de validación (_validate_entity_name_format, _validate_field_name_format, _to_kebab_case)
+    - Cuando implementes nuevos prompts interactivos para entity definition
+    - Cuando necesites referencia sobre validación en tiempo real de naming conventions
+    - Cuando trabajes con Rich UI components (Prompt, Confirm, IntPrompt, Table)
+    - Cuando implementes features que requieran user interaction para configuración compleja
+    - Cuando trabajes con loop de campos y aggregate de FieldSpec objects
+    - Cuando necesites entender el sistema de resumen visual con tablas Rich
+    - Cuando implementes opciones de Edit/Cancel/Retry en wizards
+    - Cuando trabajes con conversión automática de nombres (PascalCase → kebab-case)
+    - Cuando modifiques validación de keywords de Python o nombres reservados de SQLAlchemy
+    - Cuando necesites referencia sobre el patrón de wizard recursivo para re-starts
+    - Cuando trabajes con tests de wizard interactivo (test_wizard.py)
+    - Cuando implementes el comando CLI generate entity que integre con run_entity_wizard
+    - Cuando necesites entender cómo eliminar código duplicado entre domain models
 - app_docs/feature-2_4-generate-entity-command.md
   - Conditions:
     - Cuando trabajes con el comando CLI tac-bootstrap generate entity
