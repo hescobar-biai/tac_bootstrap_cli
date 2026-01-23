@@ -1,0 +1,224 @@
+# Reference implementation - generated from health.py.j2 template
+# This file serves as documentation for the health.py template output
+# Not used by the CLI itself (tac-bootstrap has framework="none")
+
+"""
+IDK: health-check, monitoring, observability, database-connectivity
+
+Module: health
+
+Responsibility:
+- Provide production-ready health check endpoint for monitoring systems
+- Verify database connectivity with lightweight SELECT 1 query
+- Report application version from configuration
+- Return standardized health status (healthy/degraded)
+- Support observability platforms and load balancers
+- Complete health checks in <100ms typical case
+
+Key Components:
+- router: FastAPI APIRouter with prefix='/health'
+- health_check(): GET /health endpoint with database dependency injection
+- Database connectivity check using SELECT 1
+- Response format: status, version, database, timestamp (ISO8601)
+- Exception handling for database failures
+
+Invariants:
+- Always returns HTTP 200 (status field indicates healthy/degraded)
+- Database check uses SELECT 1 (fast, ~1-10ms typical)
+- Catches all database exceptions without failing endpoint
+- Timestamp is UTC in ISO8601 format with 'Z' suffix
+- No sensitive information exposed (no URLs, credentials, hostnames)
+- Response completes in <100ms under normal conditions
+- Status 'healthy' requires database connected
+- Status 'degraded' indicates database disconnected but service running
+
+Usage Examples:
+
+```python
+# Mount router in main.py or app factory
+from src.shared.api.health import router as health_router
+from fastapi import FastAPI
+
+app = FastAPI()
+
+# Option 1: Mount with prefix (endpoint at /health/health)
+app.include_router(health_router)
+
+# Option 2: Mount without prefix (endpoint at /health)
+app.include_router(health_router, prefix="")
+
+# Option 3: Custom prefix (endpoint at /api/v1/health)
+app.include_router(health_router, prefix="/api/v1")
+```
+
+```python
+# Test the endpoint
+import requests
+
+response = requests.get("http://localhost:8000/health")
+print(response.json())
+# {
+#   "status": "healthy",
+#   "version": "0.1.0",
+#   "database": "connected",
+#   "timestamp": "2024-01-23T10:30:45.123456Z"
+# }
+```
+
+Monitoring Integration Examples:
+
+```yaml
+# Kubernetes liveness probe
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Kubernetes readiness probe
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 2
+```
+
+```
+# AWS Application Load Balancer health check
+Target: HTTP:8000/health
+Healthy threshold: 2
+Unhealthy threshold: 3
+Timeout: 5 seconds
+Interval: 30 seconds
+Success codes: 200
+```
+
+```yaml
+# Docker Compose healthcheck
+healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+```
+
+```python
+# Datadog APM health check monitor
+from datadog import api, initialize
+
+# Check endpoint and alert on degraded status
+monitor = {
+    "type": "service check",
+    "query": "\"http.can_connect\".over(\"url:http://myapp.com/health\").last(2).count_by_status()",
+    "name": "Service Health Check",
+    "message": "Service health endpoint is degraded or unreachable",
+    "tags": ["service:myapp", "env:production"],
+}
+```
+
+Collaborators:
+- FastAPI APIRouter: HTTP routing and dependency injection
+- database.py get_db(): Database session provider
+- SQLAlchemy Session/AsyncSession: Database query execution
+- Load Balancers: AWS ALB, GCP Load Balancer, Kubernetes probes
+- Monitoring Tools: Datadog, New Relic, Prometheus, custom health checkers
+
+Failure Modes:
+- Database unreachable → status='degraded', database='disconnected', HTTP 200
+- Database timeout → same as above (caught by exception handler)
+- Database query error → same as above (generic exception handling)
+- All exceptions caught to prevent endpoint failure
+- Service continues to respond even when database is down
+- HTTP 200 always returned (monitoring tools check status field)
+
+Related Docs:
+- docs/shared/api/health-endpoints.md
+- docs/shared/infrastructure/monitoring.md
+- docs/deployment/health-checks.md
+- ai_docs/doc/monitoring-observability/
+"""
+
+from datetime import datetime
+from fastapi import APIRouter, Depends
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+from src.shared.infrastructure.database import get_db
+
+# Create router with /health prefix
+# Users can override prefix when mounting: app.include_router(router, prefix="")
+router = APIRouter(
+    prefix="/health",
+    tags=["health"],
+)
+
+@router.get("")
+def health_check(db: Session = Depends(get_db)):
+    """
+    IDK: health-check, monitoring, sync
+
+    Health check endpoint for monitoring and observability.
+
+    Performs lightweight database connectivity check using SELECT 1.
+    Returns health status, application version, database state, and timestamp.
+    Always returns HTTP 200 (status field indicates healthy/degraded).
+
+    Args:
+        db: Database session from dependency injection
+
+    Returns:
+        dict: Health status response with fields:
+            - status (str): 'healthy' or 'degraded'
+            - version (str): Application version from config
+            - database (str): 'connected' or 'disconnected'
+            - timestamp (str): UTC timestamp in ISO8601 format
+
+    Example Response (Healthy):
+        {
+            "status": "healthy",
+            "version": "0.1.0",
+            "database": "connected",
+            "timestamp": "2024-01-23T10:30:45.123456Z"
+        }
+
+    Example Response (Degraded):
+        {
+            "status": "degraded",
+            "version": "0.1.0",
+            "database": "disconnected",
+            "timestamp": "2024-01-23T10:30:47.987654Z"
+        }
+
+    Performance:
+        - SELECT 1 database check: ~1-10ms typical
+        - Total response time: <100ms typical case
+        - No external API calls or heavy computations
+
+    Usage:
+        Used by load balancers, Kubernetes probes, and monitoring systems
+        to verify service availability and database connectivity.
+    """
+    status = "healthy"
+    database_status = "connected"
+
+    # Perform lightweight database connectivity check
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception:
+        # Database unreachable or query failed
+        # Service is still running but degraded
+        database_status = "disconnected"
+        status = "degraded"
+
+    return {
+        "status": status,
+        "version": "0.1.0",
+        "database": database_status,
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    }
