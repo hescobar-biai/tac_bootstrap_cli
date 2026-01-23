@@ -864,3 +864,22 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender qué combinaciones de arquitectura/framework incluyen/excluyen shared infrastructure
     - Cuando implementes features que requieran scaffold service extension patterns
     - Cuando trabajes con integration de tareas 1.1-1.10 (base classes templates) en el CLI
+
+- app_docs/feature-feature_2_1-entity-spec-domain-model.md
+  - Conditions:
+    - Cuando trabajes con modelos de dominio para generación de entidades (EntitySpec, FieldSpec, FieldType)
+    - Cuando necesites entender el sistema de validación de entity specifications
+    - Cuando implementes el comando generate entity o features relacionadas con entity generation
+    - Cuando trabajes con validación de naming conventions (PascalCase, kebab-case, snake_case)
+    - Cuando necesites referencia sobre field types soportados y sus mappings a database types
+    - Cuando trabajes con reserved field names o SQLAlchemy conflicts validation
+    - Cuando implementes features de CRUD generation que requieran entity specs
+    - Cuando modifiques o extiendas entity_config.py en domain/
+    - Cuando necesites entender derived name properties (snake_name, plural_name, table_name)
+    - Cuando trabajes con pluralization logic para entity names
+    - Cuando implementes wizard interactivo para entity definition
+    - Cuando trabajes con JSON/YAML serialization de entity specifications
+    - Cuando necesites referencia sobre Python keyword validation en field names
+    - Cuando trabajes con integration de EntitySpec con template generation system
+    - Cuando implementes features de vertical slice architecture generation
+    - Cuando trabajes con tests de entity configuration models (test_entity_config.py)
