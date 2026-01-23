@@ -7,15 +7,23 @@ and adding agentic layers to existing repositories.
 
 from __future__ import annotations
 
+import keyword
+import re
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Type, TypeVar
 
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Confirm, Prompt
+from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.table import Table
 
+from tac_bootstrap.domain.entity_config import (
+    RESERVED_FIELD_NAMES,
+    EntitySpec,
+    FieldSpec,
+    FieldType,
+)
 from tac_bootstrap.domain.models import (
     AgenticSpec,
     Architecture,
@@ -408,3 +416,346 @@ def _show_config_summary(config: TACConfig) -> None:
     table.add_row("Worktrees Enabled", str(config.agentic.worktrees.enabled))
 
     console.print(table)
+
+
+# ============================================================================
+# Helper Functions for Entity Wizard
+# ============================================================================
+
+
+def _to_kebab_case(name: str) -> str:
+    """Convert PascalCase to kebab-case.
+
+    Args:
+        name: PascalCase string (e.g., "UserProfile")
+
+    Returns:
+        kebab-case string (e.g., "user-profile")
+
+    Examples:
+        >>> _to_kebab_case("UserProfile")
+        'user-profile'
+        >>> _to_kebab_case("Product")
+        'product'
+        >>> _to_kebab_case("OAuth2Client")
+        'o-auth2-client'
+    """
+    # Insert hyphen before uppercase letters (except at start)
+    return re.sub(r"(?<!^)(?=[A-Z])", "-", name).lower()
+
+
+def _validate_entity_name_format(name: str) -> tuple[bool, str]:
+    """Validate entity name is PascalCase and not a Python keyword.
+
+    Args:
+        name: Entity name to validate
+
+    Returns:
+        Tuple of (is_valid, error_message). If valid, error_message is empty.
+
+    Examples:
+        >>> _validate_entity_name_format("Product")
+        (True, '')
+        >>> _validate_entity_name_format("product")
+        (False, 'Entity name must be PascalCase...')
+        >>> _validate_entity_name_format("Class")
+        (False, 'Entity name is a Python keyword...')
+    """
+    # Check minimum length
+    if len(name) < 2:
+        return False, "Entity name must be at least 2 characters long"
+
+    # Check PascalCase pattern
+    if not re.match(r"^[A-Z][a-zA-Z0-9]*$", name):
+        return (
+            False,
+            "Entity name must be PascalCase (start with uppercase letter, "
+            "followed by letters and numbers). Examples: Product, UserProfile, OAuth2Client",
+        )
+
+    # Check Python keywords
+    if keyword.iskeyword(name.lower()):
+        return (
+            False,
+            f"Entity name '{name}' is a Python reserved keyword and cannot be used. "
+            "Choose a different name.",
+        )
+
+    return True, ""
+
+
+def _validate_field_name_format(name: str) -> tuple[bool, str]:
+    """Validate field name is snake_case and not reserved.
+
+    Args:
+        name: Field name to validate
+
+    Returns:
+        Tuple of (is_valid, error_message). If valid, error_message is empty.
+
+    Examples:
+        >>> _validate_field_name_format("user_name")
+        (True, '')
+        >>> _validate_field_name_format("UserName")
+        (False, 'Field name must be snake_case...')
+        >>> _validate_field_name_format("id")
+        (False, 'Field name is reserved...')
+    """
+    # Check snake_case pattern
+    if not re.match(r"^[a-z][a-z0-9_]*$", name):
+        return (
+            False,
+            "Field name must be snake_case (lowercase with underscores). "
+            "Examples: user_name, email_address, is_active",
+        )
+
+    # Check Python keywords
+    if keyword.iskeyword(name):
+        return (
+            False,
+            f"Field name '{name}' is a Python reserved keyword and cannot be used. "
+            "Choose a different name.",
+        )
+
+    # Check reserved field names
+    if name in RESERVED_FIELD_NAMES:
+        return (
+            False,
+            f"Field name '{name}' is reserved by BaseEntity. "
+            f"Reserved names: {', '.join(RESERVED_FIELD_NAMES)}",
+        )
+
+    # Check SQLAlchemy conflicts
+    sqlalchemy_conflicts = ("query", "metadata", "registry", "mapper")
+    if name in sqlalchemy_conflicts:
+        return (
+            False,
+            f"Field name '{name}' conflicts with SQLAlchemy attributes. "
+            f"Reserved names: {', '.join(sqlalchemy_conflicts)}",
+        )
+
+    return True, ""
+
+
+def _show_entity_summary(entity_spec: EntitySpec) -> None:
+    """Display entity specification summary tables.
+
+    Shows two tables:
+    1. Entity metadata (name, capability, options)
+    2. Fields list with all properties
+
+    Args:
+        entity_spec: EntitySpec object to display
+    """
+    # Table 1: Entity metadata
+    meta_table = Table(title="Entity Configuration", show_header=True)
+    meta_table.add_column("Setting", style="cyan")
+    meta_table.add_column("Value", style="green")
+
+    meta_table.add_row("Entity Name", entity_spec.name)
+    meta_table.add_row("Capability", entity_spec.capability)
+    meta_table.add_row("Field Count", str(len(entity_spec.fields)))
+    meta_table.add_row("Authentication", "✓" if entity_spec.authorized else "✗")
+    meta_table.add_row("Async Mode", "✓" if entity_spec.async_mode else "✗")
+    meta_table.add_row("Domain Events", "✓" if entity_spec.with_events else "✗")
+    meta_table.add_row("Table Name", entity_spec.table_name)
+
+    console.print(meta_table)
+    console.print()
+
+    # Table 2: Fields
+    fields_table = Table(title="Fields", show_header=True)
+    fields_table.add_column("Name", style="cyan")
+    fields_table.add_column("Type", style="magenta")
+    fields_table.add_column("Required", style="green")
+    fields_table.add_column("Unique", style="cyan")
+    fields_table.add_column("Indexed", style="yellow")
+    fields_table.add_column("Max Length", style="blue")
+
+    for field in entity_spec.fields:
+        required_marker = "[green]✓[/green]" if field.required else "✗"
+        unique_marker = "[cyan]✓[/cyan]" if field.unique else "✗"
+        indexed_marker = "[yellow]✓[/yellow]" if field.indexed else "✗"
+        max_len = str(field.max_length) if field.max_length else "-"
+
+        fields_table.add_row(
+            field.name,
+            field.field_type.value,
+            required_marker,
+            unique_marker,
+            indexed_marker,
+            max_len,
+        )
+
+    console.print(fields_table)
+
+
+def run_entity_wizard() -> EntitySpec | None:
+    """Run interactive wizard for entity specification.
+
+    Guides the user through creating a complete entity specification
+    for CRUD code generation. Includes validation, defaults, and
+    a summary confirmation before returning the spec.
+
+    Returns:
+        EntitySpec object if confirmed, None if cancelled
+
+    Example:
+        >>> entity = run_entity_wizard()
+        >>> if entity:
+        ...     print(f"Created entity: {entity.name}")
+    """
+    # Welcome panel
+    console.print(
+        Panel.fit(
+            "[bold blue]Entity Generator Wizard[/bold blue]\n\n"
+            "Let's create a new CRUD entity with guided prompts.",
+            title="🚀 TAC Bootstrap",
+        )
+    )
+
+    # Step 1: Entity Name (PascalCase)
+    console.print("\n[bold]Step 1: Entity Name[/bold]")
+    console.print("[dim]Enter entity name in PascalCase (e.g., Product, UserProfile)[/dim]\n")
+
+    entity_name = ""
+    while True:
+        name_input = Prompt.ask("  Entity name")
+        is_valid, error_msg = _validate_entity_name_format(name_input)
+
+        if is_valid:
+            entity_name = name_input
+            console.print(f"  [green]✓[/green] Entity: {entity_name}")
+            break
+        else:
+            console.print(f"  [red]✗[/red] {error_msg}")
+            console.print()
+
+    # Step 2: Capability Name (kebab-case)
+    console.print("\n[bold]Step 2: Capability Name[/bold]")
+    console.print(
+        "[dim]Capability groups related entities "
+        "(e.g., catalog, user-management)[/dim]\n"
+    )
+
+    default_capability = _to_kebab_case(entity_name)
+    capability = Prompt.ask(
+        "  Capability name",
+        default=default_capability,
+    )
+    console.print(f"  [green]✓[/green] Capability: {capability}")
+
+    # Step 3: Fields
+    console.print("\n[bold]Step 3: Define Fields[/bold]")
+    console.print("[dim]Add at least one field to your entity[/dim]\n")
+
+    fields: list[FieldSpec] = []
+
+    while True:
+        # If this is not the first iteration and user doesn't want more fields, break
+        if fields and not Confirm.ask("  Add another field?", default=True):
+            break
+
+        console.print()
+        console.print(f"[bold cyan]Field #{len(fields) + 1}[/bold cyan]")
+
+        # Field name
+        field_name = ""
+        while True:
+            name_input = Prompt.ask("    Field name (snake_case)")
+            is_valid, error_msg = _validate_field_name_format(name_input)
+
+            if is_valid:
+                field_name = name_input
+                break
+            else:
+                console.print(f"    [red]✗[/red] {error_msg}")
+
+        # Field type
+        field_type = select_from_enum(
+            "    Field type",
+            FieldType,
+            default=FieldType.STRING,
+        )
+
+        # Required
+        required = Confirm.ask("    Required?", default=True)
+
+        # Unique
+        unique = Confirm.ask("    Unique?", default=False)
+
+        # Indexed
+        indexed = Confirm.ask("    Indexed?", default=False)
+
+        # Max length (only for STRING and TEXT types)
+        max_length: int | None = None
+        if field_type in (FieldType.STRING, FieldType.TEXT):
+            if Confirm.ask("    Set max length?", default=False):
+                max_length = IntPrompt.ask(
+                    "      Max length",
+                    default=255 if field_type == FieldType.STRING else 1000,
+                )
+
+        # Create field spec
+        field_spec = FieldSpec(
+            name=field_name,
+            field_type=field_type,
+            required=required,
+            unique=unique,
+            indexed=indexed,
+            max_length=max_length,
+        )
+        fields.append(field_spec)
+        console.print(f"    [green]✓[/green] Added field: {field_name}")
+
+    # Validate at least one field
+    if not fields:
+        console.print("[red]Entity must have at least one field.[/red]")
+        console.print("[yellow]Wizard cancelled.[/yellow]")
+        return None
+
+    # Step 4: Additional Options
+    console.print("\n[bold]Step 4: Additional Options[/bold]\n")
+
+    enable_auth = Confirm.ask(
+        "  Generate with authentication templates?",
+        default=False,
+    )
+
+    enable_async = Confirm.ask(
+        "  Use async repository pattern?",
+        default=False,
+    )
+
+    enable_events = Confirm.ask(
+        "  Include domain events support?",
+        default=False,
+    )
+
+    # Step 5: Summary and Confirmation
+    console.print("\n")
+
+    # Build the entity spec
+    entity_spec = EntitySpec(
+        name=entity_name,
+        capability=capability,
+        fields=fields,
+        authorized=enable_auth,
+        async_mode=enable_async,
+        with_events=enable_events,
+    )
+
+    _show_entity_summary(entity_spec)
+
+    console.print()
+    if not Confirm.ask("Proceed with this configuration?", default=True):
+        # Ask if they want to edit or cancel
+        if Confirm.ask("Edit configuration? (No = Cancel)", default=True):
+            console.print("[yellow]Restarting wizard...[/yellow]\n")
+            return run_entity_wizard()  # Recursive call to restart
+        else:
+            console.print("[yellow]Wizard cancelled.[/yellow]")
+            return None
+
+    console.print("[green]✓ Entity specification created successfully![/green]")
+    return entity_spec
