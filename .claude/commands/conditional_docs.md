@@ -833,3 +833,19 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features de observabilidad o SRE readiness
     - Cuando necesites entender el patrón de dual creation (template + reference implementation)
     - Cuando trabajes con graceful degradation (service up, database down scenarios)
+
+- app_docs/feature-137-test-base-classes-templates.md
+  - Conditions:
+    - Cuando trabajes con tests de templates de base classes en tests/test_base_classes_templates.py
+    - Cuando necesites entender la suite de tests para templates de tac_bootstrap/templates/shared/
+    - Cuando modifiques o extiendas tests de templates (base_entity, base_schema, base_service, base_repository, etc.)
+    - Cuando trabajes con validación de rendering de templates usando compile() para Python syntax checking
+    - Cuando implementes nuevos templates en templates/shared/ y necesites tests de referencia
+    - Cuando trabajes con fixtures de configuración para tests (ddd_config, simple_config, async_config)
+    - Cuando necesites entender tests de conditional rendering (sync/async, DDD/simple)
+    - Cuando trabajes con tests de integración de ScaffoldService y template inclusion logic
+    - Cuando debugees problemas de rendering de templates o contenido generado
+    - Cuando necesites referencia sobre testing patterns para templates Jinja2
+    - Cuando trabajes con coverage de templates (target >90%)
+    - Cuando modifiques templates y necesites verificar que tests siguen pasando
+    - Cuando necesites entender syntax-only validation vs runtime validation de código generado
