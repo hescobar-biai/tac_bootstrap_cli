@@ -36,7 +36,7 @@ ADWWorkflow = Literal[
     "adw_review_iso",  # Review only (dependent workflow)
     "adw_document_iso",  # Documentation only (dependent workflow)
     "adw_ship_iso",  # Ship/deployment workflow
-    "adw_sdlc_ZTE_iso",  # Zero Touch Execution - full SDLC with auto-merge
+    "adw_sdlc_zte_iso",  # Zero Touch Execution - full SDLC with auto-merge
     "adw_plan_build_iso",  # Plan + Build
     "adw_plan_build_test_iso",  # Plan + Build + Test
     "adw_plan_build_test_review_iso",  # Plan + Build + Test + Review
