@@ -865,6 +865,24 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features que requieran scaffold service extension patterns
     - Cuando trabajes con integration de tareas 1.1-1.10 (base classes templates) en el CLI
 
+- app_docs/feature-2_3-generate-service.md
+  - Conditions:
+    - Cuando trabajes con GenerateService o entity generation orchestration
+    - Cuando necesites entender cómo se generan entidades CRUD siguiendo vertical slice architecture
+    - Cuando modifiques o extiendas application/generate_service.py
+    - Cuando trabajes con EntitySpec model (name, capability, fields)
+    - Cuando implementes el comando CLI generate entity (fase 2.4+)
+    - Cuando necesites referencia sobre validation-first approach en servicios
+    - Cuando trabajes con all-or-nothing file checking (force=False behavior)
+    - Cuando implementes templates de entidades (domain.py.j2, schemas.py.j2, service.py.j2, repository.py.j2, models.py.j2, routes.py.j2)
+    - Cuando necesites entender precondiciones de base classes (shared/domain/base_entity.py, etc.)
+    - Cuando trabajes con GenerateResult model y metadata de generación
+    - Cuando implementes custom exceptions (ValidationError, PreconditionError, FileSystemError)
+    - Cuando debugees problemas de entity generation o template rendering
+    - Cuando trabajes con tests de GenerateService (test_generate_service.py)
+    - Cuando necesites entender el patrón de mkdir -p behavior para app_root
+    - Cuando trabajes con snake_case property en EntitySpec
+    - Cuando implementes features relacionadas con FASE 2 (Comando generate entity)
 - app_docs/feature-issue-142-crud-templates-capability.md
   - Conditions:
     - Cuando trabajes con templates de generación de entidades CRUD

@@ -5,7 +5,7 @@
       "headless": true
     },
     "contextOptions": {
-      "recordVideo": {
+      "recordVideo": {        
         "dir": "/Volumes/MAc1/Celes/tac_bootstrap/trees/feature_2_1/videos",
         "size": {
           "width": 1920,
