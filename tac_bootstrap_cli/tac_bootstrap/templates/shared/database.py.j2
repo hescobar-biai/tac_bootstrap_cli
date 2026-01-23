@@ -105,8 +105,8 @@ DATABASE_URL = os.getenv("DATABASE_URL") or "{{ config.project.database_url | de
 engine = create_async_engine(
     DATABASE_URL,
     # Uncomment for custom connection pool configuration:
-    # pool_size={{ config.database.pool_size | default(5) }},
-    # max_overflow={{ config.database.max_overflow | default(10) }},
+    # pool_size=5,
+    # max_overflow=10,
     # pool_pre_ping=True,  # Enable connection health checks
     # pool_recycle=3600,   # Recycle connections after 1 hour
     echo=False,  # Set to True for SQL query logging
@@ -125,8 +125,8 @@ SessionLocal = async_sessionmaker(
 engine = create_engine(
     DATABASE_URL,
     # Uncomment for custom connection pool configuration:
-    # pool_size={{ config.database.pool_size | default(5) }},
-    # max_overflow={{ config.database.max_overflow | default(10) }},
+    # pool_size=5,
+    # max_overflow=10,
     # pool_pre_ping=True,  # Enable connection health checks
     # pool_recycle=3600,   # Recycle connections after 1 hour
     echo=False,  # Set to True for SQL query logging

@@ -849,3 +849,18 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con coverage de templates (target >90%)
     - Cuando modifiques templates y necesites verificar que tests siguen pasando
     - Cuando necesites entender syntax-only validation vs runtime validation de código generado
+- app_docs/feature-issue-135-integrate-shared-infrastructure.md
+  - Conditions:
+    - Cuando trabajes con integración de base classes en ScaffoldService
+    - Cuando necesites entender cómo se generan los archivos src/shared/ automáticamente
+    - Cuando modifiques o extiendas _add_shared_infrastructure() en scaffold_service.py
+    - Cuando trabajes con conditional scaffolding basado en arquitectura (DDD/Clean/Hexagonal) + framework (FastAPI)
+    - Cuando necesites referencia sobre qué base classes se generan (base_entity, base_schema, base_service, base_repository, etc.)
+    - Cuando implementes features de scaffold generation para nuevos frameworks o arquitecturas
+    - Cuando trabajes con FileAction.CREATE behavior y idempotencia en scaffolding
+    - Cuando necesites entender tests de shared infrastructure generation (TestScaffoldServiceSharedInfrastructure)
+    - Cuando debugees problemas de generación de archivos compartidos en init command
+    - Cuando trabajes con templates en tac_bootstrap_cli/tac_bootstrap/templates/shared/
+    - Cuando necesites entender qué combinaciones de arquitectura/framework incluyen/excluyen shared infrastructure
+    - Cuando implementes features que requieran scaffold service extension patterns
+    - Cuando trabajes con integration de tareas 1.1-1.10 (base classes templates) en el CLI
