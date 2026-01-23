@@ -39,7 +39,7 @@ AVAILABLE_ADW_WORKFLOWS = [
     "adw_review_iso",
     "adw_document_iso",
     "adw_ship_iso",
-    "adw_sdlc_ZTE_iso",  # Zero Touch Execution workflow
+    "adw_sdlc_zte_iso",  # Zero Touch Execution workflow
     "adw_plan_build_iso",
     "adw_plan_build_test_iso",
     "adw_plan_build_test_review_iso",

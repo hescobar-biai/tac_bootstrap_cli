@@ -471,6 +471,23 @@ The `gh webhook forward` command creates a WebSocket tunnel to GitHub, so your m
 
 > **Note**: The forward only works while the command is running. For persistent production setups, configure a webhook in GitHub repo Settings with a publicly accessible URL.
 
+#### Cron Trigger Setup
+
+The cron trigger polls GitHub issues at a configurable interval, detecting ADW workflow commands in issue bodies or comments.
+
+```bash
+# Start with default 20s interval
+uv run adws/adw_triggers/trigger_cron.py
+
+# Custom 30s interval
+uv run adws/adw_triggers/trigger_cron.py -i 30
+
+# Custom 60s interval
+uv run adws/adw_triggers/trigger_cron.py --interval 60
+```
+
+The cron trigger detects the same workflow commands as the webhook (e.g., `/adw_sdlc_zte_iso`, `/adw_plan_build_iso`). Write the command in an issue body or comment to trigger it.
+
 ### Key Concepts
 
 - **Isolation**: Each workflow runs in a dedicated git worktree under `trees/<adw-id>/`

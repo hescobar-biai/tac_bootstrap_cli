@@ -1971,6 +1971,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Versiones anteriores listadas (aunque sea con fechas placeholder)
 - Es parseable por herramientas automaticas de changelog
 
+## Tarea 8.3: Mejorar trigger_cron.py con deteccion de workflows configurable
+
+**Tipo**: feature
+**Estado**: COMPLETADA
+**Ganancia**: El trigger cron ahora soporta todos los ADW workflows (igual que el webhook), con intervalo de polling configurable via argumento CLI. Ya no esta limitado a un solo workflow hardcodeado.
+
+**Instrucciones para el agente**:
+
+1. Reescribir `adws/adw_triggers/trigger_cron.py` con:
+   - Argumento CLI `--interval` / `-i` para configurar intervalo de polling (default: 20s)
+   - Deteccion de workflows usando `extract_adw_info()` de `adw_modules.workflow_ops` (misma logica que webhook)
+   - Soporte para TODOS los workflows en `AVAILABLE_ADW_WORKFLOWS`
+   - Validacion de workflows dependientes (requieren ADW ID existente)
+   - Gestion de estado con `ADWState`
+   - Comentarios en issues al detectar/lanzar workflows
+   - Proteccion anti-loop con `ADW_BOT_IDENTIFIER`
+   - Logger por ADW ID con `setup_logger()`
+   - Lanzamiento de workflows en background con `subprocess.Popen`
+
+2. Actualizar template Jinja2 `tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/trigger_cron.py.j2`:
+   - Usar `{{ config.project.name }}` en docstring y mensajes
+   - Usar `{{ config.agentic.cron_interval | default(20) }}` como intervalo por defecto
+   - Mantener toda la logica de deteccion identica al archivo renderizado
+
+**Archivos creados/modificados**:
+- `adws/adw_triggers/trigger_cron.py` (renderizado en raiz)
+- `tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/trigger_cron.py.j2` (template)
+
+**Criterios de aceptacion**:
+- `uv run adws/adw_triggers/trigger_cron.py --help` muestra ayuda con todos los workflows soportados
+- `uv run adws/adw_triggers/trigger_cron.py -i 30` inicia con intervalo de 30s
+- Detecta `adw_plan_iso`, `adw_sdlc_iso`, `adw_patch_iso` y todos los demas workflows
+- Valida que workflows dependientes (build, test, review, document, ship) requieren ADW ID
+- Publica comentario en issue al detectar workflow
+- No re-procesa comentarios ya procesados
+- Ignora comentarios del bot (anti-loop)
+- Template usa variables de config correctamente
+
 ---
 
 # RESUMEN DE EJECUCION
@@ -2032,12 +2070,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 |---|-------|------|----------------|---------------------|
 | 8.1 | Actualizar README.md | chore | - | `tac_bootstrap_cli/README.md` |
 | 8.2 | Crear CHANGELOG.md | chore | - | `CHANGELOG.md` |
+| 8.3 | Mejorar trigger_cron.py | feature | `templates/adws/adw_triggers/trigger_cron.py.j2` | `adws/adw_triggers/trigger_cron.py` |
 
 ---
 
 ## Metricas de Exito
 
-- **32 tareas** en total (22 features, 10 chores)
+- **33 tareas** en total (23 features, 10 chores)
 - Tests: `uv run pytest` pasa con >90% coverage en codigo nuevo
 - Backward compatible: proyectos generados con v0.2.x siguen funcionando
 - Nuevo comando: `tac-bootstrap generate entity` disponible

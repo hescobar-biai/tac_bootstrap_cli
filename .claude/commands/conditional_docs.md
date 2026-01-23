@@ -761,3 +761,42 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con security considerations (prevención de stack trace leaks)
     - Cuando necesites referencia sobre Dual Creation Pattern (template + reference implementation)
     - Cuando trabajes con IDK documentation pattern en exception handlers
+- app_docs/feature-a84f13cc-database-template.md
+  - Conditions:
+    - Cuando trabajes con el template database.py.j2 o configuración de database session management
+    - Cuando necesites entender la arquitectura de database connection y session management centralizado
+    - Cuando modifiques o extiendas el template de database.py
+    - Cuando trabajes con configuración de SQLAlchemy engine (sync o async)
+    - Cuando implementes get_db() generator para FastAPI dependency injection
+    - Cuando necesites referencia sobre environment-first configuration (DATABASE_URL env var priority chain)
+    - Cuando trabajes con declarative_base() y Base para ORM model inheritance
+    - Cuando modifiques src/shared/infrastructure/database.py o su template
+    - Cuando trabajes con connection pool configuration (pool_size, max_overflow, pool_pre_ping)
+    - Cuando necesites entender conditional rendering de sync vs async SQLAlchemy
+    - Cuando implementes features que requieran database session lifecycle management
+    - Cuando trabajes con SessionLocal sessionmaker configuration
+    - Cuando necesites referencia sobre 12-factor app pattern para database configuration
+    - Cuando trabajes con integration de database.py con repositories, services y FastAPI routes
+    - Cuando implementes database initialization o table creation en startup
+    - Cuando necesites entender SQLite vs PostgreSQL configuration patterns
+
+- app_docs/feature-5dcdd7ea-template-responses-py.md
+  - Conditions:
+    - Cuando trabajes con el template responses.py.j2 o modelos de respuesta API estandarizados
+    - Cuando necesites entender la arquitectura de response models con Pydantic
+    - Cuando modifiques o extiendas PaginatedResponse[T], SuccessResponse, ErrorResponse o ErrorDetail
+    - Cuando trabajes con generic pagination models para list endpoints
+    - Cuando implementes response_model en FastAPI routes usando tipos estandarizados
+    - Cuando necesites referencia sobre computed_field para cálculo automático de pages
+    - Cuando trabajes con 1-indexed pagination y conversión a database OFFSET/LIMIT
+    - Cuando modifiques src/shared/infrastructure/responses.py o su template
+    - Cuando trabajes con validadores de pagination (page >= 1, 1 <= page_size <= 100)
+    - Cuando necesites entender edge cases de pagination (total=0, page > pages)
+    - Cuando implementes success confirmations para POST/PUT/DELETE operations
+    - Cuando trabajes con structured error handling compatible con exceptions.py
+    - Cuando necesites referencia sobre OpenAPI schema generation automático
+    - Cuando trabajes con integration de response models con service layer y routes
+    - Cuando implementes features de CRUD que requieran responses consistentes
+    - Cuando necesites entender Generic[T] type safety para response data
+    - Cuando trabajes con dual creation pattern (template + reference implementation)
+    - Cuando modifiques ErrorDetail types o details field structure
