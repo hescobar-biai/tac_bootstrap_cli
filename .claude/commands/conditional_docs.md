@@ -883,3 +883,38 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender el patrón de mkdir -p behavior para app_root
     - Cuando trabajes con snake_case property en EntitySpec
     - Cuando implementes features relacionadas con FASE 2 (Comando generate entity)
+- app_docs/feature-issue-142-crud-templates-capability.md
+  - Conditions:
+    - Cuando trabajes con templates de generación de entidades CRUD
+    - Cuando necesites entender los templates en tac_bootstrap_cli/tac_bootstrap/templates/capabilities/crud_basic/
+    - Cuando modifiques o extiendas templates de vertical slice (domain_entity, schemas, orm_model, repository, service, routes)
+    - Cuando trabajes con EntitySpec y FieldSpec models en domain/models.py
+    - Cuando implementes generación de código desde especificaciones de entidad
+    - Cuando trabajes con mapeo de FieldType a tipos Python y SQLAlchemy
+    - Cuando necesites referencia sobre generación condicional (indexed fields, nullable, max_length)
+    - Cuando trabajes con templates de repository con métodos dinámicos (get_by_X, search)
+    - Cuando implementes features de CRUD code generation
+    - Cuando necesites entender el sistema de templates Jinja2 para vertical slices
+    - Cuando trabajes con tests de templates CRUD en tests/test_crud_templates.py
+    - Cuando debugees problemas de rendering de templates de entidades
+    - Cuando implementes la fase 2 del roadmap TAC Bootstrap (GenerateService, CLI command)
+    - Cuando trabajes con tipo discriminators y base class inheritance en entidades
+    - Cuando necesites referencia sobre IDK documentation pattern en código generado
+- app_docs/feature-feature_2_1-entity-spec-domain-model.md
+  - Conditions:
+    - Cuando trabajes con modelos de dominio para generación de entidades (EntitySpec, FieldSpec, FieldType)
+    - Cuando necesites entender el sistema de validación de entity specifications
+    - Cuando implementes el comando generate entity o features relacionadas con entity generation
+    - Cuando trabajes con validación de naming conventions (PascalCase, kebab-case, snake_case)
+    - Cuando necesites referencia sobre field types soportados y sus mappings a database types
+    - Cuando trabajes con reserved field names o SQLAlchemy conflicts validation
+    - Cuando implementes features de CRUD generation que requieran entity specs
+    - Cuando modifiques o extiendas entity_config.py en domain/
+    - Cuando necesites entender derived name properties (snake_name, plural_name, table_name)
+    - Cuando trabajes con pluralization logic para entity names
+    - Cuando implementes wizard interactivo para entity definition
+    - Cuando trabajes con JSON/YAML serialization de entity specifications
+    - Cuando necesites referencia sobre Python keyword validation en field names
+    - Cuando trabajes con integration de EntitySpec con template generation system
+    - Cuando implementes features de vertical slice architecture generation
+    - Cuando trabajes con tests de entity configuration models (test_entity_config.py)
