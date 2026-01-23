@@ -229,12 +229,14 @@ class TemplateRepository:
         """
         Render a template file with the given context.
 
-        The context is typically a TACConfig instance but can be any object
-        that will be available in the template as 'config'.
+        The context can be:
+        - A TACConfig instance (available as 'config')
+        - A dict (keys available as variables directly)
+        - Any object (available as 'config')
 
         Args:
             template_name: Name of the template file (relative to templates_dir)
-            context: Context object (usually TACConfig instance)
+            context: Context object or dict
 
         Returns:
             Rendered template string
@@ -249,7 +251,11 @@ class TemplateRepository:
         """
         try:
             template = self.env.get_template(template_name)
-            return template.render(config=context)
+            # If context is a dict, unpack it; otherwise use as 'config'
+            if isinstance(context, dict):
+                return template.render(**context)
+            else:
+                return template.render(config=context)
         except Jinja2TemplateNotFound as e:
             raise TemplateNotFoundError(template_name, [str(self.templates_dir)]) from e
         except (TemplateSyntaxError, Exception) as e:

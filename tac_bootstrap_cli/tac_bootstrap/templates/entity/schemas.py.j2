@@ -1,0 +1,96 @@
+"""
+{{ entity_spec.name }} Pydantic Schemas
+
+Auto-generated request/response schemas for {{ entity_spec.capability }} capability.
+"""
+
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+
+from pydantic import BaseModel, Field
+
+from shared.domain.base_schema import BaseCreate, BaseResponse, BaseUpdate
+
+
+class {{ entity_spec.name }}Create(BaseCreate):
+    """Schema for creating a new {{ entity_spec.snake_name }}."""
+
+{%- for field in entity_spec.fields %}
+{%- if field.field_type.value == "str" %}
+    {{ field.name }}: {{ 'str' if field.required else 'Optional[str] = None' }}{{ ' = Field(..., max_length=' + (field.max_length|string or '255') + ')' if field.required else '' }}
+{%- elif field.field_type.value == "int" %}
+    {{ field.name }}: {{ 'int' if field.required else 'Optional[int] = None' }}
+{%- elif field.field_type.value == "float" %}
+    {{ field.name }}: {{ 'float' if field.required else 'Optional[float] = None' }}
+{%- elif field.field_type.value == "bool" %}
+    {{ field.name }}: {{ 'bool' if field.required else 'Optional[bool] = None' }}{{ ' = ' + (field.default|string or 'False') if not field.required else '' }}
+{%- elif field.field_type.value == "datetime" %}
+    {{ field.name }}: {{ 'datetime' if field.required else 'Optional[datetime] = None' }}
+{%- elif field.field_type.value == "uuid" %}
+    {{ field.name }}: {{ 'UUID' if field.required else 'Optional[UUID] = None' }}
+{%- elif field.field_type.value == "text" %}
+    {{ field.name }}: {{ 'str' if field.required else 'Optional[str] = None' }}
+{%- elif field.field_type.value == "decimal" %}
+    {{ field.name }}: {{ 'float' if field.required else 'Optional[float] = None' }}
+{%- elif field.field_type.value == "json" %}
+    {{ field.name }}: {{ 'dict' if field.required else 'Optional[dict] = None' }}
+{%- endif %}
+{%- endfor %}
+
+
+class {{ entity_spec.name }}Update(BaseUpdate):
+    """Schema for updating an existing {{ entity_spec.snake_name }}."""
+
+{%- for field in entity_spec.fields %}
+{%- if field.field_type.value == "str" %}
+    {{ field.name }}: Optional[str] = None
+{%- elif field.field_type.value == "int" %}
+    {{ field.name }}: Optional[int] = None
+{%- elif field.field_type.value == "float" %}
+    {{ field.name }}: Optional[float] = None
+{%- elif field.field_type.value == "bool" %}
+    {{ field.name }}: Optional[bool] = None
+{%- elif field.field_type.value == "datetime" %}
+    {{ field.name }}: Optional[datetime] = None
+{%- elif field.field_type.value == "uuid" %}
+    {{ field.name }}: Optional[UUID] = None
+{%- elif field.field_type.value == "text" %}
+    {{ field.name }}: Optional[str] = None
+{%- elif field.field_type.value == "decimal" %}
+    {{ field.name }}: Optional[float] = None
+{%- elif field.field_type.value == "json" %}
+    {{ field.name }}: Optional[dict] = None
+{%- endif %}
+{%- endfor %}
+
+
+class {{ entity_spec.name }}Response(BaseResponse):
+    """Schema for {{ entity_spec.snake_name }} response."""
+
+{%- for field in entity_spec.fields %}
+{%- if field.field_type.value == "str" %}
+    {{ field.name }}: {{ 'str' if field.required else 'Optional[str]' }}
+{%- elif field.field_type.value == "int" %}
+    {{ field.name }}: {{ 'int' if field.required else 'Optional[int]' }}
+{%- elif field.field_type.value == "float" %}
+    {{ field.name }}: {{ 'float' if field.required else 'Optional[float]' }}
+{%- elif field.field_type.value == "bool" %}
+    {{ field.name }}: {{ 'bool' if field.required else 'Optional[bool]' }}
+{%- elif field.field_type.value == "datetime" %}
+    {{ field.name }}: {{ 'datetime' if field.required else 'Optional[datetime]' }}
+{%- elif field.field_type.value == "uuid" %}
+    {{ field.name }}: {{ 'UUID' if field.required else 'Optional[UUID]' }}
+{%- elif field.field_type.value == "text" %}
+    {{ field.name }}: {{ 'str' if field.required else 'Optional[str]' }}
+{%- elif field.field_type.value == "decimal" %}
+    {{ field.name }}: {{ 'float' if field.required else 'Optional[float]' }}
+{%- elif field.field_type.value == "json" %}
+    {{ field.name }}: {{ 'dict' if field.required else 'Optional[dict]' }}
+{%- endif %}
+{%- endfor %}
+
+    class Config:
+        """Pydantic config."""
+
+        from_attributes = True

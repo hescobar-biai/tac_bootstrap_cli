@@ -1,0 +1,60 @@
+"""
+{{ entity_spec.name }} Domain Events
+
+Auto-generated domain events for {{ entity_spec.capability }} capability.
+"""
+
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict
+from uuid import UUID
+
+
+@dataclass
+class {{ entity_spec.name }}Created:
+    """
+    Event raised when a {{ entity_spec.snake_name }} is created.
+
+    Attributes:
+        entity_id: ID of the created {{ entity_spec.snake_name }}
+        timestamp: When the event occurred
+        data: Snapshot of the created {{ entity_spec.snake_name }}
+    """
+
+    entity_id: UUID
+    timestamp: datetime
+    data: Dict[str, Any]
+
+
+@dataclass
+class {{ entity_spec.name }}Updated:
+    """
+    Event raised when a {{ entity_spec.snake_name }} is updated.
+
+    Attributes:
+        entity_id: ID of the updated {{ entity_spec.snake_name }}
+        timestamp: When the event occurred
+        changes: Fields that were changed
+        data: Snapshot of the updated {{ entity_spec.snake_name }}
+    """
+
+    entity_id: UUID
+    timestamp: datetime
+    changes: Dict[str, Any]
+    data: Dict[str, Any]
+
+
+@dataclass
+class {{ entity_spec.name }}Deleted:
+    """
+    Event raised when a {{ entity_spec.snake_name }} is deleted.
+
+    Attributes:
+        entity_id: ID of the deleted {{ entity_spec.snake_name }}
+        timestamp: When the event occurred
+        data: Snapshot of the {{ entity_spec.snake_name }} before deletion
+    """
+
+    entity_id: UUID
+    timestamp: datetime
+    data: Dict[str, Any]

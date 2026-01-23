@@ -1,0 +1,51 @@
+"""
+{{ entity_spec.name }} Domain Entity
+
+Auto-generated entity model for {{ entity_spec.capability }} capability.
+"""
+
+from datetime import datetime
+from uuid import UUID
+
+from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSON, UUID as PGUUID
+from sqlalchemy.types import Numeric
+
+from shared.domain.base_entity import BaseEntity
+
+
+class {{ entity_spec.name }}(BaseEntity):
+    """
+    {{ entity_spec.name }} domain entity.
+
+    Represents {{ entity_spec.snake_name }} in the {{ entity_spec.capability }} capability.
+    """
+
+    __tablename__ = "{{ entity_spec.table_name }}"
+
+    # Custom fields
+{%- for field in entity_spec.fields %}
+{%- if field.field_type.value == "str" %}
+    {{ field.name }} = Column(String({{ field.max_length or 255 }}), nullable={{ not field.required }})
+{%- elif field.field_type.value == "int" %}
+    {{ field.name }} = Column(Integer, nullable={{ not field.required }})
+{%- elif field.field_type.value == "float" %}
+    {{ field.name }} = Column(Float, nullable={{ not field.required }})
+{%- elif field.field_type.value == "bool" %}
+    {{ field.name }} = Column(Boolean, nullable={{ not field.required }}, default={{ field.default or False }})
+{%- elif field.field_type.value == "datetime" %}
+    {{ field.name }} = Column(DateTime(timezone=True), nullable={{ not field.required }})
+{%- elif field.field_type.value == "uuid" %}
+    {{ field.name }} = Column(PGUUID(as_uuid=True), nullable={{ not field.required }})
+{%- elif field.field_type.value == "text" %}
+    {{ field.name }} = Column(Text, nullable={{ not field.required }})
+{%- elif field.field_type.value == "decimal" %}
+    {{ field.name }} = Column(Numeric(precision=10, scale=2), nullable={{ not field.required }})
+{%- elif field.field_type.value == "json" %}
+    {{ field.name }} = Column(JSON, nullable={{ not field.required }})
+{%- endif %}
+{%- endfor %}
+
+    def __repr__(self) -> str:
+        """String representation of {{ entity_spec.name }}."""
+        return f"<{{ entity_spec.name }}(id={self.id})>"
