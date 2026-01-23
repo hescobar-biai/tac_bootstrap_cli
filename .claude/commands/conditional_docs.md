@@ -661,3 +661,21 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con Pydantic BaseModel y validators para entidades
     - Cuando implementes features de CRUD que requieran base entity functionality
     - Cuando necesites referencia sobre testing de state transitions y version management
+
+- app_docs/feature-08b00a3f-base-schema-template.md
+  - Conditions:
+    - Cuando trabajes con el template base_schema.py.j2 o las clases base de schemas Pydantic
+    - Cuando necesites entender la arquitectura de DTOs para API layer
+    - Cuando modifiques o extiendas los templates de BaseCreate, BaseUpdate, BaseResponse
+    - Cuando implementes schemas de request/response para entidades
+    - Cuando trabajes con separación de concerns entre domain entities y API DTOs
+    - Cuando necesites referencia sobre BaseCreate (foundation para POST requests)
+    - Cuando trabajes con BaseUpdate para PATCH operations y partial updates
+    - Cuando implementes BaseResponse con campos comunes (id, state, version, timestamps, audit)
+    - Cuando necesites entender from_attributes=True para conversión ORM to DTO
+    - Cuando trabajes con service layer mapping entre entities y schemas
+    - Cuando modifiques src/shared/domain/base_schema.py o su template
+    - Cuando implementes features de CRUD que requieran API schemas
+    - Cuando necesites referencia sobre exclusión de audit fields en Create/Update (security)
+    - Cuando trabajes con campo state como string vs enum específico de entidad
+    - Cuando necesites entender el patrón dogfooding (template usado por tac_bootstrap mismo)
