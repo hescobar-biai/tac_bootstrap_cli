@@ -722,3 +722,24 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender integration con SQLAlchemy Session y ORM models
     - Cuando trabajes con IDK documentation pattern en repository methods
     - Cuando necesites referencia sobre dual creation pattern (template + reference implementation)
+
+- app_docs/feature-49f979da-template-base-repository-async.md
+  - Conditions:
+    - Cuando trabajes con el template base_repository_async.py.j2 o la versión async de repositorios genéricos
+    - Cuando necesites entender la arquitectura de repository layer con SQLAlchemy 2.0 async API
+    - Cuando modifiques o extiendas BaseRepositoryAsync[TModel]
+    - Cuando implementes repositorios async específicos heredando de BaseRepositoryAsync
+    - Cuando trabajes con operaciones CRUD async (async get_by_id, create, update, delete, hard_delete, get_all, exists, count)
+    - Cuando trabajes con bulk operations (bulk_create, bulk_update) usando session.add_all()
+    - Cuando necesites referencia sobre SQLAlchemy 2.0 async patterns (select(), await session.execute())
+    - Cuando trabajes con AsyncSession en lugar de Session
+    - Cuando necesites entender Unit of Work pattern con flush() pero sin commit()
+    - Cuando trabajes con soft-delete enforcement (state != 2) en queries async
+    - Cuando implementes dynamic filtering, sorting y pagination en repositorios async
+    - Cuando trabajes con FastAPI endpoints async que requieren async repositories
+    - Cuando necesites referencia sobre migration de session.query() a select() statements
+    - Cuando modifiques src/shared/infrastructure/base_repository_async.py o su template
+    - Cuando implementes features de CRUD async que requieran data access layer async
+    - Cuando necesites entender integration con AsyncSession y async ORM patterns
+    - Cuando trabajes con dependency injection de async repositories en FastAPI
+    - Cuando necesites referencia sobre batch processing eficiente con bulk operations
