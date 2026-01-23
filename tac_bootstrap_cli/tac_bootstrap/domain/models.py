@@ -23,8 +23,9 @@ Example usage:
     )
 """
 
+import re
 from enum import Enum
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -129,6 +130,20 @@ class DefaultWorkflow(str, Enum):
     SDLC_ISO = "sdlc_iso"
     PATCH_ISO = "patch_iso"
     PLAN_IMPLEMENT = "plan_implement"
+
+
+class FieldType(str, Enum):
+    """Field types for entity specification."""
+
+    STR = "str"
+    INT = "int"
+    FLOAT = "float"
+    BOOL = "bool"
+    DATETIME = "datetime"
+    UUID = "uuid"
+    TEXT = "text"
+    DECIMAL = "decimal"
+    JSON = "json"
 
 
 # ============================================================================
@@ -451,6 +466,158 @@ class TACConfig(BaseModel):
     )
 
     model_config = {"extra": "forbid"}
+
+
+# ============================================================================
+# ENTITY GENERATION MODELS
+# ============================================================================
+
+
+class FieldSpec(BaseModel):
+    """
+    Field specification for entity generation.
+
+    Describes a single field in an entity including its type, constraints,
+    and database settings.
+
+    Attributes:
+        name: Field name in snake_case
+        type: Field data type
+        nullable: Whether field can be null
+        indexed: Whether to create database index
+        max_length: Maximum length for string fields
+        default: Default value for field
+    """
+
+    name: str = Field(..., description="Field name in snake_case")
+    type: FieldType = Field(..., description="Field data type")
+    nullable: bool = Field(default=False, description="Whether field can be null")
+    indexed: bool = Field(default=False, description="Whether to create database index")
+    max_length: int | None = Field(default=None, description="Maximum length for string fields")
+    default: Any | None = Field(default=None, description="Default value for field")
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        """
+        Validate field name is snake_case and not reserved.
+
+        Reserved names (inherited from BaseEntity):
+        - id, state, version, created_at, updated_at, deleted_at
+        """
+        if not v or not v.strip():
+            raise ValueError("Field name cannot be empty")
+
+        # Check for reserved names
+        reserved = {"id", "state", "version", "created_at", "updated_at", "deleted_at"}
+        if v.lower() in reserved:
+            raise ValueError(
+                f"Field name '{v}' is reserved (inherited from BaseEntity). "
+                f"Reserved names: {', '.join(sorted(reserved))}"
+            )
+
+        # Validate snake_case format
+        if not re.match(r"^[a-z][a-z0-9_]*$", v):
+            raise ValueError(
+                f"Field name '{v}' must be in snake_case format "
+                "(lowercase letters, numbers, underscores, must start with letter)"
+            )
+
+        return v
+
+
+class EntitySpec(BaseModel):
+    """
+    Entity specification for code generation.
+
+    Describes a complete entity to be generated including its name,
+    capability grouping, and field definitions.
+
+    Attributes:
+        name: Entity name in PascalCase (e.g., "Product")
+        capability: Capability grouping in kebab-case (e.g., "catalog")
+        fields: List of field specifications
+
+    Properties:
+        snake_name: Entity name in snake_case (e.g., "product")
+        plural_name: Pluralized entity name (e.g., "products")
+        table_name: Database table name (same as plural_name)
+    """
+
+    name: str = Field(..., description="Entity name in PascalCase")
+    capability: str = Field(..., description="Capability grouping in kebab-case")
+    fields: List[FieldSpec] = Field(..., description="List of field specifications")
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        """Validate entity name is PascalCase."""
+        if not v or not v.strip():
+            raise ValueError("Entity name cannot be empty")
+
+        # Validate PascalCase format
+        if not re.match(r"^[A-Z][a-zA-Z0-9]*$", v):
+            raise ValueError(
+                f"Entity name '{v}' must be in PascalCase format "
+                "(must start with uppercase letter, contain only letters and numbers)"
+            )
+
+        return v
+
+    @field_validator("capability")
+    @classmethod
+    def validate_capability(cls, v: str) -> str:
+        """Validate capability is kebab-case."""
+        if not v or not v.strip():
+            raise ValueError("Capability cannot be empty")
+
+        # Validate kebab-case format
+        if not re.match(r"^[a-z][a-z0-9-]*$", v):
+            raise ValueError(
+                f"Capability '{v}' must be in kebab-case format "
+                "(lowercase letters, numbers, hyphens, must start with letter)"
+            )
+
+        return v
+
+    @field_validator("fields")
+    @classmethod
+    def validate_fields(cls, v: List[FieldSpec]) -> List[FieldSpec]:
+        """Validate that fields list is not empty."""
+        if not v:
+            raise ValueError("Entity must have at least one field")
+        return v
+
+    @property
+    def snake_name(self) -> str:
+        """
+        Convert PascalCase to snake_case.
+
+        Example: "ProductCategory" -> "product_category"
+        """
+        # Insert underscore before uppercase letters (except first)
+        s1 = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", self.name)
+        # Insert underscore before uppercase letters followed by lowercase
+        s2 = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1)
+        return s2.lower()
+
+    @property
+    def plural_name(self) -> str:
+        """
+        Simple pluralization (name + s).
+
+        Example: "product" -> "products"
+        """
+        return f"{self.snake_name}s"
+
+    @property
+    def table_name(self) -> str:
+        """
+        Database table name (plural_name).
+
+        Example: "products"
+        """
+        return self.plural_name
 
 
 # ============================================================================

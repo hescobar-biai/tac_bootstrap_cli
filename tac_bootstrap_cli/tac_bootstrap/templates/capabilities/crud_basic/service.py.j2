@@ -1,0 +1,78 @@
+"""
+IDK: service-layer, {{ config.entity.snake_name }}, business-logic
+
+Module: {{ config.entity.snake_name }}_service
+
+Responsibility:
+- Implement {{ config.entity.name }} business operations
+- Orchestrate domain logic and data access
+- Handle business rules and validation
+
+Key Components:
+- {{ config.entity.name }}Service: Business logic layer for {{ config.entity.name }}
+
+Related Docs:
+- docs/{{ config.entity.capability }}/services/{{ config.entity.snake_name }}.md
+"""
+
+from {{ config.config.project.name | replace("-", "_") }}.shared.services.base_service import BaseService
+from .domain import {{ config.entity.name }}
+from .schemas import {{ config.entity.name }}Create, {{ config.entity.name }}Update, {{ config.entity.name }}Response
+from .repository import {{ config.entity.name }}Repository
+from typing import List, Optional
+
+
+class {{ config.entity.name }}Service(BaseService[{{ config.entity.name }}, {{ config.entity.name }}Create, {{ config.entity.name }}Update]):
+    """
+    IDK: service-layer, {{ config.entity.snake_name }}, crud-operations
+
+    Responsibility:
+    - Manage {{ config.entity.name }} business operations
+    - Apply business rules before persistence
+    - Coordinate between domain and repository layers
+
+    Invariants:
+    - All business rules validated before saving
+    - Transactions managed by BaseService
+
+    Related Docs:
+    - docs/{{ config.entity.capability }}/services/{{ config.entity.snake_name }}-operations.md
+    """
+
+    def __init__(self, repository: {{ config.entity.name }}Repository):
+        """
+        IDK: initialization, dependency-injection
+
+        Responsibility:
+        - Initialize service with repository
+
+        Inputs:
+        - repository: {{ config.entity.name }}Repository instance
+
+        Outputs:
+        - None
+        """
+        super().__init__(repository)
+        self.repository = repository
+
+    def apply_business_rules(self, entity: {{ config.entity.name }}) -> {{ config.entity.name }}:
+        """
+        IDK: business-rules, validation, domain-logic
+
+        Responsibility:
+        - Apply business rules before saving
+        - Validate entity integrity
+        - Perform calculations
+
+        Inputs:
+        - entity: {{ config.entity.name }} instance to validate
+
+        Outputs:
+        - {{ config.entity.name }}: validated entity
+
+        Related Docs:
+        - docs/{{ config.entity.capability }}/services/{{ config.entity.snake_name }}-business-rules.md
+        """
+        entity.validate()
+        entity.calculate_totals()
+        return entity

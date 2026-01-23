@@ -1,0 +1,112 @@
+"""
+IDK: orm-model, {{ config.entity.snake_name }}, sqlalchemy
+
+Module: {{ config.entity.snake_name }}_model
+
+Responsibility:
+- Define SQLAlchemy ORM model for {{ config.entity.name }}
+- Map domain entity to database table
+- Define columns, indexes, and constraints
+
+Key Components:
+- {{ config.entity.name }}Model: SQLAlchemy model for {{ config.entity.table_name }} table
+
+Related Docs:
+- docs/{{ config.entity.capability }}/database/{{ config.entity.snake_name }}-model.md
+"""
+
+from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime, Text, JSON, Numeric, Index
+from sqlalchemy.orm import declarative_base
+from datetime import datetime, UTC
+from uuid import uuid4
+
+Base = declarative_base()
+
+
+class {{ config.entity.name }}Model(Base):
+    """
+    IDK: orm-model, {{ config.entity.snake_name }}, database-table
+
+    Responsibility:
+    - Map {{ config.entity.name }} to {{ config.entity.table_name }} table
+    - Define column types and constraints
+    - Support querying and persistence
+
+    Invariants:
+    - Table name is {{ config.entity.table_name }}
+{% for field in config.entity.fields %}
+    - {{ field.name }}: {{ field.type }}{% if not field.nullable %}, required{% endif %}
+{% endfor %}
+
+    Related Docs:
+    - docs/{{ config.entity.capability }}/database/{{ config.entity.snake_name }}-schema.md
+    """
+
+    __tablename__ = "{{ config.entity.table_name }}"
+
+    # Primary key and base fields (inherited from Entity)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    code = Column(String(100), nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    type = Column(String(50), nullable=True, default="{{ config.entity.snake_name }}")
+
+    # Audit trail
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    created_by = Column(String(255), nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_by = Column(String(255), nullable=True)
+
+    # State management
+    state = Column(Integer, nullable=False, default=1)
+    status = Column(String(50), nullable=True)
+    version = Column(Integer, nullable=False, default=1)
+
+    # Multi-tenancy
+    organization_id = Column(String(100), nullable=True)
+    project_id = Column(String(100), nullable=True)
+    owner = Column(String(255), nullable=True)
+
+    # {{ config.entity.name }}-specific fields
+{% set type_map = {
+    'str': 'String',
+    'int': 'Integer',
+    'float': 'Float',
+    'bool': 'Boolean',
+    'datetime': 'DateTime',
+    'uuid': 'String',
+    'text': 'Text',
+    'decimal': 'Numeric',
+    'json': 'JSON'
+} %}
+{% for field in config.entity.fields %}
+{% if field.type == 'str' %}
+    {{ field.name }} = Column(String({{ field.max_length or 255 }}), nullable={{ field.nullable }})
+{% elif field.type == 'int' %}
+    {{ field.name }} = Column(Integer, nullable={{ field.nullable }})
+{% elif field.type == 'float' %}
+    {{ field.name }} = Column(Float, nullable={{ field.nullable }})
+{% elif field.type == 'bool' %}
+    {{ field.name }} = Column(Boolean, nullable={{ field.nullable }})
+{% elif field.type == 'datetime' %}
+    {{ field.name }} = Column(DateTime(timezone=True), nullable={{ field.nullable }})
+{% elif field.type == 'uuid' %}
+    {{ field.name }} = Column(String(36), nullable={{ field.nullable }})
+{% elif field.type == 'text' %}
+    {{ field.name }} = Column(Text, nullable={{ field.nullable }})
+{% elif field.type == 'decimal' %}
+    {{ field.name }} = Column(Numeric(precision=10, scale=2), nullable={{ field.nullable }})
+{% elif field.type == 'json' %}
+    {{ field.name }} = Column(JSON, nullable={{ field.nullable }})
+{% endif %}
+{% endfor %}
+
+{% set indexed_fields = config.entity.fields | selectattr('indexed', 'equalto', true) | list %}
+{% if indexed_fields %}
+    # Indexes
+    __table_args__ = (
+{% for field in indexed_fields %}
+        Index('ix_{{ config.entity.table_name }}_{{ field.name }}', '{{ field.name }}'),
+{% endfor %}
+    )
+{% endif %}
