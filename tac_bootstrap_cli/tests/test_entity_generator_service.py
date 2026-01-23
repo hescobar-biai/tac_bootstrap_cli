@@ -198,12 +198,13 @@ class TestBuildGenerationPlan:
         config = service.validate_project(temp_project_dir)
         plan = service.build_generation_plan(sample_entity_spec, config)
 
-        # Should have 5 files: entity, schemas, repository, service, routes
-        assert len(plan) == 5
+        # Should have 6 files: domain entity, schemas, orm_model, repository, service, routes
+        assert len(plan) == 6
 
         file_names = [op.path.name for op in plan]
-        assert "product.py" in file_names
+        assert "product.py" in file_names  # domain entity
         assert "product_schemas.py" in file_names
+        assert "product_model.py" in file_names  # ORM model
         assert "product_repository.py" in file_names
         assert "product_service.py" in file_names
         assert "product_routes.py" in file_names
@@ -240,8 +241,8 @@ class TestBuildGenerationPlan:
 
         plan = service.build_generation_plan(entity_spec, config)
 
-        # Should have 6 files (5 basic + events)
-        assert len(plan) == 6
+        # Should have 7 files (6 basic + events)
+        assert len(plan) == 7
 
         file_names = [op.path.name for op in plan]
         assert "product_events.py" in file_names
@@ -262,7 +263,8 @@ class TestGenerate:
         )
 
         assert result.success is True
-        assert len(result.files_created) == 5
+        # domain, schemas, orm_model, repository, service, routes
+        assert len(result.files_created) == 6
 
         # Verify no files were actually created
         entity_path = (
@@ -285,8 +287,8 @@ class TestGenerate:
             force=False,
         )
 
-        assert result.success is True
-        assert len(result.files_created) == 5
+        # domain, schemas, orm_model, repository, service, routes
+        assert len(result.files_created) == 6
 
         # Verify files were created
         entity_path = (
@@ -309,7 +311,7 @@ class TestGenerate:
 
         # Verify content contains expected elements
         entity_content = entity_path.read_text()
-        assert "class Product(BaseEntity):" in entity_content
+        assert "class Product(Entity):" in entity_content
         assert "name = Column" in entity_content
         assert "price = Column" in entity_content
 

@@ -1,17 +1,18 @@
 """
-IDK: pydantic-schemas, {{ entity.snake_name }}, dto
+IDK: pydantic-schemas, {{ entity.snake_name }}, dto, multi-tenant
 
 Module: {{ entity.snake_name }}_schemas
 
 Responsibility:
-- Define Pydantic schemas for {{ entity.name }} entity
+- Define Pydantic schemas for {{ entity.name }} entity with multi-tenant support
 - Provide Create, Update, and Response DTOs
 - Handle serialization and validation
+- Exclude organization_id from Create/Update (set server-side for security)
 
 Key Components:
 - {{ entity.name }}Create: Schema for creating new {{ entity.snake_name }}
 - {{ entity.name }}Update: Schema for updating existing {{ entity.snake_name }}
-- {{ entity.name }}Response: Schema for API responses
+- {{ entity.name }}Response: Schema for API responses (includes organization_id)
 
 Related Docs:
 - docs/{{ entity.capability }}/schemas/{{ entity.snake_name }}.md
@@ -41,11 +42,12 @@ from {{ config.project.name | replace("-", "_") }}.shared.schemas.base_schema im
 
 class {{ entity.name }}Create(BaseCreate):
     """
-    IDK: create-schema, {{ entity.snake_name }}, validation
+    IDK: create-schema, {{ entity.snake_name }}, validation, multi-tenant
 
     Responsibility:
     - Validate data for creating new {{ entity.name }}
     - Define required and optional fields
+    - Exclude organization_id and created_by (set server-side from JWT token)
 
     Invariants:
 {% for field in entity.fields %}
@@ -53,6 +55,7 @@ class {{ entity.name }}Create(BaseCreate):
     - {{ field.name }} is required
 {% endif %}
 {% endfor %}
+    - organization_id and created_by are NOT in this schema (injected server-side)
 
     Related Docs:
     - docs/{{ entity.capability }}/schemas/{{ entity.snake_name }}-create.md
@@ -88,15 +91,17 @@ class {{ entity.name }}Create(BaseCreate):
 
 class {{ entity.name }}Update(BaseUpdate):
     """
-    IDK: update-schema, {{ entity.snake_name }}, partial-update
+    IDK: update-schema, {{ entity.snake_name }}, partial-update, multi-tenant
 
     Responsibility:
     - Validate data for updating {{ entity.name }}
     - Allow partial updates (all fields optional)
+    - Exclude organization_id and created_by (cannot be changed)
 
     Invariants:
     - All fields are optional
     - Only provided fields will be updated
+    - organization_id cannot be changed (tenant isolation)
 
     Related Docs:
     - docs/{{ entity.capability }}/schemas/{{ entity.snake_name }}-update.md
@@ -115,14 +120,16 @@ class {{ entity.name }}Update(BaseUpdate):
 
 class {{ entity.name }}Response(BaseResponse):
     """
-    IDK: response-schema, {{ entity.snake_name }}, serialization
+    IDK: response-schema, {{ entity.snake_name }}, serialization, multi-tenant
 
     Responsibility:
     - Serialize {{ entity.name }} for API responses
     - Include all entity fields and inherited base fields
+    - Include organization_id for client-side validation
 
     Invariants:
-    - Includes id, created_at, updated_at from BaseResponse
+    - Includes id, created_at, updated_at, created_by from BaseResponse
+    - Includes organization_id for transparency
     - Includes all {{ entity.name }}-specific fields
 
     Related Docs:

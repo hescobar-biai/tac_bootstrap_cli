@@ -1,0 +1,211 @@
+"""
+IDK: service-layer, {{ entity.snake_name }}, business-logic, multi-tenant
+
+Module: {{ entity.snake_name }}_service
+
+Responsibility:
+- Implement {{ entity.name }} business operations with organization-level isolation
+- Orchestrate domain logic and data access with automatic authorization
+- Handle business rules and validation
+- Automatically set organization_id and created_by on entity creation
+
+Key Components:
+- {{ entity.name }}Service: Business logic layer for {{ entity.name }} with multi-tenant support
+
+Related Docs:
+- docs/{{ entity.capability }}/services/{{ entity.snake_name }}.md
+"""
+
+from {{ config.project.name | replace("-", "_") }}.shared.services.base_service import BaseService
+from .domain import {{ entity.name }}
+from .schemas import {{ entity.name }}Create, {{ entity.name }}Update, {{ entity.name }}Response
+from .repository import {{ entity.name }}Repository
+from typing import List, Optional
+
+
+class {{ entity.name }}Service(BaseService[{{ entity.name }}, {{ entity.name }}Create, {{ entity.name }}Update]):
+    """
+    IDK: service-layer, {{ entity.snake_name }}, crud-operations, multi-tenant
+
+    Responsibility:
+    - Manage {{ entity.name }} business operations with organization isolation
+    - Apply business rules before persistence
+    - Coordinate between domain and repository layers
+    - Automatically set organization_id and created_by from authenticated user context
+
+    Invariants:
+    - All business rules validated before saving
+    - organization_id automatically set from user context (never from client input)
+    - created_by automatically set from authenticated user
+    - Transactions managed by BaseService
+
+    Related Docs:
+    - docs/{{ entity.capability }}/services/{{ entity.snake_name }}-operations.md
+    """
+
+    def __init__(self, repository: {{ entity.name }}Repository):
+        """
+        IDK: initialization, dependency-injection
+
+        Responsibility:
+        - Initialize service with repository
+
+        Inputs:
+        - repository: {{ entity.name }}Repository instance
+
+        Outputs:
+        - None
+        """
+        super().__init__(repository)
+        self.repository = repository
+
+    def create(self, data: {{ entity.name }}Create, user_id: str, organization_id: str) -> {{ entity.name }}:
+        """
+        IDK: create-operation, authorization, auto-inject
+
+        Responsibility:
+        - Create new {{ entity.name }} entity
+        - Automatically set organization_id from authenticated user (never trust client)
+        - Automatically set created_by from authenticated user
+        - Apply business rules
+
+        Inputs:
+        - data: {{ entity.name }}Create schema with entity data
+        - user_id: Authenticated user ID (from JWT token)
+        - organization_id: Organization ID (from JWT token, not from client input)
+
+        Outputs:
+        - {{ entity.name }}: Created entity
+
+        Related Docs:
+        - docs/{{ entity.capability }}/services/{{ entity.snake_name }}-create.md
+        """
+        # Auto-inject organization_id and created_by - critical for security
+        data_dict = data.model_dump()
+        data_dict['organization_id'] = organization_id
+        data_dict['created_by'] = user_id
+
+        # Create entity from data with injected fields
+        entity = {{ entity.name }}(**data_dict)
+        entity = self.apply_business_rules(entity)
+
+        # Use base repository create (not the overridden method)
+        return super().create(entity)
+
+    def get_by_id(self, id: str, organization_id: str) -> Optional[{{ entity.name }}]:
+        """
+        IDK: read-operation, authorization
+
+        Responsibility:
+        - Get {{ entity.name }} by ID with organization isolation
+        - Return None if entity doesn't exist or belongs to different organization
+
+        Inputs:
+        - id: Entity unique identifier
+        - organization_id: Organization ID for tenant isolation
+
+        Outputs:
+        - {{ entity.name }} if found in organization, None otherwise
+
+        Related Docs:
+        - docs/{{ entity.capability }}/services/{{ entity.snake_name }}-get.md
+        """
+        model = self.repository.get_by_id(id, organization_id)
+        if not model:
+            return None
+        return {{ entity.name }}.model_validate(model)
+
+    def get_all(self, skip: int, limit: int, organization_id: str) -> List[{{ entity.name }}]:
+        """
+        IDK: list-operation, pagination, authorization
+
+        Responsibility:
+        - Get all {{ entity.name }} entities for organization
+        - Support pagination
+        - Filter by organization_id automatically
+
+        Inputs:
+        - skip: Number of records to skip
+        - limit: Maximum records to return
+        - organization_id: Organization ID for tenant isolation
+
+        Outputs:
+        - List of {{ entity.name }} entities belonging to organization
+
+        Related Docs:
+        - docs/{{ entity.capability }}/services/{{ entity.snake_name }}-list.md
+        """
+        models = self.repository.get_all(skip, limit, organization_id)
+        return [{{ entity.name }}.model_validate(model) for model in models]
+
+    def update(self, id: str, data: {{ entity.name }}Update, organization_id: str) -> Optional[{{ entity.name }}]:
+        """
+        IDK: update-operation, authorization
+
+        Responsibility:
+        - Update {{ entity.name }} entity
+        - Only update if entity belongs to organization
+        - Return None if entity doesn't exist or belongs to different organization
+
+        Inputs:
+        - id: Entity unique identifier
+        - data: {{ entity.name }}Update schema with update data
+        - organization_id: Organization ID for ownership validation
+
+        Outputs:
+        - {{ entity.name }}: Updated entity if found in organization, None otherwise
+
+        Related Docs:
+        - docs/{{ entity.capability }}/services/{{ entity.snake_name }}-update.md
+        """
+        update_dict = data.model_dump(exclude_unset=True)
+        model = self.repository.update(id, update_dict, organization_id)
+        if not model:
+            return None
+        return {{ entity.name }}.model_validate(model)
+
+    def soft_delete(self, id: str, organization_id: str) -> Optional[{{ entity.name }}]:
+        """
+        IDK: delete-operation, soft-delete, authorization
+
+        Responsibility:
+        - Soft delete {{ entity.name }} entity
+        - Only delete if entity belongs to organization
+        - Return None if entity doesn't exist or belongs to different organization
+
+        Inputs:
+        - id: Entity unique identifier
+        - organization_id: Organization ID for ownership validation
+
+        Outputs:
+        - {{ entity.name }}: Deleted entity if found in organization, None otherwise
+
+        Related Docs:
+        - docs/{{ entity.capability }}/services/{{ entity.snake_name }}-delete.md
+        """
+        model = self.repository.delete(id, organization_id)
+        if not model:
+            return None
+        return {{ entity.name }}.model_validate(model)
+
+    def apply_business_rules(self, entity: {{ entity.name }}) -> {{ entity.name }}:
+        """
+        IDK: business-rules, validation, domain-logic
+
+        Responsibility:
+        - Apply business rules before saving
+        - Validate entity integrity
+        - Perform calculations
+
+        Inputs:
+        - entity: {{ entity.name }} instance to validate
+
+        Outputs:
+        - {{ entity.name }}: validated entity
+
+        Related Docs:
+        - docs/{{ entity.capability }}/services/{{ entity.snake_name }}-business-rules.md
+        """
+        entity.validate()
+        entity.calculate_totals()
+        return entity

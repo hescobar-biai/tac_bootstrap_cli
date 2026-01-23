@@ -166,26 +166,40 @@ class EntityGeneratorService:
         capability_path = entity_spec.capability.replace("-", "_")
         plan: List[FileOperation] = []
 
-        # Domain entity model
+        # Select template set based on authorization requirement
+        if entity_spec.authorized:
+            # Use authorized templates with multi-tenant isolation
+            template_prefix = "capabilities/crud_authorized"
+            routes_template = f"{template_prefix}/routes_authorized.py.j2"
+            service_template = f"{template_prefix}/service_authorized.py.j2"
+            repo_template = f"{template_prefix}/repository_authorized.py.j2"
+        else:
+            # Use basic templates without authorization
+            template_prefix = "capabilities/crud_basic"
+            routes_template = f"{template_prefix}/routes.py.j2"
+            service_template = f"{template_prefix}/service.py.j2"
+            repo_template = f"{template_prefix}/repository.py.j2"
+
+        # Domain entity model (same for both basic and authorized)
         plan.append(
             FileOperation(
                 path=Path("domain")
                 / capability_path
                 / "entities"
                 / f"{entity_spec.snake_name}.py",
-                template_name="entity/entity.py.j2",
+                template_name=f"{template_prefix}/domain_entity.py.j2",
                 description=f"Domain entity: {entity_spec.name}",
             )
         )
 
-        # Pydantic schemas
+        # Pydantic schemas (same for both basic and authorized)
         plan.append(
             FileOperation(
                 path=Path("domain")
                 / capability_path
                 / "schemas"
                 / f"{entity_spec.snake_name}_schemas.py",
-                template_name="entity/schemas.py.j2",
+                template_name=f"{template_prefix}/schemas.py.j2",
                 description=(
                     f"Pydantic schemas: {entity_spec.name}Create, "
                     f"{entity_spec.name}Update, {entity_spec.name}Response"
@@ -193,51 +207,54 @@ class EntityGeneratorService:
             )
         )
 
-        # Repository (sync or async)
-        if entity_spec.async_mode:
-            plan.append(
-                FileOperation(
-                    path=Path("infrastructure")
-                    / capability_path
-                    / "repositories"
-                    / f"{entity_spec.snake_name}_repository.py",
-                    template_name="entity/repository_async.py.j2",
-                    description=f"Async repository: {entity_spec.name}Repository",
-                )
+        # ORM model (same for both basic and authorized)
+        plan.append(
+            FileOperation(
+                path=Path("infrastructure")
+                / capability_path
+                / "models"
+                / f"{entity_spec.snake_name}_model.py",
+                template_name=f"{template_prefix}/orm_model.py.j2",
+                description=f"ORM model: {entity_spec.name}Model",
             )
-        else:
-            plan.append(
-                FileOperation(
-                    path=Path("infrastructure")
-                    / capability_path
-                    / "repositories"
-                    / f"{entity_spec.snake_name}_repository.py",
-                    template_name="entity/repository.py.j2",
-                    description=f"Repository: {entity_spec.name}Repository",
-                )
-            )
+        )
 
-        # Service layer
+        # Repository (varies based on authorization)
+        plan.append(
+            FileOperation(
+                path=Path("infrastructure")
+                / capability_path
+                / "repositories"
+                / f"{entity_spec.snake_name}_repository.py",
+                template_name=repo_template,
+                description=f"Repository: {entity_spec.name}Repository"
+                + (" (multi-tenant)" if entity_spec.authorized else ""),
+            )
+        )
+
+        # Service layer (varies based on authorization)
         plan.append(
             FileOperation(
                 path=Path("application")
                 / capability_path
                 / "services"
                 / f"{entity_spec.snake_name}_service.py",
-                template_name="entity/service.py.j2",
-                description=f"Service: {entity_spec.name}Service",
+                template_name=service_template,
+                description=f"Service: {entity_spec.name}Service"
+                + (" (multi-tenant)" if entity_spec.authorized else ""),
             )
         )
 
-        # API routes
+        # API routes (varies based on authorization)
         plan.append(
             FileOperation(
                 path=Path("interfaces")
                 / "api"
                 / capability_path
                 / f"{entity_spec.snake_name}_routes.py",
-                template_name="entity/routes.py.j2",
-                description=f"API routes: /{entity_spec.plural_name}",
+                template_name=routes_template,
+                description=f"API routes: /{entity_spec.plural_name}"
+                + (" (with JWT auth)" if entity_spec.authorized else ""),
             )
         )
 
@@ -312,7 +329,7 @@ class EntityGeneratorService:
             try:
                 content = self.template_repo.render(
                     file_op.template_name,
-                    context={"entity_spec": entity_spec, "config": config},
+                    context={"entity": entity_spec, "config": config},
                 )
 
                 # Write file

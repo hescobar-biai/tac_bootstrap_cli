@@ -1,15 +1,16 @@
 """
-IDK: domain-entity, {{ entity.snake_name }}, business-logic
+IDK: domain-entity, {{ entity.snake_name }}, business-logic, multi-tenant
 
 Module: {{ entity.snake_name }}
 
 Responsibility:
-- Implement {{ entity.name }} domain entity
+- Implement {{ entity.name }} domain entity with multi-tenant support
 - Enforce business rules and invariants
 - Provide domain-specific operations
+- Include organization_id and created_by for authorization
 
 Key Components:
-- {{ entity.name }}: Domain entity with business logic
+- {{ entity.name }}: Domain entity with business logic and multi-tenant fields
 
 Related Docs:
 - docs/{{ entity.capability }}/domain/{{ entity.snake_name }}.md
@@ -37,15 +38,18 @@ from {{ config.project.name | replace("-", "_") }}.shared.domain.base_entity imp
 
 class {{ entity.name }}(Entity):
     """
-    IDK: domain-entity, {{ entity.snake_name }}, aggregate-root
+    IDK: domain-entity, {{ entity.snake_name }}, aggregate-root, multi-tenant
 
     Responsibility:
     - Represent {{ entity.name }} domain entity
     - Enforce business rules and constraints
     - Provide domain operations
+    - Maintain organization-level isolation
 
     Invariants:
     - Inherits all Entity invariants (id, audit trail, state management)
+    - organization_id is required for multi-tenant isolation
+    - created_by is required for audit trail
 {% for field in entity.fields %}
     - {{ field.name }}: {{ 'required' if not field.nullable else 'optional' }} {{ field.type }}
 {% endfor %}
@@ -93,9 +97,11 @@ class {{ entity.name }}(Entity):
         Responsibility:
         - Validate business rules and constraints
         - Ensure entity integrity
+        - Validate organization_id is set
 
         Invariants:
         - All business rules must pass
+        - organization_id must be non-empty
         - Raises ValueError on validation failure
 
         Inputs:
@@ -107,6 +113,10 @@ class {{ entity.name }}(Entity):
         Related Docs:
         - docs/{{ entity.capability }}/domain/{{ entity.snake_name }}-validation.md
         """
+        # Validate organization_id is set (critical for multi-tenant security)
+        if not self.organization_id:
+            raise ValueError("organization_id is required for multi-tenant entities")
+
         # TODO: Implement business validation rules
         pass
 

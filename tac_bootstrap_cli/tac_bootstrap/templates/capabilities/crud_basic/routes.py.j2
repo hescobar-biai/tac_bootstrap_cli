@@ -1,187 +1,187 @@
 """
-IDK: api-routes, {{ config.entity.snake_name }}, rest-endpoints
+IDK: api-routes, {{ entity.snake_name }}, rest-endpoints
 
-Module: {{ config.entity.snake_name }}_routes
+Module: {{ entity.snake_name }}_routes
 
 Responsibility:
-- Define FastAPI routes for {{ config.entity.name }} CRUD operations
+- Define FastAPI routes for {{ entity.name }} CRUD operations
 - Handle HTTP request/response
 - Delegate business logic to service layer
 
 Key Components:
-- router: FastAPI router with {{ config.entity.name }} endpoints
+- router: FastAPI router with {{ entity.name }} endpoints
 
 Related Docs:
-- docs/{{ config.entity.capability }}/api/{{ config.entity.snake_name }}.md
+- docs/{{ entity.capability }}/api/{{ entity.snake_name }}.md
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from {{ config.config.project.name | replace("-", "_") }}.shared.dependencies import get_db
-from .schemas import {{ config.entity.name }}Create, {{ config.entity.name }}Update, {{ config.entity.name }}Response
-from .service import {{ config.entity.name }}Service
-from .repository import {{ config.entity.name }}Repository
+from {{ config.project.name | replace("-", "_") }}.shared.dependencies import get_db
+from .schemas import {{ entity.name }}Create, {{ entity.name }}Update, {{ entity.name }}Response
+from .service import {{ entity.name }}Service
+from .repository import {{ entity.name }}Repository
 from typing import List
 
-router = APIRouter(prefix="/{{ config.entity.plural_name }}", tags=["{{ config.entity.plural_name }}"])
+router = APIRouter(prefix="/{{ entity.plural_name }}", tags=["{{ entity.plural_name }}"])
 
 
-def get_{{ config.entity.snake_name }}_service(db = Depends(get_db)) -> {{ config.entity.name }}Service:
+def get_{{ entity.snake_name }}_service(db = Depends(get_db)) -> {{ entity.name }}Service:
     """
     IDK: dependency-injection, service-factory
 
     Responsibility:
-    - Create {{ config.entity.name }}Service instance with database session
+    - Create {{ entity.name }}Service instance with database session
 
     Inputs:
     - db: Database session from dependency
 
     Outputs:
-    - {{ config.entity.name }}Service: Service instance
+    - {{ entity.name }}Service: Service instance
     """
-    repository = {{ config.entity.name }}Repository(db)
-    return {{ config.entity.name }}Service(repository)
+    repository = {{ entity.name }}Repository(db)
+    return {{ entity.name }}Service(repository)
 
 
 @router.post(
     "/",
-    response_model={{ config.entity.name }}Response,
+    response_model={{ entity.name }}Response,
     status_code=status.HTTP_201_CREATED,
-    summary="Create {{ config.entity.name }}",
-    description="Create a new {{ config.entity.snake_name }} entity"
+    summary="Create {{ entity.name }}",
+    description="Create a new {{ entity.snake_name }} entity"
 )
-async def create_{{ config.entity.snake_name }}(
-    data: {{ config.entity.name }}Create,
-    service: {{ config.entity.name }}Service = Depends(get_{{ config.entity.snake_name }}_service)
-) -> {{ config.entity.name }}Response:
+async def create_{{ entity.snake_name }}(
+    data: {{ entity.name }}Create,
+    service: {{ entity.name }}Service = Depends(get_{{ entity.snake_name }}_service)
+) -> {{ entity.name }}Response:
     """
     IDK: create-endpoint, post-request, crud
 
     Responsibility:
-    - Handle {{ config.entity.name }} creation requests
+    - Handle {{ entity.name }} creation requests
     - Validate input data
     - Return created entity
 
     Inputs:
-    - data: {{ config.entity.name }}Create schema with entity data
-    - service: Injected {{ config.entity.name }}Service
+    - data: {{ entity.name }}Create schema with entity data
+    - service: Injected {{ entity.name }}Service
 
     Outputs:
-    - {{ config.entity.name }}Response: Created entity
+    - {{ entity.name }}Response: Created entity
 
     Raises:
     - 422: Validation error
     - 500: Server error
 
     Related Docs:
-    - docs/{{ config.entity.capability }}/api/{{ config.entity.snake_name }}-create.md
+    - docs/{{ entity.capability }}/api/{{ entity.snake_name }}-create.md
     """
     entity = service.create(data)
-    return {{ config.entity.name }}Response(**entity.model_dump())
+    return {{ entity.name }}Response(**entity.model_dump())
 
 
 @router.get(
     "/{id}",
-    response_model={{ config.entity.name }}Response,
+    response_model={{ entity.name }}Response,
     status_code=status.HTTP_200_OK,
-    summary="Get {{ config.entity.name }} by ID",
-    description="Retrieve a {{ config.entity.snake_name }} by its unique identifier"
+    summary="Get {{ entity.name }} by ID",
+    description="Retrieve a {{ entity.snake_name }} by its unique identifier"
 )
-async def get_{{ config.entity.snake_name }}(
+async def get_{{ entity.snake_name }}(
     id: str,
-    service: {{ config.entity.name }}Service = Depends(get_{{ config.entity.snake_name }}_service)
-) -> {{ config.entity.name }}Response:
+    service: {{ entity.name }}Service = Depends(get_{{ entity.snake_name }}_service)
+) -> {{ entity.name }}Response:
     """
     IDK: read-endpoint, get-request, crud
 
     Responsibility:
-    - Handle {{ config.entity.name }} retrieval by ID
+    - Handle {{ entity.name }} retrieval by ID
     - Return entity if found
 
     Inputs:
     - id: Entity unique identifier
-    - service: Injected {{ config.entity.name }}Service
+    - service: Injected {{ entity.name }}Service
 
     Outputs:
-    - {{ config.entity.name }}Response: Found entity
+    - {{ entity.name }}Response: Found entity
 
     Raises:
     - 404: Entity not found
     - 500: Server error
 
     Related Docs:
-    - docs/{{ config.entity.capability }}/api/{{ config.entity.snake_name }}-get.md
+    - docs/{{ entity.capability }}/api/{{ entity.snake_name }}-get.md
     """
     entity = service.get_by_id(id)
     if not entity:
-        raise HTTPException(status_code=404, detail="{{ config.entity.name }} not found")
-    return {{ config.entity.name }}Response(**entity.model_dump())
+        raise HTTPException(status_code=404, detail="{{ entity.name }} not found")
+    return {{ entity.name }}Response(**entity.model_dump())
 
 
 @router.get(
     "/",
-    response_model=List[{{ config.entity.name }}Response],
+    response_model=List[{{ entity.name }}Response],
     status_code=status.HTTP_200_OK,
-    summary="List {{ config.entity.plural_name }}",
-    description="Retrieve all {{ config.entity.plural_name }} with pagination"
+    summary="List {{ entity.plural_name }}",
+    description="Retrieve all {{ entity.plural_name }} with pagination"
 )
-async def list_{{ config.entity.plural_name }}(
+async def list_{{ entity.plural_name }}(
     skip: int = 0,
     limit: int = 100,
-    service: {{ config.entity.name }}Service = Depends(get_{{ config.entity.snake_name }}_service)
-) -> List[{{ config.entity.name }}Response]:
+    service: {{ entity.name }}Service = Depends(get_{{ entity.snake_name }}_service)
+) -> List[{{ entity.name }}Response]:
     """
     IDK: list-endpoint, get-request, pagination
 
     Responsibility:
-    - Handle {{ config.entity.name }} listing requests
+    - Handle {{ entity.name }} listing requests
     - Support pagination
     - Return list of entities
 
     Inputs:
     - skip: Number of records to skip (default: 0)
     - limit: Maximum records to return (default: 100)
-    - service: Injected {{ config.entity.name }}Service
+    - service: Injected {{ entity.name }}Service
 
     Outputs:
-    - List[{{ config.entity.name }}Response]: List of entities
+    - List[{{ entity.name }}Response]: List of entities
 
     Raises:
     - 500: Server error
 
     Related Docs:
-    - docs/{{ config.entity.capability }}/api/{{ config.entity.snake_name }}-list.md
+    - docs/{{ entity.capability }}/api/{{ entity.snake_name }}-list.md
     """
     entities = service.get_all(skip=skip, limit=limit)
-    return [{{ config.entity.name }}Response(**entity.model_dump()) for entity in entities]
+    return [{{ entity.name }}Response(**entity.model_dump()) for entity in entities]
 
 
 @router.put(
     "/{id}",
-    response_model={{ config.entity.name }}Response,
+    response_model={{ entity.name }}Response,
     status_code=status.HTTP_200_OK,
-    summary="Update {{ config.entity.name }}",
-    description="Update an existing {{ config.entity.snake_name }}"
+    summary="Update {{ entity.name }}",
+    description="Update an existing {{ entity.snake_name }}"
 )
-async def update_{{ config.entity.snake_name }}(
+async def update_{{ entity.snake_name }}(
     id: str,
-    data: {{ config.entity.name }}Update,
-    service: {{ config.entity.name }}Service = Depends(get_{{ config.entity.snake_name }}_service)
-) -> {{ config.entity.name }}Response:
+    data: {{ entity.name }}Update,
+    service: {{ entity.name }}Service = Depends(get_{{ entity.snake_name }}_service)
+) -> {{ entity.name }}Response:
     """
     IDK: update-endpoint, put-request, crud
 
     Responsibility:
-    - Handle {{ config.entity.name }} update requests
+    - Handle {{ entity.name }} update requests
     - Validate input data
     - Return updated entity
 
     Inputs:
     - id: Entity unique identifier
-    - data: {{ config.entity.name }}Update schema with update data
-    - service: Injected {{ config.entity.name }}Service
+    - data: {{ entity.name }}Update schema with update data
+    - service: Injected {{ entity.name }}Service
 
     Outputs:
-    - {{ config.entity.name }}Response: Updated entity
+    - {{ entity.name }}Response: Updated entity
 
     Raises:
     - 404: Entity not found
@@ -189,48 +189,48 @@ async def update_{{ config.entity.snake_name }}(
     - 500: Server error
 
     Related Docs:
-    - docs/{{ config.entity.capability }}/api/{{ config.entity.snake_name }}-update.md
+    - docs/{{ entity.capability }}/api/{{ entity.snake_name }}-update.md
     """
     entity = service.update(id, data)
     if not entity:
-        raise HTTPException(status_code=404, detail="{{ config.entity.name }} not found")
-    return {{ config.entity.name }}Response(**entity.model_dump())
+        raise HTTPException(status_code=404, detail="{{ entity.name }} not found")
+    return {{ entity.name }}Response(**entity.model_dump())
 
 
 @router.delete(
     "/{id}",
-    response_model={{ config.entity.name }}Response,
+    response_model={{ entity.name }}Response,
     status_code=status.HTTP_200_OK,
-    summary="Delete {{ config.entity.name }}",
-    description="Soft delete a {{ config.entity.snake_name }}"
+    summary="Delete {{ entity.name }}",
+    description="Soft delete a {{ entity.snake_name }}"
 )
-async def delete_{{ config.entity.snake_name }}(
+async def delete_{{ entity.snake_name }}(
     id: str,
-    service: {{ config.entity.name }}Service = Depends(get_{{ config.entity.snake_name }}_service)
-) -> {{ config.entity.name }}Response:
+    service: {{ entity.name }}Service = Depends(get_{{ entity.snake_name }}_service)
+) -> {{ entity.name }}Response:
     """
     IDK: delete-endpoint, delete-request, soft-delete
 
     Responsibility:
-    - Handle {{ config.entity.name }} deletion requests
+    - Handle {{ entity.name }} deletion requests
     - Perform soft delete (mark as deleted)
     - Return deleted entity
 
     Inputs:
     - id: Entity unique identifier
-    - service: Injected {{ config.entity.name }}Service
+    - service: Injected {{ entity.name }}Service
 
     Outputs:
-    - {{ config.entity.name }}Response: Deleted entity
+    - {{ entity.name }}Response: Deleted entity
 
     Raises:
     - 404: Entity not found
     - 500: Server error
 
     Related Docs:
-    - docs/{{ config.entity.capability }}/api/{{ config.entity.snake_name }}-delete.md
+    - docs/{{ entity.capability }}/api/{{ entity.snake_name }}-delete.md
     """
     entity = service.soft_delete(id)
     if not entity:
-        raise HTTPException(status_code=404, detail="{{ config.entity.name }} not found")
-    return {{ config.entity.name }}Response(**entity.model_dump())
+        raise HTTPException(status_code=404, detail="{{ entity.name }} not found")
+    return {{ entity.name }}Response(**entity.model_dump())
