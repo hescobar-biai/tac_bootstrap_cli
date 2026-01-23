@@ -864,3 +864,21 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender qué combinaciones de arquitectura/framework incluyen/excluyen shared infrastructure
     - Cuando implementes features que requieran scaffold service extension patterns
     - Cuando trabajes con integration de tareas 1.1-1.10 (base classes templates) en el CLI
+
+- app_docs/feature-issue-142-crud-templates-capability.md
+  - Conditions:
+    - Cuando trabajes con templates de generación de entidades CRUD
+    - Cuando necesites entender los templates en tac_bootstrap_cli/tac_bootstrap/templates/capabilities/crud_basic/
+    - Cuando modifiques o extiendas templates de vertical slice (domain_entity, schemas, orm_model, repository, service, routes)
+    - Cuando trabajes con EntitySpec y FieldSpec models en domain/models.py
+    - Cuando implementes generación de código desde especificaciones de entidad
+    - Cuando trabajes con mapeo de FieldType a tipos Python y SQLAlchemy
+    - Cuando necesites referencia sobre generación condicional (indexed fields, nullable, max_length)
+    - Cuando trabajes con templates de repository con métodos dinámicos (get_by_X, search)
+    - Cuando implementes features de CRUD code generation
+    - Cuando necesites entender el sistema de templates Jinja2 para vertical slices
+    - Cuando trabajes con tests de templates CRUD en tests/test_crud_templates.py
+    - Cuando debugees problemas de rendering de templates de entidades
+    - Cuando implementes la fase 2 del roadmap TAC Bootstrap (GenerateService, CLI command)
+    - Cuando trabajes con tipo discriminators y base class inheritance en entidades
+    - Cuando necesites referencia sobre IDK documentation pattern en código generado
