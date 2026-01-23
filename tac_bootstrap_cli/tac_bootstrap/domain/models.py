@@ -136,6 +136,70 @@ class DefaultWorkflow(str, Enum):
 # ============================================================================
 
 
+class EntitySpec(BaseModel):
+    """
+    Specification for a CRUD entity to be generated.
+
+    Defines the entity name, capability (vertical slice), and field information
+    for generating domain models, schemas, services, repositories, and API routes.
+
+    Attributes:
+        name: Entity name in PascalCase (e.g., "User", "BlogPost")
+        capability: Capability name in snake_case (e.g., "users", "blog_posts")
+        fields: List of field specifications for the entity (optional)
+        description: Human-readable description of the entity (optional)
+    """
+
+    name: str = Field(..., description="Entity name in PascalCase")
+    capability: str = Field(..., description="Capability name in snake_case")
+    fields: List[Dict[str, str]] = Field(
+        default_factory=list, description="List of field specifications"
+    )
+    description: str = Field(default="", description="Entity description")
+
+    @property
+    def snake_name(self) -> str:
+        """
+        Convert entity name to snake_case for file naming.
+
+        Example: "BlogPost" -> "blog_post"
+        """
+        import re
+
+        # Insert underscore before uppercase letters (except first)
+        s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", self.name)
+        # Insert underscore before uppercase letters preceded by lowercase
+        return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        """Validate entity name is a valid Python identifier."""
+        if not v:
+            raise ValueError("Entity name cannot be empty")
+        if not v.isidentifier():
+            raise ValueError(
+                f"Entity name '{v}' must be a valid Python identifier "
+                "(alphanumeric and underscores, cannot start with a number)"
+            )
+        return v
+
+    @field_validator("capability")
+    @classmethod
+    def validate_capability(cls, v: str) -> str:
+        """Validate capability is a valid package name (lowercase, alphanumeric + underscore)."""
+        import re
+
+        if not v:
+            raise ValueError("Capability name cannot be empty")
+        if not re.match(r"^[a-z][a-z0-9_]{0,49}$", v):
+            raise ValueError(
+                f"Capability name '{v}' must be lowercase, start with a letter, "
+                "contain only alphanumeric characters and underscores, and be max 50 characters"
+            )
+        return v
+
+
 class ProjectSpec(BaseModel):
     """
     Project metadata and settings.
