@@ -762,3 +762,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con integration de database.py con repositories, services y FastAPI routes
     - Cuando implementes database initialization o table creation en startup
     - Cuando necesites entender SQLite vs PostgreSQL configuration patterns
+
+- app_docs/feature-6d93eca6-template-dependencies-removal.md
+  - Conditions:
+    - Cuando necesites entender qué templates fueron removidos del CLI (dependencies.py, exceptions.py, responses.py)
+    - Cuando trabajes con refactoring o cleanup de templates en TAC Bootstrap
+    - Cuando necesites saber qué patrones de FastAPI dependency injection, exception handling o response models estaban previamente incluidos
+    - Cuando investigues por qué dependencies.py, exceptions.py o responses.py templates no están en el codebase
+    - Cuando necesites histórico de templates removidos y razones de su eliminación
+    - Cuando trabajes con template consolidation o simplification
+    - Cuando necesites entender el scope del CLI (agentic layers vs full application scaffolding)
+    - Cuando busques referencia de patrones de FastAPI que ya no están auto-generados
+    - Cuando actualices conditional documentation después de template removal
+    - Cuando trabajes con migration de proyectos que usaban los templates removidos
