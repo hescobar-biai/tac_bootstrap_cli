@@ -1,0 +1,26 @@
+"""
+{{ entity_spec.name }} Async Repository
+
+Auto-generated asynchronous repository for {{ entity_spec.capability }} capability.
+"""
+
+from shared.infrastructure.base_repository_async import BaseRepositoryAsync
+
+from domain.{{ entity_spec.capability.replace('-', '_') }}.entities.{{ entity_spec.snake_name }} import {{ entity_spec.name }}
+
+
+class {{ entity_spec.name }}Repository(BaseRepositoryAsync[{{ entity_spec.name }}]):
+    """
+    Async repository for {{ entity_spec.name }} entity.
+
+    Provides async database access methods for {{ entity_spec.snake_name }} operations.
+    """
+
+    def __init__(self, session):
+        """
+        Initialize repository with async database session.
+
+        Args:
+            session: SQLAlchemy async database session
+        """
+        super().__init__({{ entity_spec.name }}, session)

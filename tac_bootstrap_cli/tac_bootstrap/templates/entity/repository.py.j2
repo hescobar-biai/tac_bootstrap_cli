@@ -1,0 +1,26 @@
+"""
+{{ entity_spec.name }} Repository
+
+Auto-generated synchronous repository for {{ entity_spec.capability }} capability.
+"""
+
+from shared.infrastructure.base_repository import BaseRepository
+
+from domain.{{ entity_spec.capability.replace('-', '_') }}.entities.{{ entity_spec.snake_name }} import {{ entity_spec.name }}
+
+
+class {{ entity_spec.name }}Repository(BaseRepository[{{ entity_spec.name }}]):
+    """
+    Repository for {{ entity_spec.name }} entity.
+
+    Provides database access methods for {{ entity_spec.snake_name }} operations.
+    """
+
+    def __init__(self, session):
+        """
+        Initialize repository with database session.
+
+        Args:
+            session: SQLAlchemy database session
+        """
+        super().__init__({{ entity_spec.name }}, session)
