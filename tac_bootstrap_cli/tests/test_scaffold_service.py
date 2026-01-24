@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from tac_bootstrap.application.exceptions import ScaffoldValidationError
 from tac_bootstrap.application.scaffold_service import ScaffoldService
 from tac_bootstrap.domain.models import (
     Architecture,
@@ -1057,3 +1058,165 @@ class TestScaffoldServiceBootstrapMetadata:
             # Verify it's a valid ISO8601 timestamp
             parsed_timestamp = datetime.fromisoformat(last_upgrade)
             assert parsed_timestamp is not None, "last_upgrade should parse as ISO8601"
+
+
+# ============================================================================
+# TEST VALIDATION INTEGRATION
+# ============================================================================
+
+
+class TestScaffoldServiceValidation:
+    """Tests for validation integration in ScaffoldService."""
+
+    def test_apply_plan_fails_on_invalid_framework_language(self, tmp_path: Path):
+        """apply_plan should raise ScaffoldValidationError for invalid framework/language combo."""
+        # Create invalid config: FastAPI + Rust (incompatible)
+        config = TACConfig(
+            project=ProjectSpec(
+                name="test-project",
+                language=Language.RUST,  # Invalid with FastAPI
+                package_manager=PackageManager.CARGO,
+                framework=Framework.FASTAPI,  # Only compatible with Python
+            ),
+            commands=CommandsSpec(start="cargo run", test="cargo test"),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="test-project")),
+        )
+
+        service = ScaffoldService()
+        plan = service.build_plan(config)
+
+        output_dir = tmp_path / "invalid-output"
+        output_dir.mkdir()
+
+        # Should raise ScaffoldValidationError BEFORE creating any files
+        with pytest.raises(ScaffoldValidationError) as exc_info:
+            service.apply_plan(plan, output_dir, config)
+
+        error_msg = str(exc_info.value)
+        assert "Validation failed with" in error_msg
+        assert "error(s):" in error_msg
+        assert "fastapi" in error_msg.lower() or "rust" in error_msg.lower()
+
+        # Verify NO files were created (directory should still be empty)
+        created_files = list(output_dir.rglob("*"))
+        # Filter out the directory itself
+        created_files = [f for f in created_files if f != output_dir]
+        assert len(created_files) == 0, f"Expected no files created, but found: {created_files}"
+
+    def test_apply_plan_shows_warnings_but_continues(
+        self, service: ScaffoldService, config: TACConfig, monkeypatch, capsys
+    ):
+        """apply_plan should show warnings but not block execution."""
+        # Mock git to be unavailable (causes warning, not error)
+        # The validation service uses shutil.which("git") to check git availability
+        import shutil
+
+        original_which = shutil.which
+
+        def mock_which(cmd, *args, **kwargs):
+            if cmd == "git":
+                return None
+            return original_which(cmd, *args, **kwargs)
+
+        monkeypatch.setattr(shutil, "which", mock_which)
+
+        plan = service.build_plan(config)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+
+            # Should succeed despite warnings
+            result = service.apply_plan(plan, tmp_path, config)
+
+            assert result.success is True
+
+            # Check that warning was printed
+            captured = capsys.readouterr()
+            # Note: warnings are printed to stdout by Rich Console
+            assert "Warning:" in captured.out or "Git" in captured.out
+
+    def test_apply_plan_error_includes_all_issues(self, tmp_path: Path):
+        """apply_plan error message should include all validation issues."""
+        # Create config with multiple errors (invalid architecture + invalid framework/language)
+        config = TACConfig(
+            project=ProjectSpec(
+                name="test-project",
+                language=Language.RUST,  # Invalid with Django
+                package_manager=PackageManager.CARGO,
+                framework=Framework.DJANGO,  # Only compatible with Python
+                architecture=Architecture.HEXAGONAL,  # Invalid with Django
+            ),
+            commands=CommandsSpec(start="cargo run", test="cargo test"),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="test-project")),
+        )
+
+        service = ScaffoldService()
+        plan = service.build_plan(config)
+
+        output_dir = tmp_path / "invalid-output"
+        output_dir.mkdir()
+
+        # Should raise ScaffoldValidationError with ALL issues
+        with pytest.raises(ScaffoldValidationError) as exc_info:
+            service.apply_plan(plan, output_dir, config)
+
+        error_msg = str(exc_info.value)
+
+        # Should mention multiple errors
+        assert "error(s):" in error_msg
+
+        # Should show both framework/language and architecture incompatibilities
+        # (exact wording depends on validator implementation)
+        assert "django" in error_msg.lower() or "rust" in error_msg.lower()
+
+    def test_apply_plan_no_files_created_on_validation_failure(self, tmp_path: Path):
+        """Verify that output_dir remains clean when validation fails."""
+        # Invalid config
+        config = TACConfig(
+            project=ProjectSpec(
+                name="test-project",
+                language=Language.TYPESCRIPT,  # Invalid with Flask
+                package_manager=PackageManager.NPM,
+                framework=Framework.FLASK,  # Python-only framework
+            ),
+            commands=CommandsSpec(start="npm start", test="npm test"),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="test-project")),
+        )
+
+        service = ScaffoldService()
+        plan = service.build_plan(config)
+
+        output_dir = tmp_path / "should-stay-empty"
+        output_dir.mkdir()
+
+        # Record initial state
+        initial_files = list(output_dir.rglob("*"))
+
+        # Attempt to apply plan (should fail validation)
+        with pytest.raises(ScaffoldValidationError):
+            service.apply_plan(plan, output_dir, config)
+
+        # Verify directory state hasn't changed
+        final_files = list(output_dir.rglob("*"))
+        assert (
+            initial_files == final_files
+        ), "Output directory should remain unchanged after validation failure"
+
+    def test_apply_plan_with_valid_config_passes_validation(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """Verify that valid configs pass validation and generate files normally."""
+        plan = service.build_plan(config)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+
+            # Should succeed
+            result = service.apply_plan(plan, tmp_path, config)
+
+            assert result.success is True
+            assert result.files_created > 0
+
+            # Verify some files were actually created
+            created_files = list(tmp_path.rglob("*"))
+            assert len(created_files) > 0

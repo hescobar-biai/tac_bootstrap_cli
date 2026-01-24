@@ -303,8 +303,8 @@ class ValidationService:
         # Note: This is a basic check - specific templates depend on config values
         # Future enhancement: validate all templates needed for this specific config
         critical_templates = [
-            ".claude/settings.json.j2",
-            ".claude/hooks/user-prompt-submit-hook.sh.j2",
+            "claude/settings.json.j2",
+            "claude/hooks/user_prompt_submit.py.j2",
         ]
 
         for template_name in critical_templates:

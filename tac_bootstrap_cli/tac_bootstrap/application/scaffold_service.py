@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
+from tac_bootstrap.application.exceptions import ScaffoldValidationError
+from tac_bootstrap.application.validation_service import ValidationService
 from tac_bootstrap.domain.models import Architecture, Framework, TACConfig
 from tac_bootstrap.domain.plan import (
     FileAction,
@@ -40,13 +42,19 @@ class ScaffoldService:
         result = service.apply_plan(plan, output_dir, config)
     """
 
-    def __init__(self, template_repo: Optional[TemplateRepository] = None):
+    def __init__(
+        self,
+        template_repo: Optional[TemplateRepository] = None,
+        validation_service: Optional[ValidationService] = None,
+    ):
         """Initialize scaffold service.
 
         Args:
             template_repo: Template repository (created if not provided)
+            validation_service: Validation service (created if not provided)
         """
         self.template_repo = template_repo or TemplateRepository()
+        self.validation_service = validation_service or ValidationService(self.template_repo)
 
     def build_plan(
         self,
@@ -577,7 +585,21 @@ class ScaffoldService:
         """
         from datetime import datetime, timezone
 
+        from rich.console import Console
+
         from tac_bootstrap.infrastructure.fs import FileSystem
+
+        # Pre-scaffold validation gate
+        console = Console()
+        validation = self.validation_service.validate_pre_scaffold(config, output_dir)
+
+        if not validation.valid:
+            raise ScaffoldValidationError(validation)
+
+        # Show warnings but continue
+        if validation.warnings():
+            for warning in validation.warnings():
+                console.print(f"[yellow]Warning: {warning.message}[/yellow]")
 
         # Register bootstrap metadata before rendering templates
         # This enables audit trail for when/how the project was generated
