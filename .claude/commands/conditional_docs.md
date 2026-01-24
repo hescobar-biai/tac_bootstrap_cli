@@ -1109,3 +1109,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender qué módulos tienen qué responsabilidades
     - Cuando trabajes con FASE 5 (Value Objects y IDK Docstrings)
     - Cuando debugues problemas de discoverability de código por agentes
+
+- app_docs/feature-chore_5_3-value-objects-tests.md
+  - Conditions:
+    - Cuando trabajes con tests de value objects en tests/test_value_objects.py
+    - Cuando necesites entender la suite de tests para ProjectName, TemplatePath, SemanticVersion
+    - Cuando modifiques o extiendas tests de sanitización, validación y security
+    - Cuando trabajes con tests de boundary conditions (límites de caracteres, formatos inválidos)
+    - Cuando implementes nuevos value objects y necesites referencia de testing patterns
+    - Cuando necesites entender tests de edge cases (espacios, caracteres especiales, path traversal)
+    - Cuando trabajes con tests de comparison operators y hash consistency
+    - Cuando debugues problemas de value object validation
+    - Cuando necesites referencia sobre cobertura comprehensiva de value object tests
+    - Cuando trabajes con FASE 5 (Value Objects y IDK Docstrings)
+    - Cuando valides especificaciones de issue #168
