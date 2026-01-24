@@ -6,47 +6,15 @@ Performance metrics for the AI Developer Workflow (ADW) system.
 
 Summary metrics across all ADW runs.
 
-| Metric            | Value          | Last Updated                 |
-| ----------------- | -------------- | ---------------------------- |
-| Current Streak    | 62             | Fri Jan 23 18:14:37 -05 2026 |
-| Longest Streak    | 62             | Fri Jan 23 18:14:37 -05 2026 |
-| Total Plan Size   | 13151 lines    | Fri Jan 23 18:14:37 -05 2026 |
-| Largest Plan Size | 673 lines      | Fri Jan 23 18:14:37 -05 2026 |
-| Total Diff Size   | 59683 lines    | Fri Jan 23 18:14:37 -05 2026 |
-| Largest Diff Size | 4591 lines     | Fri Jan 23 18:14:37 -05 2026 |
-| Average Presence  | 1.00           | Fri Jan 23 18:14:37 -05 2026 |
 | Metric            | Value          | Last Updated        |
 | ----------------- | -------------- | ------------------- |
-| Current Streak    | 59             | 2026-01-23 18:02:31 |
-| Longest Streak    | 59             | 2026-01-23 18:02:31 |
-| Total Plan Size   | 12394 lines    | 2026-01-23 18:02:31 |
-| Largest Plan Size | 673 lines      | 2026-01-23 18:02:31 |
-| Total Diff Size   | 57783 lines    | 2026-01-23 18:02:31 |
-| Largest Diff Size | 6832 lines     | 2026-01-23 18:02:31 |
-| Average Presence  | 1.00           | 2026-01-23 18:02:31 |
-| Current Streak    | 58             | 2026-01-23 17:32:16 |
-| Longest Streak    | 58             | 2026-01-23 17:32:16 |
-| Total Plan Size   | 11848 lines    | 2026-01-23 17:32:16 |
-| Largest Plan Size | 673 lines      | 2026-01-23 17:32:16 |
-| Total Diff Size   | 50086 lines    | 2026-01-23 17:32:16 |
-| Largest Diff Size | 4163 lines     | 2026-01-23 17:32:16 |
-| Average Presence  | 1.00           | 2026-01-23 17:32:16 |
-| Metric            | Value          | Last Updated             |
-| ----------------- | -------------- | ------------------------ |
-| Current Streak    | 57             | Fri Jan 23 17:35:26 2026 |
-| Longest Streak    | 57             | Fri Jan 23 17:35:26 2026 |
-| Total Plan Size   | 11961 lines    | Fri Jan 23 17:35:26 2026 |
-| Largest Plan Size | 673 lines      | Fri Jan 23 17:35:26 2026 |
-| Total Diff Size   | 53551 lines    | Fri Jan 23 17:35:26 2026 |
-| Largest Diff Size | 4591 lines     | Fri Jan 23 17:35:26 2026 |
-| Average Presence  | 1.00           | Fri Jan 23 17:35:26 2026 |
-| Current Streak    | 58             | Fri Jan 23 17:20:53 2026 |
-| Longest Streak    | 58             | Fri Jan 23 17:20:53 2026 |
-| Total Plan Size   | 11897 lines    | Fri Jan 23 17:20:53 2026 |
-| Largest Plan Size | 673 lines      | Fri Jan 23 17:20:53 2026 |
-| Total Diff Size   | 50951 lines    | Fri Jan 23 17:20:53 2026 |
-| Largest Diff Size | 4163 lines     | Fri Jan 23 17:20:53 2026 |
-| Average Presence  | 1.00           | Fri Jan 23 17:20:53 2026 |
+| Current Streak    | 63             | 2026-01-23 22:47:50 |
+| Longest Streak    | 63             | 2026-01-23 22:47:50 |
+| Total Plan Size   | 13842 lines    | 2026-01-23 22:47:50 |
+| Largest Plan Size | 673 lines      | 2026-01-23 22:47:50 |
+| Total Diff Size   | 69481 lines    | 2026-01-23 22:47:50 |
+| Largest Diff Size | 6832 lines     | 2026-01-23 22:47:50 |
+| Average Presence  | 1.00           | 2026-01-23 22:47:50 |
 
 ## ADW KPIs
 
@@ -113,7 +81,7 @@ Detailed metrics for individual ADW workflow runs.
 | Thu Jan 23 2026  | feature_1_11 | 135          | /feature    | 1        | 384               | 1033/7/9                        | 2026-01-23 16:39:43          | -       |
 | Thu Jan 23 2026  | feature_2_3  | 143          | /feature    | 1        | 341               | 1124/2/8                        | 2026-01-23 17:32:16          | -       |
 | Fri Jan 23 2026  | feature_2_2  | 142          | /feature    | 1        | 454               | 2533/2058/21                    | Fri Jan 23 17:35:26 -05 2026 | -       |
-| Fri Jan 23 2026  | feature_1.12 | 137          | /chore      | 1        | 209               | 987/1097/14                     | 2026-01-23 16:45:49          | -       |
-| Fri Jan 23 2026  | feature_2_1  | 140          | /feature    | 1        | 390               | 1989/2/9                        | Fri Jan 23 17:20:53 -05 2026 | Fri Jan 23 17:20:53 2026 |
+| Fri Jan 23 2026  | feature_2_1  | 140          | /feature    | 1        | 390               | 1989/2/9                        | Fri Jan 23 17:20:53 -05 2026 | -       |
 | Fri Jan 23 2026  | feature_2_5  | 148          | /feature    | 1        | 250               | 863/68/8                        | Fri Jan 23 18:14:37 -05 2026 | -       |
-| Thu Jan 23 2026  | feature_2_4  | 146          | /feature    | 1        | 497               | 3168/3664/36                    | 2026-01-23 18:02:31          | -                        |
+| Thu Jan 23 2026  | feature_2_4  | 146          | /feature    | 1        | 497               | 3168/3664/36                    | 2026-01-23 18:02:31          | -       |
+| Fri Jan 23 2026  | feature_3_2  | 156          | /feature    | 1        | 194               | 474/2492/23                     | 2026-01-23 22:47:50          | -       |
