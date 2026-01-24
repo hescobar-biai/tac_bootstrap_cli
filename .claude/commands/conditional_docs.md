@@ -1060,3 +1060,21 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features relacionadas con FASE 4 (Multi-layer Validation)
     - Cuando trabajes con ApplicationError hierarchy y custom exceptions
     - Cuando necesites referencia sobre filesystem protection durante validation failures
+
+- app_docs/feature-chore_4_4-validation-service-tests.md
+  - Conditions:
+    - Cuando trabajes con tests de ValidationService en tests/test_validation_service.py
+    - Cuando necesites entender la suite de tests completa para multi-layer validation
+    - Cuando modifiques o extiendas tests de framework-language compatibility
+    - Cuando trabajes con tests de framework-architecture compatibility
+    - Cuando implementes tests de template validation (critical templates existence)
+    - Cuando necesites referencia sobre tests de filesystem validation (permissions, conflicts, parent directories)
+    - Cuando trabajes con tests de git validation (warnings no bloqueantes)
+    - Cuando implementes tests de acumulación de múltiples errores
+    - Cuando necesites entender mocking strategies para TemplateRepository, GitAdapter, filesystem operations
+    - Cuando trabajes con tests de ValidationResult helper methods (errors(), warnings())
+    - Cuando debugues problemas de validation test failures
+    - Cuando necesites referencia sobre coverage de matrices de compatibilidad
+    - Cuando trabajes con tests de entity specification validation
+    - Cuando implementes nuevos validation rules y necesites patterns de testing
+    - Cuando trabajes con edge cases de validación (Framework.NONE, Django restrictions, etc.)
