@@ -958,3 +958,22 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con estructura de archivos generados (domain/{capability}/entities, schemas, services, repositories, routes, events)
     - Cuando implementes features similares de code generation para otros artifacts
     - Cuando necesites referencia sobre next-steps guidance post-generation (router registration, migrations, events)
+
+- app_docs/feature-2_6-crud-authorized-templates.md
+  - Conditions:
+    - Cuando trabajes con templates de entidades CRUD con multi-tenant authorization
+    - Cuando implementes o modifiques templates en templates/capabilities/crud_authorized/
+    - Cuando necesites entender la generación de entidades con --authorized flag
+    - Cuando trabajes con JWT authentication dependencies (get_current_user)
+    - Cuando implementes organization-level isolation y tenant filtering
+    - Cuando necesites referencia sobre auto-injection de organization_id y created_by
+    - Cuando trabajes con templates de routes_authorized.py.j2, service_authorized.py.j2, repository_authorized.py.j2
+    - Cuando modifiques EntityGeneratorService para template selection logic
+    - Cuando trabajes con security patterns (404 vs 403, ownership validation)
+    - Cuando implementes features de multi-tenancy en CRUD generation
+    - Cuando necesites entender la diferencia entre crud_basic y crud_authorized templates
+    - Cuando trabajes con tests de authorized templates (test_authorized_templates.py)
+    - Cuando necesites referencia sobre campos automáticos (organization_id, created_by)
+    - Cuando implementes features de authorization en service/repository layers
+    - Cuando trabajes con combinación de --authorized y --async-mode flags
+    - Cuando necesites entender TODO comments para production JWT validation
