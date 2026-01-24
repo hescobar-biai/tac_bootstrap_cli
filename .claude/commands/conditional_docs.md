@@ -1043,3 +1043,20 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con tests de domain validators (test_validators.py)
     - Cuando debugues problemas de compatibility validation
     - Cuando implementes features relacionadas con FASE 4 (Multi-layer Validation)
+
+- app_docs/feature-4_3-integrate-validation-in-scaffold.md
+  - Conditions:
+    - Cuando trabajes con integración de ValidationService en ScaffoldService
+    - Cuando necesites entender el sistema de validación pre-scaffold (validation gate)
+    - Cuando modifiques o extiendas application/exceptions.py
+    - Cuando trabajes con ScaffoldValidationError y formateo de mensajes de error
+    - Cuando implementes validation blocking en apply_plan()
+    - Cuando necesites referencia sobre errors vs warnings handling (blocking vs display-only)
+    - Cuando trabajes con Rich Console para output de warnings en CLI
+    - Cuando implementes fail-fast patterns antes de filesystem operations
+    - Cuando necesites entender el formato de error messages multi-línea con suggestions
+    - Cuando trabajes con tests de validation integration (TestScaffoldServiceValidation)
+    - Cuando debugues problemas de validation failures o partial file generation
+    - Cuando implementes features relacionadas con FASE 4 (Multi-layer Validation)
+    - Cuando trabajes con ApplicationError hierarchy y custom exceptions
+    - Cuando necesites referencia sobre filesystem protection durante validation failures
