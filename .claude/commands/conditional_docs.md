@@ -1026,3 +1026,20 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con tests de ValidationService (test_validation_service.py)
     - Cuando debugues problemas de validation failures o suggestion quality
     - Cuando implementes features relacionadas con FASE 4 (Multi-layer Validation)
+
+- app_docs/feature-feature_4_2-domain-compatibility-validators.md
+  - Conditions:
+    - Cuando trabajes con validators en domain/validators.py
+    - Cuando necesites entender las reglas de compatibilidad entre languages, frameworks, package managers y architectures
+    - Cuando modifiques o extiendas ValidationIssue model del domain layer
+    - Cuando trabajes con COMPATIBLE_FRAMEWORKS, COMPATIBLE_PACKAGE_MANAGERS, o ARCHITECTURES_REQUIRING_BASE_CLASSES
+    - Cuando implementes validate_framework_language(), validate_package_manager_language(), o validate_architecture_framework()
+    - Cuando necesites referencia sobre domain validation patterns (return None on success, ValidationIssue on failure)
+    - Cuando trabajes con refactoring de ValidationService para usar domain validators
+    - Cuando implementes nuevas combinaciones de validación pairwise
+    - Cuando necesites entender la separación de domain validation vs application validation
+    - Cuando trabajes con suggestion generation en domain validators
+    - Cuando modifiques compatibility matrices o agregues nuevos languages/frameworks
+    - Cuando trabajes con tests de domain validators (test_validators.py)
+    - Cuando debugues problemas de compatibility validation
+    - Cuando implementes features relacionadas con FASE 4 (Multi-layer Validation)
