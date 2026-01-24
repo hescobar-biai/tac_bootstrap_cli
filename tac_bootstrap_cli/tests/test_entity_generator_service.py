@@ -312,8 +312,8 @@ class TestGenerate:
         # Verify content contains expected elements
         entity_content = entity_path.read_text()
         assert "class Product(Entity):" in entity_content
-        assert "name = Column" in entity_content
-        assert "price = Column" in entity_content
+        assert "name: str" in entity_content
+        assert "price: float" in entity_content
 
     def test_force_overwrite(self, temp_project_dir, sample_entity_spec):
         """Test force flag overwrites existing files."""
@@ -343,4 +343,4 @@ class TestGenerate:
         # Verify file was overwritten
         new_content = entity_path.read_text()
         assert "# OLD CONTENT" not in new_content
-        assert "class Product(BaseEntity):" in new_content
+        assert "class Product(Entity):" in new_content

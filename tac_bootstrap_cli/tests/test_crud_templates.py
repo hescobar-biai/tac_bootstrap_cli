@@ -6,17 +6,18 @@ Comprehensive unit tests for validating that the 6 templates in
 and generate valid Python code.
 """
 
-from types import SimpleNamespace
 
 import pytest
 
+from tac_bootstrap.domain.entity_config import (
+    EntitySpec,
+    FieldSpec,
+    FieldType,
+)
 from tac_bootstrap.domain.models import (
     ClaudeConfig,
     ClaudeSettings,
     CommandsSpec,
-    EntitySpec,
-    FieldSpec,
-    FieldType,
     Framework,
     Language,
     PackageManager,
@@ -56,11 +57,11 @@ def entity_spec() -> EntitySpec:
         name="Product",
         capability="catalog",
         fields=[
-            FieldSpec(name="sku", type=FieldType.STR, indexed=True, max_length=50),
-            FieldSpec(name="price", type=FieldType.DECIMAL, nullable=False),
-            FieldSpec(name="quantity", type=FieldType.INT, nullable=False, default=0),
-            FieldSpec(name="is_active", type=FieldType.BOOL, nullable=False, default=True),
-            FieldSpec(name="full_description", type=FieldType.TEXT, nullable=True),
+            FieldSpec(name="sku", field_type=FieldType.STRING, indexed=True, max_length=50),
+            FieldSpec(name="price", field_type=FieldType.DECIMAL, required=True),
+            FieldSpec(name="quantity", field_type=FieldType.INTEGER, required=True, default=0),
+            FieldSpec(name="is_active", field_type=FieldType.BOOLEAN, required=True, default=True),
+            FieldSpec(name="full_description", field_type=FieldType.TEXT, required=False),
         ],
     )
 
@@ -73,7 +74,7 @@ def template_repo() -> TemplateRepository:
 
 def make_context(entity: EntitySpec, config: TACConfig):
     """Create a template context with both entity and config."""
-    return SimpleNamespace(entity=entity, config=config)
+    return {"entity": entity, "config": config}
 
 
 # ============================================================================
@@ -122,8 +123,8 @@ def test_domain_entity_handles_nullable_fields(
         name="User",
         capability="auth",
         fields=[
-            FieldSpec(name="username", type=FieldType.STR, nullable=False),
-            FieldSpec(name="bio", type=FieldType.TEXT, nullable=True),
+            FieldSpec(name="username", field_type=FieldType.STRING, required=True),
+            FieldSpec(name="bio", field_type=FieldType.TEXT, required=False),
         ],
     )
 
@@ -189,7 +190,7 @@ def test_schemas_handles_optional_in_update(
         name="Product",
         capability="catalog",
         fields=[
-            FieldSpec(name="sku", type=FieldType.STR, nullable=False),
+            FieldSpec(name="sku", field_type=FieldType.STRING, required=True),
         ],
     )
 
@@ -251,8 +252,8 @@ def test_orm_model_creates_indexes(
         name="Product",
         capability="catalog",
         fields=[
-            FieldSpec(name="sku", type=FieldType.STR, indexed=True),
-            FieldSpec(name="price", type=FieldType.DECIMAL, indexed=False),
+            FieldSpec(name="sku", field_type=FieldType.STRING, indexed=True),
+            FieldSpec(name="price", field_type=FieldType.DECIMAL, indexed=False),
         ],
     )
 
@@ -280,15 +281,15 @@ def test_orm_model_type_mapping(
         name="AllTypes",
         capability="test",
         fields=[
-            FieldSpec(name="str_field", type=FieldType.STR),
-            FieldSpec(name="int_field", type=FieldType.INT),
-            FieldSpec(name="float_field", type=FieldType.FLOAT),
-            FieldSpec(name="bool_field", type=FieldType.BOOL),
-            FieldSpec(name="datetime_field", type=FieldType.DATETIME),
-            FieldSpec(name="uuid_field", type=FieldType.UUID),
-            FieldSpec(name="text_field", type=FieldType.TEXT),
-            FieldSpec(name="decimal_field", type=FieldType.DECIMAL),
-            FieldSpec(name="json_field", type=FieldType.JSON),
+            FieldSpec(name="str_field", field_type=FieldType.STRING),
+            FieldSpec(name="int_field", field_type=FieldType.INTEGER),
+            FieldSpec(name="float_field", field_type=FieldType.FLOAT),
+            FieldSpec(name="bool_field", field_type=FieldType.BOOLEAN),
+            FieldSpec(name="datetime_field", field_type=FieldType.DATETIME),
+            FieldSpec(name="uuid_field", field_type=FieldType.UUID),
+            FieldSpec(name="text_field", field_type=FieldType.TEXT),
+            FieldSpec(name="decimal_field", field_type=FieldType.DECIMAL),
+            FieldSpec(name="json_field", field_type=FieldType.JSON),
         ],
     )
 
@@ -350,9 +351,9 @@ def test_repository_generates_get_by_methods(
         name="Product",
         capability="catalog",
         fields=[
-            FieldSpec(name="sku", type=FieldType.STR, indexed=True),
-            FieldSpec(name="barcode", type=FieldType.STR, indexed=True),
-            FieldSpec(name="price", type=FieldType.DECIMAL, indexed=False),
+            FieldSpec(name="sku", field_type=FieldType.STRING, indexed=True),
+            FieldSpec(name="barcode", field_type=FieldType.STRING, indexed=True),
+            FieldSpec(name="price", field_type=FieldType.DECIMAL, indexed=False),
         ],
     )
 
@@ -380,9 +381,9 @@ def test_repository_generates_search_method(
         name="Product",
         capability="catalog",
         fields=[
-            FieldSpec(name="name", type=FieldType.STR),
-            FieldSpec(name="description", type=FieldType.TEXT),
-            FieldSpec(name="price", type=FieldType.DECIMAL),
+            FieldSpec(name="name", field_type=FieldType.STRING),
+            FieldSpec(name="description", field_type=FieldType.TEXT),
+            FieldSpec(name="price", field_type=FieldType.DECIMAL),
         ],
     )
 
@@ -411,8 +412,8 @@ def test_repository_no_search_without_string_fields(
         name="Counter",
         capability="stats",
         fields=[
-            FieldSpec(name="count", type=FieldType.INT),
-            FieldSpec(name="value", type=FieldType.DECIMAL),
+            FieldSpec(name="count", field_type=FieldType.INTEGER),
+            FieldSpec(name="value", field_type=FieldType.DECIMAL),
         ],
     )
 
@@ -563,7 +564,7 @@ def test_all_templates_render_with_minimal_entity(
         name="SimpleEntity",
         capability="test",
         fields=[
-            FieldSpec(name="value", type=FieldType.STR),
+            FieldSpec(name="value", field_type=FieldType.STRING),
         ],
     )
 
@@ -592,7 +593,7 @@ def test_entity_spec_snake_name_conversion():
         name="ProductCategory",
         capability="catalog",
         fields=[
-            FieldSpec(name="title", type=FieldType.STR),
+            FieldSpec(name="title", field_type=FieldType.STRING),
         ],
     )
 
@@ -604,19 +605,20 @@ def test_entity_spec_snake_name_conversion():
 def test_field_spec_validation():
     """Test FieldSpec validation."""
     # Valid field
-    field = FieldSpec(name="valid_name", type=FieldType.STR)
+    field = FieldSpec(name="valid_name", field_type=FieldType.STRING)
     assert field.name == "valid_name"
 
-    # Test reserved name rejection
-    with pytest.raises(ValueError, match="reserved"):
-        FieldSpec(name="id", type=FieldType.STR)
-
-    with pytest.raises(ValueError, match="reserved"):
-        FieldSpec(name="created_at", type=FieldType.DATETIME)
-
-    # Test invalid format
+    # Test invalid format (snake_case validation)
     with pytest.raises(ValueError, match="snake_case"):
-        FieldSpec(name="InvalidName", type=FieldType.STR)
+        FieldSpec(name="InvalidName", field_type=FieldType.STRING)
+
+    # Test Python keyword rejection
+    with pytest.raises(ValueError, match="reserved keyword"):
+        FieldSpec(name="class", field_type=FieldType.STRING)
+
+    # Test SQLAlchemy conflict rejection
+    with pytest.raises(ValueError, match="conflicts with SQLAlchemy"):
+        FieldSpec(name="metadata", field_type=FieldType.STRING)
 
 
 def test_entity_spec_validation():
@@ -626,7 +628,7 @@ def test_entity_spec_validation():
         name="ValidName",
         capability="valid-capability",
         fields=[
-            FieldSpec(name="field1", type=FieldType.STR),
+            FieldSpec(name="field1", field_type=FieldType.STRING),
         ],
     )
     assert entity.name == "ValidName"
@@ -636,7 +638,7 @@ def test_entity_spec_validation():
         EntitySpec(
             name="invalid_name",
             capability="test",
-            fields=[FieldSpec(name="field1", type=FieldType.STR)],
+            fields=[FieldSpec(name="field1", field_type=FieldType.STRING)],
         )
 
     # Test kebab-case capability validation
@@ -644,7 +646,7 @@ def test_entity_spec_validation():
         EntitySpec(
             name="ValidName",
             capability="Invalid_Capability",
-            fields=[FieldSpec(name="field1", type=FieldType.STR)],
+            fields=[FieldSpec(name="field1", field_type=FieldType.STRING)],
         )
 
     # Test empty fields validation
@@ -653,4 +655,19 @@ def test_entity_spec_validation():
             name="ValidName",
             capability="test",
             fields=[],
+        )
+
+    # Test reserved field names validation (happens at EntitySpec level)
+    with pytest.raises(ValueError, match="reserved"):
+        EntitySpec(
+            name="ValidName",
+            capability="test",
+            fields=[FieldSpec(name="id", field_type=FieldType.STRING)],
+        )
+
+    with pytest.raises(ValueError, match="reserved"):
+        EntitySpec(
+            name="ValidName",
+            capability="test",
+            fields=[FieldSpec(name="created_at", field_type=FieldType.DATETIME)],
         )

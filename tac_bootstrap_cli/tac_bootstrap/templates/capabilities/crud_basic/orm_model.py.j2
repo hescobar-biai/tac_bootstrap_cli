@@ -35,7 +35,7 @@ class {{ entity.name }}Model(Base):
     Invariants:
     - Table name is {{ entity.table_name }}
 {% for field in entity.fields %}
-    - {{ field.name }}: {{ field.type }}{% if not field.nullable %}, required{% endif %}
+    - {{ field.name }}: {{ field.field_type.value }}{% if field.required %}, required{% endif %}
 {% endfor %}
 
     Related Docs:
@@ -80,24 +80,24 @@ class {{ entity.name }}Model(Base):
     'json': 'JSON'
 } %}
 {% for field in entity.fields %}
-{% if field.type == 'str' %}
-    {{ field.name }} = Column(String({{ field.max_length or 255 }}), nullable={{ field.nullable }})
-{% elif field.type == 'int' %}
-    {{ field.name }} = Column(Integer, nullable={{ field.nullable }})
-{% elif field.type == 'float' %}
-    {{ field.name }} = Column(Float, nullable={{ field.nullable }})
-{% elif field.type == 'bool' %}
-    {{ field.name }} = Column(Boolean, nullable={{ field.nullable }})
-{% elif field.type == 'datetime' %}
-    {{ field.name }} = Column(DateTime(timezone=True), nullable={{ field.nullable }})
-{% elif field.type == 'uuid' %}
-    {{ field.name }} = Column(String(36), nullable={{ field.nullable }})
-{% elif field.type == 'text' %}
-    {{ field.name }} = Column(Text, nullable={{ field.nullable }})
-{% elif field.type == 'decimal' %}
-    {{ field.name }} = Column(Numeric(precision=10, scale=2), nullable={{ field.nullable }})
-{% elif field.type == 'json' %}
-    {{ field.name }} = Column(JSON, nullable={{ field.nullable }})
+{% if field.field_type.value == 'str' %}
+    {{ field.name }} = Column(String({{ field.max_length or 255 }}), nullable={{ not field.required }})
+{% elif field.field_type.value == 'int' %}
+    {{ field.name }} = Column(Integer, nullable={{ not field.required }})
+{% elif field.field_type.value == 'float' %}
+    {{ field.name }} = Column(Float, nullable={{ not field.required }})
+{% elif field.field_type.value == 'bool' %}
+    {{ field.name }} = Column(Boolean, nullable={{ not field.required }})
+{% elif field.field_type.value == 'datetime' %}
+    {{ field.name }} = Column(DateTime(timezone=True), nullable={{ not field.required }})
+{% elif field.field_type.value == 'uuid' %}
+    {{ field.name }} = Column(String(36), nullable={{ not field.required }})
+{% elif field.field_type.value == 'text' %}
+    {{ field.name }} = Column(Text, nullable={{ not field.required }})
+{% elif field.field_type.value == 'decimal' %}
+    {{ field.name }} = Column(Numeric(precision=10, scale=2), nullable={{ not field.required }})
+{% elif field.field_type.value == 'json' %}
+    {{ field.name }} = Column(JSON, nullable={{ not field.required }})
 {% endif %}
 {% endfor %}
 

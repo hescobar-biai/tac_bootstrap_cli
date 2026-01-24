@@ -18,10 +18,10 @@ Related Docs:
 """
 
 from pydantic import BaseModel, Field
-{% set has_uuid = entity.fields | selectattr('type', 'equalto', 'uuid') | list | length > 0 %}
-{% set has_datetime = entity.fields | selectattr('type', 'equalto', 'datetime') | list | length > 0 %}
-{% set has_decimal = entity.fields | selectattr('type', 'equalto', 'decimal') | list | length > 0 %}
-{% set has_json = entity.fields | selectattr('type', 'equalto', 'json') | list | length > 0 %}
+{% set has_uuid = entity.fields | selectattr('field_type.value', 'equalto', 'uuid') | list | length > 0 %}
+{% set has_datetime = entity.fields | selectattr('field_type.value', 'equalto', 'datetime') | list | length > 0 %}
+{% set has_decimal = entity.fields | selectattr('field_type.value', 'equalto', 'decimal') | list | length > 0 %}
+{% set has_json = entity.fields | selectattr('field_type.value', 'equalto', 'json') | list | length > 0 %}
 {% if has_uuid %}
 from uuid import UUID
 {% endif %}
@@ -49,7 +49,7 @@ class {{ entity.name }}Create(BaseCreate):
 
     Invariants:
 {% for field in entity.fields %}
-{% if not field.nullable %}
+{% if field.required %}
     - {{ field.name }} is required
 {% endif %}
 {% endfor %}
@@ -70,15 +70,15 @@ class {{ entity.name }}Create(BaseCreate):
     'json': 'Dict[str, Any]'
 } %}
 {% for field in entity.fields %}
-    {{ field.name }}: {{ type_map[field.type] }}{% if field.nullable %} | None{% endif %} = Field(
-{% if field.nullable %}
+    {{ field.name }}: {{ type_map[field.field_type.value] }}{% if not field.required %} | None{% endif %} = Field(
+{% if not field.required %}
         default=None,
 {% elif field.default is not none %}
         default={{ field.default }},
 {% else %}
         ...,
 {% endif %}
-{% if field.max_length and field.type == 'str' %}
+{% if field.max_length and field.field_type.value == 'str' %}
         max_length={{ field.max_length }},
 {% endif %}
         description="{{ field.name | replace('_', ' ') | title }}"
@@ -103,9 +103,9 @@ class {{ entity.name }}Update(BaseUpdate):
     """
 
 {% for field in entity.fields %}
-    {{ field.name }}: Optional[{{ type_map[field.type] }}] = Field(
+    {{ field.name }}: Optional[{{ type_map[field.field_type.value] }}] = Field(
         default=None,
-{% if field.max_length and field.type == 'str' %}
+{% if field.max_length and field.field_type.value == 'str' %}
         max_length={{ field.max_length }},
 {% endif %}
         description="{{ field.name | replace('_', ' ') | title }}"
@@ -130,9 +130,9 @@ class {{ entity.name }}Response(BaseResponse):
     """
 
 {% for field in entity.fields %}
-    {{ field.name }}: {{ type_map[field.type] }}{% if field.nullable %} | None{% endif %} = Field(
+    {{ field.name }}: {{ type_map[field.field_type.value] }}{% if not field.required %} | None{% endif %} = Field(
         ...,
-{% if field.max_length and field.type == 'str' %}
+{% if field.max_length and field.field_type.value == 'str' %}
         max_length={{ field.max_length }},
 {% endif %}
         description="{{ field.name | replace('_', ' ') | title }}"

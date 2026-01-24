@@ -186,7 +186,7 @@ class {{ entity.name }}Repository(BaseRepository[{{ entity.name }}Model]):
     'decimal': 'float',
     'json': 'dict'
 } %}
-    def get_by_{{ field.name }}(self, {{ field.name }}: {{ type_map[field.type] }}, organization_id: str) -> Optional[{{ entity.name }}Model]:
+    def get_by_{{ field.name }}(self, {{ field.name }}: {{ type_map[field.field_type.value] }}, organization_id: str) -> Optional[{{ entity.name }}Model]:
         """
         IDK: query-method, {{ field.name }}-lookup, multi-tenant
 
@@ -210,7 +210,7 @@ class {{ entity.name }}Repository(BaseRepository[{{ entity.name }}Model]):
 
 {% endfor %}
 {% endif %}
-{% set string_fields = entity.fields | selectattr('type', 'in', ['str', 'text']) | list %}
+{% set string_fields = entity.fields | selectattr('field_type.value', 'in', ['str', 'text']) | list %}
 {% if string_fields %}
     def search(self, query: str, skip: int, limit: int, organization_id: str) -> List[{{ entity.name }}Model]:
         """

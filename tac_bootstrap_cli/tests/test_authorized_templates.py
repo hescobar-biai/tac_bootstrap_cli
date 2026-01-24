@@ -10,13 +10,15 @@ from types import SimpleNamespace
 
 import pytest
 
+from tac_bootstrap.domain.entity_config import (
+    EntitySpec,
+    FieldSpec,
+    FieldType,
+)
 from tac_bootstrap.domain.models import (
     ClaudeConfig,
     ClaudeSettings,
     CommandsSpec,
-    EntitySpec,
-    FieldSpec,
-    FieldType,
     Framework,
     Language,
     PackageManager,
@@ -57,10 +59,10 @@ def entity_spec() -> EntitySpec:
         capability="catalog",
         authorized=True,
         fields=[
-            FieldSpec(name="sku", type=FieldType.STR, indexed=True, max_length=50),
-            FieldSpec(name="price", type=FieldType.DECIMAL, nullable=False),
-            FieldSpec(name="quantity", type=FieldType.INT, nullable=False, default=0),
-            FieldSpec(name="description", type=FieldType.TEXT, nullable=True),
+            FieldSpec(name="sku", field_type=FieldType.STRING, indexed=True, max_length=50),
+            FieldSpec(name="price", field_type=FieldType.DECIMAL, required=True),
+            FieldSpec(name="quantity", field_type=FieldType.INTEGER, required=True, default=0),
+            FieldSpec(name="description", field_type=FieldType.TEXT, required=False),
         ],
     )
 
@@ -196,8 +198,8 @@ def test_repository_authorized_indexed_fields_have_org_filter(
         capability="catalog",
         authorized=True,
         fields=[
-            FieldSpec(name="sku", type=FieldType.STR, indexed=True),
-            FieldSpec(name="barcode", type=FieldType.STR, indexed=True),
+            FieldSpec(name="sku", field_type=FieldType.STRING, indexed=True),
+            FieldSpec(name="barcode", field_type=FieldType.STRING, indexed=True),
         ],
     )
 
@@ -225,8 +227,8 @@ def test_repository_authorized_search_has_org_filter(
         capability="catalog",
         authorized=True,
         fields=[
-            FieldSpec(name="name", type=FieldType.STR),
-            FieldSpec(name="description", type=FieldType.TEXT),
+            FieldSpec(name="name", field_type=FieldType.STRING),
+            FieldSpec(name="description", field_type=FieldType.TEXT),
         ],
     )
 
@@ -535,7 +537,7 @@ def test_all_authorized_templates_render_with_minimal_entity(
         capability="test",
         authorized=True,
         fields=[
-            FieldSpec(name="value", type=FieldType.STR),
+            FieldSpec(name="value", field_type=FieldType.STRING),
         ],
     )
 
@@ -733,13 +735,13 @@ def test_orm_model_authorized_renders(
 def test_orm_model_authorized_has_required_org_id(
     template_repo: TemplateRepository, entity_spec: EntitySpec, tac_config: TACConfig
 ):
-    """Test that organization_id is required (nullable=False) in authorized mode."""
+    """Test that organization_id is required (required=True) in authorized mode."""
     output = template_repo.render(
         "capabilities/crud_authorized/orm_model.py.j2",
         {"entity": entity_spec, "config": tac_config},
     )
 
-    # organization_id should be required and indexed
+    # organization_id should be nullable=False (required) and indexed
     assert "organization_id = Column(String(100), nullable=False, index=True)" in output
 
     # Should have comment about multi-tenancy
@@ -751,13 +753,13 @@ def test_orm_model_authorized_has_required_org_id(
 def test_orm_model_authorized_has_required_created_by(
     template_repo: TemplateRepository, entity_spec: EntitySpec, tac_config: TACConfig
 ):
-    """Test that created_by is required (nullable=False) in authorized mode."""
+    """Test that created_by is required (required=True) in authorized mode."""
     output = template_repo.render(
         "capabilities/crud_authorized/orm_model.py.j2",
         {"entity": entity_spec, "config": tac_config},
     )
 
-    # created_by should be required
+    # created_by should be nullable=False (required)
     assert "created_by = Column(String(255), nullable=False)" in output
 
     # Should have comment about multi-tenancy
