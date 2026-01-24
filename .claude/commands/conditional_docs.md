@@ -993,3 +993,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando debugues problemas de metadata en config.yml generados
     - Cuando trabajes con el campo last_upgrade (placeholder para upgrade command)
     - Cuando necesites entender la diferencia entre metadata section y bootstrap section en config.yml
+
+- app_docs/feature-chore_3_3-audit-trail-tests.md
+  - Conditions:
+    - Cuando trabajes con tests de metadata de bootstrap (TestScaffoldServiceBootstrapMetadata)
+    - Cuando necesites entender cómo validar la generación de metadata en config.yml
+    - Cuando implementes tests de audit trail para init y upgrade flows
+    - Cuando trabajes con tests de timestamps ISO8601 y version string validation
+    - Cuando necesites referencia sobre testing de metadata field structure
+    - Cuando implementes tests de UpgradeService que verifiquen last_upgrade
+    - Cuando trabajes con validación de metadata durante scaffolding
+    - Cuando necesites entender testing patterns para metadata preservation en upgrades
+    - Cuando debugues problemas de metadata generation o update
+    - Cuando trabajes con tests en test_scaffold_service.py relacionados a metadata
