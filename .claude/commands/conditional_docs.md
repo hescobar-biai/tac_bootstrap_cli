@@ -1006,3 +1006,23 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender testing patterns para metadata preservation en upgrades
     - Cuando debugues problemas de metadata generation o update
     - Cuando trabajes con tests en test_scaffold_service.py relacionados a metadata
+
+- app_docs/feature-issue-159-validation-service.md
+  - Conditions:
+    - Cuando trabajes con ValidationService en application/validation_service.py
+    - Cuando necesites entender el sistema de validación multi-capa (DOMAIN, TEMPLATE, FILESYSTEM, GIT)
+    - Cuando modifiques o extiendas ValidationService methods (validate_config, validate_entity, validate_pre_scaffold)
+    - Cuando trabajes con modelos de validación (ValidationLevel, ValidationIssue, ValidationResult)
+    - Cuando implementes validación de framework/language/architecture compatibility
+    - Cuando necesites referencia sobre compatibility matrices (FRAMEWORK_LANGUAGE_COMPATIBILITY, FRAMEWORK_ARCHITECTURE_COMPATIBILITY)
+    - Cuando trabajes con accumulate-all-errors validation pattern (no fail-fast)
+    - Cuando implementes validación de templates, filesystem permissions, git status
+    - Cuando trabajes con errors vs warnings distinction (blocking vs informational)
+    - Cuando necesites entender actionable suggestion generation para validation issues
+    - Cuando integres ValidationService en CLI commands (init, generate entity)
+    - Cuando trabajes con dependency injection de TemplateRepository en validators
+    - Cuando implementes pre-scaffold validation gates
+    - Cuando necesites referencia sobre graceful degradation (git validation warnings)
+    - Cuando trabajes con tests de ValidationService (test_validation_service.py)
+    - Cuando debugues problemas de validation failures o suggestion quality
+    - Cuando implementes features relacionadas con FASE 4 (Multi-layer Validation)
