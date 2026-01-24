@@ -1123,3 +1123,23 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites referencia sobre cobertura comprehensiva de value object tests
     - Cuando trabajes con FASE 5 (Value Objects y IDK Docstrings)
     - Cuando valides especificaciones de issue #168
+
+- app_docs/feature-feature_6_1-gen-docstring-jsdocs-template.md
+  - Conditions:
+    - Cuando trabajes con el template gen_docstring_jsdocs.py.j2 o generación de docstrings LLM-powered
+    - Cuando necesites entender el script de generación automática de IDK docstrings/JSDoc
+    - Cuando modifiques o extiendas templates/scripts/gen_docstring_jsdocs.py.j2
+    - Cuando trabajes con integración de LLM para documentación de código (Ollama, OpenAI, Anthropic)
+    - Cuando implementes features de documentación automática multi-lenguaje (Python, TypeScript/JavaScript)
+    - Cuando necesites referencia sobre modos de documentación (add, complement, overwrite)
+    - Cuando trabajes con AST parsing para Python o regex patterns para TypeScript/JavaScript
+    - Cuando implementes git integration (--changed-only flag)
+    - Cuando necesites entender el formato IDK de docstrings (keywords, Responsibility, Invariants, Inputs, Outputs, Failure Modes)
+    - Cuando trabajes con PEP 723 inline script dependencies
+    - Cuando modifiques scripts/gen_docstring_jsdocs.py generado
+    - Cuando necesites entender environment variable configuration (OLLAMA_BASE_URL, OLLAMA_MODEL, OPENAI_API_KEY)
+    - Cuando trabajes con CLI flags (--dry-run, --public-only, --no-recursive, --exclude)
+    - Cuando implementes features de FASE 6 (Documentación Fractal como Skill)
+    - Cuando debugues problemas de generación de docstrings o API integration
+    - Cuando trabajes con template rendering de scripts Python ejecutables
+    - Cuando necesites referencia sobre fail-fast patterns y error handling graceful
