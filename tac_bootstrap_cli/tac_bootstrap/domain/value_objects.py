@@ -220,6 +220,8 @@ class SemanticVersion(str):
         ValueError: If version doesn't match X.Y.Z format with integers
     """
 
+    _tuple: tuple[int, int, int]
+
     def __new__(cls, value: str) -> "SemanticVersion":
         """
         Create and validate a SemanticVersion instance.
@@ -265,7 +267,7 @@ class SemanticVersion(str):
             >>> SemanticVersion("1.2.3").tuple
             (1, 2, 3)
         """
-        return self._tuple  # type: ignore[attr-defined]
+        return self._tuple
 
     def __eq__(self, other: Any) -> bool:
         """Compare versions for equality."""
@@ -276,6 +278,8 @@ class SemanticVersion(str):
                 other = SemanticVersion(other)
             except ValueError:
                 return False
+        # At this point, other is guaranteed to be SemanticVersion
+        assert isinstance(other, SemanticVersion)
         return self.tuple == other.tuple
 
     def __ne__(self, other: Any) -> bool:
@@ -294,6 +298,8 @@ class SemanticVersion(str):
                 other = SemanticVersion(other)
             except ValueError:
                 return NotImplemented
+        # At this point, other is guaranteed to be SemanticVersion
+        assert isinstance(other, SemanticVersion)
         return self.tuple < other.tuple
 
     def __le__(self, other: Any) -> bool:
@@ -305,6 +311,8 @@ class SemanticVersion(str):
                 other = SemanticVersion(other)
             except ValueError:
                 return NotImplemented
+        # At this point, other is guaranteed to be SemanticVersion
+        assert isinstance(other, SemanticVersion)
         return self.tuple <= other.tuple
 
     def __gt__(self, other: Any) -> bool:
@@ -316,6 +324,8 @@ class SemanticVersion(str):
                 other = SemanticVersion(other)
             except ValueError:
                 return NotImplemented
+        # At this point, other is guaranteed to be SemanticVersion
+        assert isinstance(other, SemanticVersion)
         return self.tuple > other.tuple
 
     def __ge__(self, other: Any) -> bool:
@@ -327,6 +337,8 @@ class SemanticVersion(str):
                 other = SemanticVersion(other)
             except ValueError:
                 return NotImplemented
+        # At this point, other is guaranteed to be SemanticVersion
+        assert isinstance(other, SemanticVersion)
         return self.tuple >= other.tuple
 
     def __hash__(self) -> int:
