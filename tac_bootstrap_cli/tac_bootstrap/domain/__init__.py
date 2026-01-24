@@ -29,6 +29,15 @@ from tac_bootstrap.domain.models import (
     get_frameworks_for_language,
     get_package_managers_for_language,
 )
+from tac_bootstrap.domain.validators import (
+    ARCHITECTURES_REQUIRING_BASE_CLASSES,
+    COMPATIBLE_FRAMEWORKS,
+    COMPATIBLE_PACKAGE_MANAGERS,
+    ValidationIssue,
+    validate_architecture_framework,
+    validate_framework_language,
+    validate_package_manager_language,
+)
 
 __all__ = [
     # Entity configuration models
@@ -64,4 +73,12 @@ __all__ = [
     "get_frameworks_for_language",
     "get_package_managers_for_language",
     "get_default_commands",
+    # Validators
+    "ValidationIssue",
+    "validate_framework_language",
+    "validate_package_manager_language",
+    "validate_architecture_framework",
+    "COMPATIBLE_FRAMEWORKS",
+    "COMPATIBLE_PACKAGE_MANAGERS",
+    "ARCHITECTURES_REQUIRING_BASE_CLASSES",
 ]
