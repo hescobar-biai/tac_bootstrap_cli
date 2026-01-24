@@ -996,3 +996,20 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites referencia sobre testing de all-or-nothing file generation
     - Cuando trabajes con validation de ordering de operaciones (validation before writes)
     - Cuando implementes tests de helpful error messages con force=True hints
+- app_docs/feature-feature_3_1-bootstrap-metadata-model.md
+  - Conditions:
+    - Cuando trabajes con el modelo BootstrapMetadata en domain/models.py
+    - Cuando necesites entender el sistema de audit trail para proyectos generados
+    - Cuando implementes generación de metadata en config.yml durante scaffolding
+    - Cuando trabajes con tracking de versiones del CLI (generated_by, last_upgrade)
+    - Cuando necesites referencia sobre template checksums para change detection
+    - Cuando trabajes con timestamps de generación y upgrade (generated_at, last_upgrade)
+    - Cuando implementes features de upgrade que actualicen metadata
+    - Cuando modifiques TACConfig model para agregar campos de metadata
+    - Cuando trabajes con schema_version tracking para migrations
+    - Cuando necesites entender versioning de configs generados
+    - Cuando implementes features de project lifecycle tracking
+    - Cuando trabajes con MD5 checksums de templates para drift detection
+    - Cuando necesites referencia sobre backward compatibility de metadata opcional
+    - Cuando implementes features de upgrade/migration que dependan de metadata
+    - Cuando trabajes con FASE 3 del roadmap (Audit Trail y Metadata)
