@@ -1095,3 +1095,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features que requieran validated string types
     - Cuando debugues problemas de validation de nombres de proyecto, paths o versiones
     - Cuando trabajes con FASE 5 (Value Objects y IDK Docstrings)
+
+- app_docs/feature-chore_5_2-idk-docstrings.md
+  - Conditions:
+    - Cuando trabajes con IDK (Information Dense Keywords) docstrings en el CLI
+    - Cuando necesites entender el formato estandarizado de tres líneas (IDK, Responsibility, Invariants)
+    - Cuando modifiques o agregues docstrings a módulos del CLI (application/, infrastructure/)
+    - Cuando implementes semantic search patterns para agentes AI
+    - Cuando trabajes con keywords en kebab-case para facilitar búsqueda
+    - Cuando necesites referencia sobre invariantes y contratos de módulos/clases
+    - Cuando agregues nuevos módulos y necesites documentarlos con IDK
+    - Cuando trabajes con búsqueda de código por capabilities (grep patterns)
+    - Cuando necesites entender qué módulos tienen qué responsabilidades
+    - Cuando trabajes con FASE 5 (Value Objects y IDK Docstrings)
+    - Cuando debugues problemas de discoverability de código por agentes
