@@ -9,8 +9,8 @@ project:
   mode: "existing"
   repo_root: "."
   language: "python"
-framework: "none"
-architecture: "ddd"
+  framework: "none"
+  architecture: "ddd"
   package_manager: "uv"
 
 paths:
@@ -26,10 +26,10 @@ paths:
 commands:
   start: "uv run tac-bootstrap --help"
   test: "uv run pytest"
-lint: "uv run ruff check ."
-typecheck: "uv run mypy tac_bootstrap_cli"
-format: "uv run ruff format ."
-build: "uv build"
+  lint: "uv run ruff check ."
+  typecheck: "uv run mypy tac_bootstrap_cli"
+  format: "uv run ruff format ."
+  build: "uv build"
 agentic:
   provider: "claude_code"
   target_branch: main  # Rama destino para merge/push (main, master, develop, etc.)
