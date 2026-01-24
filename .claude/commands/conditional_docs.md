@@ -1078,3 +1078,20 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con tests de entity specification validation
     - Cuando implementes nuevos validation rules y necesites patterns de testing
     - Cuando trabajes con edge cases de validación (Framework.NONE, Django restrictions, etc.)
+
+- app_docs/feature-chore_5_1-domain-value-objects.md
+  - Conditions:
+    - Cuando trabajes con value objects de dominio (ProjectName, TemplatePath, SemanticVersion)
+    - Cuando necesites entender validación automática y sanitización en construcción de value objects
+    - Cuando modifiques o extiendas domain/value_objects.py
+    - Cuando trabajes con Pydantic v2 compatibility patterns para value objects
+    - Cuando implementes nuevos value objects con patrones de fail-fast validation
+    - Cuando necesites referencia sobre string subclass pattern con __new__
+    - Cuando trabajes con ProjectName sanitization (lowercase-hyphen format, special char removal)
+    - Cuando implementes TemplatePath validation (security, path traversal prevention)
+    - Cuando trabajes con SemanticVersion parsing y comparison operators
+    - Cuando necesites entender tests de value objects (test_value_objects.py)
+    - Cuando trabajes con integration de value objects en domain models
+    - Cuando implementes features que requieran validated string types
+    - Cuando debugues problemas de validation de nombres de proyecto, paths o versiones
+    - Cuando trabajes con FASE 5 (Value Objects y IDK Docstrings)
