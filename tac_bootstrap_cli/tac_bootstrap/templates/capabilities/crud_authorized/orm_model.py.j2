@@ -1,15 +1,16 @@
 """
-IDK: orm-model, {{ entity.snake_name }}, sqlalchemy
+IDK: orm-model, {{ entity.snake_name }}, sqlalchemy, multi-tenant
 
 Module: {{ entity.snake_name }}_model
 
 Responsibility:
-- Define SQLAlchemy ORM model for {{ entity.name }}
+- Define SQLAlchemy ORM model for {{ entity.name }} with multi-tenant support
 - Map domain entity to database table
 - Define columns, indexes, and constraints
+- Enforce organization_id for tenant isolation
 
 Key Components:
-- {{ entity.name }}Model: SQLAlchemy model for {{ entity.table_name }} table
+- {{ entity.name }}Model: SQLAlchemy model for {{ entity.table_name }} table with multi-tenant fields
 
 Related Docs:
 - docs/{{ entity.capability }}/database/{{ entity.snake_name }}-model.md
@@ -25,15 +26,18 @@ Base = declarative_base()
 
 class {{ entity.name }}Model(Base):
     """
-    IDK: orm-model, {{ entity.snake_name }}, database-table
+    IDK: orm-model, {{ entity.snake_name }}, database-table, multi-tenant
 
     Responsibility:
     - Map {{ entity.name }} to {{ entity.table_name }} table
     - Define column types and constraints
     - Support querying and persistence
+    - Enforce organization-level isolation
 
     Invariants:
     - Table name is {{ entity.table_name }}
+    - organization_id is required and indexed for multi-tenant isolation
+    - created_by is required for audit trail
 {% for field in entity.fields %}
     - {{ field.name }}: {{ field.field_type.value }}{% if field.required %}, required{% endif %}
 {% endfor %}
@@ -53,7 +57,7 @@ class {{ entity.name }}Model(Base):
 
     # Audit trail
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
-    created_by = Column(String(255), nullable=True)
+    created_by = Column(String(255), nullable=False)  # Required for multi-tenant
     updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
     updated_by = Column(String(255), nullable=True)
 
@@ -62,8 +66,8 @@ class {{ entity.name }}Model(Base):
     status = Column(String(50), nullable=True)
     version = Column(Integer, nullable=False, default=1)
 
-    # Multi-tenancy
-    organization_id = Column(String(100), nullable=True)
+    # Multi-tenancy (REQUIRED for authorized entities)
+    organization_id = Column(String(100), nullable=False, index=True)  # Required and indexed
     project_id = Column(String(100), nullable=True)
     owner = Column(String(255), nullable=True)
 
@@ -102,11 +106,16 @@ class {{ entity.name }}Model(Base):
 {% endfor %}
 
 {% set indexed_fields = entity.fields | selectattr('indexed', 'equalto', true) | list %}
-{% if indexed_fields %}
     # Indexes
     __table_args__ = (
+        # Multi-tenant indexes (critical for performance and security)
+        Index('ix_{{ entity.table_name }}_organization_id', 'organization_id'),
+        Index('ix_{{ entity.table_name }}_org_state', 'organization_id', 'state'),
+{% if indexed_fields %}
+        # Entity-specific indexes
 {% for field in indexed_fields %}
         Index('ix_{{ entity.table_name }}_{{ field.name }}', '{{ field.name }}'),
+        Index('ix_{{ entity.table_name }}_org_{{ field.name }}', 'organization_id', '{{ field.name }}'),
 {% endfor %}
-    )
 {% endif %}
+    )

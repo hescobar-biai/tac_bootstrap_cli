@@ -1,0 +1,348 @@
+"""
+IDK: api-routes, {{ entity.snake_name }}, rest-endpoints, multi-tenant
+
+Module: {{ entity.snake_name }}_routes
+
+Responsibility:
+- Define FastAPI routes for {{ entity.name }} CRUD operations with authorization
+- Handle HTTP request/response with JWT authentication
+- Delegate business logic to service layer
+- Extract user context from JWT token for multi-tenant isolation
+
+Key Components:
+- router: FastAPI router with {{ entity.name }} endpoints
+- get_current_user: Dependency for JWT authentication and user context extraction
+
+Related Docs:
+- docs/{{ entity.capability }}/api/{{ entity.snake_name }}.md
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, status, Header
+from {{ config.project.name | replace("-", "_") }}.shared.dependencies import get_db
+from .schemas import {{ entity.name }}Create, {{ entity.name }}Update, {{ entity.name }}Response
+from .service import {{ entity.name }}Service
+from .repository import {{ entity.name }}Repository
+from typing import List, Optional
+from pydantic import BaseModel
+import jwt
+from datetime import datetime
+
+router = APIRouter(prefix="/{{ entity.plural_name }}", tags=["{{ entity.plural_name }}"])
+
+
+class CurrentUser(BaseModel):
+    """
+    IDK: authentication, user-context, jwt
+
+    Responsibility:
+    - Represent authenticated user context
+    - Provide user_id and organization_id for authorization
+
+    Invariants:
+    - user_id is non-empty
+    - organization_id is non-empty
+    """
+    user_id: str
+    organization_id: str
+
+
+def get_current_user(authorization: str = Header(...)) -> CurrentUser:
+    """
+    IDK: dependency, jwt-authentication, authorization
+
+    Responsibility:
+    - Extract and validate JWT token from Authorization header
+    - Decode user_id and organization_id from token
+    - Raise 401 if token is missing, invalid, or lacks required claims
+
+    Inputs:
+    - authorization: Authorization header (format: "Bearer <token>")
+
+    Outputs:
+    - CurrentUser: Authenticated user context with user_id and organization_id
+
+    Raises:
+    - HTTPException 401: If token is missing, malformed, or invalid
+
+    Related Docs:
+    - docs/{{ entity.capability }}/api/authentication.md
+    """
+    # TODO: Replace mock JWT validation with your actual auth system
+    # TODO: Use proper JWT secret from environment variables
+    # TODO: Validate token signature, expiration, and issuer
+    # TODO: Handle token refresh logic
+
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authorization header format. Expected: Bearer <token>"
+        )
+
+    token = authorization.replace("Bearer ", "")
+
+    try:
+        # MOCK IMPLEMENTATION - Replace with your auth system
+        # In production, use: jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token, options={"verify_signature": False})
+
+        user_id = payload.get("sub") or payload.get("user_id")
+        organization_id = payload.get("organization_id") or payload.get("org_id")
+
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token missing user_id claim"
+            )
+
+        if not organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token missing organization_id claim"
+            )
+
+        return CurrentUser(user_id=user_id, organization_id=organization_id)
+
+    except jwt.DecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid JWT token"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Authentication failed: {str(e)}"
+        )
+
+
+def get_{{ entity.snake_name }}_service(db = Depends(get_db)) -> {{ entity.name }}Service:
+    """
+    IDK: dependency-injection, service-factory
+
+    Responsibility:
+    - Create {{ entity.name }}Service instance with database session
+
+    Inputs:
+    - db: Database session from dependency
+
+    Outputs:
+    - {{ entity.name }}Service: Service instance
+    """
+    repository = {{ entity.name }}Repository(db)
+    return {{ entity.name }}Service(repository)
+
+
+@router.post(
+    "/",
+    response_model={{ entity.name }}Response,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create {{ entity.name }}",
+    description="Create a new {{ entity.snake_name }} entity with automatic organization assignment"
+)
+async def create_{{ entity.snake_name }}(
+    data: {{ entity.name }}Create,
+    current_user: CurrentUser = Depends(get_current_user),
+    service: {{ entity.name }}Service = Depends(get_{{ entity.snake_name }}_service)
+) -> {{ entity.name }}Response:
+    """
+    IDK: create-endpoint, post-request, crud, authorization
+
+    Responsibility:
+    - Handle {{ entity.name }} creation requests
+    - Validate input data
+    - Automatically set organization_id and created_by from authenticated user
+    - Return created entity
+
+    Inputs:
+    - data: {{ entity.name }}Create schema with entity data
+    - current_user: Authenticated user context (injected from JWT)
+    - service: Injected {{ entity.name }}Service
+
+    Outputs:
+    - {{ entity.name }}Response: Created entity
+
+    Raises:
+    - 401: Unauthorized (invalid or missing JWT)
+    - 422: Validation error
+    - 500: Server error
+
+    Related Docs:
+    - docs/{{ entity.capability }}/api/{{ entity.snake_name }}-create.md
+    """
+    entity = service.create(data, current_user.user_id, current_user.organization_id)
+    return {{ entity.name }}Response(**entity.model_dump())
+
+
+@router.get(
+    "/{id}",
+    response_model={{ entity.name }}Response,
+    status_code=status.HTTP_200_OK,
+    summary="Get {{ entity.name }} by ID",
+    description="Retrieve a {{ entity.snake_name }} by its unique identifier (organization-scoped)"
+)
+async def get_{{ entity.snake_name }}(
+    id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    service: {{ entity.name }}Service = Depends(get_{{ entity.snake_name }}_service)
+) -> {{ entity.name }}Response:
+    """
+    IDK: read-endpoint, get-request, crud, authorization
+
+    Responsibility:
+    - Handle {{ entity.name }} retrieval by ID
+    - Return entity only if it belongs to user's organization
+    - Return 404 if entity doesn't exist or belongs to different organization
+
+    Inputs:
+    - id: Entity unique identifier
+    - current_user: Authenticated user context (injected from JWT)
+    - service: Injected {{ entity.name }}Service
+
+    Outputs:
+    - {{ entity.name }}Response: Found entity
+
+    Raises:
+    - 401: Unauthorized (invalid or missing JWT)
+    - 404: Entity not found or not accessible (prevents information leakage)
+    - 500: Server error
+
+    Related Docs:
+    - docs/{{ entity.capability }}/api/{{ entity.snake_name }}-get.md
+    """
+    entity = service.get_by_id(id, current_user.organization_id)
+    if not entity:
+        # Return 404 instead of 403 to prevent information leakage
+        # (don't reveal whether entity exists in different organization)
+        raise HTTPException(status_code=404, detail="{{ entity.name }} not found")
+    return {{ entity.name }}Response(**entity.model_dump())
+
+
+@router.get(
+    "/",
+    response_model=List[{{ entity.name }}Response],
+    status_code=status.HTTP_200_OK,
+    summary="List {{ entity.plural_name }}",
+    description="Retrieve all {{ entity.plural_name }} in user's organization with pagination"
+)
+async def list_{{ entity.plural_name }}(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: CurrentUser = Depends(get_current_user),
+    service: {{ entity.name }}Service = Depends(get_{{ entity.snake_name }}_service)
+) -> List[{{ entity.name }}Response]:
+    """
+    IDK: list-endpoint, get-request, pagination, authorization
+
+    Responsibility:
+    - Handle {{ entity.name }} listing requests
+    - Return only entities belonging to user's organization
+    - Support pagination
+
+    Inputs:
+    - skip: Number of records to skip (default: 0)
+    - limit: Maximum records to return (default: 100)
+    - current_user: Authenticated user context (injected from JWT)
+    - service: Injected {{ entity.name }}Service
+
+    Outputs:
+    - List[{{ entity.name }}Response]: List of entities in organization
+
+    Raises:
+    - 401: Unauthorized (invalid or missing JWT)
+    - 500: Server error
+
+    Related Docs:
+    - docs/{{ entity.capability }}/api/{{ entity.snake_name }}-list.md
+    """
+    entities = service.get_all(skip=skip, limit=limit, organization_id=current_user.organization_id)
+    return [{{ entity.name }}Response(**entity.model_dump()) for entity in entities]
+
+
+@router.put(
+    "/{id}",
+    response_model={{ entity.name }}Response,
+    status_code=status.HTTP_200_OK,
+    summary="Update {{ entity.name }}",
+    description="Update an existing {{ entity.snake_name }} in user's organization"
+)
+async def update_{{ entity.snake_name }}(
+    id: str,
+    data: {{ entity.name }}Update,
+    current_user: CurrentUser = Depends(get_current_user),
+    service: {{ entity.name }}Service = Depends(get_{{ entity.snake_name }}_service)
+) -> {{ entity.name }}Response:
+    """
+    IDK: update-endpoint, put-request, crud, authorization
+
+    Responsibility:
+    - Handle {{ entity.name }} update requests
+    - Validate input data
+    - Only update if entity belongs to user's organization
+    - Return 404 if entity doesn't exist or belongs to different organization
+
+    Inputs:
+    - id: Entity unique identifier
+    - data: {{ entity.name }}Update schema with update data
+    - current_user: Authenticated user context (injected from JWT)
+    - service: Injected {{ entity.name }}Service
+
+    Outputs:
+    - {{ entity.name }}Response: Updated entity
+
+    Raises:
+    - 401: Unauthorized (invalid or missing JWT)
+    - 404: Entity not found or not accessible (prevents information leakage)
+    - 422: Validation error
+    - 500: Server error
+
+    Related Docs:
+    - docs/{{ entity.capability }}/api/{{ entity.snake_name }}-update.md
+    """
+    entity = service.update(id, data, current_user.organization_id)
+    if not entity:
+        # Return 404 instead of 403 to prevent information leakage
+        raise HTTPException(status_code=404, detail="{{ entity.name }} not found")
+    return {{ entity.name }}Response(**entity.model_dump())
+
+
+@router.delete(
+    "/{id}",
+    response_model={{ entity.name }}Response,
+    status_code=status.HTTP_200_OK,
+    summary="Delete {{ entity.name }}",
+    description="Soft delete a {{ entity.snake_name }} in user's organization"
+)
+async def delete_{{ entity.snake_name }}(
+    id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    service: {{ entity.name }}Service = Depends(get_{{ entity.snake_name }}_service)
+) -> {{ entity.name }}Response:
+    """
+    IDK: delete-endpoint, delete-request, soft-delete, authorization
+
+    Responsibility:
+    - Handle {{ entity.name }} deletion requests
+    - Perform soft delete (mark as deleted)
+    - Only delete if entity belongs to user's organization
+    - Return 404 if entity doesn't exist or belongs to different organization
+
+    Inputs:
+    - id: Entity unique identifier
+    - current_user: Authenticated user context (injected from JWT)
+    - service: Injected {{ entity.name }}Service
+
+    Outputs:
+    - {{ entity.name }}Response: Deleted entity
+
+    Raises:
+    - 401: Unauthorized (invalid or missing JWT)
+    - 404: Entity not found or not accessible (prevents information leakage)
+    - 500: Server error
+
+    Related Docs:
+    - docs/{{ entity.capability }}/api/{{ entity.snake_name }}-delete.md
+    """
+    entity = service.soft_delete(id, current_user.organization_id)
+    if not entity:
+        # Return 404 instead of 403 to prevent information leakage
+        raise HTTPException(status_code=404, detail="{{ entity.name }} not found")
+    return {{ entity.name }}Response(**entity.model_dump())

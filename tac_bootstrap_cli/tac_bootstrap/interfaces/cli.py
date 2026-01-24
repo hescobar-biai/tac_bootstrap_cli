@@ -630,7 +630,16 @@ def generate(
     name: str = typer.Argument(..., help="Entity name in PascalCase (e.g., Product, UserProfile)"),
     capability: Annotated[Optional[str], typer.Option("--capability", "-c")] = None,
     fields: Annotated[Optional[str], typer.Option("--fields", "-f")] = None,
-    authorized: Annotated[bool, typer.Option("--authorized")] = False,
+    authorized: Annotated[
+        bool,
+        typer.Option(
+            "--authorized",
+            help=(
+                "Generate with multi-tenant authorization "
+                "(organization-level isolation, JWT authentication)"
+            ),
+        ),
+    ] = False,
     async_mode: Annotated[bool, typer.Option("--async")] = False,
     with_events: Annotated[bool, typer.Option("--with-events")] = False,
     interactive: Annotated[bool, typer.Option("--interactive/--no-interactive")] = True,
@@ -657,8 +666,9 @@ def generate(
         # With async repository and domain events
         $ tac-bootstrap generate entity Product --async --with-events
 
-        # With authorization on create/update/delete endpoints
-        $ tac-bootstrap generate entity Product --authorized
+        # With multi-tenant authorization (organization-level isolation)
+        $ tac-bootstrap generate entity Product --authorized \\
+          --fields "name:str:required,price:float:required"
     """
     try:
         # Validate subcommand

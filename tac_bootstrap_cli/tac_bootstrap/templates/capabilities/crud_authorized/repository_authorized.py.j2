@@ -1,0 +1,245 @@
+"""
+IDK: repository, {{ entity.snake_name }}, data-access, multi-tenant
+
+Module: {{ entity.snake_name }}_repository
+
+Responsibility:
+- Provide data access for {{ entity.name }} entities with organization-level isolation
+- Implement custom queries with automatic organization_id filtering
+- Abstract database operations with built-in authorization
+
+Key Components:
+- {{ entity.name }}Repository: Data access layer for {{ entity.name }} with multi-tenant support
+
+Related Docs:
+- docs/{{ entity.capability }}/repositories/{{ entity.snake_name }}.md
+"""
+
+from sqlalchemy.orm import Session
+from sqlalchemy import or_
+from {{ config.project.name | replace("-", "_") }}.shared.repositories.base_repository import BaseRepository
+from .orm_model import {{ entity.name }}Model
+from typing import Optional, List
+
+
+class {{ entity.name }}Repository(BaseRepository[{{ entity.name }}Model]):
+    """
+    IDK: repository, {{ entity.snake_name }}, crud, multi-tenant
+
+    Responsibility:
+    - Manage {{ entity.name }} persistence with organization-level isolation
+    - Provide custom query methods that filter by organization_id
+    - Handle database transactions
+    - Prevent cross-organization data access
+
+    Invariants:
+    - ALL queries filter by organization_id for tenant isolation
+    - All queries respect soft delete (state != 2)
+    - Session management delegated to BaseRepository
+
+    Related Docs:
+    - docs/{{ entity.capability }}/repositories/{{ entity.snake_name }}-queries.md
+    """
+
+    def __init__(self, session: Session):
+        """
+        IDK: initialization, dependency-injection
+
+        Responsibility:
+        - Initialize repository with database session
+
+        Inputs:
+        - session: SQLAlchemy database session
+
+        Outputs:
+        - None
+        """
+        super().__init__(session, {{ entity.name }}Model)
+
+    def get_by_id(self, id: str, organization_id: str) -> Optional[{{ entity.name }}Model]:
+        """
+        IDK: query-method, id-lookup, multi-tenant
+
+        Responsibility:
+        - Get {{ entity.name }} by ID with organization isolation
+        - Return None if entity doesn't exist or belongs to different organization
+
+        Inputs:
+        - id: Entity unique identifier
+        - organization_id: Organization ID for tenant isolation
+
+        Outputs:
+        - {{ entity.name }}Model if found in organization, None otherwise
+
+        Related Docs:
+        - docs/{{ entity.capability }}/repositories/{{ entity.snake_name }}-queries.md
+        """
+        # TODO: Add audit logging for authorization failures
+        return self.session.query({{ entity.name }}Model).filter(
+            {{ entity.name }}Model.id == id,
+            {{ entity.name }}Model.organization_id == organization_id
+        ).first()
+
+    def get_all(self, skip: int, limit: int, organization_id: str) -> List[{{ entity.name }}Model]:
+        """
+        IDK: query-method, list-all, pagination, multi-tenant
+
+        Responsibility:
+        - Get all {{ entity.name }} entities for organization
+        - Support pagination
+        - Filter by organization_id automatically
+
+        Inputs:
+        - skip: Number of records to skip
+        - limit: Maximum records to return
+        - organization_id: Organization ID for tenant isolation
+
+        Outputs:
+        - List of {{ entity.name }}Model instances belonging to organization
+
+        Related Docs:
+        - docs/{{ entity.capability }}/repositories/{{ entity.snake_name }}-queries.md
+        """
+        return self.session.query({{ entity.name }}Model).filter(
+            {{ entity.name }}Model.organization_id == organization_id
+        ).offset(skip).limit(limit).all()
+
+    def update(self, id: str, data: dict, organization_id: str) -> Optional[{{ entity.name }}Model]:
+        """
+        IDK: update-method, authorization
+
+        Responsibility:
+        - Update entity only if it belongs to organization
+        - Return None if entity doesn't exist or belongs to different organization
+
+        Inputs:
+        - id: Entity unique identifier
+        - data: Dictionary with fields to update
+        - organization_id: Organization ID for ownership validation
+
+        Outputs:
+        - Updated {{ entity.name }}Model if found in organization, None otherwise
+
+        Related Docs:
+        - docs/{{ entity.capability }}/repositories/{{ entity.snake_name }}-update.md
+        """
+        # TODO: Add audit logging for authorization failures
+        entity = self.session.query({{ entity.name }}Model).filter(
+            {{ entity.name }}Model.id == id,
+            {{ entity.name }}Model.organization_id == organization_id
+        ).first()
+
+        if not entity:
+            return None
+
+        for key, value in data.items():
+            if hasattr(entity, key):
+                setattr(entity, key, value)
+
+        self.session.commit()
+        self.session.refresh(entity)
+        return entity
+
+    def delete(self, id: str, organization_id: str) -> Optional[{{ entity.name }}Model]:
+        """
+        IDK: delete-method, soft-delete, authorization
+
+        Responsibility:
+        - Soft delete entity only if it belongs to organization
+        - Return None if entity doesn't exist or belongs to different organization
+
+        Inputs:
+        - id: Entity unique identifier
+        - organization_id: Organization ID for ownership validation
+
+        Outputs:
+        - Deleted {{ entity.name }}Model if found in organization, None otherwise
+
+        Related Docs:
+        - docs/{{ entity.capability }}/repositories/{{ entity.snake_name }}-delete.md
+        """
+        # TODO: Add audit logging for authorization failures
+        entity = self.session.query({{ entity.name }}Model).filter(
+            {{ entity.name }}Model.id == id,
+            {{ entity.name }}Model.organization_id == organization_id
+        ).first()
+
+        if not entity:
+            return None
+
+        entity.state = 2  # Soft delete
+        self.session.commit()
+        self.session.refresh(entity)
+        return entity
+
+{% set indexed_fields = entity.fields | selectattr('indexed', 'equalto', true) | list %}
+{% if indexed_fields %}
+{% for field in indexed_fields %}
+{% set type_map = {
+    'str': 'str',
+    'int': 'int',
+    'float': 'float',
+    'bool': 'bool',
+    'datetime': 'datetime',
+    'uuid': 'str',
+    'text': 'str',
+    'decimal': 'float',
+    'json': 'dict'
+} %}
+    def get_by_{{ field.name }}(self, {{ field.name }}: {{ type_map[field.field_type.value] }}, organization_id: str) -> Optional[{{ entity.name }}Model]:
+        """
+        IDK: query-method, {{ field.name }}-lookup, multi-tenant
+
+        Responsibility:
+        - Get {{ entity.name }} by {{ field.name }} with organization isolation
+
+        Inputs:
+        - {{ field.name }}: {{ field.name | replace('_', ' ') | title }} to search for
+        - organization_id: Organization ID for tenant isolation
+
+        Outputs:
+        - {{ entity.name }}Model if found in organization, None otherwise
+
+        Related Docs:
+        - docs/{{ entity.capability }}/repositories/{{ entity.snake_name }}-queries.md
+        """
+        return self.session.query({{ entity.name }}Model).filter(
+            {{ entity.name }}Model.{{ field.name }} == {{ field.name }},
+            {{ entity.name }}Model.organization_id == organization_id
+        ).first()
+
+{% endfor %}
+{% endif %}
+{% set string_fields = entity.fields | selectattr('field_type.value', 'in', ['str', 'text']) | list %}
+{% if string_fields %}
+    def search(self, query: str, skip: int, limit: int, organization_id: str) -> List[{{ entity.name }}Model]:
+        """
+        IDK: search, text-query, filtering, multi-tenant
+
+        Responsibility:
+        - Search {{ entity.name }} by text fields with organization isolation
+        - Support pagination
+        - Filter by organization_id automatically
+
+        Inputs:
+        - query: Search query string
+        - skip: Number of records to skip
+        - limit: Maximum records to return
+        - organization_id: Organization ID for tenant isolation
+
+        Outputs:
+        - List of matching {{ entity.name }}Model instances in organization
+
+        Related Docs:
+        - docs/{{ entity.capability }}/repositories/{{ entity.snake_name }}-search.md
+        """
+        filters = [
+{% for field in string_fields %}
+            {{ entity.name }}Model.{{ field.name }}.ilike(f"%{query}%"),
+{% endfor %}
+        ]
+        return self.session.query({{ entity.name }}Model).filter(
+            {{ entity.name }}Model.organization_id == organization_id,
+            or_(*filters)
+        ).offset(skip).limit(limit).all()
+{% endif %}

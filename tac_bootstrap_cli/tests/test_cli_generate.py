@@ -396,7 +396,10 @@ class TestGenerateCommand:
                 assert routes_path.exists()
 
                 content = routes_path.read_text()
-                assert "requires_auth" in content
+                # Check for get_current_user dependency (JWT auth)
+                assert "get_current_user" in content
+                assert "CurrentUser" in content
+                assert "organization_id" in content
 
             finally:
                 os.chdir(original_cwd)

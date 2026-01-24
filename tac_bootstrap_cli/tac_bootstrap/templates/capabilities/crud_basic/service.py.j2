@@ -1,33 +1,33 @@
 """
-IDK: service-layer, {{ config.entity.snake_name }}, business-logic
+IDK: service-layer, {{ entity.snake_name }}, business-logic
 
-Module: {{ config.entity.snake_name }}_service
+Module: {{ entity.snake_name }}_service
 
 Responsibility:
-- Implement {{ config.entity.name }} business operations
+- Implement {{ entity.name }} business operations
 - Orchestrate domain logic and data access
 - Handle business rules and validation
 
 Key Components:
-- {{ config.entity.name }}Service: Business logic layer for {{ config.entity.name }}
+- {{ entity.name }}Service: Business logic layer for {{ entity.name }}
 
 Related Docs:
-- docs/{{ config.entity.capability }}/services/{{ config.entity.snake_name }}.md
+- docs/{{ entity.capability }}/services/{{ entity.snake_name }}.md
 """
 
-from {{ config.config.project.name | replace("-", "_") }}.shared.services.base_service import BaseService
-from .domain import {{ config.entity.name }}
-from .schemas import {{ config.entity.name }}Create, {{ config.entity.name }}Update, {{ config.entity.name }}Response
-from .repository import {{ config.entity.name }}Repository
+from {{ config.project.name | replace("-", "_") }}.shared.services.base_service import BaseService
+from .domain import {{ entity.name }}
+from .schemas import {{ entity.name }}Create, {{ entity.name }}Update, {{ entity.name }}Response
+from .repository import {{ entity.name }}Repository
 from typing import List, Optional
 
 
-class {{ config.entity.name }}Service(BaseService[{{ config.entity.name }}, {{ config.entity.name }}Create, {{ config.entity.name }}Update]):
+class {{ entity.name }}Service(BaseService[{{ entity.name }}, {{ entity.name }}Create, {{ entity.name }}Update]):
     """
-    IDK: service-layer, {{ config.entity.snake_name }}, crud-operations
+    IDK: service-layer, {{ entity.snake_name }}, crud-operations
 
     Responsibility:
-    - Manage {{ config.entity.name }} business operations
+    - Manage {{ entity.name }} business operations
     - Apply business rules before persistence
     - Coordinate between domain and repository layers
 
@@ -36,10 +36,10 @@ class {{ config.entity.name }}Service(BaseService[{{ config.entity.name }}, {{ c
     - Transactions managed by BaseService
 
     Related Docs:
-    - docs/{{ config.entity.capability }}/services/{{ config.entity.snake_name }}-operations.md
+    - docs/{{ entity.capability }}/services/{{ entity.snake_name }}-operations.md
     """
 
-    def __init__(self, repository: {{ config.entity.name }}Repository):
+    def __init__(self, repository: {{ entity.name }}Repository):
         """
         IDK: initialization, dependency-injection
 
@@ -47,7 +47,7 @@ class {{ config.entity.name }}Service(BaseService[{{ config.entity.name }}, {{ c
         - Initialize service with repository
 
         Inputs:
-        - repository: {{ config.entity.name }}Repository instance
+        - repository: {{ entity.name }}Repository instance
 
         Outputs:
         - None
@@ -55,7 +55,7 @@ class {{ config.entity.name }}Service(BaseService[{{ config.entity.name }}, {{ c
         super().__init__(repository)
         self.repository = repository
 
-    def apply_business_rules(self, entity: {{ config.entity.name }}) -> {{ config.entity.name }}:
+    def apply_business_rules(self, entity: {{ entity.name }}) -> {{ entity.name }}:
         """
         IDK: business-rules, validation, domain-logic
 
@@ -65,13 +65,13 @@ class {{ config.entity.name }}Service(BaseService[{{ config.entity.name }}, {{ c
         - Perform calculations
 
         Inputs:
-        - entity: {{ config.entity.name }} instance to validate
+        - entity: {{ entity.name }} instance to validate
 
         Outputs:
-        - {{ config.entity.name }}: validated entity
+        - {{ entity.name }}: validated entity
 
         Related Docs:
-        - docs/{{ config.entity.capability }}/services/{{ config.entity.snake_name }}-business-rules.md
+        - docs/{{ entity.capability }}/services/{{ entity.snake_name }}-business-rules.md
         """
         entity.validate()
         entity.calculate_totals()

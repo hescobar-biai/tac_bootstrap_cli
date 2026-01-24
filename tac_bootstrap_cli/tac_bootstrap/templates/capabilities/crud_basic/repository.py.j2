@@ -1,33 +1,33 @@
 """
-IDK: repository, {{ config.entity.snake_name }}, data-access
+IDK: repository, {{ entity.snake_name }}, data-access
 
-Module: {{ config.entity.snake_name }}_repository
+Module: {{ entity.snake_name }}_repository
 
 Responsibility:
-- Provide data access for {{ config.entity.name }} entities
+- Provide data access for {{ entity.name }} entities
 - Implement custom queries and filtering
 - Abstract database operations
 
 Key Components:
-- {{ config.entity.name }}Repository: Data access layer for {{ config.entity.name }}
+- {{ entity.name }}Repository: Data access layer for {{ entity.name }}
 
 Related Docs:
-- docs/{{ config.entity.capability }}/repositories/{{ config.entity.snake_name }}.md
+- docs/{{ entity.capability }}/repositories/{{ entity.snake_name }}.md
 """
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from {{ config.config.project.name | replace("-", "_") }}.shared.repositories.base_repository import BaseRepository
-from .orm_model import {{ config.entity.name }}Model
+from {{ config.project.name | replace("-", "_") }}.shared.repositories.base_repository import BaseRepository
+from .orm_model import {{ entity.name }}Model
 from typing import Optional, List
 
 
-class {{ config.entity.name }}Repository(BaseRepository[{{ config.entity.name }}Model]):
+class {{ entity.name }}Repository(BaseRepository[{{ entity.name }}Model]):
     """
-    IDK: repository, {{ config.entity.snake_name }}, crud
+    IDK: repository, {{ entity.snake_name }}, crud
 
     Responsibility:
-    - Manage {{ config.entity.name }} persistence
+    - Manage {{ entity.name }} persistence
     - Provide custom query methods
     - Handle database transactions
 
@@ -36,7 +36,7 @@ class {{ config.entity.name }}Repository(BaseRepository[{{ config.entity.name }}
     - Session management delegated to BaseRepository
 
     Related Docs:
-    - docs/{{ config.entity.capability }}/repositories/{{ config.entity.snake_name }}-queries.md
+    - docs/{{ entity.capability }}/repositories/{{ entity.snake_name }}-queries.md
     """
 
     def __init__(self, session: Session):
@@ -52,9 +52,9 @@ class {{ config.entity.name }}Repository(BaseRepository[{{ config.entity.name }}
         Outputs:
         - None
         """
-        super().__init__(session, {{ config.entity.name }}Model)
+        super().__init__(session, {{ entity.name }}Model)
 
-{% set indexed_fields = config.entity.fields | selectattr('indexed', 'equalto', true) | list %}
+{% set indexed_fields = entity.fields | selectattr('indexed', 'equalto', true) | list %}
 {% if indexed_fields %}
 {% for field in indexed_fields %}
 {% set type_map = {
@@ -68,36 +68,36 @@ class {{ config.entity.name }}Repository(BaseRepository[{{ config.entity.name }}
     'decimal': 'float',
     'json': 'dict'
 } %}
-    def get_by_{{ field.name }}(self, {{ field.name }}: {{ type_map[field.type] }}) -> Optional[{{ config.entity.name }}Model]:
+    def get_by_{{ field.name }}(self, {{ field.name }}: {{ type_map[field.field_type.value] }}) -> Optional[{{ entity.name }}Model]:
         """
         IDK: query-method, {{ field.name }}-lookup
 
         Responsibility:
-        - Get {{ config.entity.name }} by {{ field.name }}
+        - Get {{ entity.name }} by {{ field.name }}
 
         Inputs:
         - {{ field.name }}: {{ field.name | replace('_', ' ') | title }} to search for
 
         Outputs:
-        - {{ config.entity.name }}Model if found, None otherwise
+        - {{ entity.name }}Model if found, None otherwise
 
         Related Docs:
-        - docs/{{ config.entity.capability }}/repositories/{{ config.entity.snake_name }}-queries.md
+        - docs/{{ entity.capability }}/repositories/{{ entity.snake_name }}-queries.md
         """
-        return self.session.query({{ config.entity.name }}Model).filter(
-            {{ config.entity.name }}Model.{{ field.name }} == {{ field.name }}
+        return self.session.query({{ entity.name }}Model).filter(
+            {{ entity.name }}Model.{{ field.name }} == {{ field.name }}
         ).first()
 
 {% endfor %}
 {% endif %}
-{% set string_fields = config.entity.fields | selectattr('type', 'in', ['str', 'text']) | list %}
+{% set string_fields = entity.fields | selectattr('field_type.value', 'in', ['str', 'text']) | list %}
 {% if string_fields %}
-    def search(self, query: str, skip: int = 0, limit: int = 100) -> List[{{ config.entity.name }}Model]:
+    def search(self, query: str, skip: int = 0, limit: int = 100) -> List[{{ entity.name }}Model]:
         """
         IDK: search, text-query, filtering
 
         Responsibility:
-        - Search {{ config.entity.name }} by text fields
+        - Search {{ entity.name }} by text fields
         - Support pagination
 
         Inputs:
@@ -106,17 +106,17 @@ class {{ config.entity.name }}Repository(BaseRepository[{{ config.entity.name }}
         - limit: Maximum records to return (default: 100)
 
         Outputs:
-        - List of matching {{ config.entity.name }}Model instances
+        - List of matching {{ entity.name }}Model instances
 
         Related Docs:
-        - docs/{{ config.entity.capability }}/repositories/{{ config.entity.snake_name }}-search.md
+        - docs/{{ entity.capability }}/repositories/{{ entity.snake_name }}-search.md
         """
         filters = [
 {% for field in string_fields %}
-            {{ config.entity.name }}Model.{{ field.name }}.ilike(f"%{query}%"),
+            {{ entity.name }}Model.{{ field.name }}.ilike(f"%{query}%"),
 {% endfor %}
         ]
-        return self.session.query({{ config.entity.name }}Model).filter(
+        return self.session.query({{ entity.name }}Model).filter(
             or_(*filters)
         ).offset(skip).limit(limit).all()
 {% endif %}
