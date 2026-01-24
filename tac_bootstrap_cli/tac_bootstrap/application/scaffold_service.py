@@ -1,9 +1,7 @@
-"""Scaffold Service for building and applying generation plans.
-
-This service is responsible for:
-1. Building a ScaffoldPlan from TACConfig
-2. Applying the plan to create directories and files
-3. Handling idempotency and existing files
+"""
+IDK: scaffold-service, plan-builder, code-generation, template-rendering, file-operations
+Responsibility: Builds scaffold plans from TACConfig and applies them to filesystem
+Invariants: Plans are idempotent, templates must exist, output directory must be writable
 """
 
 from dataclasses import dataclass, field
@@ -22,7 +20,11 @@ from tac_bootstrap.infrastructure.template_repo import TemplateRepository
 
 @dataclass
 class ApplyResult:
-    """Result of applying a scaffold plan."""
+    """
+    IDK: operation-result, statistics-tracking, error-reporting
+    Responsibility: Tracks scaffold application statistics and errors
+    Invariants: Success is false when errors exist, counters are always non-negative
+    """
 
     success: bool = True
     directories_created: int = 0
@@ -34,12 +36,10 @@ class ApplyResult:
 
 
 class ScaffoldService:
-    """Service for building and applying scaffold plans.
-
-    Example:
-        service = ScaffoldService()
-        plan = service.build_plan(config)
-        result = service.apply_plan(plan, output_dir, config)
+    """
+    IDK: plan-execution, template-application, directory-creation, validation-gate
+    Responsibility: Orchestrates scaffold plan building and application with pre-validation
+    Invariants: Validates before applying, tracks operation statistics, handles errors gracefully
     """
 
     def __init__(

@@ -1,43 +1,27 @@
 """
-Application layer exceptions for TAC Bootstrap.
-
-This module defines custom exceptions for the application layer that translate
-domain-level validation results into user-facing error messages.
+IDK: exception-hierarchy, error-types, validation-errors, domain-exceptions
+Responsibility: Defines application exceptions for translating validation results
+Invariants: All inherit from ApplicationError, validation errors contain ValidationResult
 """
 
 from tac_bootstrap.application.validation_service import ValidationResult
 
 
 class ApplicationError(Exception):
-    """Base class for all application layer exceptions."""
+    """
+    IDK: base-exception, error-hierarchy
+    Responsibility: Base class for all application layer exceptions
+    Invariants: All application exceptions inherit from this class
+    """
 
     pass
 
 
 class ScaffoldValidationError(ApplicationError):
     """
-    Exception raised when pre-scaffold validation fails.
-
-    This exception translates a ValidationResult with errors into a clear,
-    multi-line error message that shows all validation issues and suggestions.
-
-    Attributes:
-        validation_result: The ValidationResult containing all validation issues
-
-    Example:
-        >>> from tac_bootstrap.application.validation_service import (
-        ...     ValidationResult, ValidationIssue, ValidationLevel
-        ... )
-        >>> issues = [
-        ...     ValidationIssue(
-        ...         level=ValidationLevel.DOMAIN,
-        ...         severity="error",
-        ...         message="Framework fastapi is not compatible with language rust",
-        ...         suggestion="Use one of these languages with fastapi: python"
-        ...     )
-        ... ]
-        >>> result = ValidationResult(valid=False, issues=issues)
-        >>> raise ScaffoldValidationError(result)
+    IDK: validation-exception, error-formatting, multi-line-messages
+    Responsibility: Translates ValidationResult with errors into clear multi-line error message
+    Invariants: Contains ValidationResult, formats all errors with suggestions
     """
 
     def __init__(self, validation_result: ValidationResult):

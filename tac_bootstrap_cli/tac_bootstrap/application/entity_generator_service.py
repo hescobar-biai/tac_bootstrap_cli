@@ -1,9 +1,7 @@
 """
-Entity Generator Service
-
-Orchestrates the generation of complete CRUD vertical slices for entities.
-Validates project configuration, checks for conflicts, builds generation plans,
-and applies templates to the filesystem.
+IDK: entity-generation, ddd-entities, code-scaffolding, crud-vertical-slices
+Responsibility: Orchestrates generation of complete CRUD vertical slices for entities
+Invariants: Validates before generation, checks conflicts, applies templates idempotently
 """
 
 from dataclasses import dataclass
@@ -24,7 +22,11 @@ from tac_bootstrap.infrastructure.template_repo import TemplateRepository
 
 @dataclass
 class FileOperation:
-    """Represents a file to be created during entity generation."""
+    """
+    IDK: file-operation, generation-plan
+    Responsibility: Represents single file to be created during entity generation
+    Invariants: Path is relative to output directory, template name is valid
+    """
 
     path: Path
     template_name: str
@@ -33,7 +35,11 @@ class FileOperation:
 
 @dataclass
 class GenerationResult:
-    """Result of entity generation operation."""
+    """
+    IDK: generation-result, operation-status, file-tracking
+    Responsibility: Contains result of entity generation with success status and file list
+    Invariants: Success is true only when all files created, message explains outcome
+    """
 
     success: bool
     files_created: List[Path]
@@ -47,10 +53,9 @@ class GenerationResult:
 
 class EntityGeneratorService:
     """
-    Service for generating complete CRUD entities.
-
-    Orchestrates validation, conflict detection, plan building, and file creation
-    for entity generation following vertical slice architecture.
+    IDK: entity-orchestration, crud-generation, template-application, conflict-checking
+    Responsibility: Generates complete CRUD vertical slices with validation and conflict detection
+    Invariants: Validates project config first, checks file conflicts, applies templates safely
     """
 
     def __init__(

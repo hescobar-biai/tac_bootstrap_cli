@@ -1,34 +1,7 @@
 """
-TAC Bootstrap Validation Service
-
-Multi-layer validation service that performs comprehensive pre-scaffold validation
-across domain, template, filesystem, and git layers. Accumulates all validation
-issues before returning results, allowing users to fix all problems at once.
-
-Example usage:
-    from tac_bootstrap.application.validation_service import ValidationService
-    from tac_bootstrap.infrastructure.template_repo import TemplateRepository
-    from tac_bootstrap.domain.models import TACConfig
-    from pathlib import Path
-
-    # Initialize service with template repository
-    template_repo = TemplateRepository()
-    validator = ValidationService(template_repo)
-
-    # Validate config
-    result = validator.validate_config(config)
-    if not result.valid:
-        for error in result.errors():
-            print(f"ERROR: {error.message}")
-            if error.suggestion:
-                print(f"  → {error.suggestion}")
-
-    # Pre-scaffold validation (comprehensive gate)
-    result = validator.validate_pre_scaffold(config, output_dir)
-    if result.valid:
-        print("✓ All validations passed")
-    else:
-        print(f"✗ Found {len(result.errors())} errors, {len(result.warnings())} warnings")
+IDK: validation-service, config-validation, pre-scaffold-checks, multi-layer
+Responsibility: Performs pre-scaffold validation across domain, template, filesystem, git
+Invariants: Accumulates all issues, never raises exceptions, distinguishes errors
 """
 
 import os
@@ -56,14 +29,9 @@ from tac_bootstrap.infrastructure.template_repo import TemplateRepository
 
 class ValidationLevel(str, Enum):
     """
-    Validation layer where an issue occurred.
-
-    Levels:
-        SCHEMA: Pydantic validation (field types, required fields)
-        DOMAIN: Business logic validation (framework compatibility, architecture)
-        TEMPLATE: Template file existence and accessibility
-        FILESYSTEM: File system permissions, conflicts, writability
-        GIT: Git repository status and availability
+    IDK: validation-layer, issue-categorization
+    Responsibility: Categorizes validation issues by layer
+    Invariants: Each level represents a distinct validation concern
     """
 
     SCHEMA = "schema"
@@ -75,13 +43,9 @@ class ValidationLevel(str, Enum):
 
 class ValidationIssue(BaseModel):
     """
-    A single validation issue discovered during validation.
-
-    Attributes:
-        level: The validation layer where issue occurred
-        severity: "error" (blocks generation) or "warning" (informational)
-        message: Clear description of the problem
-        suggestion: Actionable guidance on how to resolve the issue
+    IDK: validation-issue, error-reporting, actionable-feedback
+    Responsibility: Represents validation issue with severity and actionable suggestion
+    Invariants: Severity is error or warning, message always set, suggestion optional
     """
 
     level: ValidationLevel
@@ -92,15 +56,9 @@ class ValidationIssue(BaseModel):
 
 class ValidationResult(BaseModel):
     """
-    Complete result of a validation operation.
-
-    Attributes:
-        valid: True if no errors exist (warnings don't affect validity)
-        issues: List of all validation issues found
-
-    Methods:
-        errors(): Returns only error-severity issues
-        warnings(): Returns only warning-severity issues
+    IDK: validation-result, issue-aggregation, error-filtering
+    Responsibility: Aggregates all validation issues and provides filtering by severity
+    Invariants: Valid is true only when no errors exist, warnings don't affect validity
     """
 
     valid: bool
@@ -132,28 +90,9 @@ class ValidationResult(BaseModel):
 
 class ValidationService:
     """
-    Multi-layer validation service for TAC Bootstrap configurations.
-
-    Performs comprehensive validation across multiple layers before scaffold generation:
-    - DOMAIN: Framework/language compatibility, architecture validity
-    - TEMPLATE: Template file existence verification
-    - FILESYSTEM: Output directory permissions, conflict detection
-    - GIT: Repository status, uncommitted changes
-
-    The service accumulates ALL validation issues before returning results,
-    allowing users to see and fix all problems at once. Never raises exceptions -
-    always returns ValidationResult for structured error handling.
-
-    Attributes:
-        template_repo: TemplateRepository instance for template existence checks
-
-    Example:
-        >>> template_repo = TemplateRepository()
-        >>> validator = ValidationService(template_repo)
-        >>> result = validator.validate_pre_scaffold(config, output_dir)
-        >>> if not result.valid:
-        ...     for error in result.errors():
-        ...         print(f"{error.level}: {error.message}")
+    IDK: multi-layer-validation, compatibility-checking, issue-accumulation
+    Responsibility: Validates configs across domain, template, filesystem, git layers
+    Invariants: Never raises exceptions, accumulates issues, returns ValidationResult
     """
 
     # Framework → Language compatibility matrix

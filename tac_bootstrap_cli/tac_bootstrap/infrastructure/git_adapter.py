@@ -1,16 +1,7 @@
-"""Git operations adapter for TAC Bootstrap.
-
-This module provides a clean abstraction layer for common Git operations used
-during project scaffolding and AI Developer Workflows (ADWs). It encapsulates
-subprocess calls to git commands and provides structured results.
-
-Example:
-    >>> from pathlib import Path
-    >>> adapter = GitAdapter(Path("my_project"))
-    >>> result = adapter.init()
-    >>> if result.success:
-    ...     adapter.add_all()
-    ...     adapter.commit("Initial commit")
+"""
+IDK: git-operations, repository-management, git-commands, version-control
+Responsibility: Provides clean abstraction for Git operations during scaffolding and workflows
+Invariants: All operations return GitResult, subprocess calls are encapsulated, errors are captured
 """
 
 import subprocess
@@ -21,12 +12,10 @@ from typing import List, Optional
 
 @dataclass
 class GitResult:
-    """Structured result from a Git operation.
-
-    Attributes:
-        success: Whether the git command succeeded (exit code 0)
-        output: Standard output from the command
-        error: Error message if the command failed
+    """
+    IDK: git-result, operation-status, error-capture
+    Responsibility: Contains structured result from Git operation with success status and output
+    Invariants: Success is true only when exit code is 0, output and error are always strings
     """
 
     success: bool
@@ -35,17 +24,10 @@ class GitResult:
 
 
 class GitAdapter:
-    """Adapter for Git operations during scaffolding and workflows.
-
-    This class provides a clean interface to common git operations without
-    requiring direct subprocess management. All operations return GitResult
-    for consistent error handling.
-
-    Example:
-        >>> adapter = GitAdapter(Path("my_project"))
-        >>> result = adapter.init()
-        >>> adapter.add_all()
-        >>> adapter.commit("Initial commit")
+    """
+    IDK: git-adapter, subprocess-wrapper, command-execution, repository-operations
+    Responsibility: Provides clean interface for Git operations without direct subprocess management
+    Invariants: All operations return GitResult, commands run in repo_path context
     """
 
     def __init__(self, repo_path: Path):

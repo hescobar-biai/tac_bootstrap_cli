@@ -1,16 +1,7 @@
 """
-DetectService - Auto-detection of project technology stack.
-
-This module provides intelligent analysis of existing repositories to automatically
-identify:
-- Programming language (Python, TypeScript, JavaScript, Go, Rust, Java)
-- Web framework (FastAPI, Django, Flask, Next.js, NestJS, Express, etc.)
-- Package manager (uv, pip, poetry, npm, pnpm, yarn, bun, cargo, maven, gradle)
-- Application root directory (src, app, lib, etc.)
-- Common project commands (start, test, lint, build)
-
-Used by the add-agentic command to pre-populate the wizard with intelligent
-suggestions based on the existing project structure.
+IDK: detect-service, auto-detection, tech-stack, language-detection, framework-detection
+Responsibility: Auto-detects project technology stack from existing files
+Invariants: Detection is read-only, never modifies files, returns confidence scores
 """
 
 import json
@@ -34,15 +25,9 @@ else:
 @dataclass
 class DetectedProject:
     """
-    Result of project detection containing identified technology stack.
-
-    Attributes:
-        language: Primary programming language
-        framework: Web framework (if detected)
-        package_manager: Package/dependency manager
-        app_root: Application root directory
-        commands: Common project commands (start, test, lint, build)
-        confidence: Detection confidence score (0-1)
+    IDK: detection-result, confidence-scoring, tech-metadata
+    Responsibility: Contains detected technology stack with confidence score
+    Invariants: Confidence is between 0-1, language is always set, framework may be None
     """
 
     language: Language
@@ -55,17 +40,9 @@ class DetectedProject:
 
 class DetectService:
     """
-    Service for auto-detecting project technology stack.
-
-    Analyzes repository files to identify language, framework, package manager,
-    app root, and common commands.
-
-    Example:
-        detector = DetectService()
-        detected = detector.detect(Path("/path/to/repo"))
-        print(f"Language: {detected.language}")
-        print(f"Package Manager: {detected.package_manager}")
-        print(f"Framework: {detected.framework}")
+    IDK: stack-analysis, dependency-parsing, file-inspection
+    Responsibility: Analyzes repository to identify language, framework, and commands
+    Invariants: All detection methods are pure functions, defaults to Python if unknown
     """
 
     def detect(self, repo_path: Path) -> DetectedProject:

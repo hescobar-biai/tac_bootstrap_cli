@@ -1,25 +1,7 @@
 """
-TAC Bootstrap Template Repository
-
-Manages Jinja2 template loading, rendering, and discovery for TAC Bootstrap.
-This infrastructure component provides a clean interface for template operations
-with custom filters for case conversion.
-
-Example usage:
-    from tac_bootstrap.infrastructure.template_repo import TemplateRepository
-    from tac_bootstrap.domain.models import TACConfig
-
-    repo = TemplateRepository()
-
-    # Render a template file
-    output = repo.render("claude/settings.json.j2", config)
-
-    # Render a template string
-    output = repo.render_string("{{ config.project.name | snake_case }}", config)
-
-    # Check if template exists
-    if repo.template_exists("adws/sdlc.py.j2"):
-        content = repo.get_template_content("adws/sdlc.py.j2")
+IDK: template-repository, jinja2-rendering, case-conversion, template-discovery
+Responsibility: Manages Jinja2 template loading, rendering, and custom filters
+Invariants: Templates are immutable, rendering is idempotent, filters are stateless
 """
 
 import re
@@ -152,15 +134,9 @@ def to_pascal_case(value: str) -> str:
 
 class TemplateRepository:
     """
-    Repository for managing Jinja2 templates.
-
-    Provides methods to load, render, and discover templates with custom
-    filters for case conversion. Templates are loaded from a configured
-    directory (default: package's templates/ directory).
-
-    Attributes:
-        env: Jinja2 Environment instance
-        templates_dir: Path to templates directory
+    IDK: template-management, jinja2-environment, filter-registration
+    Responsibility: Loads and renders Jinja2 templates with case conversion filters
+    Invariants: Templates dir exists, filters registered at init, rendering immutable
     """
 
     def __init__(self, templates_dir: Optional[Path] = None):
