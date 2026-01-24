@@ -977,3 +977,19 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features de authorization en service/repository layers
     - Cuando trabajes con combinación de --authorized y --async-mode flags
     - Cuando necesites entender TODO comments para production JWT validation
+
+- app_docs/feature-feature_3_2-register-metadata-scaffold.md
+  - Conditions:
+    - Cuando trabajes con metadata de generación de proyectos (BootstrapMetadata)
+    - Cuando necesites entender el audit trail de proyectos TAC Bootstrap
+    - Cuando modifiques el modelo BootstrapMetadata en domain/models.py
+    - Cuando trabajes con registro automático de metadata en scaffold_service.py
+    - Cuando implementes o modifiques el template config.yml.j2 relacionado a metadata
+    - Cuando trabajes con timestamps UTC ISO8601 en generación de proyectos
+    - Cuando necesites entender schema_version y versioning strategy
+    - Cuando implementes el comando upgrade (FASE 4) que depende de metadata
+    - Cuando trabajes con fallback handling para __version__ import
+    - Cuando necesites referencia sobre backward compatibility en templates (conditional rendering)
+    - Cuando debugues problemas de metadata en config.yml generados
+    - Cuando trabajes con el campo last_upgrade (placeholder para upgrade command)
+    - Cuando necesites entender la diferencia entre metadata section y bootstrap section en config.yml
