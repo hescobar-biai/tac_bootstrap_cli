@@ -438,6 +438,7 @@ The `adws/` directory contains isolated workflow scripts that automate the softw
 |---------|-------------|
 | `trigger_webhook.py` | HTTP webhook server for GitHub events |
 | `trigger_cron.py` | Scheduled execution via cron |
+| `trigger_issue_chain.py` | Ordered issue chain execution (waits for prior issue to close) |
 
 #### Webhook Trigger Setup
 
@@ -487,6 +488,23 @@ uv run adws/adw_triggers/trigger_cron.py --interval 60
 ```
 
 The cron trigger detects the same workflow commands as the webhook (e.g., `/adw_sdlc_zte_iso`, `/adw_plan_build_iso`). Write the command in an issue body or comment to trigger it.
+
+#### Issue Chain Trigger Setup
+
+The issue chain trigger processes a fixed, ordered list of issues. It only works on the first open issue in the list and will not start the next issue until the current one is closed. Each cycle checks for ADW workflow commands in the issue body or latest comment.
+
+```bash
+# Pass ordered issue numbers as arguments
+uv run adws/adw_triggers/trigger_issue_chain.py 123 456 789
+
+# Or pass as a comma-separated list
+uv run adws/adw_triggers/trigger_issue_chain.py --issues 123,456,789
+
+# Custom interval
+uv run adws/adw_triggers/trigger_issue_chain.py --issues 123,456,789 --interval 30
+```
+
+The issue chain trigger detects the same workflow commands as the cron/webhook triggers. If issue `123` is still open, issue `456` will not be processed until `123` is closed.
 
 ### Key Concepts
 
