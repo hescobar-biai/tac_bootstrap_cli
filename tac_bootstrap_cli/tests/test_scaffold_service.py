@@ -916,3 +916,144 @@ class TestScaffoldServiceSharedInfrastructure:
             content = health.read_text()
             assert "from fastapi import" in content or "FastAPI" in content
             assert "router" in content or "def" in content
+
+
+# ============================================================================
+# TEST BOOTSTRAP METADATA
+# ============================================================================
+
+
+class TestScaffoldServiceBootstrapMetadata:
+    """Tests for bootstrap metadata generation in config.yml."""
+
+    def test_init_generates_bootstrap_metadata(self, service: ScaffoldService, config: TACConfig):
+        """apply_plan should generate config.yml with metadata field."""
+        import yaml
+
+        plan = service.build_plan(config)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result = service.apply_plan(plan, tmp_path, config)
+
+            assert result.success
+
+            # Read and parse config.yml
+            config_file = tmp_path / "config.yml"
+            assert config_file.exists(), "config.yml should be created"
+
+            content = config_file.read_text()
+            parsed = yaml.safe_load(content)
+
+            # Verify metadata field exists (not bootstrap)
+            assert "metadata" in parsed, "config.yml should have 'metadata' field"
+
+            # Verify all expected fields are present
+            metadata = parsed["metadata"]
+            assert "generated_at" in metadata, "metadata should have 'generated_at' field"
+            assert "generated_by" in metadata, "metadata should have 'generated_by' field"
+            assert (
+                "schema_version" in metadata
+            ), "metadata should have 'schema_version' field"
+            assert "last_upgrade" in metadata, "metadata should have 'last_upgrade' field"
+
+    def test_bootstrap_metadata_has_valid_timestamp(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """metadata.generated_at should be a valid ISO8601 timestamp."""
+        from datetime import datetime
+
+        import yaml
+
+        plan = service.build_plan(config)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result = service.apply_plan(plan, tmp_path, config)
+
+            assert result.success
+
+            # Read and parse config.yml
+            config_file = tmp_path / "config.yml"
+            content = config_file.read_text()
+            parsed = yaml.safe_load(content)
+
+            # Verify generated_at can be parsed
+            generated_at = parsed["metadata"]["generated_at"]
+            assert isinstance(generated_at, str), "generated_at should be a string"
+
+            # Should be parseable as ISO8601
+            parsed_timestamp = datetime.fromisoformat(generated_at)
+            assert parsed_timestamp is not None, "generated_at should parse as ISO8601"
+
+    def test_bootstrap_metadata_has_correct_version(
+        self, service: ScaffoldService, config: TACConfig
+    ):
+        """metadata.generated_by should match expected TAC Bootstrap version."""
+        import yaml
+
+        from tac_bootstrap import __version__
+
+        plan = service.build_plan(config)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result = service.apply_plan(plan, tmp_path, config)
+
+            assert result.success
+
+            # Read and parse config.yml
+            config_file = tmp_path / "config.yml"
+            content = config_file.read_text()
+            parsed = yaml.safe_load(content)
+
+            # Verify generated_by has correct format
+            generated_by = parsed["metadata"]["generated_by"]
+            expected = f"tac-bootstrap v{__version__}"
+            assert (
+                generated_by == expected
+            ), f"generated_by should be '{expected}', got '{generated_by}'"
+
+    def test_upgrade_updates_last_upgrade(self, service: ScaffoldService, config: TACConfig):
+        """UpgradeService.perform_upgrade should update metadata.last_upgrade."""
+        from datetime import datetime
+
+        import yaml
+
+        from tac_bootstrap.application.upgrade_service import UpgradeService
+
+        plan = service.build_plan(config)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            result = service.apply_plan(plan, tmp_path, config)
+
+            assert result.success
+
+            # Read initial config.yml
+            config_file = tmp_path / "config.yml"
+            content = config_file.read_text()
+            parsed = yaml.safe_load(content)
+
+            # Verify last_upgrade is None initially
+            assert (
+                parsed["metadata"]["last_upgrade"] is None
+            ), "last_upgrade should be None on initial generation"
+
+            # Perform upgrade
+            upgrade_service = UpgradeService(tmp_path)
+            success, message = upgrade_service.perform_upgrade(backup=False)
+            assert success, f"Upgrade should succeed: {message}"
+
+            # Read updated config.yml
+            content = config_file.read_text()
+            parsed = yaml.safe_load(content)
+
+            # Verify last_upgrade is now set
+            last_upgrade = parsed["metadata"]["last_upgrade"]
+            assert last_upgrade is not None, "last_upgrade should be set after upgrade"
+            assert isinstance(last_upgrade, str), "last_upgrade should be a string"
+
+            # Verify it's a valid ISO8601 timestamp
+            parsed_timestamp = datetime.fromisoformat(last_upgrade)
+            assert parsed_timestamp is not None, "last_upgrade should parse as ISO8601"

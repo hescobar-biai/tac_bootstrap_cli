@@ -468,32 +468,6 @@ class BootstrapMetadata(BaseModel):
     )
     template_checksums: dict[str, str] = Field(
         default_factory=dict, description="Template name to MD5 checksum mapping"
-    Bootstrap metadata for generation audit trail.
-
-    Records when and how the project was generated, enabling version tracking,
-    upgrade detection, and debugging.
-
-    Attributes:
-        generated_at: ISO8601 UTC timestamp of when project was generated
-        generated_by: TAC Bootstrap CLI version that generated this project
-            (e.g., "tac-bootstrap v0.2.2")
-        schema_version: Config schema version for future migrations
-            (hardcoded to 2 for now, versioning strategy TBD)
-        last_upgrade: ISO8601 UTC timestamp of last upgrade
-            (None for initial generation, populated by upgrade command)
-    """
-
-    generated_at: str = Field(
-        ..., description="ISO8601 UTC timestamp of when project was generated"
-    )
-    generated_by: str = Field(
-        ..., description="TAC Bootstrap CLI version that generated this project"
-    )
-    schema_version: int = Field(
-        default=2, description="Config schema version for future migrations"
-    )
-    last_upgrade: str | None = Field(
-        default=None, description="ISO8601 UTC timestamp of last upgrade"
     )
 
 
@@ -560,7 +534,6 @@ class TACConfig(BaseModel):
     )
     metadata: BootstrapMetadata | None = Field(
         default=None, description="Bootstrap generation metadata for audit trail"
-        default=None, description="Bootstrap metadata for generation audit trail"
     )
 
     model_config = {"extra": "forbid"}

@@ -113,7 +113,5 @@ metadata:
   generated_at: "{{ config.metadata.generated_at }}"
   generated_by: "{{ config.metadata.generated_by }}"
   schema_version: {{ config.metadata.schema_version }}
-{% if config.metadata.last_upgrade %}
-  last_upgrade: "{{ config.metadata.last_upgrade }}"
-{% endif %}
+  last_upgrade: {% if config.metadata.last_upgrade %}"{{ config.metadata.last_upgrade }}"{% else %}null{% endif %}
 {% endif %}
