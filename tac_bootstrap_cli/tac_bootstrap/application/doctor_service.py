@@ -1,15 +1,7 @@
 """
-DoctorService - Validation and health checking for Agentic Layer setups.
-
-This module provides comprehensive diagnostics for TAC Bootstrap generated
-Agentic Layers, detecting and auto-fixing common issues:
-- Missing required/optional directories (.claude, adws, specs, scripts)
-- Invalid configuration files (malformed JSON/YAML)
-- Non-executable hooks
-- Missing essential commands
-- Incomplete ADW setups
-
-Used by the doctor command to validate project health and suggest/apply fixes.
+IDK: health-check, diagnostics, project-analysis, configuration-validation, auto-fix
+Responsibility: Diagnoses and auto-fixes common issues in TAC Bootstrap generated projects
+Invariants: Non-destructive checks, optional auto-fix, reports issues by severity
 """
 
 import json
@@ -25,9 +17,9 @@ import yaml
 
 class Severity(str, Enum):
     """
-    Severity levels for diagnostic issues.
-
-    Used to classify issues by their impact on functionality.
+    IDK: severity-level, issue-classification
+    Responsibility: Classifies diagnostic issues by impact (error, warning, info)
+    Invariants: Three levels representing must-fix, should-fix, and optional improvements
     """
 
     ERROR = "error"  # Must fix for functionality
@@ -38,13 +30,9 @@ class Severity(str, Enum):
 @dataclass
 class Issue:
     """
-    Represents a single diagnostic issue.
-
-    Attributes:
-        severity: Issue severity level
-        message: Human-readable description of the issue
-        suggestion: Optional suggestion for fixing the issue
-        fix_fn: Optional function to auto-fix the issue
+    IDK: diagnostic-issue, auto-fix, actionable-feedback
+    Responsibility: Represents diagnostic issue with severity, message, and fix function
+    Invariants: Message is always set, suggestion and fix_fn are optional
     """
 
     severity: Severity
@@ -56,11 +44,9 @@ class Issue:
 @dataclass
 class DiagnosticReport:
     """
-    Result of a diagnostic check.
-
-    Attributes:
-        healthy: Flag indicating overall health (False if any ERROR exists)
-        issues: List of detected issues
+    IDK: diagnostic-report, health-status, issue-aggregation
+    Responsibility: Aggregates all diagnostic issues and overall health status
+    Invariants: Healthy is false when any ERROR exists, issues list is never None
     """
 
     healthy: bool = True
@@ -81,12 +67,9 @@ class DiagnosticReport:
 @dataclass
 class FixResult:
     """
-    Result of auto-fix attempts.
-
-    Attributes:
-        fixed_count: Number of successfully fixed issues
-        failed_count: Number of failed fix attempts
-        messages: List of result messages
+    IDK: fix-result, fix-tracking, success-reporting
+    Responsibility: Tracks auto-fix attempt results with success and failure counts
+    Invariants: Counters are non-negative, messages list is never None
     """
 
     fixed_count: int = 0
@@ -96,19 +79,9 @@ class FixResult:
 
 class DoctorService:
     """
-    Service for diagnosing and fixing Agentic Layer setups.
-
-    Performs comprehensive health checks on TAC Bootstrap generated projects,
-    detecting missing directories, invalid configs, permission issues, etc.
-
-    Example:
-        doctor = DoctorService()
-        report = doctor.diagnose(Path("/path/to/repo"))
-
-        if not report.healthy:
-            print(f"Found {len(report.issues)} issues")
-            fix_result = doctor.fix(Path("/path/to/repo"), report)
-            print(f"Fixed {fix_result.fixed_count} issues")
+    IDK: health-diagnostics, issue-detection, auto-repair, project-validation
+    Responsibility: Diagnoses TAC Bootstrap projects and applies auto-fixes for detected issues
+    Invariants: Diagnosis is read-only, fixes are optional and safe, reports all issues
     """
 
     def diagnose(self, repo_path: Path) -> DiagnosticReport:

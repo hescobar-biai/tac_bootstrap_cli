@@ -1,17 +1,7 @@
-"""FileSystem operations module for TAC Bootstrap.
-
-This module provides a FileSystem class with safe, idempotent, and cross-platform
-operations for creating, reading, writing, modifying, and deleting files and directories.
-
-The FileSystem class is used by ScaffoldService to generate project structures,
-ensuring all operations handle edge cases like missing directories, nonexistent files,
-and permission management.
-
-Key features:
-- Idempotent operations (ensure_directory, append_file)
-- Automatic parent directory creation for write operations
-- Cross-platform compatibility using pathlib.Path
-- Safe permission handling with make_executable
+"""
+IDK: filesystem-operations, file-io, directory-creation, safe-writes, idempotent-operations
+Responsibility: Provides safe, idempotent filesystem operations for file and directory management
+Invariants: Creates parent directories automatically, operations are cross-platform compatible
 """
 
 import os
@@ -22,14 +12,10 @@ from typing import Optional
 
 
 class FileSystem:
-    """Provides safe and idempotent filesystem operations.
-
-    This class encapsulates all filesystem operations needed for scaffold generation,
-    including directory creation, file reading/writing, permission management,
-    and file manipulation operations.
-
-    All write operations automatically create parent directories if they don't exist.
-    Operations are designed to be idempotent where applicable.
+    """
+    IDK: filesystem-adapter, file-operations, directory-operations
+    Responsibility: Encapsulates filesystem operations for scaffold generation safely
+    Invariants: Write operations create parent dirs, operations are idempotent
     """
 
     def ensure_directory(self, path: Path) -> bool:

@@ -1,22 +1,7 @@
 """
-GenerateService - Entity Generation Orchestration
-
-This service orchestrates the generation of CRUD entities following vertical slice architecture.
-It validates preconditions, renders entity templates, manages filesystem operations, and ensures
-safe, idempotent entity generation with comprehensive error handling.
-
-Core responsibilities:
-1. Validate EntitySpec format (name is Python identifier, capability is valid package name)
-2. Check preconditions (base classes must exist)
-3. Check for existing files (all-or-nothing approach when force=False)
-4. Create vertical slice directory structure (domain/, application/, infrastructure/, api/)
-5. Render entity templates with proper context
-6. Write files to filesystem
-7. Return metadata about generated files
-
-This service uses a validation-first approach with no rollback logic (fail fast).
-It keeps logic pure (no logging - that's CLI layer) and creates app_root if missing
-(user-friendly mkdir -p behavior).
+IDK: code-generation, entity-creation, template-instantiation, ddd-scaffolding
+Responsibility: Orchestrates CRUD entity generation following vertical slice architecture
+Invariants: Validates before writing, all-or-nothing file creation, no rollback
 """
 
 import re
@@ -59,15 +44,9 @@ class FileSystemError(Exception):
 
 class GenerateResult(BaseModel):
     """
-    Result of entity generation operation.
-
-    Contains metadata about the generated entity including file paths and directory location.
-
-    Attributes:
-        entity_name: Name of the generated entity (PascalCase)
-        capability: Capability/vertical slice name (snake_case)
-        files_created: List of created file paths (relative to project_root)
-        directory: Absolute path to the generated capability directory
+    IDK: generation-result, entity-metadata, file-tracking
+    Responsibility: Contains metadata about generated entity with file paths and location
+    Invariants: All file paths are relative to project root, directory is absolute path
     """
 
     entity_name: str = Field(..., description="Name of the generated entity (PascalCase)")
@@ -87,20 +66,9 @@ class GenerateResult(BaseModel):
 
 class GenerateService:
     """
-    Application service that orchestrates entity generation.
-
-    This service coordinates the generation of complete vertical slices for CRUD entities.
-    It validates inputs, checks preconditions, renders templates, and manages filesystem
-    operations in a safe, idempotent manner.
-
-    The service follows a strict validation-first approach:
-    1. Validate all inputs before any filesystem writes
-    2. Check all preconditions (base classes exist)
-    3. Check for file conflicts (all-or-nothing when force=False)
-    4. Only then proceed with directory creation and file writing
-
-    No rollback logic is implemented - the service fails fast and lets partial directories
-    remain (users can clean up or re-run with force=True).
+    IDK: entity-orchestration, vertical-slice-generation, precondition-checking, template-rendering
+    Responsibility: Coordinates entity generation with validation-first approach
+    Invariants: Fails fast on validation errors, no rollback logic, all-or-nothing file creation
     """
 
     def __init__(self, template_repo: TemplateRepository, fs: FileSystem):

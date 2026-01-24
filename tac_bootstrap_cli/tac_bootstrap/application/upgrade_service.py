@@ -1,4 +1,8 @@
-"""Upgrade service for TAC Bootstrap projects."""
+"""
+IDK: upgrade-service, migration, config-update, backward-compatibility, version-management
+Responsibility: Upgrades TAC Bootstrap projects to newer versions preserving user code
+Invariants: Only updates framework files, never touches user code, preserves config values
+"""
 
 from __future__ import annotations
 
@@ -19,7 +23,11 @@ console = Console()
 
 
 class UpgradeService:
-    """Service for upgrading TAC Bootstrap projects to newer versions."""
+    """
+    IDK: project-upgrade, version-migration, safe-update, config-preservation
+    Responsibility: Orchestrates project upgrades to newer TAC Bootstrap versions
+    Invariants: Preserves user code, updates framework dirs, maintains compatibility
+    """
 
     # Directorios que se actualizan (no código del usuario)
     UPGRADEABLE_DIRS = ["adws", ".claude", "scripts"]
