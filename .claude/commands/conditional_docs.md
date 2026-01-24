@@ -1143,3 +1143,26 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando debugues problemas de generación de docstrings o API integration
     - Cuando trabajes con template rendering de scripts Python ejecutables
     - Cuando necesites referencia sobre fail-fast patterns y error handling graceful
+
+- app_docs/feature-feature_6_2-gen-docs-fractal-template.md
+  - Conditions:
+    - Cuando trabajes con el template gen_docs_fractal.py.j2 o generación de documentación fractal
+    - Cuando necesites entender el script de generación bottom-up de documentación por directorio
+    - Cuando modifiques o extiendas templates/scripts/gen_docs_fractal.py.j2
+    - Cuando trabajes con documentación one-markdown-per-folder con path-concatenated naming
+    - Cuando implementes features de documentación fractal LLM-powered (OpenAI)
+    - Cuando necesites referencia sobre bottom-up processing (deepest directories first)
+    - Cuando trabajes con complement mode (preservación de body existente, update de frontmatter)
+    - Cuando implementes lectura de docstrings Python o JSDoc de TypeScript
+    - Cuando necesites entender structured frontmatter YAML (doc_type, domain, owner, level, tags, idk, related_code, children)
+    - Cuando trabajes con canonical IDK vocabulary loading desde canonical_idk.yml
+    - Cuando modifiques scripts/gen_docs_fractal.py generado
+    - Cuando necesites entender environment variable configuration (OPENAI_API_KEY, OPENAI_MODEL)
+    - Cuando trabajes con CLI flags (--include-root, --output-dir, --mode, --dry-run)
+    - Cuando implementes features de FASE 6 (Documentación Fractal como Skill)
+    - Cuando debugues problemas de generación de docs/ directory structure
+    - Cuando trabajes con auto-población de metadata estructural (children, level)
+    - Cuando necesites referencia sobre multi-language support (Python, TypeScript, JavaScript)
+    - Cuando trabajes con required sections (Overview, Responsibilities, Key APIs, Invariants, Side Effects, Operational Notes)
+    - Cuando implementes features que requieran fail-fast on missing OPENAI_API_KEY
+    - Cuando trabajes con file preservation logic (only touch path-concatenated files)

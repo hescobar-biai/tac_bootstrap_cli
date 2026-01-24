@@ -404,6 +404,8 @@ class ScaffoldService:
             ("test.sh", "Test runner"),
             ("lint.sh", "Linter runner"),
             ("build.sh", "Build script"),
+            ("gen_docs_fractal.py", "Fractal documentation generator"),
+            ("gen_docstring_jsdocs.py", "Docstring/JSDoc generator"),
         ]
 
         for script, reason in scripts:
