@@ -977,3 +977,22 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features de authorization en service/repository layers
     - Cuando trabajes con combinación de --authorized y --async-mode flags
     - Cuando necesites entender TODO comments para production JWT validation
+
+- app_docs/feature-feature_2_7-test-coverage-generate-entity.md
+  - Conditions:
+    - Cuando trabajes con tests de GenerateService en tests/test_generate_service.py
+    - Cuando necesites entender la cobertura de tests para entity generation orchestration
+    - Cuando implementes o modifiques tests de validation, precondition checking, file conflicts, template rendering
+    - Cuando trabajes con mocking de FileSystem y TemplateRepository para unit tests
+    - Cuando necesites referencia sobre test fixtures (mock_fs, mock_template_repo, sample_entity_spec, authorized_entity_spec)
+    - Cuando trabajes con tests de FileAction.CREATE behavior y force overwrite logic
+    - Cuando implementes tests de integration flow (validation → preconditions → rendering → filesystem writes)
+    - Cuando necesites entender testing patterns para servicios de orquestación
+    - Cuando trabajes con pytest fixtures y parametric side effects para simular filesystem states
+    - Cuando modifiques GenerateService y necesites actualizar tests correspondientes
+    - Cuando necesites verificar cobertura >90% para generate_service.py
+    - Cuando trabajes con tests de authorized entities y tenant_id context injection
+    - Cuando implementes tests de error scenarios (ValidationError, PreconditionError, FileExistsError)
+    - Cuando necesites referencia sobre testing de all-or-nothing file generation
+    - Cuando trabajes con validation de ordering de operaciones (validation before writes)
+    - Cuando implementes tests de helpful error messages con force=True hints
