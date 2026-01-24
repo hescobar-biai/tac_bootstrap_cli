@@ -403,6 +403,74 @@ class BootstrapConfig(BaseModel):
     readme: bool = Field(default=True, description="Generate README.md")
 
 
+class BootstrapMetadata(BaseModel):
+    """
+    Bootstrap generation metadata for audit trail and traceability.
+
+    This model captures metadata about when and how a TAC Bootstrap project was
+    generated, providing an audit trail for tracking versions, upgrades, and
+    template changes over time.
+
+    Attributes:
+        generated_at: ISO8601 timestamp string indicating when the project was
+            initially generated. Format: "2024-01-15T10:30:00.123456"
+            Example: datetime.now().isoformat()
+
+        generated_by: Identifier string for the TAC Bootstrap version that created
+            the project. Format: "tac-bootstrap v{version}"
+            Example: "tac-bootstrap v0.2.0"
+
+        last_upgrade: Optional ISO8601 timestamp string for the last time the project
+            was upgraded or regenerated. None if never upgraded.
+            Example: "2024-02-20T14:45:00.789012" or None
+
+        schema_version: Integer indicating the config.yml schema version. Used for
+            migration and compatibility checks. Default: 2
+
+        template_checksums: Dictionary mapping template file names to their MD5
+            checksums. Used to detect template changes and determine if upgrades
+            are needed. Tracks primary user-facing templates:
+            - .claude/commands/*.md
+            - adws/adw_*_iso.py
+            - scripts/*.sh
+            Example: {"adw_sdlc_iso.py": "a1b2c3d4...", "start.md": "e5f6g7h8..."}
+
+    Example:
+        metadata = BootstrapMetadata(
+            generated_at="2024-01-15T10:30:00.123456",
+            generated_by="tac-bootstrap v0.2.0",
+            last_upgrade=None,
+            schema_version=2,
+            template_checksums={
+                "adw_sdlc_iso.py": "a1b2c3d4e5f6g7h8",
+                "start.md": "1a2b3c4d5e6f7g8h"
+            }
+        )
+
+    Note:
+        - Timestamps are stored as plain strings without validation
+        - The generator is responsible for creating valid ISO8601 timestamps
+        - Checksums use MD5 hash of full file content
+        - Regeneration counts as an upgrade (updates last_upgrade)
+    """
+
+    generated_at: str = Field(
+        ..., description="ISO8601 timestamp when project was generated"
+    )
+    generated_by: str = Field(
+        ..., description="TAC Bootstrap version identifier"
+    )
+    last_upgrade: str | None = Field(
+        default=None, description="ISO8601 timestamp of last upgrade"
+    )
+    schema_version: int = Field(
+        default=2, description="Config schema version for migration tracking"
+    )
+    template_checksums: dict[str, str] = Field(
+        default_factory=dict, description="Template name to MD5 checksum mapping"
+    )
+
+
 # ============================================================================
 # ROOT MODEL - Complete Configuration
 # ============================================================================
@@ -463,6 +531,9 @@ class TACConfig(BaseModel):
     templates: TemplatesConfig = Field(default=TemplatesConfig(), description="Template file paths")
     bootstrap: BootstrapConfig = Field(
         default=BootstrapConfig(), description="Bootstrap options for new projects"
+    )
+    metadata: BootstrapMetadata | None = Field(
+        default=None, description="Bootstrap generation metadata for audit trail"
     )
 
     model_config = {"extra": "forbid"}
