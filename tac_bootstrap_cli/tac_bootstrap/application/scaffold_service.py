@@ -575,7 +575,25 @@ class ScaffoldService:
         Returns:
             ApplyResult with statistics and any errors
         """
+        from datetime import datetime, timezone
+
         from tac_bootstrap.infrastructure.fs import FileSystem
+
+        # Register bootstrap metadata before rendering templates
+        # This enables audit trail for when/how the project was generated
+        try:
+            from tac_bootstrap import __version__
+        except ImportError:
+            __version__ = "unknown"
+
+        from tac_bootstrap.domain.models import BootstrapMetadata
+
+        config.metadata = BootstrapMetadata(
+            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_by=f"tac-bootstrap v{__version__}",
+            schema_version=2,
+            last_upgrade=None,  # Not set on initial generation, only on upgrade
+        )
 
         result = ApplyResult()
         fs = FileSystem()

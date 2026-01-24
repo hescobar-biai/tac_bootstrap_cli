@@ -22,6 +22,15 @@ Summary metrics across all ADW runs.
 | Total Diff Size   | 67028 lines    | Fri Jan 23 19:43:49 -05 2026 |
 | Largest Diff Size | 6832 lines     | Fri Jan 23 19:43:49 -05 2026 |
 | Average Presence  | 1.00           | Fri Jan 23 19:43:49 -05 2026 |
+| Metric            | Value          | Last Updated        |
+| ----------------- | -------------- | ------------------- |
+| Current Streak    | 63             | 2026-01-23 22:47:50 |
+| Longest Streak    | 63             | 2026-01-23 22:47:50 |
+| Total Plan Size   | 13842 lines    | 2026-01-23 22:47:50 |
+| Largest Plan Size | 673 lines      | 2026-01-23 22:47:50 |
+| Total Diff Size   | 69481 lines    | 2026-01-23 22:47:50 |
+| Largest Diff Size | 6832 lines     | 2026-01-23 22:47:50 |
+| Average Presence  | 1.00           | 2026-01-23 22:47:50 |
 
 ## ADW KPIs
 
@@ -94,3 +103,7 @@ Detailed metrics for individual ADW workflow runs.
 | Thu Jan 23 2026  | feature_2_4  | 146          | /feature    | 1        | 497               | 3168/3664/36                    | 2026-01-23 18:02:31          | -       |
 | Fri Jan 23 2026  | feature_2_7  | 152          | /chore      | 1        | 139               | 1149/2/9                        | Fri Jan 23 19:40:45 -05 2026 | -       |
 | Fri Jan 23 2026  | feature_3_1  | 154          | /feature    | 1        | 200               | 511/2/7                         | Fri Jan 23 19:43:49 -05 2026 | -       |
+| Fri Jan 23 2026  | feature_2_1  | 140          | /feature    | 1        | 390               | 1989/2/9                        | Fri Jan 23 17:20:53 -05 2026 | -       |
+| Fri Jan 23 2026  | feature_2_5  | 148          | /feature    | 1        | 250               | 863/68/8                        | Fri Jan 23 18:14:37 -05 2026 | -       |
+| Thu Jan 23 2026  | feature_2_4  | 146          | /feature    | 1        | 497               | 3168/3664/36                    | 2026-01-23 18:02:31          | -       |
+| Fri Jan 23 2026  | feature_3_2  | 156          | /feature    | 1        | 194               | 474/2492/23                     | 2026-01-23 22:47:50          | -       |

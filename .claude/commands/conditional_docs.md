@@ -978,38 +978,18 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con combinación de --authorized y --async-mode flags
     - Cuando necesites entender TODO comments para production JWT validation
 
-- app_docs/feature-feature_2_7-test-coverage-generate-entity.md
+- app_docs/feature-feature_3_2-register-metadata-scaffold.md
   - Conditions:
-    - Cuando trabajes con tests de GenerateService en tests/test_generate_service.py
-    - Cuando necesites entender la cobertura de tests para entity generation orchestration
-    - Cuando implementes o modifiques tests de validation, precondition checking, file conflicts, template rendering
-    - Cuando trabajes con mocking de FileSystem y TemplateRepository para unit tests
-    - Cuando necesites referencia sobre test fixtures (mock_fs, mock_template_repo, sample_entity_spec, authorized_entity_spec)
-    - Cuando trabajes con tests de FileAction.CREATE behavior y force overwrite logic
-    - Cuando implementes tests de integration flow (validation → preconditions → rendering → filesystem writes)
-    - Cuando necesites entender testing patterns para servicios de orquestación
-    - Cuando trabajes con pytest fixtures y parametric side effects para simular filesystem states
-    - Cuando modifiques GenerateService y necesites actualizar tests correspondientes
-    - Cuando necesites verificar cobertura >90% para generate_service.py
-    - Cuando trabajes con tests de authorized entities y tenant_id context injection
-    - Cuando implementes tests de error scenarios (ValidationError, PreconditionError, FileExistsError)
-    - Cuando necesites referencia sobre testing de all-or-nothing file generation
-    - Cuando trabajes con validation de ordering de operaciones (validation before writes)
-    - Cuando implementes tests de helpful error messages con force=True hints
-- app_docs/feature-feature_3_1-bootstrap-metadata-model.md
-  - Conditions:
-    - Cuando trabajes con el modelo BootstrapMetadata en domain/models.py
-    - Cuando necesites entender el sistema de audit trail para proyectos generados
-    - Cuando implementes generación de metadata en config.yml durante scaffolding
-    - Cuando trabajes con tracking de versiones del CLI (generated_by, last_upgrade)
-    - Cuando necesites referencia sobre template checksums para change detection
-    - Cuando trabajes con timestamps de generación y upgrade (generated_at, last_upgrade)
-    - Cuando implementes features de upgrade que actualicen metadata
-    - Cuando modifiques TACConfig model para agregar campos de metadata
-    - Cuando trabajes con schema_version tracking para migrations
-    - Cuando necesites entender versioning de configs generados
-    - Cuando implementes features de project lifecycle tracking
-    - Cuando trabajes con MD5 checksums de templates para drift detection
-    - Cuando necesites referencia sobre backward compatibility de metadata opcional
-    - Cuando implementes features de upgrade/migration que dependan de metadata
-    - Cuando trabajes con FASE 3 del roadmap (Audit Trail y Metadata)
+    - Cuando trabajes con metadata de generación de proyectos (BootstrapMetadata)
+    - Cuando necesites entender el audit trail de proyectos TAC Bootstrap
+    - Cuando modifiques el modelo BootstrapMetadata en domain/models.py
+    - Cuando trabajes con registro automático de metadata en scaffold_service.py
+    - Cuando implementes o modifiques el template config.yml.j2 relacionado a metadata
+    - Cuando trabajes con timestamps UTC ISO8601 en generación de proyectos
+    - Cuando necesites entender schema_version y versioning strategy
+    - Cuando implementes el comando upgrade (FASE 4) que depende de metadata
+    - Cuando trabajes con fallback handling para __version__ import
+    - Cuando necesites referencia sobre backward compatibility en templates (conditional rendering)
+    - Cuando debugues problemas de metadata en config.yml generados
+    - Cuando trabajes con el campo last_upgrade (placeholder para upgrade command)
+    - Cuando necesites entender la diferencia entre metadata section y bootstrap section en config.yml
