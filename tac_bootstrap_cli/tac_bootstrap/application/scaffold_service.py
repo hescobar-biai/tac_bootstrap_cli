@@ -588,12 +588,24 @@ class ScaffoldService:
 
         from tac_bootstrap.domain.models import BootstrapMetadata
 
-        config.metadata = BootstrapMetadata(
-            generated_at=datetime.now(timezone.utc).isoformat(),
-            generated_by=f"tac-bootstrap v{__version__}",
-            schema_version=2,
-            last_upgrade=None,  # Not set on initial generation, only on upgrade
-        )
+        # Handle metadata for initial generation vs upgrade
+        if config.metadata is not None:
+            # This is an upgrade - preserve original generated_at and update last_upgrade
+            original_generated_at = config.metadata.generated_at
+            config.metadata = BootstrapMetadata(
+                generated_at=original_generated_at,
+                generated_by=f"tac-bootstrap v{__version__}",
+                schema_version=2,
+                last_upgrade=datetime.now(timezone.utc).isoformat(),
+            )
+        else:
+            # This is initial generation
+            config.metadata = BootstrapMetadata(
+                generated_at=datetime.now(timezone.utc).isoformat(),
+                generated_by=f"tac-bootstrap v{__version__}",
+                schema_version=2,
+                last_upgrade=None,  # Not set on initial generation, only on upgrade
+            )
 
         result = ApplyResult()
         fs = FileSystem()
