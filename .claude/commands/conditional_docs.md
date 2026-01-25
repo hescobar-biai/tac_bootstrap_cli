@@ -1240,3 +1240,18 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features de FASE 6 (Documentación Fractal como Skill)
     - Cuando trabajes con templates de config/ directory
     - Cuando necesites referencia sobre YAML templates con Jinja2 conditionals
+
+- app_docs/feature-feature_6_6-conditional-docs-fractal-guidance.md
+  - Conditions:
+    - Cuando trabajes con el template conditional_docs.md.j2 y reglas de documentación fractal
+    - Cuando necesites entender cómo guiar a agentes AI sobre uso de fractal documentation tools
+    - Cuando modifiques o extiendas conditional_docs.md.j2 con nuevas reglas
+    - Cuando trabajes con integración de slash commands de documentación en conditional guidelines
+    - Cuando implementes reglas condicionales para /generate_fractal_docs
+    - Cuando necesites referencia sobre cuándo leer docs/ directory o canonical_idk.yml
+    - Cuando trabajes con dual-purpose pattern (template + rendered file en raíz)
+    - Cuando implementes completion de FASE 6 (Documentación Fractal como Skill)
+    - Cuando modifiques .claude/commands/conditional_docs.md en raíz del proyecto
+    - Cuando debugues problemas de conditional documentation rules
+    - Cuando trabajes con parametrización de paths usando {{ config.paths.app_root | default("src") }}
+    - Cuando necesites entender el cierre del loop entre generación y consumo de documentación fractal
