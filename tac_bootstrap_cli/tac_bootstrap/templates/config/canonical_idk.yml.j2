@@ -1,0 +1,40 @@
+# Canonical IDK Vocabulary for {{ config.project.name }}
+# Used by fractal documentation generators to maintain consistent terminology
+#
+# This file defines domain-specific keywords organized by category.
+# Documentation generators use these terms to identify relevant concepts.
+#
+# You can extend this vocabulary by adding new domains or keywords.
+# Format: Each domain contains a list of comma-separated keyword strings.
+
+domains:
+{% if config.project.language.value == "python" %}
+  backend:
+    - api-gateway, routing, middleware, authentication, authorization
+    - database, repository, orm, migration, session-management
+    - service-layer, use-case, business-logic, domain-model
+    - validation, serialization, dto, schema
+    - error-handling, exception, http-status
+    - dependency-injection, factory, singleton
+  testing:
+    - unit-test, integration-test, fixture, mock, assertion
+    - test-coverage, parametrize, conftest
+{% endif %}
+{% if config.project.language.value == "typescript" %}
+  frontend:
+    - component, hook, state-management, context, reducer
+    - routing, navigation, page, layout
+    - rendering, virtual-dom, reconciliation, hydration
+    - styling, css-modules, tailwind, theme
+  backend:
+    - controller, middleware, guard, interceptor, pipe
+    - module, provider, injectable, decorator
+    - dto, entity, repository, service
+{% endif %}
+  infrastructure:
+    - deployment, ci-cd, docker, kubernetes
+    - monitoring, logging, metrics, alerting
+    - configuration, environment, secrets
+  documentation:
+    - docstring, jsdoc, fractal-docs, idk-keywords
+    - readme, changelog, api-reference
