@@ -19,6 +19,7 @@ Usage:
     uv run trigger_issue_chain.py 123 456 789
     uv run trigger_issue_chain.py --issues 123,456,789
     uv run trigger_issue_chain.py --issues 123,456,789 --interval 30
+    uv run trigger_issue_chain.py --issues 123,456,789 --once
 """
 
 import argparse
@@ -360,6 +361,12 @@ Supported workflows:
         default=20,
         help="Polling interval in seconds (default: 20)",
     )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        default=False,
+        help="Run a single chain check cycle and exit (useful for testing)",
+    )
     return parser.parse_args()
 
 
@@ -382,6 +389,14 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
+    # Single execution mode
+    if args.once:
+        print("INFO: Running single chain check cycle (--once mode)")
+        check_and_process_issues(issue_chain)
+        print("INFO: Single cycle complete, exiting")
+        return
+
+    # Normal loop mode - schedule and run continuously
     # Schedule the check function
     schedule.every(interval).seconds.do(check_and_process_issues, issue_chain)
 
