@@ -101,6 +101,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
 
 ## Feature Documentation
 
+- app_docs/feature-feature_v_3_0_1_task_6-trigger-polling-docs.md
+  - Conditions:
+    - When working with ADW trigger polling configuration
+    - When documenting trigger intervals and CLI flags
+    - When understanding GitHub API rate limiting for triggers
+    - When configuring polling intervals for different use cases
+    - When working with adws/README.md or trigger documentation
+
 - app_docs/feature-chore_8_2-changelog-update.md
   - Conditions:
     - When working with CHANGELOG.md
