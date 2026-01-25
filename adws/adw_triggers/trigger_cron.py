@@ -9,9 +9,9 @@
 # ///
 
 """
-Cron-based ADW trigger system that monitors GitHub issues and automatically processes them.
+Cron-based ADW trigger system for TAC Bootstrap.
 
-This script polls GitHub at a configurable interval to detect issues or comments
+Polls GitHub at a configurable interval to detect issues or comments
 containing ADW workflow commands (e.g., adw_plan_iso, adw_sdlc_iso, etc.).
 
 When a qualifying issue/comment is found, it triggers the corresponding workflow
@@ -52,6 +52,9 @@ from adw_modules.workflow_ops import AVAILABLE_ADW_WORKFLOWS, extract_adw_info
 
 # Load environment variables from current or parent directories
 load_dotenv()
+
+# Default polling interval
+DEFAULT_INTERVAL = 20
 
 # Get repository URL from git remote
 try:
@@ -300,11 +303,11 @@ def check_and_process_issues():
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description="Cron-based ADW trigger that polls GitHub issues for workflow commands.",
+        description="Cron-based ADW trigger for TAC Bootstrap.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    uv run trigger_cron.py                    # Default 20s interval
+    uv run trigger_cron.py                    # Default interval
     uv run trigger_cron.py --interval 30      # Poll every 30 seconds
     uv run trigger_cron.py -i 60              # Poll every 60 seconds
 
@@ -315,8 +318,8 @@ Supported workflows:
     parser.add_argument(
         "-i", "--interval",
         type=int,
-        default=20,
-        help="Polling interval in seconds (default: 20)",
+        default=DEFAULT_INTERVAL,
+        help=f"Polling interval in seconds (default: {DEFAULT_INTERVAL})",
     )
     return parser.parse_args()
 
@@ -326,7 +329,7 @@ def main():
     args = parse_args()
     interval = args.interval
 
-    print(f"INFO: Starting ADW cron trigger")
+    print(f"INFO: Starting ADW cron trigger for TAC Bootstrap")
     print(f"INFO: Repository: {REPO_PATH}")
     print(f"INFO: Polling interval: {interval} seconds")
     print(f"INFO: Supported workflows: {len(AVAILABLE_ADW_WORKFLOWS)}")
