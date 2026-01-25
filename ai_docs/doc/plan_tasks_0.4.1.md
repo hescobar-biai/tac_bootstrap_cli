@@ -1,6 +1,6 @@
 # Task Plan: ADW Triggers Synchronization & Enhancement
 
-**Version Target:** 0.3.2
+**Version Target:** 0.4.1
 **Created:** 2026-01-25
 **Scope:** Synchronize templates with root files, update documentation
 
@@ -125,10 +125,10 @@ Add a dedicated section documenting recommended polling intervals and GitHub API
 
 ## Task 9
 
-### [CHORE] Update CHANGELOG.md with version 0.3.2
+### [CHORE] Update CHANGELOG.md with version 0.4.1
 
 **Description:**
-Document all changes introduced in this task plan under a new version 0.3.2 entry following Keep a Changelog format and semantic versioning.
+Document all changes introduced in this task plan under a new version 0.4.1 entry following Keep a Changelog format and semantic versioning.
 
 **Files affected:**
 - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/CHANGELOG.md`
@@ -136,7 +136,7 @@ Document all changes introduced in this task plan under a new version 0.3.2 entr
 **Content to add between `## [0.4.0]` and `## [0.3.0]` sections:**
 
 ```markdown
-## [0.3.2] - 2026-01-25
+## [0.4.1] - 2026-01-25
 
 ### Added
 - User assignment validation in all ADW triggers (cron, webhook, issue_chain)
@@ -161,7 +161,7 @@ Document all changes introduced in this task plan under a new version 0.3.2 entr
 - [ ] Task 5: Sync trigger_issue_chain.py.j2 (user validation from ROOT)
 - [ ] Task 6: Sync github.py.j2 (user validation functions from ROOT)
 - [ ] Task 8: Add polling docs to README
-- [ ] Task 9: Update CHANGELOG.md to v0.3.2
+- [ ] Task 9: Update CHANGELOG.md to v0.4.1
 
 ---
 
@@ -183,7 +183,7 @@ grep "is_issue_assigned_to_me" tac_bootstrap_cli/tac_bootstrap/templates/adws/ad
 grep "Trigger Polling Configuration" tac_bootstrap_cli/README.md
 
 # Verify CHANGELOG updated
-grep "0.3.2" CHANGELOG.md
+grep "0.4.1" CHANGELOG.md
 
 # Run tests
 uv run pytest tac_bootstrap_cli/tests/ -v
