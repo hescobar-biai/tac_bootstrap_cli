@@ -634,6 +634,19 @@ The issue chain trigger detects the same workflow commands as the cron/webhook t
 
 > **Important**: The issue chain trigger only processes issues assigned to the currently authenticated `gh` user. If an issue in the chain is open but not assigned to the current user, it will be skipped and the trigger will check the next issue.
 
+#### Trigger Polling Configuration
+
+| Trigger | Default Interval | Recommended Range | Notes |
+|---------|------------------|-------------------|-------|
+| `trigger_cron.py` | 20s | 15s - 60s | Lower intervals increase API usage |
+| `trigger_issue_chain.py` | 20s | 20s - 120s | Sequential processing, less frequent OK |
+
+**GitHub API Rate Limiting:**
+- Authenticated requests: 5,000/hour
+- Each polling cycle makes 1-3 API calls per open issue
+- For repos with many open issues, use longer intervals (30s+)
+- Monitor rate limits: `gh api rate_limit`
+
 ### Key Concepts
 
 - **Isolation**: Each workflow runs in a dedicated git worktree under `trees/<adw-id>/`

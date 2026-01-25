@@ -101,6 +101,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
 
 ## Feature Documentation
 
+- app_docs/feature-chore_v_0_4_1_task_8-trigger-polling-interval-docs.md
+  - Conditions:
+    - When working with trigger polling configuration in tac_bootstrap_cli
+    - When documenting polling intervals for trigger_cron.py and trigger_issue_chain.py
+    - When understanding GitHub API rate limiting for triggers
+    - When configuring polling intervals based on repository size
+    - When working with tac_bootstrap_cli/README.md trigger documentation
+    - When monitoring API usage and rate limits
+
 - app_docs/feature-feature_v_3_0_1_task_6-trigger-polling-docs.md
   - Conditions:
     - When working with ADW trigger polling configuration
