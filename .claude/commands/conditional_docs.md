@@ -1299,3 +1299,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando debugues problemas de frontmatter YAML en feature docs generadas
     - Cuando trabajes con Jinja2 variables en templates de comandos (config.adw_id, config.capability)
     - Cuando necesites entender el formato de documentación de features en app_docs/
+
+- app_docs/feature-feature_7_2-integrate-fractal-docs-workflow.md
+  - Conditions:
+    - Cuando trabajes con integración de fractal docs en adw_document_iso.py
+    - Cuando necesites entender cómo el workflow de documentación actualiza automáticamente fractal docs
+    - Cuando modifiques o extiendas adw_document_iso.py o su template adw_document_iso.py.j2
+    - Cuando trabajes con ejecución non-blocking de /generate_fractal_docs desde workflows
+    - Cuando implementes features de documentación automática dual (feature docs + fractal docs)
+    - Cuando necesites referencia sobre AgentTemplateRequest con args=['changed']
+    - Cuando trabajes con integración de comandos slash en workflows ADW
+    - Cuando debugues problemas de sincronización entre app_docs/ y docs/
+    - Cuando necesites entender el patrón de try-except para operaciones non-blocking
+    - Cuando trabajes con commits automáticos de múltiples tipos de documentación
+    - Cuando implementes features relacionadas con FASE 7 (Document Workflow Mejorado)
