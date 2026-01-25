@@ -1434,3 +1434,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando agregues filtrado de issues por current GitHub user
     - Cuando necesites ejemplos de template synchronization manteniendo Jinja2 variables
     - Cuando trabajes con validación de permisos en ADW triggers
+
+- app_docs/feature-chore_v_0_4_1_task_5-sync-trigger-issue-chain-user-validation.md
+  - Conditions:
+    - Cuando trabajes con tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/trigger_issue_chain.py.j2
+    - Cuando necesites entender user assignment validation en issue chain triggers
+    - Cuando sincronices el template de issue chain con funcionalidad de user filtering
+    - Cuando implementes auto-assignment en issue chain workflows
+    - Cuando agregues filtrado de issues por current GitHub user en chains
+    - Cuando necesites ejemplos de template synchronization preservando Jinja2 variables
+    - Cuando trabajes con procesamiento de issue chains restringido por usuario
+    - Cuando debugues problemas de assignment en workflows de issue chain
