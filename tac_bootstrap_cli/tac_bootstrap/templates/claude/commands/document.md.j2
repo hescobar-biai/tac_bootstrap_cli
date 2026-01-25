@@ -21,22 +21,45 @@ documentation_screenshots_dir: $3 if provided, otherwise leave blank
   - Expected functionality
   - Success criteria
 
-### 3. Generate Documentation
+### 3. Extract IDK Keywords
+- Analyze the code changes and extract 3-8 Information Dense Keywords (IDK)
+- If `canonical_idk.yml` exists, prioritize keywords from it
+- Supplement canonical terms with feature-specific keywords as needed
+- Keywords should represent core concepts, patterns, technologies, or domain terms
+
+### 4. Generate Documentation
 - Create file in `{{ config.paths.app_docs_dir | default('app_docs') }}/` with name: `feature-{adw_id}-{descriptive-name}.md`
-- Follow the documentation format below
+- Follow the documentation format below including YAML frontmatter
 - Focus on:
   - What was built (based on git diff)
   - How it works (technical implementation)
   - How to use it (user perspective)
   - Required configuration or setup
+  - Testing instructions with executable bash commands
 
-### 4. Update Conditional Documentation
+### 5. Update Conditional Documentation
 - After creating the file, read `.claude/commands/conditional_docs.md`
 - Add entry for the new file with appropriate conditions
 
 ## Documentation Format
 
 ```md
+---
+doc_type: feature
+adw_id: {{ config.adw_id | default('N/A') }}
+date: <current date YYYY-MM-DD>
+idk:
+  - keyword1
+  - keyword2
+  - keyword3
+tags:
+  - feature
+  - {{ config.capability | default('general') }}
+related_code:
+  - path/to/file1.py
+  - path/to/test_file1.py
+---
+
 # <Feature Title>
 
 **ADW ID:** <adw_id>
@@ -81,11 +104,15 @@ documentation_screenshots_dir: $3 if provided, otherwise leave blank
 
 <Description of how to test the feature>
 
-{% if config.commands.test %}
 ```bash
-{{ config.commands.test }}
+<executable command 1>
 ```
-{% endif %}
+
+<Description of additional test if needed>
+
+```bash
+<executable command 2>
+```
 
 ## Notes
 

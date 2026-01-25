@@ -1284,3 +1284,18 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con tests de integración ScaffoldService para fractal docs scripts
     - Cuando valides que canonical_idk.yml, run_generators.sh, generate_fractal_docs.md renderizan correctamente
     - Cuando necesites referencia sobre syntax-only validation patterns para templates
+
+- app_docs/feature-feature_7_1-document-template-idk-frontmatter.md
+  - Conditions:
+    - Cuando trabajes con el template document.md.j2 o el slash command /document
+    - Cuando necesites entender cómo generar documentación de features con frontmatter YAML
+    - Cuando modifiques o extiendas templates/claude/commands/document.md.j2
+    - Cuando trabajes con extracción de IDK keywords desde código implementado
+    - Cuando implementes features que requieran metadata estructurado en documentación
+    - Cuando necesites referencia sobre integración con canonical_idk.yml
+    - Cuando trabajes con generación de secciones de Testing con comandos ejecutables
+    - Cuando modifiques .claude/commands/document.md en raíz del proyecto
+    - Cuando implementes update automático de conditional_docs.md desde /document
+    - Cuando debugues problemas de frontmatter YAML en feature docs generadas
+    - Cuando trabajes con Jinja2 variables en templates de comandos (config.adw_id, config.capability)
+    - Cuando necesites entender el formato de documentación de features en app_docs/

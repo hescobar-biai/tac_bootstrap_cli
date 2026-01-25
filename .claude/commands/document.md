@@ -21,22 +21,45 @@ documentation_screenshots_dir: $3 si se proporciona, de lo contrario dejar en bl
   - Funcionalidad esperada
   - Criterios de éxito
 
-### 3. Generar Documentación
+### 3. Extraer Keywords IDK
+- Analizar los cambios de código y extraer 3-8 palabras clave (Information Dense Keywords - IDK)
+- Si existe `canonical_idk.yml`, priorizar keywords de ese archivo
+- Complementar términos canónicos con keywords específicas del feature según sea necesario
+- Las keywords deben representar conceptos core, patrones, tecnologías o términos de dominio
+
+### 4. Generar Documentación
 - Crear archivo en `app_docs/` con nombre: `feature-{adw_id}-{descriptive-name}.md`
-- Seguir el formato de documentación abajo
+- Seguir el formato de documentación abajo incluyendo frontmatter YAML
 - Enfocar en:
   - Qué se construyó (basado en git diff)
   - Cómo funciona (implementación técnica)
   - Cómo usarlo (perspectiva de usuario)
   - Configuración o setup requerido
+  - Instrucciones de testing con comandos bash ejecutables
 
-### 4. Actualizar Documentación Condicional
+### 5. Actualizar Documentación Condicional
 - Después de crear el archivo, leer `.claude/commands/conditional_docs.md`
 - Agregar entrada para el nuevo archivo con condiciones apropiadas
 
 ## Documentation Format
 
 ```md
+---
+doc_type: feature
+adw_id: N/A
+date: <fecha actual YYYY-MM-DD>
+idk:
+  - keyword1
+  - keyword2
+  - keyword3
+tags:
+  - feature
+  - general
+related_code:
+  - path/to/file1.py
+  - path/to/test_file1.py
+---
+
 # <Feature Title>
 
 **ADW ID:** <adw_id>
@@ -82,7 +105,13 @@ documentation_screenshots_dir: $3 si se proporciona, de lo contrario dejar en bl
 <Descripción de cómo probar la feature>
 
 ```bash
-cd tac_bootstrap_cli && uv run pytest tests/ -v -k "<test_name>"
+<comando ejecutable 1>
+```
+
+<Descripción de test adicional si es necesario>
+
+```bash
+<comando ejecutable 2>
 ```
 
 ## Notes
