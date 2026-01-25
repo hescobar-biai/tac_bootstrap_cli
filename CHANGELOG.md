@@ -5,6 +5,24 @@ All notable changes to TAC Bootstrap will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-01-25
+
+### Added
+- `--once` flag in `adws/adw_triggers/trigger_cron.py` for single execution cycle
+- `--once` flag in `adws/adw_triggers/trigger_issue_chain.py` for single execution cycle
+- Documentation for `trigger_issue_chain.py` in `adws/README.md`
+- Trigger polling configuration section in `adws/README.md`
+- Complete docstring in `adws/adw_triggers/__init__.py` with all available triggers
+
+### Fixed
+- `config.yml` structure aligned with `TACConfig` schema
+- Moved `allowed_paths` and `forbidden_paths` into `agentic.safety` section
+- Restructured `workflows` configuration under `agentic.workflows`
+- Added missing `claude` configuration section
+
+### Changed
+- N/A
+
 ## [0.3.0] - 2026-01-25
 
 ### Added
