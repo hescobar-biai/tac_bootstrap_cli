@@ -1269,3 +1269,18 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender cómo se eliminó duplicación de scripts en _add_script_files()
     - Cuando trabajes con FileAction.CREATE para archivos fractal docs
     - Cuando necesites referencia sobre estructura completa del sistema fractal docs (5 files + 1 directory)
+
+- app_docs/chore-chore_6_7-fractal-docs-templates-tests.md
+  - Conditions:
+    - Cuando trabajes con tests de templates de fractal documentation
+    - Cuando necesites entender cómo testear templates de scripts Python (gen_docstring_jsdocs.py.j2, gen_docs_fractal.py.j2)
+    - Cuando modifiques o extiendas tests en tests/test_fractal_docs_templates.py
+    - Cuando trabajes con validación de templates usando ast.parse, yaml.safe_load
+    - Cuando necesites referencia sobre testing de templates para Python vs TypeScript configurations
+    - Cuando implementes nuevos templates de fractal docs y necesites tests de referencia
+    - Cuando trabajes con fixtures de configuración (python_config, typescript_config)
+    - Cuando debugues problemas de rendering de templates fractal
+    - Cuando necesites entender tests de domain-specific keywords (backend/frontend)
+    - Cuando trabajes con tests de integración ScaffoldService para fractal docs scripts
+    - Cuando valides que canonical_idk.yml, run_generators.sh, generate_fractal_docs.md renderizan correctamente
+    - Cuando necesites referencia sobre syntax-only validation patterns para templates
