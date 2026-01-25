@@ -1,0 +1,62 @@
+# Generate Fractal Documentation
+
+Generate or update the fractal documentation tree for this project.
+
+## Arguments
+- $SCOPE: Scope of generation. Options: "full" (all files), "changed" (only git-changed files). Default: "changed"
+
+## Instructions
+
+1. Verify that the documentation generator script exists:
+   ```bash
+   if [ ! -f scripts/run_generators.sh ]; then
+     echo "Error: scripts/run_generators.sh not found."
+     echo "This script should be generated with the TAC Bootstrap Agentic Layer."
+     echo "Run: tac-bootstrap init"
+     exit 1
+   fi
+   ```
+
+2. Run the fractal documentation generator:
+   ```bash
+   {% if SCOPE == "full" %}
+   bash scripts/run_generators.sh
+   {% else %}
+   bash scripts/run_generators.sh --changed-only
+   {% endif %}
+
+   if [ $? -ne 0 ]; then
+     echo "Error: Documentation generation failed. See output above for details."
+     exit 1
+   fi
+   ```
+
+3. Review the generated documentation:
+   - Check the output above for generation summary
+   - Examine files in `docs/` directory
+
+4. If new files were created or existing files were updated, verify:
+   - Frontmatter has valid YAML
+   - IDK keywords are relevant to the module
+   - Overview section accurately describes the folder contents
+
+5. Commit the documentation changes (if any):
+   ```bash
+   if ! git diff --quiet docs/; then
+     git add docs/
+     git commit -m "docs: update fractal documentation"
+     echo "Documentation changes committed."
+   else
+     echo "No documentation changes to commit."
+   fi
+   ```
+
+## Expected Output
+- Updated/created markdown files in `docs/` directory
+- One file per folder in `{{ config.paths.app_root | default("src") }}/`
+- Each file has frontmatter with IDK keywords and structured body sections
+
+## Notes
+- The `docs/` directory is created automatically if it doesn't exist
+- If git is not initialized and `--changed-only` is used, the script falls back to full generation
+- Run with `SCOPE=full` to regenerate all documentation from scratch

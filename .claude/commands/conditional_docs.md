@@ -1185,3 +1185,22 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con error handling en bash scripts (command existence checks, directory validation)
     - Cuando necesites referencia sobre progress reporting en pipelines multi-step
     - Cuando implementes features similares de orchestration con múltiples tools
+
+- app_docs/feature-feature_6_4-generate-fractal-docs-command.md
+  - Conditions:
+    - Cuando trabajes con el template generate_fractal_docs.md.j2 o el slash command /generate_fractal_docs
+    - Cuando necesites entender cómo invocar documentación fractal desde Claude Code workflow
+    - Cuando modifiques o extiendas .claude/commands/generate_fractal_docs.md
+    - Cuando trabajes con slash commands que wrappean scripts de orquestación
+    - Cuando implementes SCOPE arguments (full vs changed) para generación incremental
+    - Cuando necesites referencia sobre prerequisite validation en slash commands
+    - Cuando trabajes con smart commit logic (solo commit si hay cambios)
+    - Cuando implementes error handling en comandos Claude Code
+    - Cuando trabajes con integration de slash commands y bash scripts
+    - Cuando debugues problemas de invocación de run_generators.sh desde Claude Code
+    - Cuando necesites entender user guidance workflows en slash commands
+    - Cuando trabajes con review instructions post-generation
+    - Cuando implementes features de FASE 6 (Documentación Fractal como Skill)
+    - Cuando modifiques templates de comandos slash parametricos
+    - Cuando necesites referencia sobre defensive wrapper patterns
+    - Cuando trabajes con git diff checks para commit logic
