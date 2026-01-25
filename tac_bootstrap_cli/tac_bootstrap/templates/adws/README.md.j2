@@ -14,7 +14,9 @@ Este directorio contiene los workflows automatizados para {{ config.project.name
 ├── adw_sdlc_iso.py       # Workflow SDLC completo
 ├── adw_patch_iso.py      # Workflow de patch rapido
 └── adw_triggers/         # Triggers automaticos
-    └── trigger_cron.py   # Polling de tareas
+    ├── trigger_cron.py        # Polling de tareas
+    ├── trigger_issue_chain.py # Procesamiento secuencial
+    └── trigger_webhook.py     # Eventos en tiempo real
 ```
 
 ## Workflows Disponibles
