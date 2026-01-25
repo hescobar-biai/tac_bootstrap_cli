@@ -99,6 +99,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
   - Read `canonical_idk.yml` for approved domain keywords
   - Use these keywords in docstrings and documentation
 
+- app_docs/feature-chore_8_1-readme-documentation-update.md
+  - Conditions:
+    - When working on README documentation updates
+    - When documenting v0.3.0 features (entity generation, base classes, fractal docs)
+    - When understanding the documentation structure for CLI features
+    - When learning about multi-layer validation documentation
+
 - app_docs/feature-e5a04ca0-python-package-structure.md
   - Conditions:
     - Cuando necesites entender la estructura base del paquete Python

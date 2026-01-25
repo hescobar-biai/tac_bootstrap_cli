@@ -18,7 +18,7 @@ Transform any repository into an AI-assisted development environment in minutes.
 
 ```bash
 # Clone the release
-git clone --branch v0.2.2 --depth 1 https://github.com/celes-app/tac-cli-dist.git
+git clone --branch v0.3.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
 make install-dev
 
@@ -35,7 +35,7 @@ tac-bootstrap init my-awesome-app
 ### Option 2: Development Install (for contributing)
 
 ```bash
-git clone --branch v0.2.2 --depth 1 https://github.com/celes-app/tac-cli-dist.git
+git clone --branch v0.3.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
 make install-dev
 
@@ -108,7 +108,7 @@ See [.env.example](.env.example) for the complete list with documentation.
 
 ```bash
 # 1. Clone latest release and install
-git clone --branch v0.2.2 --depth 1 https://github.com/celes-app/tac-cli-dist.git
+git clone --branch v0.3.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
 make install-dev
 
@@ -260,6 +260,98 @@ tac-bootstrap render config.yml --force --dry-run
 tac-bootstrap version
 ```
 
+### Entity Generation (DDD Projects)
+
+Generate complete CRUD entities with vertical slice architecture:
+
+```bash
+# Interactive wizard (recommended)
+tac-bootstrap generate entity Product
+
+# Non-interactive with fields
+tac-bootstrap generate entity Product \
+  --capability catalog \
+  --fields "name:str:required,price:float:required,description:text,is_available:bool" \
+  --no-interactive
+
+# With authorization (row-level security)
+tac-bootstrap generate entity Order \
+  --capability orders \
+  --fields "total:decimal:required,status:str:required" \
+  --authorized \
+  --no-interactive
+
+# Preview without creating files
+tac-bootstrap generate entity User --dry-run
+
+# Force overwrite existing entity
+tac-bootstrap generate entity Product -c catalog --force
+```
+
+#### Available Options for `generate entity`
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--capability` | `-c` | Capability/module name (default: entity name in kebab-case) |
+| `--fields` | `-f` | Field definitions: "name:type[:required]" comma-separated |
+| `--authorized` | | Generate with row-level security templates |
+| `--async` | | Use async repository (AsyncSession) |
+| `--with-events` | | Generate domain events |
+| `--interactive` | | Interactive wizard (default) |
+| `--dry-run` | | Preview without creating files |
+| `--force` | | Overwrite existing entity files |
+
+#### Field Types
+
+| Type | Python Type | SQLAlchemy Type |
+|------|------------|-----------------|
+| `str` | `str` | `String(max_length)` |
+| `int` | `int` | `Integer` |
+| `float` | `float` | `Float` |
+| `bool` | `bool` | `Boolean` |
+| `datetime` | `datetime` | `DateTime` |
+| `uuid` | `str` | `String(36)` |
+| `text` | `str` | `Text` |
+| `decimal` | `Decimal` | `Numeric` |
+| `json` | `dict` | `JSON` |
+
+#### Generated Structure
+
+```
+src/{capability}/
+├── domain/
+│   └── {entity}.py          # Domain model (extends BaseEntity)
+├── application/
+│   ├── schemas.py            # Create/Update/Response DTOs
+│   └── service.py            # CRUD service (extends BaseService)
+├── infrastructure/
+│   ├── models.py             # SQLAlchemy ORM model
+│   └── repository.py         # Data access (extends BaseRepository)
+└── api/
+    └── routes.py             # FastAPI CRUD endpoints
+```
+
+> **Requirement**: Entity generation requires `--architecture ddd|clean|hexagonal` and `--framework fastapi`. The shared base classes in `src/shared/` must exist (generated automatically with `init`).
+
+### Shared Base Classes (DDD Architecture)
+
+When using `--architecture ddd` with `--framework fastapi`, the CLI generates shared infrastructure in `src/shared/`:
+
+| File | Purpose |
+|------|---------|
+| `domain/base_entity.py` | Entity base with audit trail, soft delete, state management |
+| `domain/base_schema.py` | BaseCreate, BaseUpdate, BaseResponse DTOs |
+| `application/base_service.py` | Generic CRUD service with typed generics |
+| `infrastructure/base_repository.py` | Generic SQLAlchemy repository (sync) |
+| `infrastructure/base_repository_async.py` | Generic async repository |
+| `infrastructure/database.py` | SQLAlchemy session management |
+| `infrastructure/exceptions.py` | Typed exceptions with HTTP handlers |
+| `infrastructure/responses.py` | PaginatedResponse, ErrorResponse models |
+| `infrastructure/dependencies.py` | FastAPI dependency injection factories |
+| `api/health.py` | Health check endpoint |
+
+These classes eliminate ~80% of boilerplate per entity. Each new entity inherits from them.
+
 ## Upgrading Projects
 
 If you have a project created with an older version of TAC Bootstrap, you can upgrade it to the latest templates:
@@ -366,6 +458,16 @@ Options:
   --no-backup             Skip creating backup before upgrade
   --force                 Force upgrade even if versions match
 ```
+
+### Multi-layer Validation
+
+The CLI validates configurations in multiple layers before generating:
+
+1. **Schema** - Pydantic type validation
+2. **Domain** - Framework/language compatibility rules
+3. **Template** - Referenced templates exist
+4. **Filesystem** - Output directory writable, no conflicts
+5. **Git** - Repository state warnings
 
 ## Generated Structure
 
@@ -541,6 +643,46 @@ agentic:
     max_parallel: 5
 ```
 
+## Fractal Documentation
+
+Projects include automatic documentation generation tools:
+
+### Generate Documentation
+
+```bash
+# Run fractal documentation generators
+bash scripts/run_generators.sh
+
+# Only process changed files
+bash scripts/run_generators.sh --changed-only
+
+# Preview without writing
+bash scripts/run_generators.sh --dry-run
+```
+
+### What It Does
+
+1. **Step 1: Docstring Enrichment** (`gen_docstring_jsdocs.py`)
+   - Adds IDK-first docstrings to Python/TypeScript files
+   - Keywords, Responsibility, Invariants, Failure Modes
+
+2. **Step 2: Fractal Docs** (`gen_docs_fractal.py`)
+   - Generates one markdown per folder in `docs/`
+   - Bottom-up processing (deeper folders first)
+   - Frontmatter with IDK keywords, tags, and relationships
+
+### Slash Command
+
+Use `/generate_fractal_docs` in Claude Code:
+```
+/generate_fractal_docs changed   # Only changed files
+/generate_fractal_docs full      # All files
+```
+
+### Canonical IDK Vocabulary
+
+Edit `canonical_idk.yml` to define approved keywords for your domain. The generators use this vocabulary for consistent terminology across all documentation.
+
 ## Workflows
 
 ### SDLC Workflow
@@ -579,6 +721,13 @@ After setup, use these commands with Claude Code:
 - Python 3.10+
 - Git
 - Claude Code CLI
+- SQLAlchemy (for generated DDD projects)
+- FastAPI (for generated API projects)
+
+### Optional (for Fractal Documentation)
+
+- OpenAI-compatible API (Ollama local recommended)
+- `OPENAI_BASE_URL` and `OPENAI_API_KEY` environment variables
 
 ## Contributing
 
