@@ -96,9 +96,9 @@ class TestUpgradeService:
         assert version is None
 
     def test_get_current_version_no_version_field(self, tmp_path: Path) -> None:
-        """get_current_version should return '0.1.0' for pre-0.2.0 projects without version field.
+        """get_current_version should return '0.1.0' for pre-0.3.0 projects without version field.
         """
-        # Create config without version field (pre-0.2.0 projects)
+        # Create config without version field (pre-0.3.0 projects)
         config_file = tmp_path / "config.yml"
         config_data = {
             "project": {"name": "old-project"},
