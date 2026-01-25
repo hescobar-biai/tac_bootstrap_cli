@@ -8,13 +8,13 @@ Summary metrics across all ADW runs.
 
 | Metric            | Value          | Last Updated             |
 | ----------------- | -------------- | ------------------------ |
-| Current Streak    | 84             | 2026-01-25 10:05:00      |
-| Longest Streak    | 84             | 2026-01-25 10:05:00      |
-| Total Plan Size   | 17611 lines    | 2026-01-25 10:05:00      |
-| Largest Plan Size | 673 lines      | 2026-01-25 10:05:00      |
-| Total Diff Size   | 83872 lines    | 2026-01-25 10:05:00      |
-| Largest Diff Size | 6832 lines     | 2026-01-25 10:05:00      |
-| Average Presence  | 1.00           | 2026-01-25 10:05:00      |
+| Current Streak    | 93             | Sun Jan 25 17:57:28 2026 |
+| Longest Streak    | 93             | Sun Jan 25 17:57:28 2026 |
+| Total Plan Size   | 18556 lines    | Sun Jan 25 17:57:28 2026 |
+| Largest Plan Size | 673 lines      | Sun Jan 25 17:57:28 2026 |
+| Total Diff Size   | 87363 lines    | Sun Jan 25 17:57:28 2026 |
+| Largest Diff Size | 6832 lines     | Sun Jan 25 17:57:28 2026 |
+| Average Presence  | 1.00           | Sun Jan 25 17:57:28 2026 |
 
 ## ADW KPIs
 
@@ -106,3 +106,12 @@ Detailed metrics for individual ADW workflow runs.
 | Sun Jan 25 2026  | chore_8_2      | 188        | /chore      | 1        | 87                | 336/7/7                         | Sun Jan 25 01:23:01 -05 2026 | -       |
 | Sun Jan 25 2026  | feature_8_3    | 189        | /feature    | 1        | 192               | 678/9/9                         | 2026-01-25 08:57:21          | -       |
 | Sun Jan 25 2026  | bug_v_3_0_1_task_1 | 204    | /bug        | 1        | 125               | 384/59/19                       | 2026-01-25 10:05:00          | -       |
+| Sun Jan 25 2026  | feature_v_3_0_1_task_2 | 205 | /feature    | 1        | 178               | 499/72/11                       | Sun Jan 25 10:37:02 -05 2026 | -       |
+| Sun Jan 25 2026  | feature_v_3_0_1_task_4 | 207 | /feature    | 1        | 138               | 337/3/8                         | Sun Jan 25 12:49:39 -05 2026 | -       |
+| Sun Jan 25 2026  | chore_v_3_0_1_task_5 | 208 | /chore      | 1        | 71                | 327/4/8                         | Sun Jan 25 13:05:26 -05 2026 | -       |
+| Sun Jan 25 2026  | feature_v_3_0_1_task_6 | 209 | /feature    | 1        | 146               | 419/2/8                         | Sun Jan 25 13:26:55 -05 2026 | -       |
+| Sun Jan 25 2026  | chore_v_3_0_1_task_7-3 | 210 | /chore      | 1        | 131               | 407/2/8                         | Sun Jan 25 13:47:13 -05 2026 | -       |
+| Sat Jan 25 2026  | chore_v_0_4_1_task_3 | 219 | /chore      | 1        | 65                | 614/3/8                         | 2026-01-25 15:39:04          | -       |
+| Sun Jan 25 2026  | chore_v_0_4_1_task_4 | 220 | /chore      | 1        | 86                | 272/2/7                         | Sun Jan 25 15:56:24 -05 2026 | -       |
+| Sun Jan 25 2026  | chore_v_0_4_1_task_5 | 221 | /chore      | 1        | 66                | 256/5/7                         | 2026-01-25 17:05:55          | -       |
+| Sun Jan 25 2026  | chore_v_0_4_1_task_6_2 | 222 | /chore    | 1        | 64                | 265/2/6                         | Sun Jan 25 17:57:28 -05 2026 | -       |

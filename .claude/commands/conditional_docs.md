@@ -101,6 +101,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
 
 ## Feature Documentation
 
+- app_docs/feature-feature_v_3_0_1_task_6-trigger-polling-docs.md
+  - Conditions:
+    - When working with ADW trigger polling configuration
+    - When documenting trigger intervals and CLI flags
+    - When understanding GitHub API rate limiting for triggers
+    - When configuring polling intervals for different use cases
+    - When working with adws/README.md or trigger documentation
+
 - app_docs/feature-chore_8_2-changelog-update.md
   - Conditions:
     - When working with CHANGELOG.md
@@ -1368,3 +1376,84 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con secciones agentic.safety, agentic.workflows, o claude en config.yml
     - Cuando necesites entender la jerarquía correcta del YAML de configuración
     - Cuando implementes o modifiques features que requieran cambios en el schema de configuración
+
+- app_docs/feature-v_3_0_1_task_2-once-mode-cron-triggers.md
+  - Conditions:
+    - Cuando trabajes con cron trigger functionality
+    - Cuando implementes single-execution mode para testing o CI/CD
+    - Cuando modifiques adws/adw_triggers/trigger_cron.py
+    - Cuando actualices trigger templates en tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/
+
+- app_docs/feature-feature_v_3_0_1_task_4-document-chain-trigger.md
+  - Conditions:
+    - Cuando documentes trigger_issue_chain.py en README de ADWs
+    - Cuando agregues documentación de automation triggers
+    - Cuando trabajes con documentación de procesamiento secuencial de issues
+    - Cuando necesites ejemplos de documentación de features en TAC Bootstrap
+    - Cuando debugues scheduler vs once-mode execution flow
+    - Cuando integres triggers en pipelines automatizados
+
+- app_docs/chore-chore_v_3_0_1_task_5-enumerate-adw-triggers.md
+  - Conditions:
+    - Cuando trabajes con adws/adw_triggers/__init__.py o su template Jinja2
+    - Cuando necesites referencia rápida sobre los tres tipos de triggers (cron, webhook, issue_chain)
+    - Cuando implementes o modifiques automation triggers
+    - Cuando necesites ejemplos de uso de trigger_cron.py, trigger_webhook.py, trigger_issue_chain.py
+    - Cuando configures environment variables para triggers (GITHUB_TOKEN, ANTHROPIC_API_KEY, GITHUB_WEBHOOK_SECRET)
+    - Cuando debugues problemas con workflow detection o trigger execution
+    - Cuando trabajes con documentación de paquetes Python usando docstrings
+    - Cuando necesites entender las diferencias entre polling-based, webhook-based, y sequential triggers
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/__init__.py.j2
+
+- app_docs/feature-chore_v_3_0_1_task_7-3-changelog-update.md
+  - Conditions:
+    - Cuando actualices CHANGELOG.md del proyecto
+    - Cuando necesites entender cómo versionar cambios siguiendo Keep a Changelog y Semantic Versioning
+    - Cuando trabajes con tac_bootstrap_cli/tac_bootstrap/templates/CHANGELOG.md.j2
+    - Cuando determines qué tipo de version bump aplicar (MAJOR, MINOR, PATCH)
+    - Cuando documentes features, fixes, o changes en el changelog
+    - Cuando generes proyectos y necesites incluir template de CHANGELOG
+
+- app_docs/feature-chore_v_0_4_1_task_3-trigger-webhook-template.md
+  - Conditions:
+    - Cuando trabajes con tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/trigger_webhook.py.j2
+    - Cuando necesites entender el webhook trigger template para GitHub events
+    - Cuando implementes o modifiques funcionalidad de webhooks en proyectos generados
+    - Cuando trabajes con GitHub user assignment validation en workflows
+    - Cuando necesites entender cómo se lanzan workflows en background desde webhooks
+    - Cuando debugues problemas con webhook event processing o timeout issues
+    - Cuando configures FastAPI webhook endpoints en TAC Bootstrap projects
+    - Cuando necesites ejemplos de integration entre GitHub webhooks y ADW workflows
+
+- app_docs/feature-chore_v_0_4_1_task_4-sync-trigger-cron-user-validation.md
+  - Conditions:
+    - Cuando trabajes con tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/trigger_cron.py.j2
+    - Cuando necesites entender user assignment validation en cron triggers
+    - Cuando sincronices templates con archivos root que tengan user validation logic
+    - Cuando implementes auto-assignment de issues en workflow triggers
+    - Cuando agregues filtrado de issues por current GitHub user
+    - Cuando necesites ejemplos de template synchronization manteniendo Jinja2 variables
+    - Cuando trabajes con validación de permisos en ADW triggers
+
+- app_docs/feature-chore_v_0_4_1_task_5-sync-trigger-issue-chain-user-validation.md
+  - Conditions:
+    - Cuando trabajes con tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/trigger_issue_chain.py.j2
+    - Cuando necesites entender user assignment validation en issue chain triggers
+    - Cuando sincronices el template de issue chain con funcionalidad de user filtering
+    - Cuando implementes auto-assignment en issue chain workflows
+    - Cuando agregues filtrado de issues por current GitHub user en chains
+    - Cuando necesites ejemplos de template synchronization preservando Jinja2 variables
+    - Cuando trabajes con procesamiento de issue chains restringido por usuario
+    - Cuando debugues problemas de assignment en workflows de issue chain
+
+- app_docs/feature-chore_v_0_4_1_task_6_2-github-user-validation.md
+  - Conditions:
+    - Cuando trabajes con tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_modules/github.py.j2
+    - Cuando necesites entender las funciones de validación de usuario GitHub en el template
+    - Cuando sincronices templates con archivos root que contengan user validation functions
+    - Cuando implementes funcionalidad de autenticación y assignment de GitHub issues
+    - Cuando trabajes con get_current_gh_user(), is_issue_assigned_to_me(), o assign_issue_to_me()
+    - Cuando necesites ejemplos de template synchronization manteniendo funcionalidad probada
+    - Cuando implementes verificación de permisos en workflows basados en usuario autenticado
+    - Cuando agregues auto-assignment de issues usando @me en workflows
+    - Cuando trabajes con GitHub CLI (gh) integration en proyectos generados

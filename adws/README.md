@@ -349,6 +349,42 @@ uv run adw_triggers/trigger_cron.py
 - Uses `adw_plan_build_iso.py` by default
 - Supports all isolated workflows via issue body keywords
 
+#### trigger_issue_chain.py - Sequential Issue Processing
+Processes issues in a specific order, waiting for each to close before starting the next.
+
+**Usage:**
+```bash
+# Process issues 123, 456, 789 in order
+uv run adw_triggers/trigger_issue_chain.py 123 456 789
+
+# Using comma-separated format
+uv run adw_triggers/trigger_issue_chain.py --issues 123,456,789
+
+# Custom polling interval (default: 20 seconds)
+uv run adw_triggers/trigger_issue_chain.py --issues 123,456,789 --interval 30
+
+# Single check cycle (for testing)
+uv run adw_triggers/trigger_issue_chain.py --issues 123,456,789 --once
+```
+
+**Behavior:**
+- Only processes the first OPEN issue in the chain
+- Waits for issue N to be CLOSED before processing issue N+1
+- Polls GitHub at configurable intervals to check issue status
+- Supports all workflow triggers (adw_plan_iso, adw_sdlc_iso, etc.)
+
+**Use Cases:**
+- Processing dependent issues in sequence
+- Ensuring ordered feature implementation
+- Batch processing with dependencies between tasks
+
+**Example Workflow:**
+1. Create issues #10, #11, #12 with dependencies
+2. Run: `uv run adw_triggers/trigger_issue_chain.py --issues 10,11,12`
+3. Trigger starts processing #10
+4. When #10 is closed (manually or by merged PR), trigger processes #11
+5. Process continues until all issues are closed
+
 #### trigger_webhook.py - Real-time Events
 Webhook server for instant GitHub event processing.
 
@@ -607,6 +643,40 @@ Each workflow run gets a unique 8-character ID (e.g., `a1b2c3d4`) that appears i
 - Issue comments: `a1b2c3d4_ops: ✅ Starting ADW workflow`
 - Output files: `agents/a1b2c3d4/sdlc_planner/raw_output.jsonl`
 - Git commits and PRs
+
+### Trigger Polling Configuration
+
+ADW triggers use polling intervals to check GitHub for new workflow commands.
+
+#### Default Interval
+All polling-based triggers default to **20 seconds** between checks.
+
+#### Overriding via CLI
+Use the `--interval` or `-i` flag to customize:
+
+```bash
+# Poll every 30 seconds
+uv run adw_triggers/trigger_cron.py --interval 30
+
+# Poll every 60 seconds
+uv run adw_triggers/trigger_issue_chain.py --issues 1,2,3 -i 60
+```
+
+#### Recommended Intervals
+| Use Case | Interval | Rationale |
+|----------|----------|-----------|
+| Development/Testing | 10-20s | Fast feedback during testing |
+| Production (light usage) | 30-60s | Balance responsiveness and API limits |
+| Production (heavy usage) | 60-120s | Avoid GitHub API rate limiting |
+| CI/CD Integration | Use `--once` | Single execution, no polling |
+
+#### API Rate Limiting
+GitHub's API allows 5,000 requests/hour for authenticated users. Each polling cycle makes approximately 1-3 API calls depending on open issues. With default 20s interval:
+- ~180 cycles/hour
+- ~180-540 API calls/hour
+- Safe margin for other operations
+
+For repositories with many open issues, consider increasing the interval.
 
 ### Target Branch
 
