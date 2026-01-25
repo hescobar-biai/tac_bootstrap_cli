@@ -527,7 +527,7 @@ The `adws/` directory contains isolated workflow scripts that automate the softw
 | `agent.py` | Agent execution and template management |
 | `data_types.py` | Pydantic models for ADW state and configuration |
 | `git_ops.py` | Git operations (commit, push, branch) |
-| `github.py` | GitHub API integration (issues, PRs, comments) |
+| `github.py` | GitHub API integration (issues, PRs, comments, user validation) |
 | `r2_uploader.py` | Cloudflare R2 upload for screenshots |
 | `state.py` | Persistent ADW state management (`adw_state.json`) |
 | `utils.py` | Common utilities and helpers |
@@ -541,6 +541,26 @@ The `adws/` directory contains isolated workflow scripts that automate the softw
 | `trigger_webhook.py` | HTTP webhook server for GitHub events |
 | `trigger_cron.py` | Scheduled execution via cron |
 | `trigger_issue_chain.py` | Ordered issue chain execution (waits for prior issue to close) |
+
+#### User Assignment Validation
+
+**All triggers only process issues assigned to the currently authenticated GitHub user.** This prevents workflows from executing on issues belonging to other developers in multi-developer environments.
+
+When a trigger detects an ADW command:
+1. It checks if the issue is assigned to the user logged in via `gh auth login`
+2. If not assigned to current user, the workflow is **skipped**
+3. If assigned, the workflow proceeds and the issue is re-assigned (confirmed) to the current user
+
+To see which user is currently authenticated:
+```bash
+gh api user --jq '.login'
+```
+
+**Example scenario:**
+- Developer A creates issue #123 with `adw_plan_iso` and assigns it to themselves
+- Developer B runs the cron trigger on their machine
+- The trigger detects the command but skips it because #123 is not assigned to Developer B
+- Only Developer A's trigger will process issue #123
 
 #### Webhook Trigger Setup
 
@@ -574,6 +594,8 @@ The `gh webhook forward` command creates a WebSocket tunnel to GitHub, so your m
 
 > **Note**: The forward only works while the command is running. For persistent production setups, configure a webhook in GitHub repo Settings with a publicly accessible URL.
 
+> **Important**: The webhook trigger only processes issues assigned to the currently authenticated `gh` user. Issues assigned to other developers are ignored.
+
 #### Cron Trigger Setup
 
 The cron trigger polls GitHub issues at a configurable interval, detecting ADW workflow commands in issue bodies or comments.
@@ -591,6 +613,8 @@ uv run adws/adw_triggers/trigger_cron.py --interval 60
 
 The cron trigger detects the same workflow commands as the webhook (e.g., `/adw_sdlc_zte_iso`, `/adw_plan_build_iso`). Write the command in an issue body or comment to trigger it.
 
+> **Important**: The cron trigger only processes issues assigned to the currently authenticated `gh` user. Issues assigned to other developers are skipped silently.
+
 #### Issue Chain Trigger Setup
 
 The issue chain trigger processes a fixed, ordered list of issues. It only works on the first open issue in the list and will not start the next issue until the current one is closed. Each cycle checks for ADW workflow commands in the issue body or latest comment.
@@ -607,6 +631,8 @@ uv run adws/adw_triggers/trigger_issue_chain.py --issues 123,456,789 --interval 
 ```
 
 The issue chain trigger detects the same workflow commands as the cron/webhook triggers. If issue `123` is still open, issue `456` will not be processed until `123` is closed.
+
+> **Important**: The issue chain trigger only processes issues assigned to the currently authenticated `gh` user. If an issue in the chain is open but not assigned to the current user, it will be skipped and the trigger will check the next issue.
 
 ### Key Concepts
 

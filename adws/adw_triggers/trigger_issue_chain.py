@@ -38,10 +38,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from adw_modules.github import (
     ADW_BOT_IDENTIFIER,
+    assign_issue_to_me,
     extract_repo_path,
     fetch_issue,
     fetch_issue_comments,
+    get_current_gh_user,
     get_repo_url,
+    is_issue_assigned_to_me,
     make_issue_comment,
 )
 from adw_modules.state import ADWState
@@ -112,12 +115,16 @@ def resolve_issue_chain(args: argparse.Namespace) -> List[int]:
 
 
 def get_current_issue(issue_chain: List[int]) -> Optional[int]:
-    """Return the first open issue in the chain, or None if all closed."""
+    """Return the first open issue in the chain assigned to current user, or None."""
     for issue_number in issue_chain:
         issue = fetch_issue(str(issue_number), REPO_PATH)
         state = (issue.state or "").lower()
         if state == "open":
-            return issue_number
+            # Only process if assigned to current user
+            if is_issue_assigned_to_me(str(issue_number), REPO_PATH):
+                return issue_number
+            else:
+                print(f"INFO: Issue #{issue_number} is open but not assigned to current user, skipping")
     return None
 
 
@@ -243,6 +250,12 @@ def trigger_workflow(issue_number: int, workflow_info: Dict) -> bool:
     logger = setup_logger(adw_id, "chain_trigger")
     logger.info(f"Triggering {workflow} for issue #{issue_number} (reason: {trigger_reason})")
 
+    # Assign issue to current user
+    try:
+        assign_issue_to_me(str(issue_number))
+    except Exception as e:
+        logger.warning(f"Failed to assign issue: {e}")
+
     # Post comment to issue
     try:
         make_issue_comment(
@@ -356,8 +369,11 @@ def main():
     issue_chain = resolve_issue_chain(args)
     interval = args.interval
 
+    current_user = get_current_gh_user()
     print("INFO: Starting ADW issue chain trigger")
     print(f"INFO: Repository: {REPO_PATH}")
+    print(f"INFO: Current user: {current_user or 'unknown'}")
+    print(f"INFO: Only processing issues assigned to current user")
     print(f"INFO: Issue chain: {', '.join(str(n) for n in issue_chain)}")
     print(f"INFO: Polling interval: {interval} seconds")
     print(f"INFO: Supported workflows: {len(AVAILABLE_ADW_WORKFLOWS)}")

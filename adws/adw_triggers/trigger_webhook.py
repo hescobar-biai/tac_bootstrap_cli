@@ -29,7 +29,13 @@ import uvicorn
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from adw_modules.utils import make_adw_id, setup_logger, get_safe_subprocess_env
-from adw_modules.github import make_issue_comment, ADW_BOT_IDENTIFIER
+from adw_modules.github import (
+    ADW_BOT_IDENTIFIER,
+    assign_issue_to_me,
+    get_current_gh_user,
+    is_issue_assigned_to_me,
+    make_issue_comment,
+)
 from adw_modules.workflow_ops import extract_adw_info, AVAILABLE_ADW_WORKFLOWS
 from adw_modules.state import ADWState
 
@@ -125,6 +131,18 @@ async def github_webhook(request: Request):
                     model_set = extraction_result.model_set
                     trigger_reason = f"Comment with {workflow} workflow"
 
+        # Validate issue is assigned to current user
+        if workflow and issue_number:
+            if not is_issue_assigned_to_me(str(issue_number)):
+                current_user = get_current_gh_user()
+                print(
+                    f"Issue #{issue_number} is not assigned to current user ({current_user}), ignoring workflow"
+                )
+                return {
+                    "status": "ignored",
+                    "reason": f"Issue #{issue_number} is not assigned to current user ({current_user})",
+                }
+
         # Validate workflow constraints
         if workflow in DEPENDENT_WORKFLOWS:
             if not provided_adw_id:
@@ -180,6 +198,12 @@ async def github_webhook(request: Request):
             )
             if provided_adw_id:
                 logger.info(f"Using provided ADW ID: {provided_adw_id}")
+
+            # Assign issue to current user
+            try:
+                assign_issue_to_me(str(issue_number))
+            except Exception as e:
+                logger.warning(f"Failed to assign issue: {e}")
 
             # Post comment to issue about detected workflow
             try:
@@ -326,7 +350,10 @@ async def health():
 
 
 if __name__ == "__main__":
+    current_user = get_current_gh_user()
     print(f"Starting server on http://0.0.0.0:{PORT}")
+    print(f"Current user: {current_user or 'unknown'}")
+    print(f"Only processing issues assigned to current user")
     print(f"Webhook endpoint: POST /gh-webhook")
     print(f"Health check: GET /health")
 

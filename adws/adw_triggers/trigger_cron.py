@@ -40,10 +40,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from adw_modules.github import (
     ADW_BOT_IDENTIFIER,
+    assign_issue_to_me,
     extract_repo_path,
     fetch_issue_comments,
     fetch_open_issues,
+    get_current_gh_user,
     get_repo_url,
+    is_issue_assigned_to_me,
     make_issue_comment,
 )
 from adw_modules.state import ADWState
@@ -211,6 +214,12 @@ def trigger_workflow(issue_number: int, workflow_info: Dict) -> bool:
     logger = setup_logger(adw_id, "cron_trigger")
     logger.info(f"Triggering {workflow} for issue #{issue_number} (reason: {trigger_reason})")
 
+    # Assign issue to current user
+    try:
+        assign_issue_to_me(str(issue_number))
+    except Exception as e:
+        logger.warning(f"Failed to assign issue: {e}")
+
     # Post comment to issue
     try:
         make_issue_comment(
@@ -282,6 +291,10 @@ def check_and_process_issues():
             if not issue_number:
                 continue
 
+            # Check if issue is assigned to current user
+            if not is_issue_assigned_to_me(str(issue_number), REPO_PATH):
+                continue
+
             # Check if issue has a workflow trigger
             workflow_info = check_issue_for_workflow(issue_number)
             if workflow_info:
@@ -329,8 +342,11 @@ def main():
     args = parse_args()
     interval = args.interval
 
+    current_user = get_current_gh_user()
     print(f"INFO: Starting ADW cron trigger for TAC Bootstrap")
     print(f"INFO: Repository: {REPO_PATH}")
+    print(f"INFO: Current user: {current_user or 'unknown'}")
+    print(f"INFO: Only processing issues assigned to current user")
     print(f"INFO: Polling interval: {interval} seconds")
     print(f"INFO: Supported workflows: {len(AVAILABLE_ADW_WORKFLOWS)}")
 
