@@ -1358,3 +1358,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando debugues problemas de renderizado de variables config en triggers
     - Cuando trabajes con sincronización entre archivos renderizados y templates Jinja2
     - Cuando implementes features relacionadas con FASE 8.3 (Trigger Cron Configurable)
+
+- app_docs/bug-bug_v_3_0_1_task_1-config-schema-structure.md
+  - Conditions:
+    - Cuando trabajes con config.yml y su estructura/schema
+    - Cuando necesites entender cómo alinear config.yml con TACConfig Pydantic model
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/config/config.yml.j2
+    - Cuando debugues errores de validación de configuración
+    - Cuando trabajes con secciones agentic.safety, agentic.workflows, o claude en config.yml
+    - Cuando necesites entender la jerarquía correcta del YAML de configuración
+    - Cuando implementes o modifiques features que requieran cambios en el schema de configuración
