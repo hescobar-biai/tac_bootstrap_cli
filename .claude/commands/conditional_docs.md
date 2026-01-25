@@ -1445,3 +1445,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites ejemplos de template synchronization preservando Jinja2 variables
     - Cuando trabajes con procesamiento de issue chains restringido por usuario
     - Cuando debugues problemas de assignment en workflows de issue chain
+
+- app_docs/feature-chore_v_0_4_1_task_6_2-github-user-validation.md
+  - Conditions:
+    - Cuando trabajes con tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_modules/github.py.j2
+    - Cuando necesites entender las funciones de validación de usuario GitHub en el template
+    - Cuando sincronices templates con archivos root que contengan user validation functions
+    - Cuando implementes funcionalidad de autenticación y assignment de GitHub issues
+    - Cuando trabajes con get_current_gh_user(), is_issue_assigned_to_me(), o assign_issue_to_me()
+    - Cuando necesites ejemplos de template synchronization manteniendo funcionalidad probada
+    - Cuando implementes verificación de permisos en workflows basados en usuario autenticado
+    - Cuando agregues auto-assignment de issues usando @me en workflows
+    - Cuando trabajes con GitHub CLI (gh) integration en proyectos generados
