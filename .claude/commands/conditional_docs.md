@@ -1166,3 +1166,22 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con required sections (Overview, Responsibilities, Key APIs, Invariants, Side Effects, Operational Notes)
     - Cuando implementes features que requieran fail-fast on missing OPENAI_API_KEY
     - Cuando trabajes con file preservation logic (only touch path-concatenated files)
+
+- app_docs/feature-feature_6_3-run-generators-orchestrator.md
+  - Conditions:
+    - Cuando trabajes con el template run_generators.sh.j2 o script de orquestación de generadores
+    - Cuando necesites entender cómo coordinar la ejecución secuencial de gen_docstring_jsdocs.py y gen_docs_fractal.py
+    - Cuando modifiques o extiendas templates/scripts/run_generators.sh.j2
+    - Cuando trabajes con orchestration scripts que ejecuten múltiples generadores en orden
+    - Cuando implementes preflight validation (dependencies, file existence, directory checks)
+    - Cuando necesites referencia sobre flag propagation (--dry-run, --changed-only)
+    - Cuando trabajes con fail-fast patterns usando set -euo pipefail
+    - Cuando implementes scripts bash con help flags y usage documentation
+    - Cuando modifiques scripts/run_generators.sh generado
+    - Cuando debugues problemas de ejecución de pipeline de documentación
+    - Cuando trabajes con validación de dependencias (python3, uv)
+    - Cuando necesites entender sequential execution con dependencies (Step 1 → Step 2)
+    - Cuando implementes features de FASE 6 (Documentación Fractal como Skill)
+    - Cuando trabajes con error handling en bash scripts (command existence checks, directory validation)
+    - Cuando necesites referencia sobre progress reporting en pipelines multi-step
+    - Cuando implementes features similares de orchestration con múltiples tools
