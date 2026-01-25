@@ -1424,3 +1424,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando debugues problemas con webhook event processing o timeout issues
     - Cuando configures FastAPI webhook endpoints en TAC Bootstrap projects
     - Cuando necesites ejemplos de integration entre GitHub webhooks y ADW workflows
+
+- app_docs/feature-chore_v_0_4_1_task_4-sync-trigger-cron-user-validation.md
+  - Conditions:
+    - Cuando trabajes con tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/trigger_cron.py.j2
+    - Cuando necesites entender user assignment validation en cron triggers
+    - Cuando sincronices templates con archivos root que tengan user validation logic
+    - Cuando implementes auto-assignment de issues en workflow triggers
+    - Cuando agregues filtrado de issues por current GitHub user
+    - Cuando necesites ejemplos de template synchronization manteniendo Jinja2 variables
+    - Cuando trabajes con validación de permisos en ADW triggers
