@@ -1413,3 +1413,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando determines qué tipo de version bump aplicar (MAJOR, MINOR, PATCH)
     - Cuando documentes features, fixes, o changes en el changelog
     - Cuando generes proyectos y necesites incluir template de CHANGELOG
+
+- app_docs/feature-chore_v_0_4_1_task_3-trigger-webhook-template.md
+  - Conditions:
+    - Cuando trabajes con tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/trigger_webhook.py.j2
+    - Cuando necesites entender el webhook trigger template para GitHub events
+    - Cuando implementes o modifiques funcionalidad de webhooks en proyectos generados
+    - Cuando trabajes con GitHub user assignment validation en workflows
+    - Cuando necesites entender cómo se lanzan workflows en background desde webhooks
+    - Cuando debugues problemas con webhook event processing o timeout issues
+    - Cuando configures FastAPI webhook endpoints en TAC Bootstrap projects
+    - Cuando necesites ejemplos de integration entre GitHub webhooks y ADW workflows
