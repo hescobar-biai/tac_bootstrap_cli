@@ -81,6 +81,24 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con templates de prompts
     - Cuando modifiques formatos de plan, feature, bug, o review
 
+## Fractal Documentation
+
+- When working with documentation or understanding code structure:
+  - Read `docs/` directory for fractal documentation of each module
+  - Each file in `docs/` corresponds to a folder in `tac_bootstrap_cli/`
+
+- When creating new modules or capabilities:
+  - After implementation, run `/generate_fractal_docs changed` to update documentation
+  - Ensure new modules have IDK docstrings before generating fractal docs
+
+- When refactoring or moving files:
+  - Run `/generate_fractal_docs full` to regenerate all documentation
+  - Review `docs/` for outdated references
+
+- When looking for canonical terminology:
+  - Read `canonical_idk.yml` for approved domain keywords
+  - Use these keywords in docstrings and documentation
+
 - app_docs/feature-e5a04ca0-python-package-structure.md
   - Conditions:
     - Cuando necesites entender la estructura base del paquete Python
