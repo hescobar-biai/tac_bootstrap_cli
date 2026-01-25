@@ -1368,3 +1368,12 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con secciones agentic.safety, agentic.workflows, o claude en config.yml
     - Cuando necesites entender la jerarquía correcta del YAML de configuración
     - Cuando implementes o modifiques features que requieran cambios en el schema de configuración
+
+- app_docs/feature-v_3_0_1_task_2-once-mode-cron-triggers.md
+  - Conditions:
+    - Cuando trabajes con cron trigger functionality
+    - Cuando implementes single-execution mode para testing o CI/CD
+    - Cuando modifiques adws/adw_triggers/trigger_cron.py
+    - Cuando actualices trigger templates en tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/
+    - Cuando debugues scheduler vs once-mode execution flow
+    - Cuando integres triggers en pipelines automatizados
