@@ -319,6 +319,12 @@ class AgenticSpec(BaseModel):
         default="main",
         description="Target branch for merge/push operations (main, master, develop, etc.)",
     )
+    cron_interval: int = Field(
+        default=20,
+        description="Polling interval in seconds for cron trigger (default: 20)",
+        ge=5,
+        le=3600,
+    )
     model_policy: ModelPolicy = Field(default=ModelPolicy(), description="Model selection policy")
     worktrees: WorktreeConfig = Field(
         default=WorktreeConfig(), description="Git worktree configuration"
