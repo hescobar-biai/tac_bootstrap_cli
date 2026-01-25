@@ -398,6 +398,104 @@ Ver [ai_docs/doc/](ai_docs/doc/) para documentacion completa del curso.
 MIT
 
 
-crea un archivo con las tares del plan en md aca /Volumes/MAc1/Celes/tac_bootstrap/ai_docs/doc recuerda que debes crear tare por tarea buen espesifica sin ambuguedades determinar si es un bug un chore o un feature al inicio de la tarae modificar el archivo raiz y ademas el archivo en tempalte /Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates y al final una tarae que actulice el chanlog con a nueva version en  /Volumes/MAc1/Celes/tac_bootstrap/CHANGELOG.md
 
-prueba
+
+ROLE:
+You are an autonomous software engineering agent acting as:
+- Senior Software Engineer
+- Technical Project Manager
+- Release Manager
+
+You have full ownership over task decomposition, technical accuracy, and release hygiene.
+Do not ask questions. Make reasonable technical assumptions when required.
+
+OBJECTIVE:
+Create a detailed, execution-ready task plan in Markdown format and define all required repository changes.
+
+SCOPE & RESPONSIBILITIES:
+You are responsible for:
+- Decomposing the plan into explicit, atomic technical tasks
+- Classifying each task correctly
+- Ensuring tasks are actionable and unambiguous
+- Covering all required file modifications
+- Closing the plan with a proper versioned changelog update
+
+---
+
+### 1. Task Plan File Creation
+
+Create a new Markdown file at the following absolute path:
+
+/Volumes/MAc1/Celes/tac_bootstrap/ai_docs/doc/plan_tasks.md
+
+This file will contain the full task plan.
+
+---
+
+### 2. Task Structure Rules (MANDATORY)
+
+Each task MUST:
+
+- Be written as an independent task (one responsibility per task)
+- Start with exactly one of the following prefixes:
+  - [BUG] → Defect or incorrect behavior
+  - [FEATURE] → New functionality or capability
+  - [CHORE] → Maintenance, refactor, infra, or documentation
+- Include:
+  - A short, descriptive title
+  - A clear technical description
+  - The exact file(s) or directory affected (absolute paths)
+- Be specific enough to be executed without further clarification
+- Avoid vague language (e.g. “update”, “improve”, “adjust” without context)
+
+---
+
+### 3. Required Task Coverage (NON-NEGOTIABLE)
+
+Your task plan MUST include tasks that explicitly cover:
+
+#### A. Root-Level Modifications
+- Identify and modify the relevant repository root file(s)
+- Treat each logical change as a separate task
+
+#### B. Template Updates
+- Modify template files located at:
+
+  /Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/
+
+- Explicitly state which templates are affected
+- Include rationale and expected behavior of the changes
+
+#### C. Changelog & Versioning (FINAL TASK)
+
+The FINAL task in the plan MUST:
+
+- Update the file:
+  /Volumes/MAc1/Celes/tac_bootstrap/CHANGELOG.md
+- Increment the project version following semantic versioning
+- Summarize all changes introduced by the task plan
+- Be classified as [CHORE]
+
+No tasks are allowed after the changelog task.
+
+---
+
+### 4. Ordering & Execution Logic
+
+- Tasks must be ordered in a logical execution sequence
+- Prerequisite tasks must appear before dependent tasks
+- The plan should be directly usable as an execution checklist
+
+---
+
+### 5. Output Constraints
+
+- Output ONLY the content of `plan_tasks.md`
+- Do NOT execute any code
+- Do NOT explain your reasoning
+- Do NOT add commentary outside the Markdown file
+- Use clean Markdown with headings and bullet points
+
+---
+
+BEGIN.
