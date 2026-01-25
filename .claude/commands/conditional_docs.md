@@ -1204,3 +1204,21 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando modifiques templates de comandos slash parametricos
     - Cuando necesites referencia sobre defensive wrapper patterns
     - Cuando trabajes con git diff checks para commit logic
+
+- app_docs/feature-feature_6_5-canonical-idk-template.md
+  - Conditions:
+    - Cuando trabajes con el template canonical_idk.yml.j2 o el archivo de vocabulario canónico IDK
+    - Cuando necesites entender el sistema de keywords controlado por dominio para documentación
+    - Cuando modifiques o extiendas templates/config/canonical_idk.yml.j2
+    - Cuando trabajes con vocabulario específico por lenguaje (Python, TypeScript)
+    - Cuando implementes dominios de vocabulario (backend, frontend, testing, infrastructure, documentation)
+    - Cuando necesites referencia sobre conditional rendering basado en config.project.language.value
+    - Cuando trabajes con integración de canonical_idk.yml con generadores fractal (gen_docstring_jsdocs.py, gen_docs_fractal.py)
+    - Cuando implementes keywords para frameworks (FastAPI, Django, React, NestJS)
+    - Cuando modifiques vocabulario de domains (agregar nuevos términos o categorías)
+    - Cuando debugues problemas de rendering de canonical_idk.yml en proyectos generados
+    - Cuando trabajes con extensibilidad de vocabulario para usuarios
+    - Cuando necesites entender graceful degradation para lenguajes no soportados
+    - Cuando implementes features de FASE 6 (Documentación Fractal como Skill)
+    - Cuando trabajes con templates de config/ directory
+    - Cuando necesites referencia sobre YAML templates con Jinja2 conditionals
