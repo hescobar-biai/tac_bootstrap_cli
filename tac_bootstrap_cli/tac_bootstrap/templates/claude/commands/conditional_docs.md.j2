@@ -55,3 +55,21 @@ This guide helps determine which documentation to read based on specific changes
     - When you need reference documentation for AI tools and SDKs
     - When working with Claude Code, MCP, or other AI integrations
     - When you need examples of API usage
+
+## Fractal Documentation
+
+- When working with documentation or understanding code structure:
+  - Read `docs/` directory for fractal documentation of each module
+  - Each file in `docs/` corresponds to a folder in `{{ config.paths.app_root | default("src") }}/`
+
+- When creating new modules or capabilities:
+  - After implementation, run `/generate_fractal_docs changed` to update documentation
+  - Ensure new modules have IDK docstrings before generating fractal docs
+
+- When refactoring or moving files:
+  - Run `/generate_fractal_docs full` to regenerate all documentation
+  - Review `docs/` for outdated references
+
+- When looking for canonical terminology:
+  - Read `canonical_idk.yml` for approved domain keywords
+  - Use these keywords in docstrings and documentation

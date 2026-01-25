@@ -81,6 +81,24 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con templates de prompts
     - Cuando modifiques formatos de plan, feature, bug, o review
 
+## Fractal Documentation
+
+- When working with documentation or understanding code structure:
+  - Read `docs/` directory for fractal documentation of each module
+  - Each file in `docs/` corresponds to a folder in `tac_bootstrap_cli/`
+
+- When creating new modules or capabilities:
+  - After implementation, run `/generate_fractal_docs changed` to update documentation
+  - Ensure new modules have IDK docstrings before generating fractal docs
+
+- When refactoring or moving files:
+  - Run `/generate_fractal_docs full` to regenerate all documentation
+  - Review `docs/` for outdated references
+
+- When looking for canonical terminology:
+  - Read `canonical_idk.yml` for approved domain keywords
+  - Use these keywords in docstrings and documentation
+
 - app_docs/feature-e5a04ca0-python-package-structure.md
   - Conditions:
     - Cuando necesites entender la estructura base del paquete Python
@@ -1222,3 +1240,18 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes features de FASE 6 (Documentación Fractal como Skill)
     - Cuando trabajes con templates de config/ directory
     - Cuando necesites referencia sobre YAML templates con Jinja2 conditionals
+
+- app_docs/feature-feature_6_6-conditional-docs-fractal-guidance.md
+  - Conditions:
+    - Cuando trabajes con el template conditional_docs.md.j2 y reglas de documentación fractal
+    - Cuando necesites entender cómo guiar a agentes AI sobre uso de fractal documentation tools
+    - Cuando modifiques o extiendas conditional_docs.md.j2 con nuevas reglas
+    - Cuando trabajes con integración de slash commands de documentación en conditional guidelines
+    - Cuando implementes reglas condicionales para /generate_fractal_docs
+    - Cuando necesites referencia sobre cuándo leer docs/ directory o canonical_idk.yml
+    - Cuando trabajes con dual-purpose pattern (template + rendered file en raíz)
+    - Cuando implementes completion de FASE 6 (Documentación Fractal como Skill)
+    - Cuando modifiques .claude/commands/conditional_docs.md en raíz del proyecto
+    - Cuando debugues problemas de conditional documentation rules
+    - Cuando trabajes con parametrización de paths usando {{ config.paths.app_root | default("src") }}
+    - Cuando necesites entender el cierre del loop entre generación y consumo de documentación fractal
