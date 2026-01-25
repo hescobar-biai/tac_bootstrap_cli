@@ -96,6 +96,9 @@ class ScaffoldService:
         # Add structure READMEs
         self._add_structure_files(plan, config, existing_repo)
 
+        # Add fractal documentation scripts
+        self._add_fractal_docs_scripts(plan, config)
+
         return plan
 
     def _add_directories(self, plan: ScaffoldPlan, config: TACConfig) -> None:
@@ -404,8 +407,6 @@ class ScaffoldService:
             ("test.sh", "Test runner"),
             ("lint.sh", "Linter runner"),
             ("build.sh", "Build script"),
-            ("gen_docs_fractal.py", "Fractal documentation generator"),
-            ("gen_docstring_jsdocs.py", "Docstring/JSDoc generator"),
         ]
 
         for script, reason in scripts:
@@ -566,6 +567,52 @@ class ScaffoldService:
                 template=template,
                 reason=reason,
             )
+
+    def _add_fractal_docs_scripts(self, plan: ScaffoldPlan, config: TACConfig) -> None:
+        """Add fractal documentation generation scripts."""
+        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
+
+        # Scripts
+        plan.add_file(
+            f"{config.paths.scripts_dir}/gen_docstring_jsdocs.py",
+            action=action,
+            template="scripts/gen_docstring_jsdocs.py.j2",
+            reason="Docstring/JSDoc generator",
+            executable=True,
+        )
+        plan.add_file(
+            f"{config.paths.scripts_dir}/gen_docs_fractal.py",
+            action=action,
+            template="scripts/gen_docs_fractal.py.j2",
+            reason="Fractal documentation generator",
+            executable=True,
+        )
+        plan.add_file(
+            f"{config.paths.scripts_dir}/run_generators.sh",
+            action=action,
+            template="scripts/run_generators.sh.j2",
+            reason="Run all documentation generators",
+            executable=True,
+        )
+
+        # Canonical IDK vocabulary
+        plan.add_file(
+            "canonical_idk.yml",
+            action=action,
+            template="config/canonical_idk.yml.j2",
+            reason="Canonical IDK vocabulary for fractal docs",
+        )
+
+        # Slash command
+        plan.add_file(
+            ".claude/commands/generate_fractal_docs.md",
+            action=action,
+            template="claude/commands/generate_fractal_docs.md.j2",
+            reason="/generate_fractal_docs slash command",
+        )
+
+        # Docs directory
+        plan.add_directory("docs", "Fractal documentation output")
 
     def apply_plan(
         self,
