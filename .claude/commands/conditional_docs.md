@@ -1255,3 +1255,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando debugues problemas de conditional documentation rules
     - Cuando trabajes con parametrización de paths usando {{ config.paths.app_root | default("src") }}
     - Cuando necesites entender el cierre del loop entre generación y consumo de documentación fractal
+
+- app_docs/feature-feature_6_6_v2-fractal-docs-integration.md
+  - Conditions:
+    - Cuando trabajes con integración de fractal docs scripts en ScaffoldService
+    - Cuando necesites entender cómo se generan scripts de documentación fractal automáticamente
+    - Cuando modifiques o extiendas _add_fractal_docs_scripts() en scaffold_service.py
+    - Cuando trabajes con generación de gen_docstring_jsdocs.py, gen_docs_fractal.py, run_generators.sh
+    - Cuando necesites referencia sobre canonical_idk.yml y su ubicación en project root
+    - Cuando trabajes con /generate_fractal_docs slash command generation
+    - Cuando implementes features que incluyan scripts ejecutables en scaffolding
+    - Cuando debugues problemas de generación de fractal docs files en nuevos proyectos
+    - Cuando necesites entender cómo se eliminó duplicación de scripts en _add_script_files()
+    - Cuando trabajes con FileAction.CREATE para archivos fractal docs
+    - Cuando necesites referencia sobre estructura completa del sistema fractal docs (5 files + 1 directory)
