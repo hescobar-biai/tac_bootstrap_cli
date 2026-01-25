@@ -157,6 +157,28 @@ def generate_documentation(
         full_path = os.path.join(working_dir or ".", doc_file_path)
         if os.path.exists(full_path):
             logger.info(f"Documentation created at: {doc_file_path}")
+
+            # Step 2: Update fractal documentation for changed files
+            try:
+                logger.info("Updating fractal documentation...")
+                fractal_request = AgentTemplateRequest(
+                    agent_name="fractal_docs_generator",
+                    slash_command="/generate_fractal_docs",
+                    args=["changed"],
+                    adw_id=adw_id,
+                    working_dir=working_dir,
+                )
+                fractal_result = execute_template(fractal_request)
+
+                if fractal_result.success:
+                    logger.info("Fractal documentation updated successfully")
+                else:
+                    logger.warning(
+                        f"Fractal docs update failed (non-blocking): {fractal_result.output}"
+                    )
+            except Exception as e:
+                logger.warning(f"Fractal docs update failed (non-blocking): {e}")
+
             return DocumentationResult(
                 success=True,
                 documentation_created=True,
