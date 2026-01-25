@@ -1344,3 +1344,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender backward compatibility testing para templates
     - Cuando trabajes con validación de template rendering usando TemplateRepository fixtures
     - Cuando implementes features relacionadas con FASE 7.3 (Tests para Document Workflow)
+
+- app_docs/feature-feature_8_3-trigger-cron-configurable-workflows.md
+  - Conditions:
+    - Cuando trabajes con adws/adw_triggers/trigger_cron.py o su template Jinja2
+    - Cuando necesites entender el sistema de polling configurable de workflows ADW
+    - Cuando modifiques o extiendas AgenticSpec.cron_interval en domain/models.py
+    - Cuando trabajes con templates de triggers (trigger_cron.py.j2, trigger_webhook.py.j2)
+    - Cuando implementes o debugues detección de workflows con extract_adw_info()
+    - Cuando necesites referencia sobre configuración de intervalos de polling (CLI y config)
+    - Cuando trabajes con validación de templates de triggers en tests/test_trigger_templates.py
+    - Cuando modifiques DEFAULT_INTERVAL o argumentos CLI de trigger_cron
+    - Cuando debugues problemas de renderizado de variables config en triggers
+    - Cuando trabajes con sincronización entre archivos renderizados y templates Jinja2
+    - Cuando implementes features relacionadas con FASE 8.3 (Trigger Cron Configurable)
