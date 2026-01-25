@@ -644,6 +644,40 @@ Each workflow run gets a unique 8-character ID (e.g., `a1b2c3d4`) that appears i
 - Output files: `agents/a1b2c3d4/sdlc_planner/raw_output.jsonl`
 - Git commits and PRs
 
+### Trigger Polling Configuration
+
+ADW triggers use polling intervals to check GitHub for new workflow commands.
+
+#### Default Interval
+All polling-based triggers default to **20 seconds** between checks.
+
+#### Overriding via CLI
+Use the `--interval` or `-i` flag to customize:
+
+```bash
+# Poll every 30 seconds
+uv run adw_triggers/trigger_cron.py --interval 30
+
+# Poll every 60 seconds
+uv run adw_triggers/trigger_issue_chain.py --issues 1,2,3 -i 60
+```
+
+#### Recommended Intervals
+| Use Case | Interval | Rationale |
+|----------|----------|-----------|
+| Development/Testing | 10-20s | Fast feedback during testing |
+| Production (light usage) | 30-60s | Balance responsiveness and API limits |
+| Production (heavy usage) | 60-120s | Avoid GitHub API rate limiting |
+| CI/CD Integration | Use `--once` | Single execution, no polling |
+
+#### API Rate Limiting
+GitHub's API allows 5,000 requests/hour for authenticated users. Each polling cycle makes approximately 1-3 API calls depending on open issues. With default 20s interval:
+- ~180 cycles/hour
+- ~180-540 API calls/hour
+- Safe margin for other operations
+
+For repositories with many open issues, consider increasing the interval.
+
 ### Target Branch
 
 By default, ADW workflows merge to `main`. To change the target branch:
