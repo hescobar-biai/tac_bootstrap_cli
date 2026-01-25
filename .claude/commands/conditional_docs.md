@@ -1404,3 +1404,12 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con documentación de paquetes Python usando docstrings
     - Cuando necesites entender las diferencias entre polling-based, webhook-based, y sequential triggers
     - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/__init__.py.j2
+
+- app_docs/feature-chore_v_3_0_1_task_7-3-changelog-update.md
+  - Conditions:
+    - Cuando actualices CHANGELOG.md del proyecto
+    - Cuando necesites entender cómo versionar cambios siguiendo Keep a Changelog y Semantic Versioning
+    - Cuando trabajes con tac_bootstrap_cli/tac_bootstrap/templates/CHANGELOG.md.j2
+    - Cuando determines qué tipo de version bump aplicar (MAJOR, MINOR, PATCH)
+    - Cuando documentes features, fixes, o changes en el changelog
+    - Cuando generes proyectos y necesites incluir template de CHANGELOG
