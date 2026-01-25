@@ -110,6 +110,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When working with tac_bootstrap_cli/README.md trigger documentation
     - When monitoring API usage and rate limits
 
+- app_docs/feature-chore_v_0_4_1_task_9-changelog-update-v0.4.1.md
+  - Conditions:
+    - When updating CHANGELOG.md for version 0.4.1
+    - When documenting version 0.4.1 release changes
+    - When working with semantic versioning and Keep a Changelog format
+    - When documenting ADW trigger user assignment validation features
+    - When referencing GitHub helper functions for user validation
+    - When understanding changes in version 0.4.1
+
 - app_docs/feature-feature_v_3_0_1_task_6-trigger-polling-docs.md
   - Conditions:
     - When working with ADW trigger polling configuration

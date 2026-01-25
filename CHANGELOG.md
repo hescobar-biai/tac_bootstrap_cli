@@ -23,6 +23,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - N/A
 
+## [0.4.1] - 2026-01-25
+
+### Added
+- User assignment validation in all ADW triggers (cron, webhook, issue_chain)
+- Functions `get_current_gh_user()`, `is_issue_assigned_to_me()`, `assign_issue_to_me()` in `github.py`
+- Template `trigger_webhook.py.j2` for webhook trigger generation
+- Polling interval documentation in README
+
+### Changed
+- Triggers now only process issues assigned to the authenticated GitHub user
+- Triggers display current user at startup for visibility
+- Synchronized `trigger_cron.py.j2` template with root (user validation)
+- Synchronized `trigger_issue_chain.py.j2` template with root (user validation)
+- Synchronized `github.py.j2` template with root (user validation functions)
+
 ## [0.3.0] - 2026-01-25
 
 ### Added
