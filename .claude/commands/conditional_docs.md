@@ -99,6 +99,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
   - Read `canonical_idk.yml` for approved domain keywords
   - Use these keywords in docstrings and documentation
 
+## Feature Documentation
+
+- app_docs/feature-chore_8_2-changelog-update.md
+  - Conditions:
+    - When working with CHANGELOG.md
+    - When documenting release history
+    - When implementing version tracking
+    - When following Keep a Changelog format
+    - When understanding Semantic Versioning practices
+
 - app_docs/feature-chore_8_1-readme-documentation-update.md
   - Conditions:
     - When working on README documentation updates
