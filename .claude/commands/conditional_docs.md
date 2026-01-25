@@ -1375,5 +1375,12 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes single-execution mode para testing o CI/CD
     - Cuando modifiques adws/adw_triggers/trigger_cron.py
     - Cuando actualices trigger templates en tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/
+
+- app_docs/feature-feature_v_3_0_1_task_4-document-chain-trigger.md
+  - Conditions:
+    - Cuando documentes trigger_issue_chain.py en README de ADWs
+    - Cuando agregues documentación de automation triggers
+    - Cuando trabajes con documentación de procesamiento secuencial de issues
+    - Cuando necesites ejemplos de documentación de features en TAC Bootstrap
     - Cuando debugues scheduler vs once-mode execution flow
     - Cuando integres triggers en pipelines automatizados

@@ -349,6 +349,42 @@ uv run adw_triggers/trigger_cron.py
 - Uses `adw_plan_build_iso.py` by default
 - Supports all isolated workflows via issue body keywords
 
+#### trigger_issue_chain.py - Sequential Issue Processing
+Processes issues in a specific order, waiting for each to close before starting the next.
+
+**Usage:**
+```bash
+# Process issues 123, 456, 789 in order
+uv run adw_triggers/trigger_issue_chain.py 123 456 789
+
+# Using comma-separated format
+uv run adw_triggers/trigger_issue_chain.py --issues 123,456,789
+
+# Custom polling interval (default: 20 seconds)
+uv run adw_triggers/trigger_issue_chain.py --issues 123,456,789 --interval 30
+
+# Single check cycle (for testing)
+uv run adw_triggers/trigger_issue_chain.py --issues 123,456,789 --once
+```
+
+**Behavior:**
+- Only processes the first OPEN issue in the chain
+- Waits for issue N to be CLOSED before processing issue N+1
+- Polls GitHub at configurable intervals to check issue status
+- Supports all workflow triggers (adw_plan_iso, adw_sdlc_iso, etc.)
+
+**Use Cases:**
+- Processing dependent issues in sequence
+- Ensuring ordered feature implementation
+- Batch processing with dependencies between tasks
+
+**Example Workflow:**
+1. Create issues #10, #11, #12 with dependencies
+2. Run: `uv run adw_triggers/trigger_issue_chain.py --issues 10,11,12`
+3. Trigger starts processing #10
+4. When #10 is closed (manually or by merged PR), trigger processes #11
+5. Process continues until all issues are closed
+
 #### trigger_webhook.py - Real-time Events
 Webhook server for instant GitHub event processing.
 
