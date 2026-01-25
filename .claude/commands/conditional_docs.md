@@ -1384,3 +1384,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites ejemplos de documentación de features en TAC Bootstrap
     - Cuando debugues scheduler vs once-mode execution flow
     - Cuando integres triggers en pipelines automatizados
+
+- app_docs/chore-chore_v_3_0_1_task_5-enumerate-adw-triggers.md
+  - Conditions:
+    - Cuando trabajes con adws/adw_triggers/__init__.py o su template Jinja2
+    - Cuando necesites referencia rápida sobre los tres tipos de triggers (cron, webhook, issue_chain)
+    - Cuando implementes o modifiques automation triggers
+    - Cuando necesites ejemplos de uso de trigger_cron.py, trigger_webhook.py, trigger_issue_chain.py
+    - Cuando configures environment variables para triggers (GITHUB_TOKEN, ANTHROPIC_API_KEY, GITHUB_WEBHOOK_SECRET)
+    - Cuando debugues problemas con workflow detection o trigger execution
+    - Cuando trabajes con documentación de paquetes Python usando docstrings
+    - Cuando necesites entender las diferencias entre polling-based, webhook-based, y sequential triggers
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/__init__.py.j2
