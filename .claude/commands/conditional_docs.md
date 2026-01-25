@@ -1313,3 +1313,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender el patrón de try-except para operaciones non-blocking
     - Cuando trabajes con commits automáticos de múltiples tipos de documentación
     - Cuando implementes features relacionadas con FASE 7 (Document Workflow Mejorado)
+
+- app_docs/feature-feature_7_3-document-workflow-tests.md
+  - Conditions:
+    - Cuando trabajes con tests de validación de document workflow templates
+    - Cuando necesites entender la verificación de IDK frontmatter en document.md.j2
+    - Cuando modifiques o extiendas tests en tests/test_fractal_docs_templates.py::TestDocumentWorkflowTemplates
+    - Cuando trabajes con testing de integración de fractal docs en adw_document_iso.py.j2
+    - Cuando implementes tests de templates de comandos slash o workflows ADW
+    - Cuando necesites referencia sobre AST parsing y YAML validation en tests de templates
+    - Cuando trabajes con verificación de non-blocking error handling en workflows
+    - Cuando debugues problemas de tests de document workflow
+    - Cuando necesites entender backward compatibility testing para templates
+    - Cuando trabajes con validación de template rendering usando TemplateRepository fixtures
+    - Cuando implementes features relacionadas con FASE 7.3 (Tests para Document Workflow)

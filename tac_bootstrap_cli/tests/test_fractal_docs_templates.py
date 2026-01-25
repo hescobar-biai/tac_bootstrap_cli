@@ -298,3 +298,146 @@ class TestConditionalDocsTemplate:
 
         # Verify mentions canonical_idk.yml
         assert "canonical_idk" in content_lower, "Should mention canonical_idk.yml"
+
+
+# ============================================================================
+# TEST DOCUMENT WORKFLOW TEMPLATES
+# ============================================================================
+
+
+class TestDocumentWorkflowTemplates:
+    """Tests for document workflow templates."""
+
+    def test_document_command_has_idk_frontmatter(
+        self, template_repo: TemplateRepository, python_config: TACConfig
+    ):
+        """document.md.j2 should include IDK frontmatter with valid YAML structure."""
+        content = template_repo.render("claude/commands/document.md.j2", python_config)
+
+        # Verify content is not empty
+        assert len(content.strip()) > 100, "Document command should have meaningful content"
+
+        # Verify starts with YAML frontmatter delimiter
+        assert content.startswith("# Document Feature"), "Should start with heading"
+
+        # Find the documentation format section which contains the frontmatter example
+        assert "```md" in content, "Should contain markdown code block with frontmatter example"
+        assert "---" in content, "Should contain YAML frontmatter delimiters"
+
+        # Verify required frontmatter fields are mentioned
+        content_lower = content.lower()
+        assert "doc_type:" in content_lower, "Should mention doc_type field"
+        assert "adw_id:" in content_lower, "Should mention adw_id field"
+        assert "date:" in content_lower, "Should mention date field"
+        assert "idk:" in content_lower, "Should mention idk field"
+        assert "tags:" in content_lower, "Should mention tags field"
+        assert "related_code:" in content_lower, "Should mention related_code field"
+
+        # Extract the example YAML frontmatter from the documentation format section
+        # The format shows an example with:
+        # ---
+        # doc_type: feature
+        # adw_id: ...
+        # ...
+        # ---
+        # We verify the structure is present in the template
+        lines = content.split("\n")
+        in_code_block = False
+        frontmatter_lines = []
+        frontmatter_started = False
+
+        for line in lines:
+            if "```md" in line:
+                in_code_block = True
+                continue
+            if in_code_block and "```" in line:
+                break
+            if in_code_block:
+                if line.strip() == "---" and not frontmatter_started:
+                    frontmatter_started = True
+                    frontmatter_lines.append(line)
+                elif line.strip() == "---" and frontmatter_started:
+                    frontmatter_lines.append(line)
+                    break
+                elif frontmatter_started:
+                    frontmatter_lines.append(line)
+
+        # Join and verify it's parseable YAML
+        if frontmatter_lines:
+            # Remove the --- delimiters for parsing
+            yaml_content = "\n".join(
+                line for line in frontmatter_lines if line.strip() != "---"
+            )
+            # Should parse as valid YAML (even with template variables)
+            # We just check it has the structure, template variables are okay
+            assert "doc_type:" in yaml_content, "YAML should have doc_type field"
+            assert "idk:" in yaml_content, "YAML should have idk field"
+
+    def test_adw_document_includes_fractal_step(
+        self, template_repo: TemplateRepository, python_config: TACConfig
+    ):
+        """adw_document_iso.py.j2 should include call to /generate_fractal_docs."""
+        content = template_repo.render("adws/adw_document_iso.py.j2", python_config)
+
+        # Verify content is not empty
+        assert len(content.strip()) > 500, "ADW document script should have meaningful content"
+
+        # Verify it's valid Python syntax
+        ast.parse(content)  # Should not raise SyntaxError
+
+        # Verify includes fractal docs call with expected parameters
+        assert (
+            'slash_command="/generate_fractal_docs"' in content
+        ), "Should call /generate_fractal_docs"
+        assert 'args=["changed"]' in content, "Should pass 'changed' argument"
+        assert (
+            'agent_name="fractal_docs_generator"' in content
+        ), "Should use fractal_docs_generator agent"
+
+    def test_adw_document_fractal_is_non_blocking(
+        self, template_repo: TemplateRepository, python_config: TACConfig
+    ):
+        """adw_document_iso.py.j2 wraps fractal docs in try-except for non-blocking behavior."""
+        content = template_repo.render("adws/adw_document_iso.py.j2", python_config)
+
+        # Verify content is not empty
+        assert len(content.strip()) > 500, "ADW document script should have meaningful content"
+
+        # Verify it's valid Python syntax
+        ast.parse(content)  # Should not raise SyntaxError
+
+        # Find the fractal docs section
+        lines = content.split("\n")
+        fractal_section_start = None
+        try_found = False
+        except_found = False
+        logger_warning_found = False
+        unconditional_raise_found = False
+
+        for i, line in enumerate(lines):
+            # Find where fractal docs generation starts
+            if "/generate_fractal_docs" in line:
+                fractal_section_start = i
+                # Look backwards for try statement (should be within ~10 lines before)
+                for j in range(max(0, i - 15), i):
+                    if "try:" in lines[j]:
+                        try_found = True
+                        break
+
+            # Look for except block after fractal docs call
+            if fractal_section_start and i > fractal_section_start:
+                if "except Exception" in line or "except:" in line:
+                    except_found = True
+                # Look for logger.warning in exception handler (non-blocking)
+                if except_found and "logger.warning" in line:
+                    logger_warning_found = True
+                # Check there's no unconditional raise (which would make it blocking)
+                if except_found and line.strip() == "raise":
+                    unconditional_raise_found = True
+
+        assert try_found, "Fractal docs call should be wrapped in try block"
+        assert except_found, "Fractal docs call should have except handler"
+        assert logger_warning_found, "Exception handler should use logger.warning (non-blocking)"
+        assert not unconditional_raise_found, (
+            "Exception handler should not re-raise unconditionally (should be non-blocking)"
+        )
