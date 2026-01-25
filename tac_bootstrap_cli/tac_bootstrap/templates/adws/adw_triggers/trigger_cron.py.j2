@@ -21,6 +21,7 @@ Usage:
     uv run trigger_cron.py                    # Default {{ config.agentic.cron_interval | default(20) }}s interval
     uv run trigger_cron.py --interval 30      # Custom 30s interval
     uv run trigger_cron.py -i 60              # Custom 60s interval
+    uv run trigger_cron.py --once             # Single check cycle
 """
 
 import argparse
@@ -321,6 +322,12 @@ Supported workflows:
         default=DEFAULT_INTERVAL,
         help=f"Polling interval in seconds (default: {DEFAULT_INTERVAL})",
     )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        default=False,
+        help="Run a single check cycle and exit (useful for testing)",
+    )
     return parser.parse_args()
 
 
@@ -338,6 +345,14 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
+    # Single execution mode
+    if args.once:
+        print("INFO: Running single check cycle (--once mode)")
+        check_and_process_issues()
+        print("INFO: Single cycle complete, exiting")
+        return
+
+    # Normal loop mode - schedule and run continuously
     # Schedule the check function
     schedule.every(interval).seconds.do(check_and_process_issues)
 
