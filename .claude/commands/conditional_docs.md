@@ -1504,3 +1504,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites referencia sobre soft guidelines vs hard constraints en output styles
     - Cuando trabajes con confirmación de tareas sin explicación en workflows agentic
     - Cuando requieras máxima eficiencia de tokens en operaciones programáticamente parseadas
+
+- app_docs/feature-feature_Tac_9_task_5-verbose-bullet-points-output-style.md
+  - Conditions:
+    - Cuando trabajes con output styles detallados en TAC Bootstrap
+    - Cuando necesites entender respuestas comprehensivas con formato de bullet points estructurado
+    - Cuando implementes workflows agentic que requieren explicaciones profundas
+    - Cuando priorices claridad y comprensión sobre eficiencia de tokens
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/claude/output-styles/
+    - Cuando agregues nuevos output styles que enfaticen completitud de información
+    - Cuando necesites patrones de respuesta detallados y jerárquicamente organizados
+    - Cuando trabajes con contexto comprehensivo y múltiples niveles de explicación
+    - Cuando implementes instrucciones para explicaciones técnicas complejas o educacionales
+    - Cuando necesites ejemplos que demuestren respuestas exhaustivas versus insuficientes
+    - Cuando trabajes con distribución de instrucciones en .claude/output-styles/
