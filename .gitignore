@@ -59,8 +59,9 @@ trees/
 # Claude hooks logs
 logs/
 
-# Agent output directories
+# Agent output directories (but not template directories)
 agents/
+!tac_bootstrap_cli/tac_bootstrap/templates/claude/agents/
 
 claude-max-output.json
 claude-max-output.jsonl
@@ -111,8 +112,9 @@ credentials.json
 logs/
 *.log
 
-# Agent outputs (can be large)
+# Agent outputs (can be large, but not template directories)
 agents/
+!tac_bootstrap_cli/tac_bootstrap/templates/claude/agents/
 
 # Git worktrees
 trees/
