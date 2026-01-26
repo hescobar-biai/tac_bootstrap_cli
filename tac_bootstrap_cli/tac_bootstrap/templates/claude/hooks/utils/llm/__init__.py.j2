@@ -1,0 +1,19 @@
+"""LLM utilities for {{ config.project.name }}.
+
+Provides a unified interface for interacting with multiple LLM providers.
+Supported providers: OpenAI (oai), Ollama (ollama), Anthropic (anth)
+
+Provider selection is done via direct module imports:
+  - from llm.oai import prompt_llm, generate_completion_message
+  - from llm.ollama import prompt_llm, generate_completion_message
+  - from llm.anth import prompt_llm, generate_completion_message
+
+Or use the default exports from this package:
+  - from llm import prompt_llm, generate_completion_message
+"""
+
+from .oai import prompt_llm, generate_completion_message
+from .ollama import prompt_llm, generate_completion_message
+from .anth import prompt_llm, generate_completion_message
+
+__all__ = ["prompt_llm", "generate_completion_message"]
