@@ -1489,3 +1489,18 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando refactorices retry logic en agent.py.j2
     - Cuando remuevas funcionalidad de fallback de modelos de la configuración
     - Cuando necesites ejemplos de instrucciones claras y accionables para Claude en Markdown
+
+- app_docs/feature-feature_Tac_9_task_3-concise-ultra-output-style.md
+  - Conditions:
+    - Cuando trabajes con output styles ultra-optimizados en TAC Bootstrap
+    - Cuando necesites entender brevedad extrema y limitación de 50 tokens
+    - Cuando implementes workflows agentic de alta frecuencia
+    - Cuando optimices consumo de tokens en operaciones batch y polling loops
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/claude/output-styles/
+    - Cuando agregues nuevos output styles más agresivos que concise-done
+    - Cuando necesites patrones de respuesta ultra-condensados (confirmaciones de una palabra)
+    - Cuando trabajes con exception carve-outs para errores y información crítica
+    - Cuando implementes instrucciones para operaciones repetitivas de alta frecuencia
+    - Cuando necesites referencia sobre soft guidelines vs hard constraints en output styles
+    - Cuando trabajes con confirmación de tareas sin explicación en workflows agentic
+    - Cuando requieras máxima eficiencia de tokens en operaciones programáticamente parseadas
