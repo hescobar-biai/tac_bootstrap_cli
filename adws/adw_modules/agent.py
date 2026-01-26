@@ -532,7 +532,9 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
     # Read-only agents that don't create files - no warning needed
     read_only_agents = {
         "clarifier",
+        "resolver",
         "classifier",
+        "branch_generator",
         "branch_name_generator",
         "issue_classifier",
         "adw_classifier",
