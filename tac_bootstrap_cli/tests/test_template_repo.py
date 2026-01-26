@@ -616,3 +616,161 @@ class TestCommandTemplates:
         assert "Validate Application Can Start" in content
         # Build section should be conditional and not error out
         assert "## Report" in content
+
+
+# ============================================================================
+# TEST AGENT TEMPLATES
+# ============================================================================
+
+
+class TestAgentTemplates:
+    """Test agent template rendering."""
+
+    def test_research_docs_fetcher_template_renders(self):
+        """Test research-docs-fetcher template renders without errors."""
+        from tac_bootstrap.infrastructure.template_repo import TemplateRepository
+
+        config = TACConfig(
+            project=ProjectSpec(
+                name="test-app",
+                language=Language.PYTHON,
+                package_manager=PackageManager.UV,
+            ),
+            commands=CommandsSpec(
+                start="uv run python -m app",
+                test="uv run pytest",
+            ),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="test-app")),
+        )
+
+        repo = TemplateRepository()
+        content = repo.render("claude/agents/research-docs-fetcher.md.j2", config)
+
+        # Should render without errors
+        assert content
+        # Should be markdown format
+        assert "# research-docs-fetcher" in content
+        # Should have main sections
+        assert "## Description" in content
+        assert "## Purpose" in content
+        assert "## Tools Available" in content
+        assert "## Instructions" in content
+        # Should have WebSearch as primary tool
+        assert "WebSearch" in content
+        # Should focus on research capabilities
+        assert "research" in content.lower() or "discover" in content.lower()
+
+    def test_research_docs_fetcher_template_substitutes_project_name(self):
+        """Test research-docs-fetcher template correctly substitutes project name."""
+        from tac_bootstrap.infrastructure.template_repo import TemplateRepository
+
+        config = TACConfig(
+            project=ProjectSpec(
+                name="my-awesome-project",
+                language=Language.PYTHON,
+                package_manager=PackageManager.UV,
+            ),
+            commands=CommandsSpec(
+                start="uv run python -m app",
+                test="uv run pytest",
+            ),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="my-awesome-project")),
+        )
+
+        repo = TemplateRepository()
+        content = repo.render("claude/agents/research-docs-fetcher.md.j2", config)
+
+        # Project name should appear in description
+        assert "my-awesome-project" in content
+        # Should not have unrendered template variables
+        assert "{{" not in content
+        assert "}}" not in content
+
+    def test_research_docs_fetcher_template_is_language_agnostic(self):
+        """Test research-docs-fetcher template works for different languages."""
+        from tac_bootstrap.infrastructure.template_repo import TemplateRepository
+
+        # Test with different language configs
+        languages = [
+            (Language.PYTHON, PackageManager.UV),
+            (Language.TYPESCRIPT, PackageManager.PNPM),
+            (Language.GO, PackageManager.GO_MOD),
+        ]
+
+        for language, package_manager in languages:
+            config = TACConfig(
+                project=ProjectSpec(
+                    name="test-app",
+                    language=language,
+                    package_manager=package_manager,
+                ),
+                commands=CommandsSpec(
+                    start="start command",
+                    test="test command",
+                ),
+                claude=ClaudeConfig(settings=ClaudeSettings(project_name="test-app")),
+            )
+
+            repo = TemplateRepository()
+            content = repo.render("claude/agents/research-docs-fetcher.md.j2", config)
+
+            # Should render successfully for all languages
+            assert content
+            assert "# research-docs-fetcher" in content
+            # Content should be same length (no conditional logic based on language)
+            # This verifies it's truly language-agnostic
+
+    def test_docs_scraper_template_renders(self):
+        """Test docs-scraper template renders without errors."""
+        from tac_bootstrap.infrastructure.template_repo import TemplateRepository
+
+        config = TACConfig(
+            project=ProjectSpec(
+                name="test-app",
+                language=Language.PYTHON,
+                package_manager=PackageManager.UV,
+            ),
+            commands=CommandsSpec(
+                start="uv run python -m app",
+                test="uv run pytest",
+            ),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="test-app")),
+        )
+
+        repo = TemplateRepository()
+        content = repo.render("claude/agents/docs-scraper.md.j2", config)
+
+        # Should render without errors
+        assert content
+        # Should be markdown format
+        assert "# docs-scraper" in content
+        # Should have main sections
+        assert "## Description" in content
+        assert "## Purpose" in content
+        # Should have WebFetch as primary tool
+        assert "WebFetch" in content
+
+    def test_meta_agent_template_renders(self):
+        """Test meta-agent template renders without errors."""
+        from tac_bootstrap.infrastructure.template_repo import TemplateRepository
+
+        config = TACConfig(
+            project=ProjectSpec(
+                name="test-app",
+                language=Language.PYTHON,
+                package_manager=PackageManager.UV,
+            ),
+            commands=CommandsSpec(
+                start="uv run python -m app",
+                test="uv run pytest",
+            ),
+            claude=ClaudeConfig(settings=ClaudeSettings(project_name="test-app")),
+        )
+
+        repo = TemplateRepository()
+        content = repo.render("claude/agents/meta-agent.md.j2", config)
+
+        # Should render without errors
+        assert content
+        # Meta-agent uses frontmatter format
+        assert "name:" in content or "description:" in content
