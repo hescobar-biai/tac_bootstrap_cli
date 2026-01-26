@@ -1587,3 +1587,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con patrones de importación explícita vs star imports
     - Cuando necesites documentación sobre la estructura del paquete llm utilities
     - Cuando implementes provider-specific imports para OpenAI, Ollama, o Anthropic
+
+- app_docs/chore-chore_Tac_9_task_12-tts-utilities-directory.md
+  - Conditions:
+    - Cuando crees estructuras de directorio para utilidades en templates
+    - Cuando implementes package initialization files Jinja2 para nuevos módulos
+    - Cuando necesites entender el patrón de scaffolding para directorios utilities
+    - Cuando trabajes con infraestructura de placeholder para implementaciones futuras
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/
+    - Cuando necesites documentación sobre la estructura TTS utilities package
+    - Cuando establescas arquitectura para nuevos utility providers (TTS, STT, etc.)
+    - Cuando necesites mantener consistencia con patrones de directorios existentes (llm/)
