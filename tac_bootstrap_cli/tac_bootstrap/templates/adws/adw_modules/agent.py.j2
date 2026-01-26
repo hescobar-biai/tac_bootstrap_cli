@@ -528,6 +528,16 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
 
     # CRITICAL: Validate working_dir to prevent accidental writes to main repo
     effective_cwd = request.working_dir
+
+    # Read-only agents that don't create files - no warning needed
+    read_only_agents = {
+        "clarifier",
+        "classifier",
+        "branch_name_generator",
+        "issue_classifier",
+        "adw_classifier",
+    }
+
     if effective_cwd:
         if not os.path.isdir(effective_cwd):
             return AgentPromptResponse(
@@ -537,12 +547,13 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
                 retry_code=RetryCode.NONE,
             )
     else:
-        # Log warning when no working_dir is provided
-        logger = get_retry_logger(request.adw_id)
-        logger.warning(
-            f"⚠️ No working_dir provided for {request.agent_name} - "
-            f"executing in current directory. This may cause files to be created in main repo!"
-        )
+        # Only warn for agents that create files (not read-only agents)
+        if request.agent_name not in read_only_agents:
+            logger = get_retry_logger(request.adw_id)
+            logger.warning(
+                f"⚠️ No working_dir provided for {request.agent_name} - "
+                f"executing in current directory. This may cause files to be created in main repo!"
+            )
 
     try:
         # Open output file for streaming
