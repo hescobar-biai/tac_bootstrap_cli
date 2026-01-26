@@ -1622,3 +1622,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con system TTS engines (NSSpeechSynthesizer, SAPI5, espeak)
     - Cuando necesites referencia de templates con configuración namespaced (config.tts.pyttsx3)
     - Cuando implementes funciones de síntesis con playback y guardado de archivos
+
+- app_docs/feature-chore_Tac_9_task_16-tts-package-init.md
+  - Conditions:
+    - Cuando trabajes con exports de paquetes Python con múltiples submodulos
+    - Cuando necesites evitar naming collisions con namespace prefixing
+    - Cuando actualices __init__.py.j2 templates para TTS utilities
+    - Cuando implementes explicit __all__ lists para public APIs
+    - Cuando trabajes con tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts/__init__.py.j2
+    - Cuando necesites exponer múltiples TTS implementations desde un único package
+    - Cuando integres nuevos TTS backends (pyttsx3, OpenAI, ElevenLabs) en templates
+    - Cuando sigas Python package initialization best practices sin side effects

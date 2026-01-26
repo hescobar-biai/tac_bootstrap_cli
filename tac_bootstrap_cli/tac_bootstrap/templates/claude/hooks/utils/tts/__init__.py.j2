@@ -1,9 +1,35 @@
 """TTS utilities for {{ config.project.name }}.
 
-Provides a unified interface for text-to-speech implementations.
-This module serves as a placeholder for future TTS provider implementations.
+Provides a unified interface for text-to-speech synthesis using multiple TTS engines.
+
+Available TTS implementations:
+- pyttsx3_tts: Offline TTS using system engines (synthesize_speech, save_to_file)
+- openai_tts: OpenAI TTS API (synthesize_speech, save_audio_file)
+- elevenlabs_tts: ElevenLabs TTS API (synthesize_speech, save_audio_file)
+
+Import specific functions from submodules to use different TTS backends.
 """
 
-from .elevenlabs_tts import synthesize_speech, save_audio_file
+# pyttsx3 TTS - offline system TTS
+from .pyttsx3_tts import synthesize_speech as pyttsx3_synthesize_speech
+from .pyttsx3_tts import save_to_file as pyttsx3_save_to_file
 
-__all__ = ["synthesize_speech", "save_audio_file"]
+# OpenAI TTS
+from .openai_tts import synthesize_speech as openai_synthesize_speech
+from .openai_tts import save_audio_file as openai_save_audio_file
+
+# ElevenLabs TTS
+from .elevenlabs_tts import synthesize_speech as elevenlabs_synthesize_speech
+from .elevenlabs_tts import save_audio_file as elevenlabs_save_audio_file
+
+__all__ = [
+    # pyttsx3 TTS
+    "pyttsx3_synthesize_speech",
+    "pyttsx3_save_to_file",
+    # OpenAI TTS
+    "openai_synthesize_speech",
+    "openai_save_audio_file",
+    # ElevenLabs TTS
+    "elevenlabs_synthesize_speech",
+    "elevenlabs_save_audio_file",
+]
