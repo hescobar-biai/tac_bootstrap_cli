@@ -1475,3 +1475,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes verificación de permisos en workflows basados en usuario autenticado
     - Cuando agregues auto-assignment de issues usando @me en workflows
     - Cuando trabajes con GitHub CLI (gh) integration en proyectos generados
+
+- app_docs/feature-feature_Tac_9_task_2-concise-done-output-style.md
+  - Conditions:
+    - Cuando trabajes con output styles en TAC Bootstrap
+    - Cuando necesites entender cómo crear templates estáticos con extensión .j2
+    - Cuando implementes instrucciones de comportamiento para Claude
+    - Cuando optimices consumo de tokens en workflows agentic
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/claude/output-styles/
+    - Cuando agregues nuevos output styles siguiendo el patrón concise-done
+    - Cuando necesites referencia sobre la estrategia dual-location (template source + rendered distribution)
+    - Cuando trabajes con .claude/output-styles/ para distribución de instrucciones
+    - Cuando refactorices retry logic en agent.py.j2
+    - Cuando remuevas funcionalidad de fallback de modelos de la configuración
+    - Cuando necesites ejemplos de instrucciones claras y accionables para Claude en Markdown
