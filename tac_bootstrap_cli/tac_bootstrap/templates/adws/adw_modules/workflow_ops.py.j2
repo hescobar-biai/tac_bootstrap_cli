@@ -107,7 +107,10 @@ def extract_adw_info(text: str, temp_adw_id: str) -> ADWExtractionResult:
 
 
 def classify_issue(
-    issue: GitHubIssue, adw_id: str, logger: logging.Logger
+    issue: GitHubIssue,
+    adw_id: str,
+    logger: logging.Logger,
+    working_dir: Optional[str] = None,
 ) -> Tuple[Optional[IssueClassSlashCommand], Optional[str]]:
     """Classify GitHub issue and return appropriate slash command.
     Returns (command, error_message) tuple."""
@@ -123,6 +126,7 @@ def classify_issue(
         slash_command="/classify_issue",
         args=[minimal_issue_json],
         adw_id=adw_id,
+        working_dir=working_dir,
     )
 
     logger.debug(f"Classifying issue: {issue.title}")
@@ -465,6 +469,7 @@ def generate_branch_name(
     issue_class: IssueClassSlashCommand,
     adw_id: str,
     logger: logging.Logger,
+    working_dir: Optional[str] = None,
 ) -> Tuple[Optional[str], Optional[str]]:
     """Generate a git branch name for the issue.
     Returns (branch_name, error_message) tuple."""
@@ -481,6 +486,7 @@ def generate_branch_name(
         slash_command="/generate_branch_name",
         args=[issue_type, adw_id, minimal_issue_json],
         adw_id=adw_id,
+        working_dir=working_dir,
     )
 
     response = execute_template(request)
@@ -788,14 +794,14 @@ def create_or_find_branch(
     logger.info("No existing branch found, creating new one")
 
     # Classify the issue
-    issue_command, error = classify_issue(issue, adw_id, logger)
+    issue_command, error = classify_issue(issue, adw_id, logger, working_dir=cwd)
     if error:
         return "", f"Failed to classify issue: {error}"
 
     state.update(issue_class=issue_command)
 
     # Generate branch name
-    branch_name, error = generate_branch_name(issue, issue_command, adw_id, logger)
+    branch_name, error = generate_branch_name(issue, issue_command, adw_id, logger, working_dir=cwd)
     if error:
         return "", f"Failed to generate branch name: {error}"
 
