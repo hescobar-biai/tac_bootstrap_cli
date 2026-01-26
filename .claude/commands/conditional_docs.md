@@ -1576,3 +1576,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando agregues nuevos output styles siguiendo la estructura de verbose-yaml-structured
     - Cuando requieras asegurar que templates no contienen variables Jinja2
     - Cuando trabajes con distribución de instrucciones en .claude/output-styles/
+
+- app_docs/feature-chore_Tac_9_task_11-llm-package-initialization.md
+  - Conditions:
+    - Cuando trabajes con templates Jinja2 para paquetes Python
+    - Cuando implementes package initialization files con `__init__.py`
+    - Cuando necesites entender cómo se exportan funciones públicas en módulos
+    - Cuando configures interfaces unificadas para múltiples proveedores LLM
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm/
+    - Cuando trabajes con patrones de importación explícita vs star imports
+    - Cuando necesites documentación sobre la estructura del paquete llm utilities
+    - Cuando implementes provider-specific imports para OpenAI, Ollama, o Anthropic
