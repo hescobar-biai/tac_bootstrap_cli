@@ -1643,3 +1643,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender filtering syntax para documentos (e.g., "1-3", "5", "1-2,5,7-8")
     - Cuando integres comandos de carga de TAC methodology documentation
     - Cuando trabajes con estructuras ai_docs/doc/ en proyectos TAC
+
+- app_docs/feature-feature_Tac_9_task_23-quick-plan-command.md
+  - Conditions:
+    - Cuando trabajes con el comando /quick-plan
+    - Cuando implementes templates para slash commands de planificación
+    - Cuando necesites crear implementation plans rápidos sin overhead de /feature
+    - Cuando trabajes con tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/quick-plan.md.j2
+    - Cuando uses architect pattern para planning workflows
+    - Cuando generes documentación estructurada en specs/ directory
+    - Cuando necesites entender static templates vs dynamic templates en TAC Bootstrap
+    - Cuando implementes comandos con Opus model para high-quality planning
+    - Cuando trabajes con dogfooding de command templates en el repositorio TAC Bootstrap
