@@ -1533,6 +1533,21 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites preservar semántica completa durante conversión entre formatos
     - Cuando trabajes con distribución de instrucciones en .claude/output-styles/
 
+- app_docs/feature-feature_Tac_9_task_9-openai-llm-wrapper-template.md
+  - Conditions:
+    - Cuando trabajes con templates Jinja2 para integraciones LLM
+    - Cuando necesites crear wrappers para APIs de LLM en proyectos generados
+    - Cuando implementes integración OpenAI en generated projects
+    - Cuando requieras funcionalidad de prompting LLM desde hook scripts
+    - Cuando generes mensajes de completación con AI usando OpenAI
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm/
+    - Cuando necesites entender el patrón de templates ejecutables con uv script metadata
+    - Cuando sincronices templates OpenAI con wrappers Anthropic paralelos
+    - Cuando necesites configuración environment-based para API keys y personalization
+    - Cuando requieras manejo de errores silencioso (returning None) en funciones LLM
+    - Cuando trabajes con templates Jinja2 con minimal templating (solo docstring y shebang)
+    - Cuando implementes funciones de prompting reutilizables en multiple hook contexts
+
 - app_docs/chore-chore_Tac_9_task_7_2-verbose-yaml-structured-output-template.md
   - Conditions:
     - Cuando trabajes con templates Jinja2 para output styles
