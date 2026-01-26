@@ -1655,3 +1655,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites entender static templates vs dynamic templates en TAC Bootstrap
     - Cuando implementes comandos con Opus model para high-quality planning
     - Cuando trabajes con dogfooding de command templates en el repositorio TAC Bootstrap
+
+- app_docs/feature-chore_Tac_9_task_24-agents-directory-structure.md
+  - Conditions:
+    - Cuando trabajes con estructuras de directorios en templates
+    - Cuando necesites entender la organización de templates/claude/agents/
+    - Cuando implementes agent definition files en el sistema de templates
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/claude/agents/
+    - Cuando uses .gitkeep para preservar directorios vacíos en git
+    - Cuando necesites actualizar .gitignore para incluir template directories
+    - Cuando establezcas infraestructura foundational para agent-related features
+    - Cuando trabajes con format-agnostic directory structures
