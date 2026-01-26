@@ -1610,3 +1610,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando agregues nuevos providers TTS siguiendo el patrón establecido
     - Cuando trabajes con uv script dependencies en templates Python
     - Cuando necesites referencia de integración ElevenLabs Turbo v2.5
+
+- app_docs/feature-feature_Tac_9_task_15-pyttsx3-tts-template.md
+  - Conditions:
+    - Cuando implementes TTS offline o local sin dependencias de API
+    - Cuando trabajes con pyttsx3 o wrappers de TTS cross-platform
+    - Cuando crees templates para funcionalidad que no requiere internet/API keys
+    - Cuando necesites entender configuración de propiedades de voz (rate, volume, voice_index)
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts/
+    - Cuando implementes funcionalidad con fallback offline para servicios cloud
+    - Cuando trabajes con system TTS engines (NSSpeechSynthesizer, SAPI5, espeak)
+    - Cuando necesites referencia de templates con configuración namespaced (config.tts.pyttsx3)
+    - Cuando implementes funciones de síntesis con playback y guardado de archivos
