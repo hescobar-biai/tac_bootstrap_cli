@@ -389,8 +389,9 @@ def prompt_claude_code_with_retry(
         AgentPromptResponse with output and retry code
     """
     logger = get_retry_logger(request.adw_id)
-    last_response = None
+    original_model = request.model
     current_model = request.model
+    current_request = request
 
     # Retryable error codes (not including QUOTA_EXHAUSTED - that triggers model fallback)
     retryable_codes = [
@@ -403,68 +404,23 @@ def prompt_claude_code_with_retry(
         RetryCode.API_ERROR,
     ]
 
-    for attempt in range(max_retries + 1):  # +1 for initial attempt
-        if attempt > 0:
-            # Check if we should try a fallback model instead of retrying
-            if last_response and last_response.retry_code == RetryCode.QUOTA_EXHAUSTED:
-                fallback_model = get_fallback_model(current_model)
-                if fallback_model:
-                    logger.warning(
-                        f"🔄 Model {current_model} quota exhausted, falling back to {fallback_model}"
-                    )
-                    current_model = fallback_model
-                    # Update the request with the new model
-                    request = request.model_copy(update={"model": current_model})
-                    # Reset retry counter for the new model (give it full retries)
-                    attempt = 0
-                else:
-                    logger.error(
-                        f"❌ No fallback available from {current_model}. All models exhausted."
-                    )
-                    return last_response
-
-            # Calculate delay based on error type
-            delay = calculate_backoff_delay(
-                attempt,
-                base_delay,
-                retry_code=last_response.retry_code if last_response else RetryCode.NONE
-            )
-
-            logger.warning(
-                f"⏳ Retry {attempt}/{max_retries} in {delay}s (model: {current_model}) - "
-                f"Previous error: {last_response.retry_code.value if last_response else 'unknown'}"
-            )
-
-            # Log progress during long waits
-            if delay > 30:
-                for waited in range(0, delay, 30):
-                    remaining = delay - waited
-                    if remaining > 30:
-                        logger.info(f"   Waiting... {remaining}s remaining")
-                        time.sleep(30)
-                    else:
-                        time.sleep(remaining)
-                        break
-            else:
-                time.sleep(delay)
-
-            logger.info(f"🔄 Retrying attempt {attempt + 1} with model {current_model}...")
-
-        response = prompt_claude_code(request)
-        last_response = response
+    attempt = 0
+    while attempt <= max_retries:
+        # Execute the request
+        response = prompt_claude_code(current_request)
 
         # Success - return immediately
         if response.success:
-            if attempt > 0 or current_model != request.model:
+            if attempt > 0 or current_model != original_model:
                 logger.info(f"✅ Succeeded on attempt {attempt + 1} with model {current_model}")
             return response
 
-        # Non-retryable error (but not quota exhausted - that triggers fallback)
+        # Non-retryable error
         if response.retry_code == RetryCode.NONE:
             logger.error(f"❌ Non-retryable error: {response.output[:200]}")
             return response
 
-        # Quota exhausted - try fallback model
+        # Quota exhausted - try fallback model (doesn't count as retry)
         if response.retry_code == RetryCode.QUOTA_EXHAUSTED:
             fallback_model = get_fallback_model(current_model)
             if fallback_model:
@@ -472,9 +428,8 @@ def prompt_claude_code_with_retry(
                     f"🔄 Model {current_model} quota exhausted, falling back to {fallback_model}"
                 )
                 current_model = fallback_model
-                # Update the request with the new model
-                request = request.model_copy(update={"model": current_model})
-                # Don't count this as a retry - it's a model switch
+                current_request = current_request.model_copy(update={"model": current_model})
+                # Don't increment attempt - model switch is free
                 continue
             else:
                 logger.error(
@@ -485,10 +440,37 @@ def prompt_claude_code_with_retry(
         # Check if this is a retryable error
         if response.retry_code in retryable_codes:
             if attempt < max_retries:
+                attempt += 1
+
+                # Calculate delay based on error type
+                delay = calculate_backoff_delay(
+                    attempt,
+                    base_delay,
+                    retry_code=response.retry_code
+                )
+
                 logger.warning(
                     f"⚠️ Retryable error ({response.retry_code.value}): "
                     f"{response.output[:100]}..."
                 )
+                logger.warning(
+                    f"⏳ Retry {attempt}/{max_retries} in {delay}s (model: {current_model})"
+                )
+
+                # Log progress during long waits
+                if delay > 30:
+                    for waited in range(0, delay, 30):
+                        remaining = delay - waited
+                        if remaining > 30:
+                            logger.info(f"   Waiting... {remaining}s remaining")
+                            time.sleep(30)
+                        else:
+                            time.sleep(remaining)
+                            break
+                else:
+                    time.sleep(delay)
+
+                logger.info(f"🔄 Retrying attempt {attempt + 1} with model {current_model}...")
                 continue
             else:
                 logger.error(
@@ -497,8 +479,11 @@ def prompt_claude_code_with_retry(
                 )
                 return response
 
+        # Unknown error code - return as-is
+        return response
+
     # Should not reach here, but return last response just in case
-    return last_response
+    return response
 
 
 def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
