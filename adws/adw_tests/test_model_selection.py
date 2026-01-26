@@ -11,8 +11,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from adw_modules.agent import (
     get_model_for_slash_command,
     SLASH_COMMAND_MODEL_MAP,
+    MODEL_FALLBACK_CHAIN,
+    get_fallback_model,
+    is_quota_exhausted_error,
 )
-from adw_modules.data_types import AgentTemplateRequest
+from adw_modules.data_types import AgentTemplateRequest, RetryCode
 
 
 def test_model_mapping_structure():
@@ -159,25 +162,100 @@ def test_get_model_for_slash_command():
     return True
 
 
+def test_model_fallback_chain():
+    """Test the model fallback chain for quota exhausted scenarios."""
+    print("\nTesting model fallback chain...")
+
+    all_passed = True
+
+    # Test fallback chain
+    test_cases = [
+        ("opus", "sonnet"),
+        ("sonnet", "haiku"),
+        ("haiku", None),  # No fallback from haiku
+    ]
+
+    for current_model, expected_fallback in test_cases:
+        result = get_fallback_model(current_model)
+        if result == expected_fallback:
+            print(f"✅ {current_model} → {result}")
+        else:
+            print(f"❌ {current_model} → {result} (expected {expected_fallback})")
+            all_passed = False
+
+    return all_passed
+
+
+def test_quota_exhausted_detection():
+    """Test detection of quota exhausted errors."""
+    print("\nTesting quota exhausted error detection...")
+
+    all_passed = True
+
+    # Test cases: (error_message, expected_is_quota_exhausted)
+    test_cases = [
+        ("You've hit your limit · resets 1pm (America/Bogota)", True),
+        ("Rate limit exceeded, try again later", False),  # Rate limit, not quota
+        ("Usage limit reached for this billing period", True),
+        ("Error 429: Too many requests", False),  # Rate limit
+        ("Monthly limit exceeded", True),
+        ("Connection timeout", False),
+        ("quota exceeded for model", True),
+    ]
+
+    for error_msg, expected in test_cases:
+        result = is_quota_exhausted_error(error_msg)
+        if result == expected:
+            status = "quota" if result else "not quota"
+            print(f"✅ \"{error_msg[:50]}...\" → {status}")
+        else:
+            print(f"❌ \"{error_msg[:50]}...\" → {result} (expected {expected})")
+            all_passed = False
+
+    return all_passed
+
+
+def test_retry_code_quota_exhausted():
+    """Test that RetryCode.QUOTA_EXHAUSTED exists."""
+    print("\nTesting RetryCode.QUOTA_EXHAUSTED...")
+
+    try:
+        code = RetryCode.QUOTA_EXHAUSTED
+        print(f"✅ RetryCode.QUOTA_EXHAUSTED exists: {code.value}")
+        return True
+    except AttributeError:
+        print("❌ RetryCode.QUOTA_EXHAUSTED does not exist")
+        return False
+
+
 def main():
     """Run all tests."""
     print("ADW Model Selection Tests")
     print("=" * 50)
-    
+
     all_tests_passed = True
-    
+
     # Run tests
     if not test_model_mapping_structure():
         all_tests_passed = False
-    
+
     if not test_model_mapping_lookups():
         all_tests_passed = False
-    
+
     test_model_differences()
-    
+
     if not test_get_model_for_slash_command():
         all_tests_passed = False
-    
+
+    if not test_model_fallback_chain():
+        all_tests_passed = False
+
+    if not test_quota_exhausted_detection():
+        all_tests_passed = False
+
+    if not test_retry_code_quota_exhausted():
+        all_tests_passed = False
+
     print("\n" + "=" * 50)
     if all_tests_passed:
         print("✅ All tests passed!")

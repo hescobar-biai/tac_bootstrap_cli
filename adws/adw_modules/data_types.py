@@ -15,6 +15,7 @@ class RetryCode(str, Enum):
     EXECUTION_ERROR = "execution_error"  # Error during execution
     ERROR_DURING_EXECUTION = "error_during_execution"  # Agent encountered an error
     RATE_LIMITED = "rate_limited"  # API rate limited (429) or overloaded
+    QUOTA_EXHAUSTED = "quota_exhausted"  # User hit usage limit (needs model fallback)
     CONNECTION_ERROR = "connection_error"  # Network/connection issues
     API_ERROR = "api_error"  # API returned an error response
     NONE = "none"  # No retry needed
@@ -153,7 +154,7 @@ class AgentPromptRequest(BaseModel):
     prompt: str
     adw_id: str
     agent_name: str = "ops"
-    model: Literal["sonnet", "opus"] = "sonnet"
+    model: Literal["sonnet", "opus", "haiku"] = "sonnet"
     dangerously_skip_permissions: bool = False
     output_file: str
     working_dir: Optional[str] = None
@@ -176,7 +177,7 @@ class AgentTemplateRequest(BaseModel):
     slash_command: SlashCommand
     args: List[str]
     adw_id: str
-    model: Literal["sonnet", "opus"] = "sonnet"
+    model: Literal["sonnet", "opus", "haiku"] = "sonnet"
     working_dir: Optional[str] = None
 
 
