@@ -526,6 +526,24 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
     # Set up environment with only required variables
     env = get_claude_env()
 
+    # CRITICAL: Validate working_dir to prevent accidental writes to main repo
+    effective_cwd = request.working_dir
+    if effective_cwd:
+        if not os.path.isdir(effective_cwd):
+            return AgentPromptResponse(
+                output=f"Error: working_dir does not exist: {effective_cwd}",
+                success=False,
+                session_id=None,
+                retry_code=RetryCode.NONE,
+            )
+    else:
+        # Log warning when no working_dir is provided
+        logger = get_retry_logger(request.adw_id)
+        logger.warning(
+            f"⚠️ No working_dir provided for {request.agent_name} - "
+            f"executing in current directory. This may cause files to be created in main repo!"
+        )
+
     try:
         # Open output file for streaming
         with open(request.output_file, "w") as output_f:
@@ -537,7 +555,7 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
                 stderr=subprocess.PIPE,
                 text=True,
                 env=env,
-                cwd=request.working_dir,  # Use working_dir if provided
+                cwd=effective_cwd,  # Use working_dir if provided
                 timeout=request.timeout_seconds,  # Add timeout!
             )
 
