@@ -425,6 +425,41 @@ def implement_plan(
     return implement_response
 
 
+def clean_model_output(output: str) -> str:
+    """Clean model output by removing markdown code blocks and extra whitespace.
+
+    Models sometimes wrap their output in markdown code blocks like:
+    ```
+    actual_content
+    ```
+
+    This function removes those wrappers to get the clean content.
+    """
+    import re
+
+    cleaned = output.strip()
+
+    # Remove markdown code blocks (``` or ```language)
+    # Pattern matches: ``` optionally followed by language name, then content, then ```
+    code_block_pattern = r'^```(?:\w+)?\s*\n?(.*?)\n?```$'
+    match = re.match(code_block_pattern, cleaned, re.DOTALL)
+    if match:
+        cleaned = match.group(1).strip()
+
+    # Also handle case where ``` appears on separate lines
+    if cleaned.startswith('```'):
+        lines = cleaned.split('\n')
+        # Remove first line if it's just ``` or ```language
+        if lines[0].strip().startswith('```'):
+            lines = lines[1:]
+        # Remove last line if it's just ```
+        if lines and lines[-1].strip() == '```':
+            lines = lines[:-1]
+        cleaned = '\n'.join(lines).strip()
+
+    return cleaned
+
+
 def generate_branch_name(
     issue: GitHubIssue,
     issue_class: IssueClassSlashCommand,
@@ -453,7 +488,8 @@ def generate_branch_name(
     if not response.success:
         return None, response.output
 
-    branch_name = response.output.strip()
+    # Clean the output to remove markdown code blocks that models sometimes add
+    branch_name = clean_model_output(response.output)
     logger.info(f"Generated branch name: {branch_name}")
     return branch_name, None
 
