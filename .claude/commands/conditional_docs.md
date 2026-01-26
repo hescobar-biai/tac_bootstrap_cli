@@ -1518,3 +1518,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando implementes instrucciones para explicaciones técnicas complejas o educacionales
     - Cuando necesites ejemplos que demuestren respuestas exhaustivas versus insuficientes
     - Cuando trabajes con distribución de instrucciones en .claude/output-styles/
+
+- app_docs/feature-feature_Tac_9_task_6-verbose-yaml-structured-output-style.md
+  - Conditions:
+    - Cuando trabajes con output styles en formato YAML para parsing programático
+    - Cuando necesites entender conversión de Markdown a YAML para machine-readable directives
+    - Cuando implementes sistemas de configuración que requieren parsing automático de output styles
+    - Cuando integres Claude directives en workflows agenticos con herramientas de automatización
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/claude/output-styles/
+    - Cuando agregues nuevos output styles que prioricen consumo programático
+    - Cuando necesites estructuras de datos YAML para gestión de configuración
+    - Cuando trabajes con PyYAML para parsing de directivas de comportamiento
+    - Cuando implementes output styles con soporte de múltiples formatos (Markdown + YAML)
+    - Cuando necesites preservar semántica completa durante conversión entre formatos
+    - Cuando trabajes con distribución de instrucciones en .claude/output-styles/
