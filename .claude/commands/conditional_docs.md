@@ -1633,3 +1633,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites exponer múltiples TTS implementations desde un único package
     - Cuando integres nuevos TTS backends (pyttsx3, OpenAI, ElevenLabs) en templates
     - Cuando sigas Python package initialization best practices sin side effects
+
+- app_docs/feature-feature_Tac_9_task_21-load-ai-docs-command.md
+  - Conditions:
+    - Cuando trabajes con el comando /load_ai_docs
+    - Cuando implementes templates para slash commands de documentación
+    - Cuando uses Task tool con Explore agent para cargar documentación
+    - Cuando trabajes con tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/load_ai_docs.md.j2
+    - Cuando necesites entender filtering syntax para documentos (e.g., "1-3", "5", "1-2,5,7-8")
+    - Cuando integres comandos de carga de TAC methodology documentation
+    - Cuando trabajes con estructuras ai_docs/doc/ en proyectos TAC
