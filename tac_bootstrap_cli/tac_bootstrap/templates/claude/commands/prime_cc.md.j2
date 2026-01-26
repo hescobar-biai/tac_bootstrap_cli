@@ -1,0 +1,281 @@
+---
+description: Gain a general understanding of the codebase with a focus on Claude Code improvements
+---
+
+# Prime Claude Code
+
+Execute the `Run`, `Read` and `Report` sections to understand the codebase with Claude Code-specific optimizations, then summarize your understanding.
+
+## Variables
+
+None required - this command uses project configuration from {{ config.project.name }}.
+
+## Instructions
+
+**Purpose:**
+This command extends `/prime` with Claude Code-specific context loading. It helps Claude Code agents understand:
+- Available slash commands and their purposes
+- Output formatting styles and conventions
+- Automation hooks and triggers
+- Claude Code permissions and settings
+- CLI-based development workflows
+
+**Claude Code Optimizations:**
+- **Tool Usage**: Prefer Read, Edit, Bash, Grep, Glob tools over other approaches
+- **CLI Workflows**: Understand terminal-based development patterns
+- **File Navigation**: Quick access to `.claude/` configuration files
+- **Command Discovery**: Learn available slash commands for efficient workflows
+- **Hook System**: Awareness of automation triggers and context builders
+
+**Execution Flow:**
+1. First run `/prime` to get general project context
+2. Then read Claude Code-specific configuration files
+3. Understand available commands, hooks, and automation
+4. Report comprehensive understanding of both project and Claude Code setup
+
+## Run
+
+1. **Execute standard prime command:**
+   - Read and execute `.claude/commands/prime.md` top to bottom
+   - This loads general project context (README, config, structure)
+
+2. **Load Claude Code configuration:**
+   - Read all files listed in the Read section below
+   - Understand available slash commands and their purposes
+   - Learn about output styles and formatting conventions
+   - Review automation hooks and their triggers
+   - Check permissions in settings.json
+
+## Read
+
+**Claude Code Commands:**
+- `.claude/commands/**` - All available slash commands for this project
+
+**Claude Code Configuration:**
+- `.claude/settings.json` - Permissions, allowlists, and Claude Code settings
+- `.claude/output-styles/**` - Output formatting styles and conventions
+
+**Automation Hooks:**
+- `.claude/hooks/context_bundle_builder.py` - Context bundling automation (if exists)
+- `.claude/hooks/**` - Other automation scripts and triggers
+
+**Project-Specific Files:**
+{% if config.paths.adws_dir %}
+- `{{ config.paths.adws_dir }}/README.md` - AI Developer Workflows documentation
+- `{{ config.paths.adws_dir }}/adw_modules/` - Reusable workflow modules
+{% endif %}
+{% if config.paths.scripts_dir %}
+- `{{ config.paths.scripts_dir }}/` - Utility scripts for CLI workflows
+{% endif %}
+
+## Understand
+
+### Claude Code Environment
+- **Project**: {{ config.project.name }}
+- **Claude Provider**: {{ config.agentic.provider }}
+- **Working Directory**: {{ config.project.repo_root }}
+
+### Available Commands Structure
+```
+.claude/commands/
+├── prime.md              # General project context
+├── prime_cc.md           # Claude Code-optimized context (this command)
+{% if config.claude.commands.start %}
+├── start.md              # Project startup
+{% endif %}
+{% if config.claude.commands.test %}
+├── test.md               # Testing workflows
+{% endif %}
+{% if config.claude.commands.build %}
+├── build.md              # Build processes
+{% endif %}
+{% if config.claude.commands.review %}
+├── review.md             # Code review
+{% endif %}
+{% if config.claude.commands.ship %}
+├── ship.md               # Deployment/shipping
+{% endif %}
+└── ...                   # Additional project commands
+```
+
+### Automation Hooks
+```
+.claude/hooks/
+├── context_bundle_builder.py    # Auto-build context bundles
+└── ...                          # Additional automation scripts
+```
+
+### CLI Development Workflow
+```bash
+# Project Commands
+{% if config.commands.start %}
+{{ config.commands.start }}           # Start application
+{% endif %}
+{% if config.commands.test %}
+{{ config.commands.test }}            # Run tests
+{% endif %}
+{% if config.commands.lint %}
+{{ config.commands.lint }}            # Linting
+{% endif %}
+{% if config.commands.typecheck %}
+{{ config.commands.typecheck }}       # Type checking
+{% endif %}
+{% if config.commands.build %}
+{{ config.commands.build }}           # Build
+{% endif %}
+
+{% if config.paths.adws_dir %}
+# AI Developer Workflows
+uv run {{ config.paths.adws_dir }}/adw_sdlc_iso.py --issue <num>       # Full SDLC workflow
+uv run {{ config.paths.adws_dir }}/adw_patch_iso.py --issue <num>      # Quick patch workflow
+{% endif %}
+```
+
+### Key Directories
+```
+{{ config.project.name }}/
+├── .claude/                # Claude Code configuration
+│   ├── commands/           # Slash commands
+│   ├── hooks/              # Automation hooks
+│   ├── output-styles/      # Output formatting
+│   └── settings.json       # Permissions & settings
+{% if config.paths.app_root %}
+├── {{ config.paths.app_root }}/              # Application source code
+{% endif %}
+{% if config.paths.adws_dir %}
+├── {{ config.paths.adws_dir }}/                   # AI Developer Workflows
+{% endif %}
+{% if config.paths.scripts_dir %}
+├── {{ config.paths.scripts_dir }}/                # Utility scripts
+{% endif %}
+├── {{ config.paths.specs_dir }}/                  # Feature specifications
+├── config.yml              # Project configuration
+└── constitution.md         # Project principles
+```
+
+## Examples
+
+**Example 1: Basic usage**
+```
+User: /prime_cc
+Agent: Executing /prime command first...
+       [loads general project context]
+
+       Loading Claude Code-specific configuration...
+       Reading .claude/commands/ directory...
+       Found 15 slash commands available
+
+       Reading .claude/settings.json...
+       Permissions configured for shell access
+
+       Reading automation hooks...
+       Found context_bundle_builder.py hook
+
+       Summary:
+       - Project: tac-bootstrap (Python/DDD/uv)
+       - 15 slash commands available
+       - Shell access enabled
+       - Context bundling automation active
+       - ADW workflows configured
+```
+
+**Example 2: Understanding tool preferences**
+```
+Agent understands after /prime_cc:
+  ✓ Use Read tool instead of `cat` commands
+  ✓ Use Edit tool instead of `sed` or manual editing
+  ✓ Use Grep tool instead of `grep` or `rg` commands
+  ✓ Use Glob tool instead of `find` commands
+  ✓ Use Bash tool only for actual terminal operations
+```
+
+**Example 3: Command discovery**
+```
+After /prime_cc, agent knows:
+  - /prime - General project context
+  - /prime_cc - Claude Code-optimized context
+  - /start - Start the application
+  - /test - Run test suite
+  - /build - Build the project
+  - /review - Review implementation
+  - /feature - Plan new feature
+  - ... and 8+ more commands
+```
+
+## Report
+
+Report to the user:
+
+1. **Project Summary:**
+   - Project name: {{ config.project.name }}
+   - Language: {{ config.project.language }}
+   - Architecture: {{ config.project.architecture }}
+   - Package manager: {{ config.project.package_manager }}
+
+2. **Claude Code Configuration:**
+   - Number of available slash commands
+   - Key commands and their purposes
+   - Permissions and allowlists from settings.json
+   - Output styles configured
+
+3. **Automation & Workflows:**
+   - Automation hooks discovered and their purposes
+{% if config.paths.adws_dir %}
+   - AI Developer Workflows available (ADW)
+   - Workflow types: SDLC, Patch, etc.
+{% endif %}
+
+4. **CLI Development Setup:**
+   - Available CLI commands for development
+   - Testing commands and framework
+   - Build and deployment processes
+   - Key directories and file structure
+
+5. **Tool Usage Patterns:**
+   - Preferred tools: Read, Edit, Bash, Grep, Glob
+   - File navigation shortcuts
+   - Common workflow patterns
+
+6. **Next Steps:**
+   - Current development state
+   - Next task to implement (if known)
+   - Key files for current work
+   - Relevant slash commands to use
+
+**Format:**
+```
+Claude Code context loaded for: {{ config.project.name }}
+
+Project Configuration:
+  - Language: {{ config.project.language }}
+  - Architecture: {{ config.project.architecture }}
+  - Package Manager: {{ config.project.package_manager }}
+
+Available Slash Commands: {count}
+  - /prime - {description}
+  - /start - {description}
+  - /test - {description}
+  - ... (list key commands)
+
+Automation Hooks: {count}
+  - context_bundle_builder.py - {purpose}
+  - ... (list other hooks)
+
+CLI Workflows:
+  - {{ config.commands.start }} - Start application
+  - {{ config.commands.test }} - Run tests
+  - ... (list key commands)
+
+Tool Preferences:
+  ✓ Read tool for file reading
+  ✓ Edit tool for file editing
+  ✓ Grep tool for searching
+  ✓ Glob tool for finding files
+  ✓ Bash tool for terminal commands
+
+Constitution principles loaded from constitution.md.
+
+Ready for Claude Code development. Ask about specific commands or workflows for more details.
+```
+
+**Note**: The constitution.md file defines project principles for code style, testing, architecture, UX/DX, and performance. Reference these during development and code review.
