@@ -4,7 +4,7 @@ Extract ADW workflow information from the text below and return a JSON response.
 
 ## Instructions
 
-- Look for ADW workflow commands in the text (e.g., `/adw_plan_iso`, `/adw_build_iso`, `/adw_test_iso`, `/adw_review_iso`, `/adw_document_iso`, `/adw_patch_iso`, `/adw_plan_build_iso`, `/adw_plan_build_test_iso`, `/adw_plan_build_test_review_iso`, `/adw_sdlc_iso`, `/adw_sdlc_zte_iso`)
+- Look for ADW workflow commands in the text (e.g., `/adw_plan_iso`, `/adw_build_iso`, `/adw_test_iso`, `/adw_review_iso`, `/adw_document_iso`, `/adw_patch_iso`, `/adw_plan_build_iso`, `/adw_plan_build_test_iso`, `/adw_plan_build_test_review_iso`, `/adw_sdlc_iso`, `/adw_sdlc_ZTE_iso`)
 - Also recognize commands without the `_iso` suffix and automatically add it (e.g., `/adw_plan` → `/adw_plan_iso`)
 - Also recognize variations like `adw_plan_build`, `adw plan build`, `/adw plan then build`, etc. and map to the correct command
 - Look for ADW IDs (8-character alphanumeric strings, often after "adw_id:" or "ADW ID:" or similar)
@@ -13,7 +13,7 @@ Extract ADW workflow information from the text below and return a JSON response.
   - Also recognize variations like "model set: heavy", "modelset heavy", etc.
 - Return a JSON object with the extracted information
 - If no ADW workflow is found, return empty JSON: `{}`
-- IMPORTANT: Only classify as `adw_sdlc_zte_iso` when the user EXPLICITLY mentions "ZTE", "zte", or "zero touch execution". This is a dangerous workflow that auto-merges to production. If the user just says "sdlc" without mentioning ZTE, use `/adw_sdlc_iso` instead.
+- IMPORTANT: DO NOT RUN the `adw_sdlc_ZTE_iso` workflows unless `ZTE` is EXPLICITLY uppercased. This is a dangerous workflow and it needs to be absolutely clear when we're running it. If zte is not capitalized, then run the non zte version `/adw_sdlc_iso`.
 
 ## Valid ADW Commands
 
@@ -30,7 +30,7 @@ Extract ADW workflow information from the text below and return a JSON response.
 - `/adw_plan_build_document_iso` - Plan + Build + Document (skips test and review)
 - `/adw_plan_build_test_review_iso` - Plan + Build + Test + Review
 - `/adw_sdlc_iso` - Complete SDLC: Plan + Build + Test + Review + Document
-- `/adw_sdlc_zte_iso` - Zero Touch Execution: Complete SDLC + auto-merge to production. DANGEROUS: only use when user explicitly requests ZTE/zero-touch.
+- `/adw_sdlc_zte_iso` - Zero Touch Execution: Complete SDLC + auto-merge to production. Note: as per instructions, 'ZTE' must be capitalized. Do not run this if 'zte' is not capitalized.
 
 ## Response Format
 

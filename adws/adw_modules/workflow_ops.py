@@ -39,7 +39,7 @@ AVAILABLE_ADW_WORKFLOWS = [
     "adw_review_iso",
     "adw_document_iso",
     "adw_ship_iso",
-    "adw_sdlc_zte_iso",  # Zero Touch Execution workflow
+    "adw_sdlc_ZTE_iso",  # Zero Touch Execution workflow
     "adw_plan_build_iso",
     "adw_plan_build_test_iso",
     "adw_plan_build_test_review_iso",
@@ -107,10 +107,7 @@ def extract_adw_info(text: str, temp_adw_id: str) -> ADWExtractionResult:
 
 
 def classify_issue(
-    issue: GitHubIssue,
-    adw_id: str,
-    logger: logging.Logger,
-    working_dir: Optional[str] = None,
+    issue: GitHubIssue, adw_id: str, logger: logging.Logger
 ) -> Tuple[Optional[IssueClassSlashCommand], Optional[str]]:
     """Classify GitHub issue and return appropriate slash command.
     Returns (command, error_message) tuple."""
@@ -126,7 +123,6 @@ def classify_issue(
         slash_command="/classify_issue",
         args=[minimal_issue_json],
         adw_id=adw_id,
-        working_dir=working_dir,
     )
 
     logger.debug(f"Classifying issue: {issue.title}")
@@ -203,7 +199,6 @@ Return your analysis as JSON:
   "assumptions": ["assumption if continuing without answer"],
   "analysis": "brief explanation"
 }}
-
 IMPORTANT: Return ONLY the JSON object, no markdown formatting or code blocks."""
 
     # Execute the agent with inline prompt (using AgentPromptRequest would be cleaner, but we'll use execute_template)
@@ -429,47 +424,11 @@ def implement_plan(
     return implement_response
 
 
-def clean_model_output(output: str) -> str:
-    """Clean model output by removing markdown code blocks and extra whitespace.
-
-    Models sometimes wrap their output in markdown code blocks like:
-    ```
-    actual_content
-    ```
-
-    This function removes those wrappers to get the clean content.
-    """
-    import re
-
-    cleaned = output.strip()
-
-    # Remove markdown code blocks (``` or ```language)
-    # Pattern matches: ``` optionally followed by language name, then content, then ```
-    code_block_pattern = r'^```(?:\w+)?\s*\n?(.*?)\n?```$'
-    match = re.match(code_block_pattern, cleaned, re.DOTALL)
-    if match:
-        cleaned = match.group(1).strip()
-
-    # Also handle case where ``` appears on separate lines
-    if cleaned.startswith('```'):
-        lines = cleaned.split('\n')
-        # Remove first line if it's just ``` or ```language
-        if lines[0].strip().startswith('```'):
-            lines = lines[1:]
-        # Remove last line if it's just ```
-        if lines and lines[-1].strip() == '```':
-            lines = lines[:-1]
-        cleaned = '\n'.join(lines).strip()
-
-    return cleaned
-
-
 def generate_branch_name(
     issue: GitHubIssue,
     issue_class: IssueClassSlashCommand,
     adw_id: str,
     logger: logging.Logger,
-    working_dir: Optional[str] = None,
 ) -> Tuple[Optional[str], Optional[str]]:
     """Generate a git branch name for the issue.
     Returns (branch_name, error_message) tuple."""
@@ -486,7 +445,6 @@ def generate_branch_name(
         slash_command="/generate_branch_name",
         args=[issue_type, adw_id, minimal_issue_json],
         adw_id=adw_id,
-        working_dir=working_dir,
     )
 
     response = execute_template(request)
@@ -494,8 +452,7 @@ def generate_branch_name(
     if not response.success:
         return None, response.output
 
-    # Clean the output to remove markdown code blocks that models sometimes add
-    branch_name = clean_model_output(response.output)
+    branch_name = response.output.strip()
     logger.info(f"Generated branch name: {branch_name}")
     return branch_name, None
 
@@ -794,14 +751,14 @@ def create_or_find_branch(
     logger.info("No existing branch found, creating new one")
 
     # Classify the issue
-    issue_command, error = classify_issue(issue, adw_id, logger, working_dir=cwd)
+    issue_command, error = classify_issue(issue, adw_id, logger)
     if error:
         return "", f"Failed to classify issue: {error}"
 
     state.update(issue_class=issue_command)
 
     # Generate branch name
-    branch_name, error = generate_branch_name(issue, issue_command, adw_id, logger, working_dir=cwd)
+    branch_name, error = generate_branch_name(issue, issue_command, adw_id, logger)
     if error:
         return "", f"Failed to generate branch name: {error}"
 

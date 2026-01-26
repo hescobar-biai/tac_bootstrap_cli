@@ -15,7 +15,6 @@ class RetryCode(str, Enum):
     EXECUTION_ERROR = "execution_error"  # Error during execution
     ERROR_DURING_EXECUTION = "error_during_execution"  # Agent encountered an error
     RATE_LIMITED = "rate_limited"  # API rate limited (429) or overloaded
-    QUOTA_EXHAUSTED = "quota_exhausted"  # User hit usage limit (needs model fallback)
     CONNECTION_ERROR = "connection_error"  # Network/connection issues
     API_ERROR = "api_error"  # API returned an error response
     NONE = "none"  # No retry needed
@@ -37,7 +36,7 @@ ADWWorkflow = Literal[
     "adw_review_iso",  # Review only (dependent workflow)
     "adw_document_iso",  # Documentation only (dependent workflow)
     "adw_ship_iso",  # Ship/deployment workflow
-    "adw_sdlc_zte_iso",  # Zero Touch Execution - full SDLC with auto-merge
+    "adw_sdlc_ZTE_iso",  # Zero Touch Execution - full SDLC with auto-merge
     "adw_plan_build_iso",  # Plan + Build
     "adw_plan_build_test_iso",  # Plan + Build + Test
     "adw_plan_build_test_review_iso",  # Plan + Build + Test + Review
@@ -154,7 +153,7 @@ class AgentPromptRequest(BaseModel):
     prompt: str
     adw_id: str
     agent_name: str = "ops"
-    model: Literal["sonnet", "opus", "haiku"] = "sonnet"
+    model: Literal["sonnet", "opus"] = "sonnet"
     dangerously_skip_permissions: bool = False
     output_file: str
     working_dir: Optional[str] = None
@@ -177,7 +176,7 @@ class AgentTemplateRequest(BaseModel):
     slash_command: SlashCommand
     args: List[str]
     adw_id: str
-    model: Literal["sonnet", "opus", "haiku"] = "sonnet"
+    model: Literal["sonnet", "opus"] = "sonnet"
     working_dir: Optional[str] = None
 
 

@@ -1,72 +1,69 @@
 # Review
 
-Revisar trabajo realizado contra un archivo de especificación (specs/*.md) para asegurar que la implementación cumple los requerimientos.
+Review work done against a specification file (specs/*.md) to ensure the implementation meets requirements.
 
 ## Variables
 
 adw_id: $ARGUMENT
 spec_file: $ARGUMENT
-agent_name: $ARGUMENT si se proporciona, de lo contrario usar 'review_agent'
+agent_name: $ARGUMENT if provided, otherwise use 'review_agent'
 review_image_dir: `<absolute path to codebase>/agents/<adw_id>/<agent_name>/review_img/`
 
 ## Instructions
 
-- Verificar branch actual con `git branch` para entender contexto
-- Ejecutar `git diff origin/main` para ver cambios hechos en el branch actual
-- Encontrar spec file buscando specs/*.md que coincida con el branch
-- Leer el spec file para entender requerimientos
+- Verify current branch with `git branch` to understand context
+- Run `git diff origin/main` to see changes made in current branch
+- Find spec file by searching specs/*.md that matches the branch
+- Read the spec file to understand requirements
 
-### Para TAC Bootstrap CLI
+### Validation Steps
 
-Si los cambios son en `tac_bootstrap_cli/`:
-
-1. **Verificar sintaxis y tipos**
+1. **Verify syntax and types**
    ```bash
-   cd tac_bootstrap_cli && uv run python -m py_compile tac_bootstrap/**/*.py
-   cd tac_bootstrap_cli && uv run mypy tac_bootstrap/ --ignore-missing-imports
+   uv run mypy tac_bootstrap_cli
    ```
 
-2. **Verificar linting**
+2. **Verify linting**
    ```bash
-   cd tac_bootstrap_cli && uv run ruff check .
+   uv run ruff check .
    ```
 
-3. **Ejecutar tests**
+3. **Run tests**
    ```bash
-   cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short
+   uv run pytest
    ```
 
-4. **Verificar CLI funciona**
+4. **Verify application works**
    ```bash
-   cd tac_bootstrap_cli && uv run tac-bootstrap --help
+   uv run tac-bootstrap --help --help
    ```
 
-### Severidad de Issues
+### Issue Severity
 
-- `skippable` - No bloquea release pero es un problema
-- `tech_debt` - No bloquea release pero creará deuda técnica
-- `blocker` - Bloquea release, debe resolverse inmediatamente
+- `skippable` - Does not block release but is a problem
+- `tech_debt` - Does not block release but will create technical debt
+- `blocker` - Blocks release, must be resolved immediately
 
 ## Report
 
-Después de completar la validación, generar DOS outputs:
+After completing validation, generate TWO outputs:
 
-### 1. JSON Report (compatible con versión anterior)
+### 1. JSON Report (backward compatible)
 
-- IMPORTANTE: Retornar resultados exclusivamente como JSON array.
-- `success` debe ser `true` si NO hay issues BLOCKING
-- `success` debe ser `false` SOLO si hay issues BLOCKING
+- IMPORTANT: Return results exclusively as JSON array.
+- `success` must be `true` if there are NO BLOCKING issues
+- `success` must be `false` ONLY if there are BLOCKING issues
 
 ```json
 {
-    "success": "boolean - true si no hay issues BLOCKING",
-    "review_summary": "string - 2-4 oraciones describiendo qué se construyó y si cumple la spec",
+    "success": "boolean - true if no BLOCKING issues",
+    "review_summary": "string - 2-4 sentences describing what was built and if it meets the spec",
     "validation_results": {
         "syntax_check": "passed|failed",
         "type_check": "passed|failed",
         "linting": "passed|failed",
         "tests": "passed|failed",
-        "cli_smoke": "passed|failed"
+        "app_smoke": "passed|failed"
     },
     "review_issues": [
         {
@@ -79,32 +76,32 @@ Después de completar la validación, generar DOS outputs:
 }
 ```
 
-### 2. Validation Checklist (NUEVO)
+### 2. Validation Checklist (NEW)
 
-Generar un archivo markdown de checklist de validación y guardarlo junto al archivo spec.
+Generate a validation checklist markdown file and save it alongside the spec file.
 
-**Instrucciones para Generar el Checklist:**
+**Checklist Generation Instructions:**
 
-1. Parsear el archivo spec para extraer:
-   - Nombre/título del feature desde el primer encabezado
-   - Todos los ítems de la sección `## Acceptance Criteria` (líneas que empiezan con `- [ ]`)
-   - Todos los comandos de la sección `## Validation Commands`
-   - Nombre del branch git actual
-   - Fecha actual
+1. Parse the spec file to extract:
+   - Feature name/title from first heading
+   - All items from `## Acceptance Criteria` section (lines starting with `- [ ]`)
+   - All commands from `## Validation Commands` section
+   - Current git branch name
+   - Current date
 
-2. Mapear `validation_results` a ítems del checklist con estados apropiados:
-   - `passed` → `- [x] <nombre del check> - PASSED`
-   - `failed` → `- [ ] <nombre del check> - FAILED`
+2. Map `validation_results` to checklist items with proper checkbox states:
+   - `passed` → `- [x] <check name> - PASSED`
+   - `failed` → `- [ ] <check name> - FAILED`
 
-3. Generar checklist markdown en este formato exacto:
+3. Generate checklist markdown in this exact format:
 
 ```markdown
-# Validation Checklist: <Nombre del Feature>
+# Validation Checklist: <Feature Name>
 
-**Spec:** `<ruta_del_archivo_spec>`
-**Branch:** `<branch_actual>`
+**Spec:** `<spec_file_path>`
+**Branch:** `<current_branch>`
 **Review ID:** `<adw_id>`
-**Date:** `<fecha_actual>`
+**Date:** `<current_date>`
 
 ## Automated Technical Validations
 
@@ -115,37 +112,37 @@ Generar un archivo markdown de checklist de validación y guardarlo junto al arc
 
 ## Acceptance Criteria
 
-<!-- Extraído de la sección "## Acceptance Criteria" del spec -->
-<copiar todas las líneas que empiezan con "- [ ]" de la sección Acceptance Criteria del spec>
+<!-- Extracted from spec file "## Acceptance Criteria" section -->
+<copy all lines starting with "- [ ]" from spec's Acceptance Criteria section>
 
 ## Validation Commands Executed
 
 ```bash
-<copiar todos los comandos de la sección "## Validation Commands" del spec>
+<copy all commands from spec's "## Validation Commands" section>
 ```
 
 ## Review Summary
 
-<review_summary del output JSON>
+<review_summary from JSON output>
 
 ## Review Issues
 
-<formatear todos los issues del array review_issues con su severidad>
+<format all issues from review_issues array with severity>
 
 ---
-*Generado por el comando `/review` - TAC Bootstrap CLI*
+*Generated by `/review` command - TAC Bootstrap CLI*
 ```
 
-4. Guardar el checklist en:
-   - Ruta del archivo: `<directorio_del_spec>/<nombre_base_del_spec>-checklist.md`
-   - Ejemplo: si el spec es `specs/issue-64-adw-xyz-feature.md`, guardar en `specs/issue-64-adw-xyz-feature-checklist.md`
+4. Save the checklist to:
+   - File path: `<spec_file_directory>/<spec_file_basename>-checklist.md`
+   - Example: if spec is `specs/issue-64-adw-xyz-feature.md`, save to `specs/issue-64-adw-xyz-feature-checklist.md`
 
-5. Reportar al usuario:
-   - "Validation checklist guardado en: `<ruta_del_archivo_checklist>`"
-   - "Puedes copiar este checklist en comentarios de GitHub PR"
+5. Report to user:
+   - "Validation checklist saved to: `<checklist_file_path>`"
+   - "You can copy this checklist into GitHub PR comments"
 
-**Casos Edge:**
-- Si el spec no tiene sección "## Acceptance Criteria", usar lista vacía o notar "No se encontraron criterios de aceptación en el spec"
-- Si falta la sección de comandos de validación, notar "No se especificaron comandos de validación"
-- Asegurar escapado apropiado de markdown para caracteres especiales en el texto de criterios
-- Preservar el formato exacto de los criterios de aceptación del spec
+**Edge Cases:**
+- If spec file has no "## Acceptance Criteria" section, use empty list or note "No acceptance criteria found in spec"
+- If validation commands section is missing, note "No validation commands specified"
+- Ensure proper markdown escaping for special characters in criteria text
+- Preserve the exact formatting of acceptance criteria from the spec

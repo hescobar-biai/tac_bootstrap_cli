@@ -22,7 +22,6 @@ This workflow creates an isolated git worktree under trees/<adw_id>/ for
 parallel execution without interference.
 """
 
-import subprocess
 import sys
 import os
 import logging
@@ -49,7 +48,8 @@ from adw_modules.workflow_ops import (
     AGENT_PLANNER,
 )
 from adw_modules.utils import setup_logger, check_env_vars
-from adw_modules.data_types import GitHubIssue, IssueClassSlashCommand
+from adw_modules.data_types import GitHubIssue, IssueClassSlashCommand, AgentTemplateRequest
+from adw_modules.agent import execute_template
 from adw_modules.worktree_ops import (
     create_worktree,
     validate_worktree,
@@ -260,28 +260,26 @@ def main():
         state.save("adw_plan_iso")
         logger.info(f"Created worktree at {worktree_path}")
 
-        # Run setup_worktree.sh directly (no API call needed - avoids rate limiting/hanging)
-        logger.info("Setting up isolated environment via bash script")
-        script_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "scripts", "setup_worktree.sh"
+        # Run install_worktree command to set up the isolated environment
+        logger.info("Setting up isolated environment")
+        install_request = AgentTemplateRequest(
+            agent_name="ops",
+            slash_command="/install_worktree",
+            args=[worktree_path],
+            adw_id=adw_id,
+            working_dir=worktree_path,  # Execute in worktree
         )
-        result = subprocess.run(
-            ["bash", script_path, worktree_path],
-            capture_output=True,
-            text=True,
-            timeout=120,  # 2 min max for file ops + dependency install
-        )
-        if result.returncode != 0:
-            error_msg = result.stderr.strip() or result.stdout.strip() or "Unknown error"
-            logger.error(f"Error setting up worktree: {error_msg}")
+
+        install_response = execute_template(install_request)
+        if not install_response.success:
+            logger.error(f"Error setting up worktree: {install_response.output}")
             make_issue_comment(
                 issue_number,
-                format_issue_message(adw_id, "ops", f"❌ Error setting up worktree: {error_msg}"),
+                format_issue_message(adw_id, "ops", f"❌ Error setting up worktree: {install_response.output}"),
             )
             sys.exit(1)
 
-        logger.info(f"Worktree environment setup complete: {result.stdout.strip()}")
+        logger.info("Worktree environment setup complete")
 
     make_issue_comment(
         issue_number,

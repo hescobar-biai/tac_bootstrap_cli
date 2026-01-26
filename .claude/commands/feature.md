@@ -1,6 +1,6 @@
 # Feature Planning
 
-Crear un plan para implementar una nueva funcionalidad en TAC Bootstrap CLI siguiendo el formato especificado.
+Create a plan to implement a new feature in tac-bootstrap following the specified format.
 
 ## Variables
 issue_number: $1
@@ -9,38 +9,30 @@ issue_json: $3
 
 ## Instructions
 
-- IMPORTANTE: Estás creando un plan para implementar una nueva funcionalidad del TAC Bootstrap CLI.
-- El plan se usará para guiar la implementación con agentic coding.
-- CRITICAL: Crear el plan usando ruta RELATIVA `specs/issue-{issue_number}-adw-{adw_id}-sdlc_planner-{descriptive-name}.md`
-- CRITICAL: NUNCA uses rutas absolutas (que empiezan con /). SIEMPRE usa rutas relativas al directorio actual.
-- CRITICAL: Al usar la herramienta Write, usa SOLO `specs/filename.md`, NO `/Users/.../specs/filename.md`
-- Investigar el codebase para entender patrones existentes antes de planificar.
-- IMPORTANTE: Reemplazar cada <placeholder> en el formato con valores reales.
-- Usar el reasoning model: pensar cuidadosamente sobre requerimientos y approach.
-- Seguir patrones y convenciones existentes del proyecto.
-- Si necesitas una nueva librería, usar `uv add` y reportarlo en Notes.
-- Mantener simplicidad - no usar decoradores innecesarios.
+- IMPORTANT: You are creating a plan to implement a new feature for tac-bootstrap.
+- The plan will be used to guide implementation with agentic coding.
+- Create the plan in `specs/` with filename: `issue-{issue_number}-adw-{adw_id}-feature_planner-{descriptive-name}.md`
+- Investigate the codebase to understand existing patterns before planning.
+- IMPORTANT: Replace each <placeholder> in the format with real values.
+- Use the reasoning model: think carefully about requirements and approach.
+- Follow existing patterns and conventions in the project.
+- If you need a new library, use `` and report it in Notes.
+- Keep it simple - don't use unnecessary decorators.
 
 ## Relevant Files
 
-Archivos clave para TAC Bootstrap CLI:
+Key files for tac-bootstrap:
 
-- `PLAN_TAC_BOOTSTRAP.md` - Plan maestro con todas las tareas
-- `CLAUDE.md` - Guía para agentes
-- `config.yml` - Configuración del proyecto
-- `tac_bootstrap_cli/` - Código fuente del CLI (si existe)
-  - `tac_bootstrap/domain/` - Modelos Pydantic
-  - `tac_bootstrap/application/` - Servicios
-  - `tac_bootstrap/infrastructure/` - Templates, FS
-  - `tac_bootstrap/interfaces/` - CLI, Wizard
-- `prompts/templates/` - Templates de prompts
+- `CLAUDE.md` - Agent guide
+- `config.yml` - Project configuration
+- `tac_bootstrap_cli/` - Application source code
 
-Leer `.claude/commands/conditional_docs.md` para documentación adicional requerida.
+Read `.claude/commands/conditional_docs.md` for additional documentation.
 
 ## Plan Format
 
 ```md
-# Feature: <nombre de la feature>
+# Feature: <feature name>
 
 ## Metadata
 issue_number: `{issue_number}`
@@ -48,75 +40,74 @@ adw_id: `{adw_id}`
 issue_json: `{issue_json}`
 
 ## Feature Description
-<describir la feature en detalle, su propósito y valor>
+<describe the feature in detail, its purpose and value>
 
 ## User Story
-As a <tipo de usuario>
-I want to <acción/objetivo>
-So that <beneficio/valor>
+As a <user type>
+I want to <action/goal>
+So that <benefit/value>
 
 ## Problem Statement
-<definir claramente el problema u oportunidad que esta feature aborda>
+<clearly define the problem or opportunity this feature addresses>
 
 ## Solution Statement
-<describir el approach propuesto y cómo resuelve el problema>
+<describe the proposed approach and how it solves the problem>
 
 ## Relevant Files
-Archivos necesarios para implementar la feature:
+Files needed to implement the feature:
 
-<listar archivos relevantes con descripción de por qué son relevantes>
+<list relevant files with description of why they are relevant>
 
 ### New Files
-<listar archivos nuevos que se crearán>
+<list new files to be created>
 
 ## Implementation Plan
 
 ### Phase 1: Foundation
-<trabajo fundacional antes de implementar la feature principal>
+<foundational work before implementing the main feature>
 
 ### Phase 2: Core Implementation
-<implementación principal de la feature>
+<main feature implementation>
 
 ### Phase 3: Integration
-<integración con funcionalidad existente>
+<integration with existing functionality>
 
 ## Step by Step Tasks
-IMPORTANTE: Ejecutar cada paso en orden.
+IMPORTANT: Execute each step in order.
 
-### Task 1: <nombre>
-- <detalle>
-- <detalle>
+### Task 1: <name>
+- <detail>
+- <detail>
 
-### Task 2: <nombre>
-- <detalle>
+### Task 2: <name>
+- <detail>
 
-<El último paso debe ejecutar Validation Commands>
+<The last step should execute Validation Commands>
 
 ## Testing Strategy
 
 ### Unit Tests
-<tests unitarios necesarios>
+<required unit tests>
 
 ### Edge Cases
-<casos edge a probar>
+<edge cases to test>
 
 ## Acceptance Criteria
-<criterios específicos y medibles para considerar la feature completa>
+<specific and measurable criteria to consider the feature complete>
 
 ## Validation Commands
-Ejecutar todos los comandos para validar con cero regresiones:
+Run all commands to validate with zero regressions:
 
-- `cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short` - Tests unitarios
-- `cd tac_bootstrap_cli && uv run ruff check .` - Linting
-- `cd tac_bootstrap_cli && uv run mypy tac_bootstrap/` - Type check
-- `cd tac_bootstrap_cli && uv run tac-bootstrap --help` - Smoke test
+- `uv run pytest` - Run tests
+- `uv run ruff check .` - Linting
+- `uv run mypy tac_bootstrap_cli` - Type check
 
 ## Notes
-<notas adicionales, consideraciones futuras, o contexto relevante>
+<additional notes, future considerations, or relevant context>
 ```
 
 ## Feature
-Extraer detalles de la feature de la variable `issue_json` (parsear JSON y usar campos title y body).
+Extract feature details from the `issue_json` variable (parse JSON and use title and body fields).
 
 ## Report
 
@@ -124,16 +115,11 @@ CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
 
 1. First, check if a plan file already exists in `specs/` matching pattern: `issue-{issue_number}-adw-{adw_id}-*.md`
 2. If plan file EXISTS: Return ONLY the relative path, nothing else
-3. If plan file does NOT exist: Create it using RELATIVE PATH (e.g., `specs/filename.md`), then return ONLY the path
+3. If plan file does NOT exist: Create it following the Plan Format, then return ONLY the path
 
-CRITICAL FILE CREATION RULES:
-- When using the Write tool, use RELATIVE paths only: `specs/filename.md`
-- NEVER use absolute paths like `/Users/.../specs/filename.md`
-- The file will be created in the current working directory
-
-YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the RELATIVE path like:
+YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the path like:
 ```
-specs/issue-37-adw-e4dc9574-sdlc_planner-feature-name.md
+specs/issue-37-adw-e4dc9574-feature_planner-feature-name.md
 ```
 
 DO NOT include:
@@ -141,6 +127,5 @@ DO NOT include:
 - Phrases like "Perfect!", "I can see that...", "The plan file is at..."
 - Markdown formatting around the path
 - Multiple lines
-- Absolute paths (starting with /)
 
-ONLY output the bare RELATIVE path. This is machine-parsed.
+ONLY output the bare path. This is machine-parsed.

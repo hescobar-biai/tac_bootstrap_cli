@@ -1,27 +1,61 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.8"
-# ///
+#!/usr/bin/env python3
+"""
+Post-tool-use hook for tac-bootstrap.
+
+This hook logs tool execution details after each tool call.
+Logging is best-effort - errors are silently ignored to avoid disrupting workflows.
+
+Logs are written to: logs/{session_id}/post_tool_use.json
+"""
 
 import json
-import os
 import sys
 from pathlib import Path
 
-from utils.constants import ensure_session_log_dir
+
+def truncate_output(output, max_length=500):
+    """
+    Truncate tool output to prevent excessive log sizes.
+
+    Args:
+        output: Tool output string or dict
+        max_length: Maximum length before truncation
+
+    Returns:
+        Truncated string representation
+    """
+    if output is None:
+        return None
+
+    output_str = str(output)
+    if len(output_str) > max_length:
+        return output_str[:max_length] + "... [truncated]"
+    return output_str
+
 
 def main():
     try:
         # Read JSON input from stdin
         input_data = json.load(sys.stdin)
-        
+
         # Extract session_id
         session_id = input_data.get('session_id', 'unknown')
-        
-        # Ensure session log directory exists
-        log_dir = ensure_session_log_dir(session_id)
+
+        # Ensure log directory exists
+        log_base_dir = Path("logs")
+        log_dir = log_base_dir / session_id
+        log_dir.mkdir(parents=True, exist_ok=True)
         log_path = log_dir / 'post_tool_use.json'
-        
+
+        # Prepare log entry with truncated output
+        log_entry = {
+            'tool_name': input_data.get('tool_name', 'unknown'),
+            'tool_input': input_data.get('tool_input', {}),
+            'tool_output': truncate_output(input_data.get('tool_output')),
+            'timestamp': input_data.get('timestamp', ''),
+            'session_id': session_id,
+        }
+
         # Read existing log data or initialize empty list
         if log_path.exists():
             with open(log_path, 'r') as f:
@@ -31,22 +65,23 @@ def main():
                     log_data = []
         else:
             log_data = []
-        
+
         # Append new data
-        log_data.append(input_data)
-        
+        log_data.append(log_entry)
+
         # Write back to file with formatting
         with open(log_path, 'w') as f:
             json.dump(log_data, f, indent=2)
-        
+
         sys.exit(0)
-        
+
     except json.JSONDecodeError:
         # Handle JSON decode errors gracefully
         sys.exit(0)
     except Exception:
-        # Exit cleanly on any other error
+        # Exit cleanly on any other error (logging is best-effort)
         sys.exit(0)
+
 
 if __name__ == '__main__':
     main()

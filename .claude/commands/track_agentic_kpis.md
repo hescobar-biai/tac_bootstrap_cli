@@ -2,6 +2,12 @@
 
 Update or create the ADW performance tracking tables in `app_docs/agentic_kpis.md`. This command analyzes the current ADW run's metrics and maintains both summary and detailed KPI tables. Think hard about building this, these are key KPIs for the AI Developer Workflow (ADW) system. Use the python commands as suggestions and guides for how to calculate the values. Ultimately, do whatever python calculation you need to do to get the values.
 
+The four core TAC (Tactical Agentic Coding) KPIs tracked are:
+- **SIZE**: Amount of work delegable to agents per execution (measured by plan size and diff size)
+- **ATTEMPTS**: Number of iterations required post-execution (tracks how many times workflows need to be re-run)
+- **STREAK**: Consecutive one-shot successful executions (Attempts ≤ 2)
+- **PRESENCE**: Human time required during execution (measured by average attempts across all workflows)
+
 ## Variables
 
 state_json: $ARGUMENTS
@@ -42,8 +48,6 @@ IMPORTANT: Use Python to calculate the exact count value:
 
 ### 3. Read Existing File
 - Check if `app_docs/agentic_kpis.md` exists
-- CRITICAL: Use RELATIVE path `app_docs/agentic_kpis.md`
-- CRITICAL: NEVER use absolute paths (starting with /). ALWAYS use relative paths.
 - If it exists, read and parse the existing tables
 - If not, prepare to create new file with both tables
 
@@ -89,9 +93,6 @@ IMPORTANT: All calculations must be done using Python expressions. Use `python -
 
 ### 6. Write Updated File
 - Create/update `app_docs/agentic_kpis.md` with the structure below
-- CRITICAL: Use RELATIVE path `app_docs/agentic_kpis.md`
-- CRITICAL: NEVER use absolute paths (starting with /). ALWAYS use relative paths.
-- CRITICAL: When using Write tool, use ONLY `app_docs/agentic_kpis.md`, NOT `/Users/.../app_docs/agentic_kpis.md`
 - Ensure proper markdown table formatting
 - Include "Last Updated" timestamp using `date` command
 
@@ -127,17 +128,4 @@ Detailed metrics for individual ADW workflow runs.
 
 ## Report
 
-CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
-
-YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE:
-```
-Updated app_docs/agentic_kpis.md
-```
-
-DO NOT include:
-- Any explanation or commentary
-- Phrases like "Perfect!", "I updated...", "The file is at..."
-- Multiple lines
-- Absolute paths (starting with /)
-
-ONLY output: "Updated app_docs/agentic_kpis.md"
+Return only: "Updated app_docs/agentic_kpis.md"

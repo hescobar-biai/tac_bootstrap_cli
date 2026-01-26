@@ -1,53 +1,48 @@
 # Install & Prime
 
-Instalar dependencias y preparar el entorno de desarrollo para TAC Bootstrap CLI.
+Install dependencies and prepare the development environment for tac-bootstrap.
 
 ## Read
 - README.md
 - CLAUDE.md
-- PLAN_TAC_BOOTSTRAP.md (secciones relevantes)
 - config.yml
 
 ## Check Structure
-Verificar que existe la estructura del CLI:
+Verify the application structure exists:
 ```
 tac_bootstrap_cli/
-├── pyproject.toml
-├── tac_bootstrap/
-│   ├── __init__.py
-│   ├── domain/
-│   ├── application/
-│   ├── infrastructure/
-│   └── interfaces/
-└── tests/
+├── (package manifest: pyproject.toml, package.json, Cargo.toml, etc.)
+└── (source code)
 ```
 
-Si no existe, informar al usuario que debe ejecutar TAREA 1.1 del plan.
+If it doesn't exist, inform the user they need to create the application first.
 
-## Run (si tac_bootstrap_cli existe)
-1. Instalar dependencias del CLI:
+## Run (if tac_bootstrap_cli exists)
+
+1. Install dependencies:
    ```bash
    cd tac_bootstrap_cli && uv sync
    ```
 
-2. Verificar instalación:
+2. Verify installation:
    ```bash
-   cd tac_bootstrap_cli && uv run tac-bootstrap --help
+   uv run tac-bootstrap --help --help
    ```
 
-## Run (si tac_bootstrap_cli NO existe)
-1. Informar que el CLI aún no ha sido creado
-2. Sugerir ejecutar TAREA 1.1 del PLAN_TAC_BOOTSTRAP.md
+## Run (if tac_bootstrap_cli does NOT exist)
+
+1. Inform that the application has not been created yet
+2. Suggest checking specs/ for setup instructions
 
 ## Read and Execute
 .claude/commands/prime.md
 
 ## Report
-- Estado de la instalación (exitosa/pendiente)
-- Versión del CLI instalada (si aplica)
-- Próximos pasos según el plan
-- Comandos disponibles:
-  - `/prime` - Preparar contexto
-  - `/feature` - Planificar feature
-  - `/implement <plan>` - Ejecutar plan
-  - `/test` - Correr tests
+- Installation state (successful/pending)
+- Installed version (if applicable)
+- Next steps
+- Available commands:
+  - `/prime` - Prepare context
+  - `/feature` - Plan feature
+  - `/implement <plan>` - Execute plan
+  - `/test` - Run tests

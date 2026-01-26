@@ -1,49 +1,47 @@
 # Start
 
-Iniciar TAC Bootstrap CLI en modo desarrollo.
+Start tac-bootstrap in development mode.
 
 ## Variables
-- PORT: No aplica (CLI, no servidor web)
+- PORT: Not applicable (CLI or library)
 
 ## Check
-Verificar que tac_bootstrap_cli existe:
+Verify application exists:
 ```bash
-ls tac_bootstrap_cli/pyproject.toml
+ls tac_bootstrap_cli/
 ```
 
 ## Workflow
 
-### Si tac_bootstrap_cli existe:
+### If application exists:
 
-1. Verificar dependencias:
+1. Verify dependencies:
    ```bash
    cd tac_bootstrap_cli && uv sync
    ```
 
-2. Mostrar ayuda del CLI:
+2. Start application:
    ```bash
-   cd tac_bootstrap_cli && uv run tac-bootstrap --help
+   uv run tac-bootstrap --help
    ```
 
-3. Mostrar versión:
-   ```bash
-   cd tac_bootstrap_cli && uv run tac-bootstrap version
+3. Verify running:
+   - Check for successful startup messages
+   - Verify no errors in output
+
+### If application does NOT exist:
+
+1. Inform user that the application has not been created yet
+2. Show instructions:
    ```
+   The application for tac-bootstrap does not exist yet.
 
-### Si tac_bootstrap_cli NO existe:
-
-1. Informar que el CLI aún no ha sido creado
-2. Mostrar instrucciones:
-   ```
-   El CLI de TAC Bootstrap aún no existe.
-
-   Para crearlo, ejecuta TAREA 1.1 del plan:
-   1. Lee PLAN_TAC_BOOTSTRAP.md
-   2. Busca "TAREA 1.1: Crear estructura base"
-   3. Ejecuta el prompt de esa tarea
+   To create it, check the specs directory for setup instructions:
+   1. Read specs/
+   2. Follow the setup guide
    ```
 
 ## Report
-- Estado del CLI (instalado/pendiente)
-- Comandos disponibles (si está instalado)
-- Próximos pasos
+- Application state (running/pending)
+- Available commands (if running)
+- Next steps

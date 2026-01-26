@@ -1,61 +1,61 @@
 # GitHub Check
 
-Verificar conexión y configuración de GitHub para el proyecto.
+Verify GitHub connection and configuration for the project.
 
 ## Instructions
 
-Ejecutar verificaciones de GitHub en secuencia y reportar resultados.
+Run GitHub checks in sequence and report results.
 
-### 1. Verificar GitHub CLI instalado
+### 1. Verify GitHub CLI installed
 ```bash
 gh --version
 ```
-- Si falla: Informar que `gh` CLI no está instalado
-- Sugerir: `brew install gh` (macOS) o ver https://cli.github.com/
+- If fails: Report that `gh` CLI is not installed
+- Suggest: `brew install gh` (macOS) or see https://cli.github.com/
 
-### 2. Verificar autenticación GitHub
+### 2. Verify GitHub authentication
 ```bash
 gh auth status
 ```
-- Debe mostrar cuenta autenticada
-- Si falla: Sugerir `gh auth login`
+- Should show authenticated account
+- If fails: Suggest `gh auth login`
 
-### 3. Verificar Git remoto configurado
+### 3. Verify Git remote configured
 ```bash
 git remote -v
 ```
-- Debe mostrar `origin` apuntando a GitHub
-- Si no hay remote: Informar que no está configurado
+- Should show `origin` pointing to GitHub
+- If no remote: Report that it's not configured
 
-### 4. Verificar acceso al repositorio
+### 4. Verify repository access
 ```bash
 gh repo view --json name,owner,url
 ```
-- Si funciona: Mostrar info del repo
-- Si falla: Verificar permisos o que el repo exista
+- If works: Show repo info
+- If fails: Verify permissions or that the repo exists
 
-### 5. Verificar branch actual
+### 5. Verify current branch
 ```bash
 git branch --show-current
 ```
-- Mostrar branch actual
+- Show current branch
 
-### 6. Verificar estado de sync con remote
+### 6. Verify sync status with remote
 ```bash
 git fetch origin --dry-run 2>&1
 ```
-- Verificar que se puede conectar al remote
+- Verify connection to remote works
 
-### 7. Verificar issues y PRs (opcional)
+### 7. Verify issues and PRs (optional)
 ```bash
 gh issue list --limit 5
 gh pr list --limit 5
 ```
-- Mostrar issues y PRs recientes si existen
+- Show recent issues and PRs if they exist
 
 ## Report
 
-Reportar resultados como JSON:
+Report results as JSON:
 
 ```json
 {
@@ -99,17 +99,17 @@ Reportar resultados como JSON:
 }
 ```
 
-### Ejemplo de Output
+### Example Output
 
 ```json
 {
   "status": "ready",
   "checks": [
     {"name": "gh_cli_installed", "passed": true, "message": "gh version 2.40.0"},
-    {"name": "gh_authenticated", "passed": true, "message": "Logged in", "account": "usuario"},
-    {"name": "git_remote_configured", "passed": true, "message": "Remote configurado", "remote_url": "git@github.com:org/repo.git"},
-    {"name": "repo_access", "passed": true, "message": "Acceso verificado", "repo_name": "tac-bootstrap"},
-    {"name": "remote_sync", "passed": true, "message": "Conexión exitosa"}
+    {"name": "gh_authenticated", "passed": true, "message": "Logged in", "account": "user"},
+    {"name": "git_remote_configured", "passed": true, "message": "Remote configured", "remote_url": "git@github.com:org/repo.git"},
+    {"name": "repo_access", "passed": true, "message": "Access verified", "repo_name": "tac-bootstrap"},
+    {"name": "remote_sync", "passed": true, "message": "Connection successful"}
   ],
   "summary": {
     "current_branch": "main",

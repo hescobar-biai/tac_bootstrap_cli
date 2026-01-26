@@ -330,53 +330,16 @@ def is_connection_error(error_msg: str) -> bool:
     return any(indicator in error_lower for indicator in connection_indicators)
 
 
-def is_quota_exhausted_error(error_msg: str) -> bool:
-    """Check if an error message indicates quota/usage limit exhausted.
-
-    This is different from rate limiting - quota exhausted means the user
-    has hit their usage limit and needs to wait for reset or use a different model.
-    """
-    quota_indicators = [
-        "hit your limit",
-        "limit reached",
-        "usage limit",
-        "quota exceeded",
-        "quota exhausted",
-        "resets",  # "resets 1pm" pattern
-        "monthly limit",
-        "daily limit",
-    ]
-    error_lower = error_msg.lower()
-    return any(indicator in error_lower for indicator in quota_indicators)
-
-
-# Model fallback chain: opus -> sonnet -> haiku
-MODEL_FALLBACK_CHAIN: Final[Dict[str, Optional[str]]] = {
-    "opus": "sonnet",
-    "sonnet": "haiku",
-    "haiku": None,  # No fallback from haiku
-}
-
-
-def get_fallback_model(current_model: str) -> Optional[str]:
-    """Get the fallback model for the current model.
-
-    Returns None if there's no fallback available (already at lowest tier).
-    """
-    return MODEL_FALLBACK_CHAIN.get(current_model)
-
-
 def prompt_claude_code_with_retry(
     request: AgentPromptRequest,
     max_retries: int = 5,
     base_delay: int = 5,
 ) -> AgentPromptResponse:
-    """Execute Claude Code with intelligent retry logic and model fallback.
+    """Execute Claude Code with intelligent retry logic.
 
     Features:
     - Exponential backoff with jitter
     - Longer delays for rate limiting (starts at 30s)
-    - Automatic model fallback when quota is exhausted (opus -> sonnet -> haiku)
     - Detailed logging during retries
     - Configurable max retries and base delay
 
@@ -389,11 +352,9 @@ def prompt_claude_code_with_retry(
         AgentPromptResponse with output and retry code
     """
     logger = get_retry_logger(request.adw_id)
-    original_model = request.model
-    current_model = request.model
-    current_request = request
+    last_response = None
 
-    # Retryable error codes (not including QUOTA_EXHAUSTED - that triggers model fallback)
+    # Retryable error codes
     retryable_codes = [
         RetryCode.CLAUDE_CODE_ERROR,
         RetryCode.TIMEOUT_ERROR,
@@ -404,15 +365,42 @@ def prompt_claude_code_with_retry(
         RetryCode.API_ERROR,
     ]
 
-    attempt = 0
-    while attempt <= max_retries:
-        # Execute the request
-        response = prompt_claude_code(current_request)
+    for attempt in range(max_retries + 1):  # +1 for initial attempt
+        if attempt > 0:
+            # Calculate delay based on error type
+            delay = calculate_backoff_delay(
+                attempt,
+                base_delay,
+                retry_code=last_response.retry_code if last_response else RetryCode.NONE
+            )
+
+            logger.warning(
+                f"⏳ Retry {attempt}/{max_retries} in {delay}s - "
+                f"Previous error: {last_response.retry_code.value if last_response else 'unknown'}"
+            )
+
+            # Log progress during long waits
+            if delay > 30:
+                for waited in range(0, delay, 30):
+                    remaining = delay - waited
+                    if remaining > 30:
+                        logger.info(f"   Waiting... {remaining}s remaining")
+                        time.sleep(30)
+                    else:
+                        time.sleep(remaining)
+                        break
+            else:
+                time.sleep(delay)
+
+            logger.info(f"🔄 Retrying attempt {attempt + 1}...")
+
+        response = prompt_claude_code(request)
+        last_response = response
 
         # Success - return immediately
         if response.success:
-            if attempt > 0 or current_model != original_model:
-                logger.info(f"✅ Succeeded on attempt {attempt + 1} with model {current_model}")
+            if attempt > 0:
+                logger.info(f"✅ Succeeded on retry attempt {attempt}")
             return response
 
         # Non-retryable error
@@ -420,57 +408,13 @@ def prompt_claude_code_with_retry(
             logger.error(f"❌ Non-retryable error: {response.output[:200]}")
             return response
 
-        # Quota exhausted - try fallback model (doesn't count as retry)
-        if response.retry_code == RetryCode.QUOTA_EXHAUSTED:
-            fallback_model = get_fallback_model(current_model)
-            if fallback_model:
-                logger.warning(
-                    f"🔄 Model {current_model} quota exhausted, falling back to {fallback_model}"
-                )
-                current_model = fallback_model
-                current_request = current_request.model_copy(update={"model": current_model})
-                # Don't increment attempt - model switch is free
-                continue
-            else:
-                logger.error(
-                    f"❌ No fallback available from {current_model}. All models exhausted."
-                )
-                return response
-
         # Check if this is a retryable error
         if response.retry_code in retryable_codes:
             if attempt < max_retries:
-                attempt += 1
-
-                # Calculate delay based on error type
-                delay = calculate_backoff_delay(
-                    attempt,
-                    base_delay,
-                    retry_code=response.retry_code
-                )
-
                 logger.warning(
                     f"⚠️ Retryable error ({response.retry_code.value}): "
                     f"{response.output[:100]}..."
                 )
-                logger.warning(
-                    f"⏳ Retry {attempt}/{max_retries} in {delay}s (model: {current_model})"
-                )
-
-                # Log progress during long waits
-                if delay > 30:
-                    for waited in range(0, delay, 30):
-                        remaining = delay - waited
-                        if remaining > 30:
-                            logger.info(f"   Waiting... {remaining}s remaining")
-                            time.sleep(30)
-                        else:
-                            time.sleep(remaining)
-                            break
-                else:
-                    time.sleep(delay)
-
-                logger.info(f"🔄 Retrying attempt {attempt + 1} with model {current_model}...")
                 continue
             else:
                 logger.error(
@@ -479,11 +423,8 @@ def prompt_claude_code_with_retry(
                 )
                 return response
 
-        # Unknown error code - return as-is
-        return response
-
     # Should not reach here, but return last response just in case
-    return response
+    return last_response
 
 
 def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
@@ -512,7 +453,7 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
     cmd.extend(["--model", request.model])
     cmd.extend(["--output-format", "stream-json"])
     cmd.append("--verbose")
-    
+
     # Check for MCP config in working directory
     if request.working_dir:
         mcp_config_path = os.path.join(request.working_dir, ".mcp.json")
@@ -526,37 +467,6 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
     # Set up environment with only required variables
     env = get_claude_env()
 
-    # CRITICAL: Validate working_dir to prevent accidental writes to main repo
-    effective_cwd = request.working_dir
-
-    # Read-only agents that don't create files - no warning needed
-    read_only_agents = {
-        "clarifier",
-        "resolver",
-        "classifier",
-        "branch_generator",
-        "branch_name_generator",
-        "issue_classifier",
-        "adw_classifier",
-    }
-
-    if effective_cwd:
-        if not os.path.isdir(effective_cwd):
-            return AgentPromptResponse(
-                output=f"Error: working_dir does not exist: {effective_cwd}",
-                success=False,
-                session_id=None,
-                retry_code=RetryCode.NONE,
-            )
-    else:
-        # Only warn for agents that create files (not read-only agents)
-        if request.agent_name not in read_only_agents:
-            logger = get_retry_logger(request.adw_id)
-            logger.warning(
-                f"⚠️ No working_dir provided for {request.agent_name} - "
-                f"executing in current directory. This may cause files to be created in main repo!"
-            )
-
     try:
         # Open output file for streaming
         with open(request.output_file, "w") as output_f:
@@ -568,7 +478,7 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
                 stderr=subprocess.PIPE,
                 text=True,
                 env=env,
-                cwd=effective_cwd,  # Use working_dir if provided
+                cwd=request.working_dir,  # Use working_dir if provided
                 timeout=request.timeout_seconds,  # Add timeout!
             )
 
@@ -703,11 +613,8 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
             # Determine the appropriate retry code based on error content
             retry_code = RetryCode.CLAUDE_CODE_ERROR
 
-            # Check for quota exhausted (user hit their usage limit)
-            if is_quota_exhausted_error(error_msg):
-                retry_code = RetryCode.QUOTA_EXHAUSTED
-            # Check for rate limiting (temporary, can retry)
-            elif is_rate_limited_error(error_msg):
+            # Check for rate limiting
+            if is_rate_limited_error(error_msg):
                 retry_code = RetryCode.RATE_LIMITED
             # Check for connection errors
             elif is_connection_error(error_msg):
@@ -747,9 +654,7 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
         error_msg = f"Error executing Claude Code: {e}"
         # Try to classify the error
         error_str = str(e)
-        if is_quota_exhausted_error(error_str):
-            retry_code = RetryCode.QUOTA_EXHAUSTED
-        elif is_rate_limited_error(error_str):
+        if is_rate_limited_error(error_str):
             retry_code = RetryCode.RATE_LIMITED
         elif is_connection_error(error_str):
             retry_code = RetryCode.CONNECTION_ERROR

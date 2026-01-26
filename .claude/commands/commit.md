@@ -22,6 +22,7 @@ issue: $ARGUMENT
   - `sdlc_planner: chore: update dependencies to latest versions`
 - Extract context from the issue JSON to make the commit message relevant
 - Don't include any 'Generated with...' or 'Authored by...' in the commit message. Focus purely on the changes made.
+- Do NOT stage files in: .env, secrets/
 
 ## Run
 

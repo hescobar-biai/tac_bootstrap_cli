@@ -1,50 +1,42 @@
 # Patch Plan
 
-Crear un **plan de patch enfocado** para resolver un issue específico en TAC Bootstrap CLI basado en el `review_change_request`.
+Create a **focused patch plan** to resolve a specific issue in tac-bootstrap based on the `review_change_request`.
 
 ## Variables
 
 adw_id: $1
 review_change_request: $2
-spec_path: $3 si se proporciona, de lo contrario dejar en blanco
-agent_name: $4 si se proporciona, de lo contrario usar 'patch_agent'
-issue_screenshots: $5 (opcional) - lista de paths a screenshots separados por coma
+spec_path: $3 if provided, otherwise leave blank
+agent_name: $4 if provided, otherwise use 'patch_agent'
+issue_screenshots: $5 (optional) - list of paths to screenshots separated by comma
 
 ## Instructions
 
-- IMPORTANTE: Estás creando un patch plan para arreglar un issue específico. Mantener cambios pequeños y enfocados.
-- Leer la especificación original (spec) en `spec_path` si se proporciona.
-- IMPORTANTE: Usar `review_change_request` para entender exactamente qué necesita ser arreglado.
-- Si `issue_screenshots` se proporcionan, examinarlos para entender el contexto visual.
-- CRITICAL: Crear el patch plan usando ruta RELATIVA `specs/patch/patch-adw-{adw_id}-{descriptive-name}.md`
-- CRITICAL: NUNCA uses rutas absolutas (que empiezan con /). SIEMPRE usa rutas relativas al directorio actual.
-- CRITICAL: Al usar la herramienta Write, usa SOLO `specs/patch/filename.md`, NO `/Users/.../specs/patch/filename.md`
-- IMPORTANTE: Esto es un PATCH - mantener el scope mínimo. Solo arreglar lo descrito en `review_change_request`.
-- Ejecutar `git diff --stat` para entender cambios existentes.
-- Pensar sobre la forma más eficiente de implementar con cambios mínimos.
-- Basar la validación en los pasos de validación del `spec_path` si se proporciona.
-- Reemplazar cada <placeholder> en el formato con detalles específicos.
+- IMPORTANT: You are creating a patch plan to fix a specific issue. Keep changes small and focused.
+- Read the original specification (spec) at `spec_path` if provided.
+- IMPORTANT: Use `review_change_request` to understand exactly what needs to be fixed.
+- If `issue_screenshots` are provided, examine them to understand the visual context.
+- Create the patch plan in `specs/patch/` with filename: `patch-adw-{adw_id}-{descriptive-name}.md`
+- IMPORTANT: This is a PATCH - keep scope minimal. Only fix what is described in `review_change_request`.
+- Run `git diff --stat` to understand existing changes.
+- Think about the most efficient way to implement with minimal changes.
+- Base validation on the validation steps from `spec_path` if provided.
+- Replace each <placeholder> in the format with specific details.
 
 ## Relevant Files
 
-Archivos clave para TAC Bootstrap CLI:
+Key files for tac-bootstrap:
 
-- `PLAN_TAC_BOOTSTRAP.md` - Plan maestro del proyecto
-- `CLAUDE.md` - Guía para agentes
-- `config.yml` - Configuración del proyecto
-- `tac_bootstrap_cli/` - Código fuente del CLI
-  - `tac_bootstrap/domain/` - Modelos Pydantic
-  - `tac_bootstrap/application/` - Servicios
-  - `tac_bootstrap/infrastructure/` - Templates, FS
-  - `tac_bootstrap/interfaces/` - CLI, Wizard
-  - `tests/` - Tests unitarios
+- `CLAUDE.md` - Agent guide
+- `config.yml` - Project configuration
+- `tac_bootstrap_cli/` - Application source code
 
-Leer `.claude/commands/conditional_docs.md` para documentación adicional.
+Read `.claude/commands/conditional_docs.md` for additional documentation.
 
 ## Plan Format
 
 ```md
-# Patch: <título conciso del patch>
+# Patch: <concise patch title>
 
 ## Metadata
 adw_id: `{adw_id}`
@@ -52,55 +44,49 @@ review_change_request: `{review_change_request}`
 
 ## Issue Summary
 **Original Spec:** <spec_path>
-**Issue:** <descripción breve del issue basado en `review_change_request`>
-**Solution:** <descripción breve del approach basado en `review_change_request`>
+**Issue:** <brief description of the issue based on `review_change_request`>
+**Solution:** <brief description of the approach based on `review_change_request`>
 
 ## Files to Modify
-Archivos a modificar para implementar el patch:
+Files to modify to implement the patch:
 
-<listar solo los archivos que necesitan cambios - ser específico y mínimo>
+<list only the files that need changes - be specific and minimal>
 
 ## Implementation Steps
-IMPORTANTE: Ejecutar cada paso en orden.
+IMPORTANT: Execute each step in order.
 
-<listar 2-5 pasos enfocados. Cada paso debe ser una acción concreta.>
+<list 2-5 focused steps. Each step should be a concrete action.>
 
-### Step 1: <acción específica>
-- <detalle de implementación>
-- <detalle de implementación>
+### Step 1: <specific action>
+- <implementation detail>
+- <implementation detail>
 
-### Step 2: <acción específica>
-- <detalle de implementación>
+### Step 2: <specific action>
+- <implementation detail>
 
-<continuar según sea necesario, pero mantenerlo mínimo>
+<continue as needed, but keep it minimal>
 
 ## Validation
-Ejecutar comandos para validar el patch con cero regresiones:
+Run commands to validate the patch with zero regressions:
 
-- `cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short` - Tests unitarios
-- `cd tac_bootstrap_cli && uv run ruff check .` - Linting
-- `cd tac_bootstrap_cli && uv run tac-bootstrap --help` - Smoke test
+- `uv run pytest` - Run tests
+- `uv run ruff check .` - Linting
 
 ## Patch Scope
-**Lines of code to change:** <estimación>
+**Lines of code to change:** <estimate>
 **Risk level:** <low|medium|high>
-**Testing required:** <descripción breve>
+**Testing required:** <brief description>
 ```
 
 ## Report
 
 CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
 
-1. First, check if a plan file already exists in `specs/patch/` matching pattern: `patch-adw-{adw_id}-*.md`
+1. First, check if a patch plan file already exists in `specs/patch/` matching pattern: `patch-adw-{adw_id}-*.md`
 2. If plan file EXISTS: Return ONLY the relative path, nothing else
-3. If plan file does NOT exist: Create it using RELATIVE PATH (e.g., `specs/patch/filename.md`), then return ONLY the path
+3. If plan file does NOT exist: Create it following the Plan Format, then return ONLY the path
 
-CRITICAL FILE CREATION RULES:
-- When using the Write tool, use RELATIVE paths only: `specs/patch/filename.md`
-- NEVER use absolute paths like `/Users/.../specs/patch/filename.md`
-- The file will be created in the current working directory
-
-YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the RELATIVE path like:
+YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the path like:
 ```
 specs/patch/patch-adw-e4dc9574-patch-name.md
 ```
@@ -110,6 +96,5 @@ DO NOT include:
 - Phrases like "Perfect!", "I found...", "The plan file is at..."
 - Markdown formatting around the path
 - Multiple lines
-- Absolute paths (starting with /)
 
-ONLY output the bare RELATIVE path. This is machine-parsed.
+ONLY output the bare path. This is machine-parsed.

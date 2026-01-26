@@ -36,6 +36,28 @@ adw_id: $ARGUMENT
 5. Set GH_TOKEN environment variable from GITHUB_PAT if available, then run `gh pr create --title "<pr_title>" --body "<pr_body>" --base main` to create the PR
 6. Capture the PR URL from the output
 
+## PR Body Format
+
+```markdown
+## Summary
+<2-3 sentences describing the change>
+
+## Implementation
+- Plan file: `<plan_file>`
+- ADW ID: `<adw_id>`
+
+## Changes
+<list key changes based on git diff>
+
+## Testing
+- [ ] Tests pass: `uv run pytest`
+- [ ] Lint passes: `uv run ruff check .`
+- [ ] Build succeeds: `uv build`
+
+## Related Issues
+Closes #<issue_number>
+```
+
 ## Report
 
 Return ONLY the PR URL that was created (no other text)

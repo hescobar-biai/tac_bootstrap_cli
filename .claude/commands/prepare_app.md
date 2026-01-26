@@ -1,37 +1,51 @@
 # Prepare Application
 
-Preparar el entorno de desarrollo de TAC Bootstrap CLI para tests o reviews.
+Prepare the tac-bootstrap development environment for tests or reviews.
 
 ## Instructions
 
-### Si tac_bootstrap_cli/ existe:
+### If tac_bootstrap_cli/ exists:
 
-1. **Sincronizar dependencias**
+1. **Sync dependencies**
    ```bash
    cd tac_bootstrap_cli && uv sync
    ```
 
-2. **Verificar CLI funcional**
+
+2. **Build Application**
    ```bash
-   cd tac_bootstrap_cli && uv run tac-bootstrap --help
+   uv build
    ```
 
-3. **Ejecutar tests rápidos**
+3. **Validate Application Can Start**
    ```bash
-   cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short -x
+   uv run tac-bootstrap --help --help
    ```
 
-### Si tac_bootstrap_cli/ NO existe:
+4. **Run quick tests**
+   ```bash
+   uv run pytest -x --tb=short
+   ```
 
-1. **Informar estado**
-   - El CLI aún no ha sido creado
-   - No es posible preparar el entorno de desarrollo
+### If tac_bootstrap_cli/ does NOT exist:
 
-2. **Sugerir siguiente paso**
-   - Ejecutar TAREA 1.1 del PLAN_TAC_BOOTSTRAP.md para crear estructura base
+1. **Inform state**
+   - The application has not been created yet
+   - Cannot prepare the development environment
+
+2. **Suggest next step**
+   - Follow setup instructions in specs/ to create the application
+
+## Report
+
+After running the above steps, report:
+
+1. **Dependencies status**: All dependencies synchronized successfully
+2. ****: 3. **Build status**: Application built successfully4. **Application validation**: Application can start (verified with --help)
+5. **Test status**: Quick tests passed
 
 ## Notes
 
-- Este comando prepara el entorno para desarrollo del CLI
-- Para tests de la app de ejemplo (si existe), usar los scripts en `scripts/`
-- Leer `PLAN_TAC_BOOTSTRAP.md` para entender el estado actual del proyecto
+- This command prepares the environment for application development
+- For example app tests (if applicable), use scripts in `scripts/`
+- Read documentation in specs/ to understand current project state

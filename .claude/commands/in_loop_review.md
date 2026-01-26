@@ -1,6 +1,6 @@
 # In-Loop Review
 
-Quick checkout and review workflow for agent work validation in TAC Bootstrap CLI.
+Quick checkout and review workflow for agent work validation.
 
 ## Variables
 
@@ -8,34 +8,28 @@ branch: $ARGUMENTS
 
 ## Workflow
 
-IMPORTANTE: Si no se proporciona branch, detener ejecución y reportar que el argumento branch es requerido.
+IMPORTANT: If no branch is provided, stop execution and report that the branch argument is required.
 
 ### Step 1: Pull and Checkout Branch
-- Ejecutar `git fetch origin` para obtener cambios remotos
-- Ejecutar `git checkout {branch}` para cambiar al branch objetivo
+- Run `git fetch origin` to get remote changes
+- Run `git checkout {branch}` to switch to target branch
 
 ### Step 2: Prepare Environment
 
-**Si tac_bootstrap_cli/ existe:**
-- Ejecutar `cd tac_bootstrap_cli && uv sync` para sincronizar dependencias
-- Ejecutar `cd tac_bootstrap_cli && uv run tac-bootstrap --help` para verificar CLI funciona
+**Install dependencies:**
+- Run `` to sync dependencies
 
-**Si tac_bootstrap_cli/ NO existe:**
-- Informar que el CLI aún no ha sido creado
+**Verify application:**
+- Run `uv run tac-bootstrap --help --help` or equivalent to verify app works
 
 ### Step 3: Run Validation
-- Ejecutar `cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short` para correr tests
-- Ejecutar `cd tac_bootstrap_cli && uv run ruff check .` para verificar linting
+- Run `uv run pytest` to run tests
+- Run `uv run ruff check .` to verify linting
 
 ### Step 4: Manual Review
-- El CLI está listo para revisión manual
-- El ingeniero puede probar comandos directamente:
-  ```bash
-  cd tac_bootstrap_cli && uv run tac-bootstrap --help
-  cd tac_bootstrap_cli && uv run tac-bootstrap init --help
-  cd tac_bootstrap_cli && uv run tac-bootstrap doctor --help
-  ```
+- The application is ready for manual review
+- The engineer can test commands directly
 
 ## Report
 
-Reportar pasos tomados para preparar el entorno para revisión.
+Report steps taken to prepare the environment for review.

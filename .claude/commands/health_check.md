@@ -1,6 +1,6 @@
 # Health Check
 
-Verificar el estado del entorno de desarrollo de TAC Bootstrap CLI.
+Verify the development environment state for tac-bootstrap.
 
 ## Variables
 
@@ -8,48 +8,48 @@ TEST_COMMAND_TIMEOUT: 2 minutes
 
 ## Instructions
 
-Ejecutar verificaciones del entorno de desarrollo para TAC Bootstrap CLI.
+Execute development environment verifications for tac-bootstrap.
 
-### Si tac_bootstrap_cli/ existe:
+### If tac_bootstrap_cli/ exists:
 
-1. **Verificar estructura del CLI**
+1. **Verify application structure**
    - Command: `ls -la tac_bootstrap_cli/`
-   - Debe existir: pyproject.toml, tac_bootstrap/
+   - Must exist: source files, configuration
 
-2. **Verificar dependencias instaladas**
+2. **Verify dependencies installed**
    - Command: `cd tac_bootstrap_cli && uv sync --dry-run`
-   - Si hay dependencias faltantes, reportar
+   - If missing dependencies, report
 
-3. **Verificar CLI funciona**
-   - Command: `cd tac_bootstrap_cli && uv run tac-bootstrap --help`
-   - Debe mostrar ayuda del CLI
+3. **Verify application works**
+   - Command: `uv run tac-bootstrap --help --help`
+   - Must show help or respond
 
-4. **Verificar sintaxis Python**
-   - Command: `cd tac_bootstrap_cli && uv run python -m py_compile tac_bootstrap/__init__.py`
-   - No debe haber errores de sintaxis
+4. **Verify syntax**
+   - Command: `cd tac_bootstrap_cli && uv run python -m py_compile **/*.py`
+   - No syntax errors
 
-5. **Verificar config.yml**
-   - Leer config.yml y validar que es YAML válido
-   - Verificar campos requeridos: project.name, project.language
+5. **Verify config.yml**
+   - Read config.yml and validate it's valid YAML
+   - Verify required fields: project.name, project.language
 
-### Si tac_bootstrap_cli/ NO existe:
+### If tac_bootstrap_cli/ does NOT exist:
 
-1. **Verificar archivos de configuración base**
-   - Command: `ls config.yml PLAN_TAC_BOOTSTRAP.md CLAUDE.md`
-   - Deben existir estos archivos
+1. **Verify base configuration files**
+   - Command: `ls config.yml CLAUDE.md`
+   - These files must exist
 
-2. **Informar estado**
-   - El CLI aún no ha sido creado
-   - Siguiente paso: Ejecutar TAREA 1.1 del PLAN_TAC_BOOTSTRAP.md
+2. **Inform state**
+   - The application has not been created yet
+   - Next step: Follow setup instructions in specs/
 
 ## Report
 
-Reportar resultados como JSON:
+Report results as JSON:
 
 ```json
 {
   "status": "healthy|warning|error",
-  "cli_exists": boolean,
+  "app_exists": boolean,
   "checks": [
     {
       "name": "string",

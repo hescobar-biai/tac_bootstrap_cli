@@ -292,6 +292,7 @@ class ScaffoldService:
             ("pre_compact.py", "Pre-compact logging"),
             ("subagent_stop.py", "Subagent stop handler"),
             ("user_prompt_submit.py", "User prompt validation and logging"),
+            ("universal_hook_logger.py", "Universal hook logger for all events"),
         ]
 
         for hook, reason in hooks:

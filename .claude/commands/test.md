@@ -1,14 +1,14 @@
 # Application Validation Test Suite
 
-Ejecutar tests comprehensivos para TAC Bootstrap CLI, retornando resultados en formato JSON.
+Run comprehensive tests for tac-bootstrap, returning results in JSON format.
 
 ## Purpose
 
-Validar el CLI de TAC Bootstrap antes de hacer cambios:
-- Detectar errores de sintaxis y tipos
-- Identificar tests rotos
-- Verificar que el build funciona
-- Asegurar calidad del código
+Validate the application before making changes:
+- Detect syntax and type errors
+- Identify broken tests
+- Verify build works
+- Ensure code quality
 
 ## Variables
 
@@ -16,70 +16,57 @@ TEST_COMMAND_TIMEOUT: 5 minutes
 
 ## Instructions
 
-- Ejecutar cada test en secuencia
-- Capturar resultado (passed/failed) y mensajes de error
-- IMPORTANTE: Retornar SOLO el JSON array con resultados
-- Si un test pasa, omitir el campo error
-- Si un test falla, incluir mensaje de error
-- Ejecutar todos los tests aunque algunos fallen
-- Timeout de comandos: `TEST_COMMAND_TIMEOUT`
+- Execute each test in sequence
+- Capture result (passed/failed) and error messages
+- IMPORTANT: Return ONLY the JSON array with results
+- If a test passes, omit the error field
+- If a test fails, include error message
+- Execute all tests even if some fail
+- Command timeout: `TEST_COMMAND_TIMEOUT`
 
 ## Test Execution Sequence
 
-### TAC Bootstrap CLI Tests (tac_bootstrap_cli/)
-
-**Si tac_bootstrap_cli/ existe:**
+**If tac_bootstrap_cli/ exists:**
 
 1. **Python Syntax Check**
-   - Command: `cd tac_bootstrap_cli && uv run python -m py_compile tac_bootstrap/**/*.py`
+   - Command: `cd tac_bootstrap_cli && uv run python -m py_compile **/*.py`
    - test_name: "python_syntax_check"
-   - test_purpose: "Valida sintaxis Python compilando archivos fuente"
+   - test_purpose: "Validate Python syntax by compiling source files"
 
 2. **Code Quality Check**
-   - Command: `cd tac_bootstrap_cli && uv run ruff check .`
+   - Command: `uv run ruff check .`
    - test_name: "backend_linting"
-   - test_purpose: "Valida calidad de código Python"
+   - test_purpose: "Validate Python code quality"
 
 3. **Type Check**
-   - Command: `cd tac_bootstrap_cli && uv run mypy tac_bootstrap/ --ignore-missing-imports`
+   - Command: `uv run mypy tac_bootstrap_cli`
    - test_name: "type_check"
-   - test_purpose: "Valida tipos con mypy"
+   - test_purpose: "Validate types with mypy"
 
 4. **Unit Tests**
-   - Command: `cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short`
+   - Command: `uv run pytest`
    - test_name: "unit_tests"
-   - test_purpose: "Ejecuta todos los tests unitarios"
+   - test_purpose: "Execute all unit tests"
 
-5. **CLI Smoke Test**
-   - Command: `cd tac_bootstrap_cli && uv run tac-bootstrap --help`
-   - test_name: "cli_smoke_test"
-   - test_purpose: "Verifica que el CLI arranca correctamente"
+5. **Application Smoke Test**
+   - Command: `uv run tac-bootstrap --help --help`
+   - test_name: "app_smoke_test"
+   - test_purpose: "Verify application starts correctly"
 
-**Si tac_bootstrap_cli/ NO existe:**
+
+**If tac_bootstrap_cli/ does NOT exist:**
 
 1. **Structure Check**
-   - Command: `ls tac_bootstrap_cli/pyproject.toml`
+   - Command: `ls tac_bootstrap_cli/`
    - test_name: "structure_check"
-   - test_purpose: "Verifica que existe la estructura del CLI"
-   - Note: Este test fallará indicando que el CLI aún no existe
-
-### App de Ejemplo Tests (app/) - Opcional
-
-Solo si se está trabajando en la app de ejemplo:
-
-1. **Backend Tests**
-   - Command: `cd app/server && uv run pytest tests/ -v --tb=short`
-   - test_name: "app_backend_tests"
-
-2. **Frontend Build**
-   - Command: `cd app/client && bun run build`
-   - test_name: "app_frontend_build"
+   - test_purpose: "Verify application structure exists"
+   - Note: This test will fail indicating the application does not exist yet
 
 ## Report
 
-- IMPORTANTE: Retornar resultados como JSON array
-- Ordenar con tests fallidos primero
-- Incluir todos los tests en el output
+- IMPORTANT: Return results as JSON array
+- Order with failed tests first
+- Include all tests in output
 
 ### Output Structure
 
@@ -102,15 +89,15 @@ Solo si se está trabajando en la app de ejemplo:
   {
     "test_name": "unit_tests",
     "passed": false,
-    "execution_command": "cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short",
-    "test_purpose": "Ejecuta todos los tests unitarios",
+    "execution_command": "uv run pytest",
+    "test_purpose": "Execute all unit tests",
     "error": "AssertionError: Expected X but got Y"
   },
   {
     "test_name": "python_syntax_check",
     "passed": true,
-    "execution_command": "cd tac_bootstrap_cli && uv run python -m py_compile tac_bootstrap/**/*.py",
-    "test_purpose": "Valida sintaxis Python compilando archivos fuente"
+    "execution_command": "cd tac_bootstrap_cli && python -m py_compile **/*.py",
+    "test_purpose": "Validate Python syntax by compiling source files"
   }
 ]
 ```

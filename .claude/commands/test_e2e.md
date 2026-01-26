@@ -1,61 +1,52 @@
 # E2E Test Runner
 
-Ejecutar tests end-to-end (E2E) usando Playwright browser automation (MCP Server).
+Run end-to-end (E2E) tests using Playwright browser automation (MCP Server).
 
-## Nota para TAC Bootstrap CLI
+## When to Use This Command
 
-Este comando está diseñado para proyectos que generará TAC Bootstrap CLI que tengan UI web.
-Para el desarrollo del CLI mismo, usar `/test` que ejecuta tests unitarios de Python.
-
-## Cuándo Usar Este Comando
-
-- Cuando el proyecto generado tenga una UI web (frontend)
-- Cuando existan archivos de test en `.claude/commands/e2e/`
-- NO usar para el desarrollo del CLI tac-bootstrap en sí
+- When the project has a web UI (frontend)
+- When E2E test files exist in `.claude/commands/e2e/`
+- NOT for unit tests (use `/test` for those)
 
 ## Variables
 
-adw_id: $ARGUMENT si se proporciona, de lo contrario generar hex string de 8 caracteres
-agent_name: $ARGUMENT si se proporciona, de lo contrario usar 'test_e2e'
+adw_id: $ARGUMENT if provided, otherwise generate 8-character hex string
+agent_name: $ARGUMENT if provided, otherwise use 'test_e2e'
 e2e_test_file: $ARGUMENT
-application_url: $ARGUMENT si se proporciona, de lo contrario determinar de configuración de puerto:
-  - Si `.ports.env` existe, usar http://localhost:${FRONTEND_PORT}
-  - De lo contrario usar default http://localhost:5173
+application_url: $ARGUMENT if provided, otherwise use default http://localhost:5173
 
 ## Instructions
 
-- Si `application_url` no se proporciona, verificar `.ports.env`:
-  - Si existe, usar http://localhost:${FRONTEND_PORT}
-  - De lo contrario usar default http://localhost:5173
-- Leer el `e2e_test_file`
-- Digerir el `User Story` para entender qué se valida
-- IMPORTANTE: Ejecutar los `Test Steps` detallados en `e2e_test_file` usando Playwright
-- Revisar `Success Criteria` y si alguno falla, marcar test como fallido
-- Capturar screenshots según especificado
-- IMPORTANTE: Retornar resultados en el formato del `Output Format`
-- Inicializar Playwright browser en modo headed para visibilidad
-- Usar la URL determinada de `application_url`
-- Permitir tiempo para operaciones async y visibilidad de elementos
-- Si hay error, marcar test como fallido inmediatamente y explicar qué paso falló
+- If `application_url` is not provided, use default http://localhost:5173
+- Read the `e2e_test_file`
+- Digest the `User Story` to understand what is being validated
+- IMPORTANT: Execute the `Test Steps` detailed in `e2e_test_file` using Playwright
+- Review `Success Criteria` and if any fails, mark test as failed
+- Capture screenshots as specified
+- IMPORTANT: Return results in the `Output Format`
+- Initialize Playwright browser in headed mode for visibility
+- Use the URL determined from `application_url`
+- Allow time for async operations and element visibility
+- If there's an error, mark test as failed immediately and explain which step failed
 
 ## Setup
 
-Leer y Ejecutar `.claude/commands/prepare_app.md` para preparar la aplicación.
+Read and Execute `.claude/commands/prepare_app.md` to prepare the application.
 
 ## Screenshot Directory
 
 <absolute path to codebase>/agents/<adw_id>/<agent_name>/img/<directory name based on test file name>/*.png
 
-Cada screenshot debe guardarse con nombre descriptivo. La estructura de directorios asegura que:
-- Screenshots están organizados por ADW ID (workflow run)
-- Se almacenan bajo el nombre de agente especificado
-- Cada test tiene su propio subdirectorio basado en el nombre del archivo de test
+Each screenshot should be saved with a descriptive name. The directory structure ensures that:
+- Screenshots are organized by ADW ID (workflow run)
+- They are stored under the specified agent name
+- Each test has its own subdirectory based on the test file name
 
 ## Report
 
-- Retornar exclusivamente el JSON output especificado en el archivo de test
-- Capturar errores inesperados
-- IMPORTANTE: Asegurar que todos los screenshots estén en `Screenshot Directory`
+- Return exclusively the JSON output specified in the test file
+- Capture unexpected errors
+- IMPORTANT: Ensure all screenshots are in `Screenshot Directory`
 
 ### Output Format
 

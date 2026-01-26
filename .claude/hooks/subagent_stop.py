@@ -31,7 +31,7 @@ def main():
         parser = argparse.ArgumentParser()
         parser.add_argument('--chat', action='store_true', help='Copy transcript to chat.json')
         args = parser.parse_args()
-        
+
         # Read JSON input from stdin
         input_data = json.load(sys.stdin)
 
@@ -52,14 +52,14 @@ def main():
                     log_data = []
         else:
             log_data = []
-        
+
         # Append new data
         log_data.append(input_data)
-        
+
         # Write back to file with formatting
         with open(log_path, 'w') as f:
             json.dump(log_data, f, indent=2)
-        
+
         # Handle --chat switch (same as stop.py)
         if args.chat and 'transcript_path' in input_data:
             transcript_path = input_data['transcript_path']
@@ -75,7 +75,7 @@ def main():
                                     chat_data.append(json.loads(line))
                                 except json.JSONDecodeError:
                                     pass  # Skip invalid lines
-                    
+
                     # Write to session-specific chat.json
                     chat_file = log_dir / 'chat.json'
                     with open(chat_file, 'w') as f:

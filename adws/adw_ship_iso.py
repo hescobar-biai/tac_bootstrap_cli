@@ -71,70 +71,6 @@ def get_main_repo_root() -> str:
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def cleanup_after_merge(adw_id: str, branch_name: str, logger: logging.Logger) -> Tuple[bool, Optional[str]]:
-    """Clean up worktree and branches after successful merge.
-
-    Args:
-        adw_id: The ADW ID for the worktree
-        branch_name: The feature branch to delete
-        logger: Logger instance
-
-    Returns:
-        Tuple of (success, error_message)
-    """
-    repo_root = get_main_repo_root()
-    errors = []
-
-    # Step 1: Run purge_tree.sh to clean up worktree
-    logger.info(f"Cleaning up worktree for {adw_id}...")
-    purge_script = os.path.join(repo_root, "scripts", "purge_tree.sh")
-
-    if os.path.exists(purge_script):
-        result = subprocess.run(
-            ["bash", purge_script, adw_id],
-            capture_output=True, text=True, cwd=repo_root
-        )
-        if result.returncode != 0:
-            errors.append(f"purge_tree.sh failed: {result.stderr}")
-            logger.warning(f"purge_tree.sh failed: {result.stderr}")
-        else:
-            logger.info(f"✅ Worktree cleaned up")
-    else:
-        logger.warning(f"purge_tree.sh not found at {purge_script}")
-
-    # Step 2: Delete remote branch
-    logger.info(f"Deleting remote branch: {branch_name}...")
-    result = subprocess.run(
-        ["git", "push", "origin", "--delete", branch_name],
-        capture_output=True, text=True, cwd=repo_root
-    )
-    if result.returncode != 0:
-        # Check if branch doesn't exist (not an error)
-        if "remote ref does not exist" in result.stderr:
-            logger.info(f"Remote branch already deleted or doesn't exist")
-        else:
-            errors.append(f"Failed to delete remote branch: {result.stderr}")
-            logger.warning(f"Failed to delete remote branch: {result.stderr}")
-    else:
-        logger.info(f"✅ Remote branch deleted")
-
-    # Step 3: Clean up agents directory
-    agents_dir = os.path.join(repo_root, "agents", adw_id)
-    if os.path.exists(agents_dir):
-        logger.info(f"Cleaning up agents directory: {agents_dir}...")
-        try:
-            import shutil
-            shutil.rmtree(agents_dir)
-            logger.info(f"✅ Agents directory cleaned up")
-        except Exception as e:
-            errors.append(f"Failed to clean agents dir: {e}")
-            logger.warning(f"Failed to clean agents directory: {e}")
-
-    if errors:
-        return False, "; ".join(errors)
-    return True, None
-
-
 def manual_merge_to_target(branch_name: str, logger: logging.Logger) -> Tuple[bool, Optional[str]]:
     """Manually merge a branch to target branch using git commands.
 
@@ -371,42 +307,26 @@ def main():
     
     logger.info(f"✅ Successfully merged {branch_name} to {target_branch}")
 
-    # Step 5: Cleanup after successful merge
-    logger.info("Starting post-merge cleanup...")
-    make_issue_comment(
-        issue_number,
-        format_issue_message(adw_id, AGENT_SHIPPER, "🧹 Starting post-merge cleanup...")
-    )
-
-    cleanup_success, cleanup_error = cleanup_after_merge(adw_id, branch_name, logger)
-
-    if cleanup_success:
-        cleanup_status = "✅ Worktree, branches, and agents cleaned up"
-    else:
-        cleanup_status = f"⚠️ Cleanup completed with warnings: {cleanup_error}"
-        logger.warning(f"Cleanup warnings: {cleanup_error}")
-
-    # Step 6: Post success message
+    # Step 5: Post success message
     make_issue_comment(
         issue_number,
         format_issue_message(adw_id, AGENT_SHIPPER,
                            f"🎉 **Successfully shipped!**\n\n"
                            f"✅ Validated all state fields\n"
                            f"✅ Merged branch `{branch_name}` to {target_branch}\n"
-                           f"✅ Pushed to origin/{target_branch}\n"
-                           f"{cleanup_status}\n\n"
+                           f"✅ Pushed to origin/{target_branch}\n\n"
                            f"🚢 Code has been deployed to production!")
     )
-
-    # Save final state before cleanup (for reference)
+    
+    # Save final state
     state.save("adw_ship_iso")
-
+    
     # Post final state summary
     make_issue_comment(
         issue_number,
         f"{adw_id}_ops: 📋 Final ship state:\n```json\n{json.dumps(state.data, indent=2)}\n```"
     )
-
+    
     logger.info("Ship workflow completed successfully")
 
 
