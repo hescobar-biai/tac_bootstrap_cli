@@ -83,14 +83,21 @@ EOF
 echo "  Created playwright-mcp-config.json"
 echo "  Created videos/ directory"
 
-# 4. Install backend dependencies if applicable
+# 4. Symlink .claude/ directory so Claude Code recognizes worktree as project root
+# This is CRITICAL - without it, Claude Code looks up the tree and finds .claude/ in main repo
+if [ -d "$PARENT_DIR/.claude" ] && [ ! -e "$WORKTREE_PATH/.claude" ]; then
+    ln -s "$PARENT_DIR/.claude" "$WORKTREE_PATH/.claude"
+    echo "  Symlinked .claude/ directory"
+fi
+
+# 6. Install backend dependencies if applicable
 if [ -f "$WORKTREE_PATH/app/server/pyproject.toml" ]; then
     echo "  Installing backend dependencies..."
     (cd "$WORKTREE_PATH/app/server" && uv sync --all-extras)
     echo "  Backend dependencies installed"
 fi
 
-# 5. Install frontend dependencies if applicable
+# 7. Install frontend dependencies if applicable
 if [ -f "$WORKTREE_PATH/app/client/package.json" ]; then
     echo "  Installing frontend dependencies..."
     (cd "$WORKTREE_PATH/app/client" && bun install)
