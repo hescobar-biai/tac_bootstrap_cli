@@ -83,11 +83,12 @@ EOF
 echo "  Created playwright-mcp-config.json"
 echo "  Created videos/ directory"
 
-# 4. Symlink .claude/ directory so Claude Code recognizes worktree as project root
-# This is CRITICAL - without it, Claude Code looks up the tree and finds .claude/ in main repo
+# 4. Copy .claude/ directory so Claude Code recognizes worktree as project root
+# CRITICAL: Must COPY not symlink! Symlinks cause Claude to resolve paths to main repo
+# which results in files being written to main instead of the worktree
 if [ -d "$PARENT_DIR/.claude" ] && [ ! -e "$WORKTREE_PATH/.claude" ]; then
-    ln -s "$PARENT_DIR/.claude" "$WORKTREE_PATH/.claude"
-    echo "  Symlinked .claude/ directory"
+    cp -R "$PARENT_DIR/.claude" "$WORKTREE_PATH/.claude"
+    echo "  Copied .claude/ directory"
 fi
 
 # 6. Install backend dependencies if applicable
