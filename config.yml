@@ -38,6 +38,7 @@ agentic:
   model_policy:
     default: "sonnet"
     heavy: "opus"
+    fallback: "haiku"  # Fallback model when quota is exhausted
   worktrees:
     enabled: true
     max_parallel: 5

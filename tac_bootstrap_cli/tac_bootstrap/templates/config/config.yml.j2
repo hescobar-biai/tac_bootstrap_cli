@@ -51,6 +51,7 @@ agentic:
   model_policy:
     default: "{{ config.agentic.model_policy.default }}"
     heavy: "{{ config.agentic.model_policy.heavy }}"
+    fallback: "{{ config.agentic.model_policy.fallback | default('haiku') }}"  # Fallback model when quota is exhausted
   worktrees:
     enabled: {{ config.agentic.worktrees.enabled | lower }}
     max_parallel: {{ config.agentic.worktrees.max_parallel }}

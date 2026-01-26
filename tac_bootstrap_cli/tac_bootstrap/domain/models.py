@@ -303,6 +303,7 @@ class ModelPolicy(BaseModel):
 
     default: str = Field(default="sonnet", description="Default model for standard tasks")
     heavy: str = Field(default="opus", description="Model for complex/heavy tasks")
+    fallback: str = Field(default="haiku", description="Fallback model when quota is exhausted")
 
 
 class AgenticSpec(BaseModel):
