@@ -11,7 +11,9 @@ issue_json: $3
 
 - IMPORTANTE: Estás creando un plan para implementar una nueva funcionalidad del TAC Bootstrap CLI.
 - El plan se usará para guiar la implementación con agentic coding.
-- Crear el plan en `specs/` con filename: `issue-{issue_number}-adw-{adw_id}-sdlc_planner-{descriptive-name}.md`
+- CRITICAL: Crear el plan usando ruta RELATIVA `specs/issue-{issue_number}-adw-{adw_id}-sdlc_planner-{descriptive-name}.md`
+- CRITICAL: NUNCA uses rutas absolutas (que empiezan con /). SIEMPRE usa rutas relativas al directorio actual.
+- CRITICAL: Al usar la herramienta Write, usa SOLO `specs/filename.md`, NO `/Users/.../specs/filename.md`
 - Investigar el codebase para entender patrones existentes antes de planificar.
 - IMPORTANTE: Reemplazar cada <placeholder> en el formato con valores reales.
 - Usar el reasoning model: pensar cuidadosamente sobre requerimientos y approach.
@@ -122,9 +124,14 @@ CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
 
 1. First, check if a plan file already exists in `specs/` matching pattern: `issue-{issue_number}-adw-{adw_id}-*.md`
 2. If plan file EXISTS: Return ONLY the relative path, nothing else
-3. If plan file does NOT exist: Create it following the Plan Format, then return ONLY the path
+3. If plan file does NOT exist: Create it using RELATIVE PATH (e.g., `specs/filename.md`), then return ONLY the path
 
-YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the path like:
+CRITICAL FILE CREATION RULES:
+- When using the Write tool, use RELATIVE paths only: `specs/filename.md`
+- NEVER use absolute paths like `/Users/.../specs/filename.md`
+- The file will be created in the current working directory
+
+YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the RELATIVE path like:
 ```
 specs/issue-37-adw-e4dc9574-sdlc_planner-feature-name.md
 ```
@@ -134,5 +141,6 @@ DO NOT include:
 - Phrases like "Perfect!", "I can see that...", "The plan file is at..."
 - Markdown formatting around the path
 - Multiple lines
+- Absolute paths (starting with /)
 
-ONLY output the bare path. This is machine-parsed.
+ONLY output the bare RELATIVE path. This is machine-parsed.

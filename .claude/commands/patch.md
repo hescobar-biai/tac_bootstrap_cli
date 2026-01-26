@@ -16,7 +16,9 @@ issue_screenshots: $5 (opcional) - lista de paths a screenshots separados por co
 - Leer la especificación original (spec) en `spec_path` si se proporciona.
 - IMPORTANTE: Usar `review_change_request` para entender exactamente qué necesita ser arreglado.
 - Si `issue_screenshots` se proporcionan, examinarlos para entender el contexto visual.
-- Crear el patch plan en `specs/patch/` con filename: `patch-adw-{adw_id}-{descriptive-name}.md`
+- CRITICAL: Crear el patch plan usando ruta RELATIVA `specs/patch/patch-adw-{adw_id}-{descriptive-name}.md`
+- CRITICAL: NUNCA uses rutas absolutas (que empiezan con /). SIEMPRE usa rutas relativas al directorio actual.
+- CRITICAL: Al usar la herramienta Write, usa SOLO `specs/patch/filename.md`, NO `/Users/.../specs/patch/filename.md`
 - IMPORTANTE: Esto es un PATCH - mantener el scope mínimo. Solo arreglar lo descrito en `review_change_request`.
 - Ejecutar `git diff --stat` para entender cambios existentes.
 - Pensar sobre la forma más eficiente de implementar con cambios mínimos.
@@ -89,13 +91,18 @@ Ejecutar comandos para validar el patch con cero regresiones:
 
 CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
 
-1. First, check if a plan file already exists in `specs/` matching pattern: `issue-{issue_number}-adw-{adw_id}-*.md`
+1. First, check if a plan file already exists in `specs/patch/` matching pattern: `patch-adw-{adw_id}-*.md`
 2. If plan file EXISTS: Return ONLY the relative path, nothing else
-3. If plan file does NOT exist: Create it following the Plan Format, then return ONLY the path
+3. If plan file does NOT exist: Create it using RELATIVE PATH (e.g., `specs/patch/filename.md`), then return ONLY the path
 
-YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the path like:
+CRITICAL FILE CREATION RULES:
+- When using the Write tool, use RELATIVE paths only: `specs/patch/filename.md`
+- NEVER use absolute paths like `/Users/.../specs/patch/filename.md`
+- The file will be created in the current working directory
+
+YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the RELATIVE path like:
 ```
-specs/issue-37-adw-e4dc9574-patch_planner-patch-name.md
+specs/patch/patch-adw-e4dc9574-patch-name.md
 ```
 
 DO NOT include:
@@ -103,5 +110,6 @@ DO NOT include:
 - Phrases like "Perfect!", "I found...", "The plan file is at..."
 - Markdown formatting around the path
 - Multiple lines
+- Absolute paths (starting with /)
 
-ONLY output the bare path. This is machine-parsed.
+ONLY output the bare RELATIVE path. This is machine-parsed.
