@@ -1548,6 +1548,21 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con templates Jinja2 con minimal templating (solo docstring y shebang)
     - Cuando implementes funciones de prompting reutilizables en multiple hook contexts
 
+- app_docs/feature-251-ollama-llm-wrapper.md
+  - Conditions:
+    - Cuando trabajes con local LLM inference usando Ollama
+    - Cuando necesites crear wrappers para modelos locales sin APIs en la nube
+    - Cuando implementes integración Ollama en generated projects
+    - Cuando requieras funcionalidad de prompting local LLM desde hook scripts
+    - Cuando desarrolles características sin costos de API cloud durante testing
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm/
+    - Cuando necesites entender OpenAI SDK con OpenAI-compatible endpoint
+    - Cuando sincronices templates locales con wrappers cloud (OpenAI, Anthropic)
+    - Cuando trabajes con hardcoded model configuration para local inference
+    - Cuando requieras graceful error handling para local Ollama connections
+    - Cuando implementes funciones de prompting reutilizables en hook contexts locales
+    - Cuando necesites setup de Ollama local y configuración de modelos alternativos
+
 - app_docs/chore-chore_Tac_9_task_7_2-verbose-yaml-structured-output-template.md
   - Conditions:
     - Cuando trabajes con templates Jinja2 para output styles
