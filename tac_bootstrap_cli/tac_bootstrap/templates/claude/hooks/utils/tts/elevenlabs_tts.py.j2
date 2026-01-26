@@ -1,0 +1,79 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#     "elevenlabs",
+#     "python-dotenv",
+# ]
+# ///
+
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+
+def synthesize_speech(text: str, voice_id: str = "EXAVITQu4vr4xnSDxMaL") -> bytes | None:
+    """
+    Synthesize speech from text using ElevenLabs Turbo v2.5 for {{ config.project.name }}.
+
+    Args:
+        text (str): The text to synthesize
+        voice_id (str): The voice ID to use (default: 'EXAVITQu4vr4xnSDxMaL')
+
+    Returns:
+        bytes: The audio data in MP3 format, or None if error
+    """
+    load_dotenv()
+
+    api_key = os.getenv("ELEVENLABS_API_KEY")
+    if not api_key:
+        return None
+
+    try:
+        from elevenlabs.client import ElevenLabs
+
+        client = ElevenLabs(api_key=api_key)
+
+        audio_generator = client.text_to_speech.convert(
+            text=text,
+            voice_id=voice_id,
+            model_id="eleven_turbo_v2_5",
+            output_format="mp3_44100_128",
+        )
+
+        # Collect all audio chunks into bytes
+        audio_bytes = b"".join(audio_generator)
+        return audio_bytes
+
+    except Exception:
+        return None
+
+
+def save_audio_file(text: str, file_path: str, voice_id: str = "EXAVITQu4vr4xnSDxMaL") -> bool:
+    """
+    Synthesize speech and save to file.
+
+    Args:
+        text (str): The text to synthesize
+        file_path (str): The path where to save the audio file
+        voice_id (str): The voice ID to use (default: 'EXAVITQu4vr4xnSDxMaL')
+
+    Returns:
+        bool: True if successful, False if error
+    """
+    try:
+        audio_bytes = synthesize_speech(text, voice_id)
+        if audio_bytes is None:
+            return False
+
+        # Ensure parent directory exists
+        Path(file_path).parent.mkdir(parents=True, exist_ok=True)
+
+        # Write audio to file
+        with open(file_path, "wb") as f:
+            f.write(audio_bytes)
+
+        return True
+
+    except Exception:
+        return False
