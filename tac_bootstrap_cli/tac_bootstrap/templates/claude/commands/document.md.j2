@@ -29,6 +29,9 @@ documentation_screenshots_dir: $3 if provided, otherwise leave blank
 
 ### 4. Generate Documentation
 - Create file in `{{ config.paths.app_docs_dir | default('app_docs') }}/` with name: `feature-{adw_id}-{descriptive-name}.md`
+- CRITICAL: Create the documentation using RELATIVE path `{{ config.paths.app_docs_dir | default('app_docs') }}/feature-{adw_id}-{descriptive-name}.md`
+- CRITICAL: NEVER use absolute paths (starting with /). ALWAYS use relative paths to current directory.
+- CRITICAL: When using the Write tool, use ONLY `{{ config.paths.app_docs_dir | default('app_docs') }}/filename.md`, NOT `/Users/.../{{ config.paths.app_docs_dir | default('app_docs') }}/filename.md`
 - Follow the documentation format below including YAML frontmatter
 - Focus on:
   - What was built (based on git diff)
@@ -121,4 +124,18 @@ related_code:
 
 ## Report
 
-- IMPORTANT: Return exclusively the path to the documentation file created.
+CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
+
+YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the RELATIVE path like:
+```
+{{ config.paths.app_docs_dir | default('app_docs') }}/feature-e4dc9574-feature-name.md
+```
+
+DO NOT include:
+- Any explanation or commentary
+- Phrases like "Perfect!", "I created...", "The documentation file is at..."
+- Markdown formatting around the path
+- Multiple lines
+- Absolute paths (starting with /)
+
+ONLY output the bare RELATIVE path. This is machine-parsed.

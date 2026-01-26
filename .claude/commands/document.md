@@ -29,6 +29,9 @@ documentation_screenshots_dir: $3 si se proporciona, de lo contrario dejar en bl
 
 ### 4. Generar Documentación
 - Crear archivo en `app_docs/` con nombre: `feature-{adw_id}-{descriptive-name}.md`
+- CRITICAL: Crear la documentación usando ruta RELATIVA `app_docs/feature-{adw_id}-{descriptive-name}.md`
+- CRITICAL: NUNCA uses rutas absolutas (que empiezan con /). SIEMPRE usa rutas relativas al directorio actual.
+- CRITICAL: Al usar la herramienta Write, usa SOLO `app_docs/filename.md`, NO `/Users/.../app_docs/filename.md`
 - Seguir el formato de documentación abajo incluyendo frontmatter YAML
 - Enfocar en:
   - Qué se construyó (basado en git diff)
@@ -121,4 +124,18 @@ related_code:
 
 ## Report
 
-- IMPORTANTE: Retornar exclusivamente el path al archivo de documentación creado.
+CRITICAL OUTPUT FORMAT - Debes seguir esto exactamente:
+
+TU OUTPUT FINAL DEBE SER EXACTAMENTE UNA LÍNEA conteniendo solo la ruta RELATIVA como:
+```
+app_docs/feature-e4dc9574-feature-name.md
+```
+
+NO incluyas:
+- Ninguna explicación o comentario
+- Frases como "Perfecto!", "Creé...", "El archivo de documentación está en..."
+- Formato markdown alrededor de la ruta
+- Múltiples líneas
+- Rutas absolutas (que empiezan con /)
+
+SOLO output la ruta RELATIVA. Esto es parseado por máquina.
