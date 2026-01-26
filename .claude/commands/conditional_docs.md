@@ -1598,3 +1598,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites documentación sobre la estructura TTS utilities package
     - Cuando establescas arquitectura para nuevos utility providers (TTS, STT, etc.)
     - Cuando necesites mantener consistencia con patrones de directorios existentes (llm/)
+
+- app_docs/feature-feature_Tac_9_task_13-elevenlabs-tts-template.md
+  - Conditions:
+    - Cuando implementes integraciones de API TTS (ElevenLabs, OpenAI, etc.)
+    - Cuando crees templates Jinja2 para wrappers de servicios externos
+    - Cuando trabajes con audio synthesis o text-to-speech capabilities
+    - Cuando necesites entender el patrón de standalone functions con error handling leniente
+    - Cuando modifiques tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts/
+    - Cuando implementes autenticación via environment variables en templates
+    - Cuando agregues nuevos providers TTS siguiendo el patrón establecido
+    - Cuando trabajes con uv script dependencies en templates Python
+    - Cuando necesites referencia de integración ElevenLabs Turbo v2.5

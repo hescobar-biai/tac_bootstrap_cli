@@ -1,4 +1,4 @@
-"""TTS utilities for {{ config.project.name }}.
+"""TTS utilities for tac_bootstrap.
 
 Provides a unified interface for text-to-speech implementations.
 This module serves as a placeholder for future TTS provider implementations.
