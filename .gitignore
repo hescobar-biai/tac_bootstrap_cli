@@ -60,7 +60,8 @@ trees/
 logs/
 
 # Agent output directories (but not template directories)
-agents/
+agents/*
+!agents/context_bundles/
 !tac_bootstrap_cli/tac_bootstrap/templates/claude/agents/
 
 claude-max-output.json
@@ -113,7 +114,8 @@ logs/
 *.log
 
 # Agent outputs (can be large, but not template directories)
-agents/
+agents/*
+!agents/context_bundles/
 !tac_bootstrap_cli/tac_bootstrap/templates/claude/agents/
 
 # Git worktrees
