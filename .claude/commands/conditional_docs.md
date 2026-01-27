@@ -101,6 +101,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
 
 ## Feature Documentation
 
+- app_docs/feature-chore_Tac_11_task_7-dangerous-command-blocker-hook.md
+  - Conditions:
+    - When working with dangerous command blocker configuration
+    - When configuring PreToolUse hooks in .claude/settings.json
+    - When implementing security hooks for Bash commands
+    - When understanding hook execution order and separation of concerns
+    - When working with dangerous_command_blocker.py hook
+    - When configuring hook matchers and timeouts
+
 - app_docs/feature-chore_v_0_4_1_task_8-trigger-polling-interval-docs.md
   - Conditions:
     - When working with trigger polling configuration in tac_bootstrap_cli
