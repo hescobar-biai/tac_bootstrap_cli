@@ -21,7 +21,7 @@ def temp_project_dir():
 
         # Create a minimal valid config.yml as plain dict
         config_dict = {
-            "version": "0.5.0",
+            "version": "0.5.1",
             "schema_version": 1,
             "project": {
                 "name": "test-project",
@@ -112,7 +112,7 @@ class TestValidateProject:
 
             # Create config with SIMPLE architecture as plain dict
             config_dict = {
-                "version": "0.5.0",
+                "version": "0.5.1",
                 "schema_version": 1,
                 "project": {
                     "name": "test-project",
