@@ -106,8 +106,14 @@ class ScaffoldService:
         directories = [
             (".claude", "Claude Code configuration"),
             (".claude/commands", "Slash commands"),
+            (".claude/commands/experts", "Expert command groups"),
+            (".claude/commands/experts/cc_hook_expert", "Claude Code hook expert commands"),
+            (".claude/agents", "Agent definitions"),
+            (".claude/output-styles", "Output style presets"),
             (".claude/hooks", "Execution hooks"),
             (".claude/hooks/utils", "Hook utilities"),
+            (".claude/hooks/utils/llm", "LLM provider utilities"),
+            (".claude/hooks/utils/tts", "Text-to-speech utilities"),
             (config.paths.adws_dir, "AI Developer Workflows"),
             (f"{config.paths.adws_dir}/adw_modules", "ADW shared modules"),
             (f"{config.paths.adws_dir}/adw_triggers", "ADW triggers"),
@@ -305,6 +311,15 @@ class ScaffoldService:
             "conditional_docs",
             "scout",
             "question",
+            # TAC-9/10: Context and agent delegation commands
+            "background",
+            "load_ai_docs",
+            "load_bundle",
+            "prime_cc",
+            "quick-plan",
+            "parallel_subagents",
+            "t_metaprompt_workflow",
+            "build_w_report",
         ]
 
         for cmd in commands:
@@ -325,6 +340,8 @@ class ScaffoldService:
             ("subagent_stop.py", "Subagent stop handler"),
             ("user_prompt_submit.py", "User prompt validation and logging"),
             ("dangerous_command_blocker.py", "Security validation hook"),
+            ("context_bundle_builder.py", "Context bundle building for session recovery"),
+            ("universal_hook_logger.py", "Universal event logging for all hooks"),
         ]
 
         for hook, reason in hooks:
@@ -348,6 +365,88 @@ class ScaffoldService:
             action=action,
             template="claude/hooks/utils/constants.py.j2",
             reason="Shared constants for hooks",
+        )
+
+        # LLM provider utilities
+        llm_utils = [
+            ("__init__.py", "LLM utilities package"),
+            ("anth.py", "Anthropic API wrapper"),
+            ("oai.py", "OpenAI API wrapper"),
+            ("ollama.py", "Ollama local LLM wrapper"),
+        ]
+        for util, reason in llm_utils:
+            plan.add_file(
+                f".claude/hooks/utils/llm/{util}",
+                action=action,
+                template=f"claude/hooks/utils/llm/{util}.j2",
+                reason=reason,
+            )
+
+        # TTS utilities
+        tts_utils = [
+            ("__init__.py", "TTS utilities package"),
+            ("elevenlabs_tts.py", "ElevenLabs TTS wrapper"),
+            ("openai_tts.py", "OpenAI TTS wrapper"),
+            ("pyttsx3_tts.py", "pyttsx3 local TTS wrapper"),
+        ]
+        for util, reason in tts_utils:
+            plan.add_file(
+                f".claude/hooks/utils/tts/{util}",
+                action=action,
+                template=f"claude/hooks/utils/tts/{util}.j2",
+                reason=reason,
+            )
+
+        # Agent definitions
+        agents = [
+            ("docs-scraper.md", "Documentation scraping agent"),
+            ("meta-agent.md", "Meta-prompt generation agent"),
+            ("research-docs-fetcher.md", "Research and documentation fetcher agent"),
+        ]
+        for agent, reason in agents:
+            plan.add_file(
+                f".claude/agents/{agent}",
+                action=action,
+                template=f"claude/agents/{agent}.j2",
+                reason=reason,
+            )
+
+        # Output style presets
+        output_styles = [
+            ("concise-done.md", "Concise output with done confirmation"),
+            ("concise-ultra.md", "Ultra-concise minimal output"),
+            ("concise-tts.md", "TTS-optimized concise output"),
+            ("verbose-bullet-points.md", "Verbose bullet-point format"),
+            ("verbose-yaml-structured.md", "Verbose YAML-structured output"),
+        ]
+        for style, reason in output_styles:
+            plan.add_file(
+                f".claude/output-styles/{style}",
+                action=action,
+                template=f"claude/output-styles/{style}.j2",
+                reason=reason,
+            )
+
+        # Expert commands
+        expert_commands = [
+            ("experts/cc_hook_expert/cc_hook_expert_plan.md", "Hook expert planning command"),
+            ("experts/cc_hook_expert/cc_hook_expert_build.md", "Hook expert build command"),
+            ("experts/cc_hook_expert/cc_hook_expert_improve.md", "Hook expert improvement command"),
+        ]
+        for cmd, reason in expert_commands:
+            plan.add_file(
+                f".claude/commands/{cmd}",
+                action=action,
+                template=f"claude/commands/{cmd}.j2",
+                reason=reason,
+            )
+
+        # Settings local override
+        plan.add_file(
+            ".claude/settings.local.json",
+            action=action,
+            template="claude/settings.local.json.j2",
+            reason="Local settings override for output style",
         )
 
     def _add_adw_files(self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool) -> None:

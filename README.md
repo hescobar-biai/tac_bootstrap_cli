@@ -499,3 +499,4 @@ No tasks are allowed after the changelog task.
 ---
 
 BEGIN.
+recuerda que lso archivos se deebnn crear en base /Users/hernandoescobar/Documents/Celes/tac_bootstrap/ en el cli /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli y los nuevos tempaltes se deben agregar en el /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py

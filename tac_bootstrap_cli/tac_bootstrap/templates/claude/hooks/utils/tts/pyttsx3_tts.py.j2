@@ -53,14 +53,15 @@ def synthesize_speech(text: str) -> bool:
         # Initialize TTS engine
         engine = pyttsx3.init()
 
-        # Configure voice properties from template variables
-        engine.setProperty('rate', {{ config.tts.pyttsx3.rate | default(150) }})        # Speech rate (words per minute)
-        engine.setProperty('volume', {{ config.tts.pyttsx3.volume | default(0.9) }})    # Volume (0.0 to 1.0)
+        # Configure voice properties (default settings)
+        engine.setProperty('rate', 150)        # Speech rate (words per minute)
+        engine.setProperty('volume', 0.9)      # Volume (0.0 to 1.0)
 
         # Set voice by index if multiple voices are available
         voices = engine.getProperty('voices')
-        if voices and len(voices) > {{ config.tts.pyttsx3.voice_index | default(0) }}:
-            engine.setProperty('voice', voices[{{ config.tts.pyttsx3.voice_index | default(0) }}].id)
+        voice_index = 0
+        if voices and len(voices) > voice_index:
+            engine.setProperty('voice', voices[voice_index].id)
 
         # Speak the text
         engine.say(text)
@@ -106,14 +107,15 @@ def save_to_file(text: str, file_path: str) -> bool:
         # Initialize TTS engine
         engine = pyttsx3.init()
 
-        # Configure voice properties from template variables
-        engine.setProperty('rate', {{ config.tts.pyttsx3.rate | default(150) }})        # Speech rate (words per minute)
-        engine.setProperty('volume', {{ config.tts.pyttsx3.volume | default(0.9) }})    # Volume (0.0 to 1.0)
+        # Configure voice properties (default settings)
+        engine.setProperty('rate', 150)        # Speech rate (words per minute)
+        engine.setProperty('volume', 0.9)      # Volume (0.0 to 1.0)
 
         # Set voice by index if multiple voices are available
         voices = engine.getProperty('voices')
-        if voices and len(voices) > {{ config.tts.pyttsx3.voice_index | default(0) }}:
-            engine.setProperty('voice', voices[{{ config.tts.pyttsx3.voice_index | default(0) }}].id)
+        voice_index = 0
+        if voices and len(voices) > voice_index:
+            engine.setProperty('voice', voices[voice_index].id)
 
         # Ensure parent directory exists
         Path(file_path).parent.mkdir(parents=True, exist_ok=True)
