@@ -253,7 +253,7 @@ class TestSemanticVersion:
     def test_less_than_with_string(self):
         """Test less than comparison with string."""
         v1 = SemanticVersion("0.6.0")
-        assert v1 < "0.6.0"
+        assert v1 < "0.7.0"
         assert not (v1 < "0.1.0")
 
     def test_less_than_or_equal_comparison(self):
