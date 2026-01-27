@@ -5,6 +5,26 @@ All notable changes to TAC Bootstrap will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-01-25
+
+### Added
+- Output style presets for token control (concise-done, concise-ultra, concise-tts, verbose-bullet-points, verbose-yaml-structured)
+- LLM utility wrappers for Anthropic, OpenAI, and Ollama
+- TTS utility wrappers for ElevenLabs, OpenAI, and pyttsx3
+- Context bundle builder hook for session tracking and recovery
+- Universal hook logger for comprehensive event logging
+- `/background` command for out-loop agent delegation
+- `/load_bundle` command for context recovery
+- `/load_ai_docs` command for documentation loading via sub-agents
+- `/prime_cc` command for Claude Code-specific context priming
+- `/quick-plan` command for rapid implementation planning
+- Agent definitions: docs-scraper, meta-agent, research-docs-fetcher
+- Expert agent pattern: cc_hook_expert (plan/build/improve)
+- Local settings override template for output style configuration
+
+### Changed
+- Extended `.claude/` directory structure with new subdirectories (output-styles, agents, hooks/utils/llm, hooks/utils/tts, commands/experts)
+
 ## [0.4.0] - 2026-01-25
 
 ### Added
