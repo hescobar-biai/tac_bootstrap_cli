@@ -1688,3 +1688,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con scaffold template discovery mechanism
     - Cuando necesites mantener directorios vacíos en Git
     - Cuando sigas el patrón dual-location (templates + direct files) para structure consistency
+
+- app_docs/feature-chore_Tac_11_task_14-slash-command-model-map-update.md
+  - Conditions:
+    - Cuando trabajes con SLASH_COMMAND_MODEL_MAP en agent.py
+    - Cuando agregues nuevos slash commands a TAC Bootstrap
+    - Cuando necesites entender model selection (opus, sonnet, haiku) para commands
+    - Cuando modifiques adws/adw_modules/agent.py
+    - Cuando implementes TAC-11 commands (/scout, /question)
+    - Cuando trabajes con get_model_for_slash_command() function
+    - Cuando necesites configurar lightweight vs heavyweight command models
+    - Cuando mantengas consistencia con patrones TAC-9 y TAC-10
+    - Cuando extiendas el model map para nuevas integraciones TAC
