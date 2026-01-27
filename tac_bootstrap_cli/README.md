@@ -187,6 +187,28 @@ uv run adws/adw_patch_iso.py --issue 456
 | `trigger_webhook.py` | GitHub webhook events |
 | `trigger_cron.py` | Scheduled polling |
 | `trigger_issue_chain.py` | Sequential issue processing |
+| `trigger_issue_parallel.py` | Parallel issue processing |
+
+#### Parallel Trigger
+
+Process multiple issues simultaneously with configurable concurrency:
+
+```bash
+# Process issues 123, 456, 789 in parallel
+uv run adws/adw_triggers/trigger_issue_parallel.py 123 456 789
+
+# Limit to 3 concurrent workflows
+uv run adws/adw_triggers/trigger_issue_parallel.py --issues 123,456,789 --max-concurrent 3
+
+# Single execution (for testing)
+uv run adws/adw_triggers/trigger_issue_parallel.py --issues 123,456,789 --once
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--max-concurrent` | 5 | Maximum parallel workflows |
+| `--interval` | 20 | Polling interval (seconds) |
+| `--once` | false | Run single cycle and exit |
 
 ## Configuration
 
