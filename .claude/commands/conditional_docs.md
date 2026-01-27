@@ -101,6 +101,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
 
 ## Feature Documentation
 
+- app_docs/feature-ac5b5582-python-package-structure.md
+  - Conditions:
+    - When working with Python package structure and DDD architecture
+    - When understanding pyproject.toml configuration for tac_bootstrap_cli
+    - When setting up or modifying CLI entry points
+    - When working with domain, application, infrastructure, or interfaces layers
+    - When implementing template directory structure
+    - When understanding the foundation of TAC Bootstrap CLI package
+
 - app_docs/feature-chore_Tac_11_task_7-dangerous-command-blocker-hook.md
   - Conditions:
     - When working with dangerous command blocker configuration
