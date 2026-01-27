@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "{{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/pre_tool_use.py || true"
+            "command": "{{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/universal_hook_logger.py --event PreToolUse && {{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/pre_tool_use.py || true"
           }
         ]
       }
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "{{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/post_tool_use.py || true"
+            "command": "{{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/context_bundle_builder.py --type post_tool_use --matcher \"Read|Write\" && {{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/post_tool_use.py || true"
           }
         ]
       }
@@ -49,7 +49,73 @@
         "hooks": [
           {
             "type": "command",
-            "command": "{{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/stop.py || true"
+            "command": "{{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/universal_hook_logger.py --event Stop && {{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/stop.py --chat || true"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/context_bundle_builder.py --type user_prompt || true"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/universal_hook_logger.py --event SubagentStop && {{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/subagent_stop.py || true"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/universal_hook_logger.py --event Notification && {{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/notification.py --notify || true"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/universal_hook_logger.py --event PreCompact && {{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/pre_compact.py || true"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/universal_hook_logger.py --event SessionStart || true"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/universal_hook_logger.py --event SessionEnd || true"
           }
         ]
       }
