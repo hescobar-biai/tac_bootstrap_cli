@@ -16,11 +16,14 @@
 **[FEATURE] Crear template parallel_subagents.md.j2 para delegación multi-agente**
 
 - **Descripción**: Crear un nuevo template de comando que permita lanzar múltiples agentes en paralelo para tareas complejas. Este template implementa el patrón Level 4 (Delegation Prompt) de TAC-10.
-- **Archivo**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/parallel_subagents.md.j2`
+- **Archivos**:
+  - Template Jinja2: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/parallel_subagents.md.j2`
+  - Archivo directo: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/parallel_subagents.md`
 - **Contenido**:
   - Frontmatter con description y argument-hint
   - Variables: PROMPT_REQUEST ($1), COUNT ($2)
   - Workflow de 4 pasos: Parse Input, Design Agent Prompts, Launch Parallel Agents, Collect & Summarize
+- **Nota**: El template .j2 usa variables Jinja2, el archivo .md es la versión renderizada para uso directo
 
 ---
 
@@ -29,12 +32,15 @@
 **[FEATURE] Crear template t_metaprompt_workflow.md.j2 para generar prompts**
 
 - **Descripción**: Crear un meta-prompt (Level 6) que genera nuevos prompts siguiendo el formato consistente de TAC. Incluye documentación de referencia y un Specified Format template.
-- **Archivo**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/t_metaprompt_workflow.md.j2`
+- **Archivos**:
+  - Template Jinja2: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/t_metaprompt_workflow.md.j2`
+  - Archivo directo: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/t_metaprompt_workflow.md`
 - **Contenido**:
   - Frontmatter con allowed-tools (Write, Edit, WebFetch, Task)
   - Variables: HIGH_LEVEL_PROMPT ($ARGUMENTS)
   - Documentation links para slash commands
   - Specified Format template con estructura estándar (metadata, variables, workflow, report)
+- **Nota**: El template .j2 usa variables Jinja2, el archivo .md es la versión renderizada para uso directo
 
 ---
 
@@ -43,11 +49,14 @@
 **[FEATURE] Crear template cc_hook_expert_improve.md.j2 para self-improvement**
 
 - **Descripción**: Completar el sistema de expertos con el prompt de mejora continua (Level 7). Analiza cambios recientes y actualiza las secciones de Expertise de los prompts plan y build.
-- **Archivo**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cc_hook_expert/cc_hook_expert_improve.md.j2`
+- **Archivos**:
+  - Template Jinja2: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cc_hook_expert/cc_hook_expert_improve.md.j2`
+  - Archivo directo: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cc_hook_expert/cc_hook_expert_improve.md`
 - **Contenido**:
   - Workflow de 5 pasos: Establish Expertise, Analyze Recent Changes, Determine Relevance, Extract and Apply Learnings, Report
   - Lógica de early return si no hay learnings relevantes
   - Report format estructurado
+- **Nota**: El template .j2 usa variables Jinja2, el archivo .md es la versión renderizada para uso directo
 
 ---
 
@@ -56,12 +65,15 @@
 **[FEATURE] Crear template build_w_report.md.j2 con reporte YAML estructurado**
 
 - **Descripción**: Variante del comando build que genera un reporte YAML detallado de los cambios realizados (files, lines_changed, description).
-- **Archivo**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/build_w_report.md.j2`
+- **Archivos**:
+  - Template Jinja2: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/build_w_report.md.j2`
+  - Archivo directo: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/build_w_report.md`
 - **Contenido**:
   - Frontmatter con allowed-tools (Read, Write, Edit, Bash, MultiEdit)
   - Variables: PATH_TO_PLAN ($ARGUMENTS)
   - Workflow: Read plan, implement, run git diff
   - Report format YAML: work_changes array
+- **Nota**: El template .j2 usa variables Jinja2, el archivo .md es la versión renderizada para uso directo
 
 ---
 
@@ -70,7 +82,9 @@
 **[FEATURE] Actualizar settings.json.j2 con hooks adicionales integrados**
 
 - **Descripción**: Modificar el template de settings.json para incluir todos los hooks de TAC-10 integrados con universal_hook_logger y context_bundle_builder.
-- **Archivo**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/settings.json.j2`
+- **Archivos**:
+  - Template Jinja2: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/settings.json.j2`
+  - Archivo directo: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/settings.json`
 - **Cambios**:
   - Agregar hook UserPromptSubmit con context_bundle_builder --type user_prompt
   - Agregar hook SubagentStop con universal_hook_logger
@@ -81,6 +95,7 @@
   - Modificar PreToolUse para incluir universal_hook_logger antes de pre_tool_use.py
   - Modificar PostToolUse para incluir context_bundle_builder con matcher "Read|Write"
   - Modificar Stop para incluir universal_hook_logger antes de stop.py
+- **Nota**: Aplicar cambios en ambos archivos simultáneamente
 
 ---
 
@@ -103,8 +118,11 @@
 
 - **Descripción**: Crear templates .gitkeep para los nuevos directorios de agents que se crearán durante el scaffold.
 - **Archivos**:
-  - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/hook_logs/.gitkeep.j2`
-  - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/.gitkeep.j2`
+  - Template Jinja2: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/hook_logs/.gitkeep.j2`
+  - Template Jinja2: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/.gitkeep.j2`
+  - Archivo directo: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/agents/hook_logs/.gitkeep`
+  - Archivo directo: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/agents/context_bundles/.gitkeep`
+- **Nota**: Crear archivos en ambas ubicaciones
 
 ---
 
@@ -125,42 +143,6 @@
 
 ### Tarea 9
 
-**[CHORE] Copiar nuevos templates a la raíz del proyecto tac_bootstrap**
-
-- **Descripción**: Sincronizar los nuevos templates creados en tac_bootstrap_cli con la estructura actual de .claude/ en la raíz del proyecto.
-- **Archivos destino**:
-  - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/parallel_subagents.md`
-  - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/t_metaprompt_workflow.md`
-  - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/build_w_report.md`
-  - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cc_hook_expert/cc_hook_expert_improve.md`
-- **Nota**: Renderizar templates sin variables Jinja2 para uso directo en el proyecto
-
----
-
-### Tarea 10
-
-**[CHORE] Actualizar settings.json en la raíz con hooks integrados**
-
-- **Descripción**: Actualizar el settings.json de la raíz del proyecto para reflejar la nueva configuración de hooks.
-- **Archivo**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/settings.json`
-- **Cambios**: Aplicar la misma estructura de hooks definida en Tarea 5
-
----
-
-### Tarea 11
-
-**[CHORE] Crear directorios agents en la raíz del proyecto**
-
-- **Descripción**: Crear la estructura de directorios para logs y context bundles en la raíz del proyecto.
-- **Directorios**:
-  - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/agents/hook_logs/`
-  - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/agents/context_bundles/`
-- **Archivos**: Agregar .gitkeep en cada directorio
-
----
-
-### Tarea 12
-
 **[CHORE] Ejecutar suite de tests completa**
 
 - **Descripción**: Ejecutar todos los tests del proyecto para verificar que no hay regresiones.
@@ -169,7 +151,7 @@
 
 ---
 
-### Tarea 13
+### Tarea 10
 
 **[CHORE] Actualizar CHANGELOG.md e incrementar versión a 0.5.0**
 
