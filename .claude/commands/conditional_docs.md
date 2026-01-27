@@ -1666,3 +1666,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando necesites actualizar .gitignore para incluir template directories
     - Cuando establezcas infraestructura foundational para agent-related features
     - Cuando trabajes con format-agnostic directory structures
+
+- app_docs/feature-chore_Tac_9_task_33-context-bundles-directory.md
+  - Conditions:
+    - Cuando trabajes con directorios para context bundles
+    - Cuando necesites entender agents/context_bundles/ infrastructure
+    - Cuando implementes features que generen context bundle JSONL files
+    - Cuando modifiques .gitignore patterns para preservar directorios específicos
+    - Cuando uses .gitkeep para mantener directorios vacíos en version control
+    - Cuando trabajes con runtime storage para agent context bundles
+    - Cuando necesites establecer directory structure para dynamic agent loading
+    - Cuando implementes context bundle generation features en TAC Bootstrap CLI
