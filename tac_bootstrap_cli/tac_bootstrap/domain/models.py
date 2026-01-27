@@ -23,10 +23,13 @@ Example usage:
     )
 """
 
+import json
 import re
 from enum import Enum
+from pathlib import Path
 from typing import Any, Dict, List
 
+import yaml
 from pydantic import BaseModel, Field, field_validator
 
 from tac_bootstrap import __version__
@@ -132,6 +135,23 @@ class DefaultWorkflow(str, Enum):
     PLAN_IMPLEMENT = "plan_implement"
 
 
+class PermissionLevel(str, Enum):
+    """Permission levels for operations."""
+
+    ALLOW = "allow"
+    DENY = "deny"
+    ASK = "ask"
+
+
+class HookEvent(str, Enum):
+    """Hook events for automation triggers."""
+
+    PRE_COMMIT = "pre_commit"
+    POST_COMMIT = "post_commit"
+    PRE_TEST = "pre_test"
+    POST_TEST = "post_test"
+
+
 class FieldType(str, Enum):
     """Field types for entity specification."""
 
@@ -227,6 +247,42 @@ class CommandsSpec(BaseModel):
     typecheck: str = Field(default="", description="Command to run type checker")
     format: str = Field(default="", description="Command to format code")
     build: str = Field(default="", description="Command to build the project")
+
+
+class PermissionsSpec(BaseModel):
+    """
+    Permission configuration for agent operations.
+
+    Controls what operations agents are allowed to perform.
+    """
+
+    file_operations: PermissionLevel = Field(
+        default=PermissionLevel.ASK, description="Permission level for file operations"
+    )
+    network: PermissionLevel = Field(
+        default=PermissionLevel.ASK, description="Permission level for network operations"
+    )
+    subprocess: PermissionLevel = Field(
+        default=PermissionLevel.ASK, description="Permission level for subprocess execution"
+    )
+
+
+class HooksSpec(BaseModel):
+    """
+    Hook configuration for automation triggers.
+
+    Defines shell commands to run on specific events.
+    """
+
+    pre_commit: List[str] = Field(
+        default_factory=list, description="Commands to run before git commit"
+    )
+    post_commit: List[str] = Field(
+        default_factory=list, description="Commands to run after git commit"
+    )
+    on_test: List[str] = Field(
+        default_factory=list, description="Commands to run on test execution"
+    )
 
 
 class WorktreeConfig(BaseModel):
@@ -544,6 +600,145 @@ class TACConfig(BaseModel):
     )
 
     model_config = {"extra": "forbid"}
+
+    @classmethod
+    def from_yaml(cls, path: Path) -> "TACConfig":
+        """
+        Load configuration from YAML file.
+
+        Args:
+            path: Path to YAML configuration file
+
+        Returns:
+            TACConfig instance
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+            yaml.YAMLError: If YAML is invalid
+            pydantic.ValidationError: If validation fails
+        """
+        with open(path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        return cls(**data)
+
+    @classmethod
+    def from_json(cls, path: Path) -> "TACConfig":
+        """
+        Load configuration from JSON file.
+
+        Args:
+            path: Path to JSON configuration file
+
+        Returns:
+            TACConfig instance
+
+        Raises:
+            FileNotFoundError: If file doesn't exist
+            json.JSONDecodeError: If JSON is invalid
+            pydantic.ValidationError: If validation fails
+        """
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return cls(**data)
+
+    def to_dict(self) -> dict:
+        """
+        Serialize configuration to dictionary with JSON-serializable types.
+
+        Returns:
+            Dictionary representation of the configuration
+        """
+        # Use model_dump with mode='json' to convert enums to strings
+        # and ensure all types are JSON-serializable
+        return json.loads(self.model_dump_json(exclude_none=True))
+
+    def to_yaml(self, path: Path) -> None:
+        """
+        Save configuration to YAML file.
+
+        Args:
+            path: Path where YAML file will be written
+        """
+        with open(path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(
+                self.to_dict(),
+                f,
+                default_flow_style=False,
+                sort_keys=False,
+                allow_unicode=True,
+            )
+
+    def to_json(self, path: Path) -> None:
+        """
+        Save configuration to JSON file.
+
+        Args:
+            path: Path where JSON file will be written
+        """
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
+
+    @classmethod
+    def get_default_config(cls, **overrides: Any) -> "TACConfig":
+        """
+        Create a TACConfig instance with sensible defaults.
+
+        Args:
+            **overrides: Field overrides for customization
+
+        Returns:
+            TACConfig instance with defaults applied
+
+        Example:
+            config = TACConfig.get_default_config(
+                project=ProjectSpec(
+                    name="my-app",
+                    language=Language.PYTHON,
+                    package_manager=PackageManager.UV
+                )
+            )
+        """
+        # Extract project if provided in overrides
+        project = overrides.pop("project", None)
+        if not project:
+            # Minimal default project
+            project = ProjectSpec(
+                name="my-project",
+                language=Language.PYTHON,
+                package_manager=PackageManager.UV,
+            )
+
+        # Get default commands based on language/package manager
+        default_cmds = get_default_commands(project.language, project.package_manager)
+        commands = overrides.pop(
+            "commands",
+            CommandsSpec(
+                start=default_cmds.get("start", ""),
+                test=default_cmds.get("test", ""),
+                lint=default_cmds.get("lint", ""),
+                typecheck=default_cmds.get("typecheck", ""),
+                format=default_cmds.get("format", ""),
+                build=default_cmds.get("build", ""),
+            ),
+        )
+
+        # Claude config
+        claude = overrides.pop(
+            "claude",
+            ClaudeConfig(
+                settings=ClaudeSettings(project_name=project.name),
+            ),
+        )
+
+        # Create config with defaults
+        defaults = {
+            "project": project,
+            "commands": commands,
+            "claude": claude,
+        }
+        defaults.update(overrides)
+
+        return cls(**defaults)
 
 
 # ============================================================================
