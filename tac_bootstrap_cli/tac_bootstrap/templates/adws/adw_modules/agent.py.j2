@@ -66,6 +66,9 @@ SLASH_COMMAND_MODEL_MAP: Final[Dict[SlashCommand, Dict[ModelSet, str]]] = {
     "/parallel_subagents": {"base": "sonnet", "heavy": "opus"},  # TAC-10: Parallel agents
     # TAC-10: Meta-prompting (opus for prompt generation)
     "/t_metaprompt_workflow": {"base": "sonnet", "heavy": "opus"},  # TAC-10: Meta-prompt
+    # TAC-11: Exploration and clarification (lightweight)
+    "/scout": {"base": "sonnet", "heavy": "sonnet"},  # TAC-11: Scout command for exploration
+    "/question": {"base": "sonnet", "heavy": "sonnet"},  # TAC-11: Question command for clarification
 }
 
 
