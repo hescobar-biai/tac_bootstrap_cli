@@ -2,42 +2,25 @@
 doc_type: folder
 domain: tac-bootstrap-cli-experts-cc-hook-expert
 owner: UNKNOWN
-level: L3
+level: L4
 tags:
   - expert:backend
-  - level:L3
+  - level:L4
   - topic:auth
 idk:
-  - api-gateway
-  - authentication
-  - authorization
-  - caching
-  - command-line-interface
-  - configuration
-  - control-plane
-  - data-modeling
-  - deployment
-  - error-handling
-  - event-driven
-  - framework
-  - gateway
-  - hook
-  - infrastructure-as-code
-  - integration
-  - logging
-  - management
-  - monitoring
-  - observability
-  - performance
-  - routing
-  - security
-  - service-discovery
-  - system-administration
-  - testing
-  - validation
+  - claude-code-hooks
+  - expert-agents
+  - hook-methodology
+  - implementation-planning
+  - knowledge-capture
+  - multi-agent-systems
+  - plan-build-improve
+  - slash-commands
+  - specialized-agents
+  - template-generation
+  - workflow-automation
 related_code: ['tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cc_hook_expert']
-children:
-  - []
+children: []
 source_readmes: []
 last_reviewed: UNKNOWN
 ---

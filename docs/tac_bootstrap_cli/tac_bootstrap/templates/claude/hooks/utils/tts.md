@@ -2,26 +2,24 @@
 doc_type: folder
 domain: tac-bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts
 owner: UNKNOWN
-level: L3
+level: L5
 tags:
-  - expert:frontend
-  - level:L3
-  - topic:routing
+  - expert:backend
+  - level:L5
+  - topic:api
 idk:
-  - routing
-  - hooks
-  - utils
-  - api
-  - performance
-  - caching
-  - queue
-  - db
+  - text-to-speech
+  - tts
+  - audio-synthesis
+  - voice-generation
+  - speech-output
+  - template-utils
+  - hook-utilities
+  - audio-processing
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts
-children:
-  - []
-source_readmes:
-  - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts/README.md
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 
