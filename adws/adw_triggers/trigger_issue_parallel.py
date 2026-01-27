@@ -105,13 +105,29 @@ def parse_issue_list(raw_value: str) -> List[int]:
     return issues
 
 
+def parse_positional_issues(values: List[str]) -> List[int]:
+    """Parse positional arguments that may be comma-separated or space-separated."""
+    issues: List[int] = []
+    for value in values:
+        # Handle comma-separated values in a single argument
+        if "," in value:
+            for item in value.split(","):
+                item = item.strip()
+                if item and item.isdigit():
+                    issues.append(int(item))
+        elif value.isdigit():
+            issues.append(int(value))
+    return issues
+
+
 def resolve_issue_list(args: argparse.Namespace) -> List[int]:
     """Build the list of issues from CLI arguments."""
     issue_list: List[int] = []
     if args.issues_csv:
         issue_list.extend(args.issues_csv)
     if args.issues:
-        issue_list.extend(args.issues)
+        # Parse positional args that may contain comma-separated values
+        issue_list.extend(parse_positional_issues(args.issues))
 
     if not issue_list:
         raise argparse.ArgumentTypeError("Provide at least one issue number.")
@@ -446,8 +462,8 @@ Supported workflows:
     parser.add_argument(
         "issues",
         nargs="*",
-        type=int,
-        help="Issue numbers to process in parallel",
+        type=str,
+        help="Issue numbers to process in parallel (space or comma separated)",
     )
     parser.add_argument(
         "--issues",
