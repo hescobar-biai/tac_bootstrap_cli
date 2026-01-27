@@ -6,7 +6,7 @@
     },
     "contextOptions": {
       "recordVideo": {
-        "dir": "./videos",
+        "dir": "/Users/hernandoescobar/Documents/Celes/tac_bootstrap/trees/10ce4b8d/videos",
         "size": {
           "width": 1920,
           "height": 1080
