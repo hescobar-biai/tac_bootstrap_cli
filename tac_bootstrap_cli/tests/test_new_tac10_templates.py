@@ -280,8 +280,14 @@ class TestSettingsTemplateWithHooks:
                 blocker_entry = entry
                 break
 
-        assert blocker_entry is not None, "PreToolUse should have a Bash matcher entry for dangerous_command_blocker"
+        assert blocker_entry is not None, (
+            "PreToolUse should have a Bash matcher entry for dangerous_command_blocker"
+        )
         blocker_hook = blocker_entry.get("hooks", [])[0] if blocker_entry.get("hooks") else None
         assert blocker_hook is not None, "Bash matcher entry should have a hook"
-        assert "dangerous_command_blocker.py" in blocker_hook.get("command", ""), "Bash hook should run dangerous_command_blocker.py"
-        assert blocker_hook.get("timeout") == 5000, "dangerous_command_blocker should have 5000ms timeout"
+        assert "dangerous_command_blocker.py" in blocker_hook.get("command", ""), (
+            "Bash hook should run dangerous_command_blocker.py"
+        )
+        assert blocker_hook.get("timeout") == 5000, (
+            "dangerous_command_blocker should have 5000ms timeout"
+        )
