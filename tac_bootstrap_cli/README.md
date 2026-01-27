@@ -30,7 +30,7 @@ Transform any repository into an AI-assisted development environment in minutes.
 ### Global Install (Recommended)
 
 ```bash
-git clone --branch v0.5.1 --depth 1 https://github.com/celes-app/tac-cli-dist.git
+git clone --branch v0.6.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
 make install-dev
 
@@ -44,7 +44,7 @@ tac-bootstrap --help
 ### Development Install
 
 ```bash
-git clone --branch v0.5.1 --depth 1 https://github.com/celes-app/tac-cli-dist.git
+git clone --branch v0.6.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
 make install-dev
 
@@ -93,7 +93,9 @@ project/
 │   └── adw_*_iso.py         # Isolated workflow scripts
 ├── agents/
 │   ├── hook_logs/           # Hook execution logs
-│   └── context_bundles/     # Session context storage
+│   ├── context_bundles/     # Session context storage
+│   ├── security_logs/       # Blocked command audit logs
+│   └── scout_files/         # Scout exploration results
 ├── scripts/                 # Utility scripts
 ├── specs/                   # Feature specifications
 ├── ai_docs/                 # AI reference documentation
@@ -123,6 +125,8 @@ project/
 | `/test` | Run tests |
 | `/commit` | Create git commit |
 | `/quick-plan` | Rapid planning |
+| `/scout <task> [scale]` | Parallel codebase exploration |
+| `/question <query>` | Read-only Q&A about project |
 | `/background <task>` | Background agent delegation |
 | `/parallel_subagents` | Multi-agent parallel execution |
 
@@ -140,6 +144,7 @@ Automated actions during Claude Code sessions:
 | `Stop` | Session cleanup |
 | `universal_hook_logger` | Comprehensive event logging |
 | `context_bundle_builder` | Context preservation |
+| `dangerous_command_blocker` | Block dangerous shell commands |
 
 See [Hooks Documentation](docs/hooks.md) for details.
 
