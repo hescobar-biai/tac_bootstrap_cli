@@ -1,0 +1,25 @@
+# Build
+
+Build the application.
+
+## Variables
+- $ARGUMENTS: Optional build arguments
+
+## Instructions
+
+1. Run the build command:
+   ```bash
+   uv build $ARGUMENTS
+   ```
+
+2. If build fails:
+   - Analyze the error output
+   - Identify the root cause
+   - Do NOT attempt to fix unless explicitly asked
+
+3. Report results
+
+## Report
+- Build status: success/failed
+- Output: (relevant build output)
+- Errors: (list if any)

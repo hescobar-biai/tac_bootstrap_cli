@@ -106,6 +106,7 @@ class ScaffoldService:
         directories = [
             (".claude", "Claude Code configuration"),
             (".claude/commands", "Slash commands"),
+            (".claude/commands/e2e", "E2E test command examples"),
             (".claude/commands/experts", "Expert command groups"),
             (".claude/commands/experts/cc_hook_expert", "Claude Code hook expert commands"),
             (".claude/agents", "Agent definitions"),
@@ -441,6 +442,24 @@ class ScaffoldService:
                 reason=reason,
             )
 
+        # E2E test command examples
+        e2e_commands = [
+            ("e2e/README.md", "E2E test examples documentation"),
+            ("e2e/test_basic_query.md", "E2E test: basic query execution"),
+            ("e2e/test_complex_query.md", "E2E test: complex query filtering"),
+            ("e2e/test_disable_input_debounce.md", "E2E test: input disabling and debouncing"),
+            ("e2e/test_export_functionality.md", "E2E test: export functionality"),
+            ("e2e/test_sql_injection.md", "E2E test: SQL injection protection"),
+            ("e2e/test_random_query_generator.md", "E2E test: random query generator"),
+        ]
+        for cmd, reason in e2e_commands:
+            plan.add_file(
+                f".claude/commands/{cmd}",
+                action=action,
+                template=f"claude/commands/{cmd}.j2",
+                reason=reason,
+            )
+
         # Settings local override
         plan.add_file(
             ".claude/settings.local.json",
@@ -474,6 +493,7 @@ class ScaffoldService:
             ("utils.py", "Utility functions"),
             ("worktree_ops.py", "Git worktree management"),
             ("r2_uploader.py", "Cloudflare R2 uploader"),
+            ("tool_sequencer.py", "Tool sequence orchestration"),
         ]
 
         for module, reason in modules:
@@ -526,6 +546,27 @@ class ScaffoldService:
             action=action,
             template="adws/adw_triggers/trigger_cron.py.j2",
             reason="Cron-based task polling",
+            executable=True,
+        )
+        plan.add_file(
+            f"{adws_dir}/adw_triggers/trigger_webhook.py",
+            action=action,
+            template="adws/adw_triggers/trigger_webhook.py.j2",
+            reason="Webhook-based task trigger",
+            executable=True,
+        )
+        plan.add_file(
+            f"{adws_dir}/adw_triggers/trigger_issue_chain.py",
+            action=action,
+            template="adws/adw_triggers/trigger_issue_chain.py.j2",
+            reason="Chain processing for GitHub issues",
+            executable=True,
+        )
+        plan.add_file(
+            f"{adws_dir}/adw_triggers/trigger_issue_parallel.py",
+            action=action,
+            template="adws/adw_triggers/trigger_issue_parallel.py.j2",
+            reason="Parallel processing for GitHub issues",
             executable=True,
         )
 
