@@ -1677,3 +1677,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con runtime storage para agent context bundles
     - Cuando necesites establecer directory structure para dynamic agent loading
     - Cuando implementes context bundle generation features en TAC Bootstrap CLI
+
+- app_docs/feature-chore_Tac_10_task_7-gitkeep-agents-templates.md
+  - Conditions:
+    - Cuando trabajes con .gitkeep files en templates o repository
+    - Cuando necesites entender agents/ directory structure (hook_logs/, context_bundles/)
+    - Cuando implementes templates Jinja2 para .gitkeep files
+    - Cuando modifiques .gitignore para preservar directorios específicos en agents/
+    - Cuando crees infrastructure para agent-related features
+    - Cuando trabajes con scaffold template discovery mechanism
+    - Cuando necesites mantener directorios vacíos en Git
+    - Cuando sigas el patrón dual-location (templates + direct files) para structure consistency
