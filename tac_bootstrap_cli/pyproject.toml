@@ -3,7 +3,7 @@ name = "tac-bootstrap"
 version = "0.6.0"
 description = "CLI to bootstrap Agentic Layer for Claude Code with TAC patterns"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<4.0"
 license = {text = "MIT"}
 authors = [
     {name = "TAC Bootstrap Team"}
