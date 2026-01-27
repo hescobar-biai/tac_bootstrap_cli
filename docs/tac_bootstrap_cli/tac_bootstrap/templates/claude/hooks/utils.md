@@ -16,6 +16,20 @@ idk:
   - template-utils
   - tts-service
   - llm-client
+level: L5
+tags:
+  - expert:backend
+  - level:L5
+  - topic:api
+idk:
+  - claude-hooks-utilities
+  - llm-integration
+  - text-to-speech
+  - ai-service-clients
+  - template-hook-helpers
+  - tac-bootstrap
+  - jinja2-templates
+  - automation-utils
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils
 children:

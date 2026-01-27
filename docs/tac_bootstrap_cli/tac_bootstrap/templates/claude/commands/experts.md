@@ -16,6 +16,12 @@ idk:
   - code-review-automation
   - knowledge-capture
   - iterative-improvement
+  - claude-command-experts
+  - hook-expert-system
+  - ai-agent-templates
+  - expert-knowledge-base
+  - command-generation
+  - context-aware-planning
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts
 children:

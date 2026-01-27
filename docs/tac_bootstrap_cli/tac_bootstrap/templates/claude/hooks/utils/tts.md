@@ -5,6 +5,7 @@ owner: UNKNOWN
 level: L5
 tags:
   - expert:frontend
+  - expert:backend
   - level:L5
   - topic:api
 idk:
@@ -16,6 +17,12 @@ idk:
   - speech-generation
   - claude-hooks
   - jinja2-templates
+  - audio-synthesis
+  - voice-generation
+  - speech-output
+  - template-utils
+  - hook-utilities
+  - audio-processing
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts
 children: []
