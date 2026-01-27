@@ -1,25 +1,24 @@
 ---
 doc_type: folder
-domain: tac-bootstrap-cli-experts-commands-experts
+domain: tac-bootstrap-cli-templates-claude-commands-experts
 owner: UNKNOWN
-level: L3
+level: L4
 tags:
-  - expert:frontend
-  - level:L3
-  - topic:routing
+  - expert:backend
+  - level:L4
+  - topic:api
 idk:
-  - routing
-  - cli
-  - commands
-  - experts
-  - api
-  - performance
+  - expert-commands
+  - hook-expert
+  - claude-code-integration
+  - template-commands
+  - skill-generation
+  - plan-build-improve-workflow
 related_code:
-  - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cc_hook_expert.md
+  - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts
 children:
   - docs/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cc_hook_expert.md
-source_readmes:
-  - README.md
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 
