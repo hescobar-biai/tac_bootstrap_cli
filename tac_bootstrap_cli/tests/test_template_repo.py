@@ -366,6 +366,29 @@ class TestTemplateDiscovery:
         templates = repo.list_templates()
         assert ".hidden" not in templates
 
+    def test_list_templates_discovers_nested_directories(self, temp_templates_dir: Path):
+        """Test that list_templates discovers nested directory structures."""
+        # Create nested experts directory structure
+        experts_dir = temp_templates_dir / "claude" / "commands" / "experts"
+        experts_dir.mkdir(parents=True, exist_ok=True)
+        (experts_dir / ".gitkeep").write_text("")
+
+        cc_hook_expert_dir = experts_dir / "cc_hook_expert"
+        cc_hook_expert_dir.mkdir(parents=True, exist_ok=True)
+        (cc_hook_expert_dir / ".gitkeep").write_text("")
+
+        # Create a template file in the nested directory
+        (cc_hook_expert_dir / "test_command.md.j2").write_text("# Test Command")
+
+        repo = TemplateRepository(templates_dir=temp_templates_dir)
+        templates = repo.list_templates()
+
+        # Should discover templates in nested directories
+        assert "claude/commands/experts/cc_hook_expert/test_command.md.j2" in templates
+        # .gitkeep files should be ignored
+        assert "claude/commands/experts/.gitkeep" not in templates
+        assert "claude/commands/experts/cc_hook_expert/.gitkeep" not in templates
+
     def test_get_template_content(self, repo: TemplateRepository):
         """Test getting raw template content."""
         content = repo.get_template_content("simple.txt.j2")
