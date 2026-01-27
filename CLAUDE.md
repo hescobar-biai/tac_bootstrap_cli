@@ -40,6 +40,7 @@ El archivo `PLAN_TAC_BOOTSTRAP.md` contiene el plan completo con:
 ### Para Desarrollo del Generador
 ```bash
 /prime                  # Preparar contexto
+/scout "<task>" [scale] # Explorar codebase para encontrar archivos relevantes
 /feature <desc>         # Planificar feature
 /implement <plan>       # Ejecutar plan
 /test                   # Correr tests
