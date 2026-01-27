@@ -5,6 +5,21 @@ All notable changes to TAC Bootstrap will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-01-26
+
+### Added
+- Nuevo template `parallel_subagents.md.j2` para delegación multi-agente (TAC-10 Level 4)
+- Nuevo template `t_metaprompt_workflow.md.j2` para generación de prompts (TAC-10 Level 6)
+- Nuevo template `cc_hook_expert_improve.md.j2` para self-improvement (TAC-10 Level 7)
+- Nuevo template `build_w_report.md.j2` con reporte YAML estructurado
+- Hooks adicionales: UserPromptSubmit, SubagentStop, Notification, PreCompact, SessionStart, SessionEnd
+- Integración de universal_hook_logger en todos los hooks
+- Directorios `agents/hook_logs/` y `agents/context_bundles/` en scaffold
+
+### Changed
+- settings.json.j2 actualizado con configuración completa de hooks
+- scaffold_service.py ahora crea estructura de directorios agents/
+
 ## [0.5.0] - 2026-01-25
 
 ### Added
