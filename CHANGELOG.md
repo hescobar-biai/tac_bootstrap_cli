@@ -5,6 +5,32 @@ All notable changes to TAC Bootstrap will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-01-27
+
+### Added
+
+- Trigger: `adws/adw_triggers/trigger_plan_parallel.py` - Execute tasks from plan markdown files in parallel
+- Parses `#### Task N` format with support for task groups (P1, P2, etc.) and task types (FEATURE, CHORE, BUG)
+- Options: `--group`, `--tasks`, `--max-concurrent`, `--workflow`, `--dry-run`, `--verbose`
+- Template: `trigger_plan_parallel.py.j2`
+
+#### Documentation Scripts with Dual Provider Support
+- `scripts/gen_docs_fractal.py` - Now supports `--provider claude` (default) and `--provider api`
+- `scripts/gen_docstring_jsdocs.py` - Same dual provider support
+- Claude provider uses CLI directly (no API key needed)
+- Options: `--claude-model` (sonnet, opus, haiku), `--claude-path`
+
+#### E2E Test Commands
+- New command templates in `.claude/commands/e2e/` (7 test examples)
+
+#### Base Commands
+- Added `build.md` and `lint.md` to base `.claude/commands/`
+
+### Changed
+- Documentation scripts default to Claude Code CLI provider (no API key required)
+- Removed `openai` dependency when using Claude provider
+- Updated README with new trigger and scripts documentation
+
 ## [0.6.0] - 2026-01-27
 
 ### Added

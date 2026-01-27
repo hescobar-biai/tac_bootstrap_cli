@@ -309,6 +309,50 @@ Generates:
 - Repository
 - API routes
 
+## Documentation Scripts
+
+Scripts for generating and maintaining project documentation using LLM providers.
+
+### gen_docs_fractal.py
+
+Generate a fractal documentation tree from code docstrings and READMEs:
+
+```bash
+# Using Claude Code CLI (recommended - no API key needed)
+uv run scripts/gen_docs_fractal.py --provider claude --dry-run
+
+# Using OpenAI API
+uv run scripts/gen_docs_fractal.py --provider api --dry-run
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--provider` | claude | LLM provider: `claude` (CLI) or `api` (OpenAI) |
+| `--claude-model` | sonnet | Claude model: sonnet, opus, haiku |
+| `--mode` | complement | merge mode: complement or overwrite |
+| `--dry-run` | false | Preview changes without writing |
+
+### gen_docstring_jsdocs.py
+
+Add IDK-format docstrings to Python/TypeScript files:
+
+```bash
+# Using Claude Code CLI (recommended - no API key needed)
+uv run scripts/gen_docstring_jsdocs.py --provider claude --dry-run
+
+# Using OpenAI API
+uv run scripts/gen_docstring_jsdocs.py --provider api --dry-run
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--provider` | claude | LLM provider: `claude` (CLI) or `api` (OpenAI) |
+| `--claude-model` | sonnet | Claude model: sonnet, opus, haiku |
+| `--mode` | add | add (safe), complement, or overwrite |
+| `--changed-only` | false | Process only git-changed files |
+| `--public-only` | false | Skip private functions/methods |
+| `--dry-run` | false | Preview changes without writing |
+
 ## Development
 
 ```bash

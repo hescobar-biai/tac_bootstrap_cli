@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # /// script
-# dependencies = ["openai", "python-dotenv", "pyyaml"]
+# dependencies = ["python-dotenv", "pyyaml"]
 # ///
 """
 gen_docs_fractal.py
@@ -38,14 +38,27 @@ Key behavior
 
 Usage
 -----
+  # Using Claude Code CLI (recommended - no API key needed)
   python gen_docs_fractal.py \
     --repo . \
     --docs-root docs \
     --include-root tac_bootstrap_cli \
     --mode complement \
+    --provider claude \
     --dry-run
 
-Requires OPENAI_API_KEY environment variable (or .env file).
+  # Using OpenAI API (requires OPENAI_API_KEY)
+  python gen_docs_fractal.py \
+    --repo . \
+    --docs-root docs \
+    --include-root tac_bootstrap_cli \
+    --mode complement \
+    --provider api \
+    --dry-run
+
+Providers:
+- claude: Uses Claude Code CLI (no API key needed, recommended)
+- api: Uses OpenAI-compatible API (requires OPENAI_API_KEY environment variable)
 """
 
 from __future__ import annotations
@@ -55,11 +68,13 @@ import ast
 import json
 import os
 import re
+import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 import urllib.request
 from dotenv import load_dotenv
 
@@ -156,6 +171,80 @@ class OpenAICompatClient:
             payload = json.loads(raw)
 
         return payload["choices"][0]["message"]["content"]
+
+
+# ---------------------------
+# Claude Code CLI client
+# ---------------------------
+class ClaudeCodeClient:
+    """Client that uses Claude Code CLI for LLM calls."""
+
+    def __init__(
+        self,
+        model: str = "sonnet",
+        timeout_s: int = 300,
+        claude_path: Optional[str] = None,
+    ):
+        self.model = model
+        self.timeout_s = timeout_s
+        self.claude_path = claude_path or os.getenv("CLAUDE_CODE_PATH", "claude")
+
+    def chat(self, messages: List[Dict[str, str]]) -> str:
+        """Execute prompt via Claude Code CLI."""
+        import subprocess
+        import tempfile
+
+        # Combine messages into a single prompt
+        prompt_parts = []
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role == "system":
+                prompt_parts.append(f"<system>\n{content}\n</system>\n")
+            else:
+                prompt_parts.append(content)
+
+        full_prompt = "\n".join(prompt_parts)
+
+        # Write prompt to temp file for large prompts
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+            f.write(full_prompt)
+            prompt_file = f.name
+
+        try:
+            cmd = [
+                self.claude_path,
+                "--model", self.model,
+                "--dangerously-skip-permissions",
+                "--print",
+                "--output-format", "text",
+            ]
+
+            # Read prompt from file
+            with open(prompt_file, 'r') as f:
+                prompt_content = f.read()
+
+            result = subprocess.run(
+                cmd,
+                input=prompt_content,
+                capture_output=True,
+                text=True,
+                timeout=self.timeout_s,
+                cwd=os.getcwd(),
+            )
+
+            if result.returncode != 0:
+                error_msg = result.stderr or "Unknown error"
+                raise RuntimeError(f"Claude CLI failed: {error_msg}")
+
+            return result.stdout.strip()
+
+        finally:
+            # Cleanup temp file
+            try:
+                os.unlink(prompt_file)
+            except OSError:
+                pass
 
 
 # ---------------------------
@@ -657,15 +746,18 @@ def run() -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--sleep-s", type=float, default=0.0)
 
-    # OpenAI configuration - environment variables take precedence
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("ERROR: OPENAI_API_KEY environment variable is required.", file=sys.stderr)
-        print("Set it in your .env file or export it before running this script.", file=sys.stderr)
-        return 1
+    # Provider selection
+    ap.add_argument("--provider", choices=["claude", "api"], default="claude",
+                    help="LLM provider: 'claude' uses Claude Code CLI (no API key), 'api' uses OpenAI-compatible API")
 
+    # Claude Code configuration
+    ap.add_argument("--claude-model", default="sonnet", help="Claude model for CLI (sonnet, opus, haiku)")
+    ap.add_argument("--claude-path", default=None, help="Path to claude CLI (default: from CLAUDE_CODE_PATH or 'claude')")
+
+    # OpenAI configuration - environment variables take precedence
     base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
     model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    api_key = os.getenv("OPENAI_API_KEY", "")
 
     ap.add_argument("--base-url", default=base_url, help="OpenAI API base URL")
     ap.add_argument("--api-key", default=api_key, help="OpenAI API key")
@@ -690,17 +782,33 @@ def run() -> int:
     if project_language not in ['python', 'typescript', 'javascript']:
         print(f"WARNING: Language '{project_language}' not explicitly supported. Generating structure-based docs only.", file=sys.stderr)
 
-    client = OpenAICompatClient(
-        base_url=args.base_url,
-        api_key=args.api_key,
-        model=args.model,
-        timeout_s=args.timeout_s,
-        temperature=args.temperature,
-        max_tokens=args.max_tokens,
-        extra_headers_json=args.extra_headers_json,
-        extra_body_json=args.extra_body_json,
-        endpoint=args.endpoint,
-    )
+    # Create client based on provider
+    client: Union[OpenAICompatClient, ClaudeCodeClient]
+    if args.provider == "claude":
+        print(f"Using Claude Code CLI (model: {args.claude_model})")
+        client = ClaudeCodeClient(
+            model=args.claude_model,
+            timeout_s=args.timeout_s,
+            claude_path=args.claude_path,
+        )
+    else:
+        # API mode requires API key
+        if not args.api_key:
+            print("ERROR: OPENAI_API_KEY environment variable is required for API provider.", file=sys.stderr)
+            print("Set it in your .env file, export it, or use --provider claude instead.", file=sys.stderr)
+            return 1
+        print(f"Using OpenAI API (model: {args.model})")
+        client = OpenAICompatClient(
+            base_url=args.base_url,
+            api_key=args.api_key,
+            model=args.model,
+            timeout_s=args.timeout_s,
+            temperature=args.temperature,
+            max_tokens=args.max_tokens,
+            extra_headers_json=args.extra_headers_json,
+            extra_body_json=args.extra_body_json,
+            endpoint=args.endpoint,
+        )
 
     # Canonical/global IDK from canonical_idk.yml if exists (optional, silent)
     canonical_idk_path = repo / "canonical_idk.yml"

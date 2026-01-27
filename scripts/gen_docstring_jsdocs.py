@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 # /// script
-# dependencies = ["openai", "python-dotenv"]
+# dependencies = ["python-dotenv"]
 # ///
 """
 gen_docstring_jsdocs.py
 
 Adds IDK-format docstrings/JSDoc to Python and TypeScript/JavaScript files using LLM.
 Generated for project: tac-bootstrap
+
+Providers:
+- claude: Uses Claude Code CLI (no API key needed, recommended)
+- api: Uses OpenAI-compatible API (requires OPENAI_API_KEY or OLLAMA)
 
 Modes:
 - add: add docs only if missing (default, safest)
@@ -15,6 +19,13 @@ Modes:
 
 IDK concept:
 - IDK line must be 5–12 domain keywords (kebab-case), NO sentences, NO verbs.
+
+Usage:
+  # Using Claude Code CLI (recommended - no API key needed)
+  python gen_docstring_jsdocs.py --repo tac_bootstrap_cli --provider claude --dry-run
+
+  # Using OpenAI API
+  python gen_docstring_jsdocs.py --repo tac_bootstrap_cli --provider api --dry-run
 """
 
 from __future__ import annotations
@@ -30,8 +41,8 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
-
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+import tempfile
 import urllib.request
 from dotenv import load_dotenv
 
@@ -115,6 +126,77 @@ class OpenAICompatClient:
             payload = json.loads(raw)
 
         return payload["choices"][0]["message"]["content"]
+
+
+# ---------------------------
+# Claude Code CLI client
+# ---------------------------
+class ClaudeCodeClient:
+    """Client that uses Claude Code CLI for LLM calls."""
+
+    def __init__(
+        self,
+        model: str = "sonnet",
+        timeout_s: int = 300,
+        claude_path: Optional[str] = None,
+    ):
+        self.model = model
+        self.timeout_s = timeout_s
+        self.claude_path = claude_path or os.getenv("CLAUDE_CODE_PATH", "claude")
+
+    def chat(self, messages: List[Dict[str, str]]) -> str:
+        """Execute prompt via Claude Code CLI."""
+        # Combine messages into a single prompt
+        prompt_parts = []
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role == "system":
+                prompt_parts.append(f"<system>\n{content}\n</system>\n")
+            else:
+                prompt_parts.append(content)
+
+        full_prompt = "\n".join(prompt_parts)
+
+        # Write prompt to temp file for large prompts
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+            f.write(full_prompt)
+            prompt_file = f.name
+
+        try:
+            cmd = [
+                self.claude_path,
+                "--model", self.model,
+                "--dangerously-skip-permissions",
+                "--print",
+                "--output-format", "text",
+            ]
+
+            # Read prompt from file
+            with open(prompt_file, 'r') as f:
+                prompt_content = f.read()
+
+            result = subprocess.run(
+                cmd,
+                input=prompt_content,
+                capture_output=True,
+                text=True,
+                timeout=self.timeout_s,
+                cwd=os.getcwd(),
+            )
+
+            if result.returncode != 0:
+                error_msg = result.stderr or "Unknown error"
+                raise RuntimeError(f"Claude CLI failed: {error_msg}")
+
+            return result.stdout.strip()
+
+        finally:
+            # Cleanup temp file
+            try:
+                os.unlink(prompt_file)
+            except OSError:
+                pass
 
 
 # ---------------------------
@@ -842,15 +924,16 @@ def process_ts_file(
     return changed, edits
 
 
-def validate_api_config(client: OpenAICompatClient) -> bool:
+def validate_api_config(client: Union[OpenAICompatClient, ClaudeCodeClient]) -> bool:
     """Validate API configuration by making a simple test request."""
     try:
-        test_msg = [{"role": "user", "content": "test"}]
+        test_msg = [{"role": "user", "content": "Say 'ok' only."}]
         client.chat(test_msg)
         return True
     except Exception as e:
         print(f"ERROR: API validation failed: {e}", file=sys.stderr)
-        print(f"Base URL: {client.base_url}", file=sys.stderr)
+        if hasattr(client, 'base_url'):
+            print(f"Base URL: {client.base_url}", file=sys.stderr)
         print(f"Model: {client.model}", file=sys.stderr)
         return False
 
@@ -862,12 +945,22 @@ def main() -> int:
     default_api_key = os.getenv("OPENAI_API_KEY", "ollama")
 
     ap = argparse.ArgumentParser(
-        description="Docstring/JSDoc generator for tac-bootstrap using OpenAI-compatible APIs.",
+        description="Docstring/JSDoc generator for tac-bootstrap using LLM providers.",
         epilog="WARNING: Always commit your code before using 'overwrite' mode!"
     )
     ap.add_argument("--repo", default="tac_bootstrap_cli")
     ap.add_argument("--include-glob", default=None, help="Glob pattern for files to include")
     ap.add_argument("--exclude", action="append", help="Regex patterns to exclude files (can be used multiple times)")
+
+    # Provider selection
+    ap.add_argument("--provider", choices=["claude", "api"], default="claude",
+                    help="LLM provider: 'claude' uses Claude Code CLI (no API key), 'api' uses OpenAI-compatible API")
+
+    # Claude Code configuration
+    ap.add_argument("--claude-model", default="sonnet", help="Claude model for CLI (sonnet, opus, haiku)")
+    ap.add_argument("--claude-path", default=None, help="Path to claude CLI (default: from CLAUDE_CODE_PATH or 'claude')")
+
+    # OpenAI/Ollama configuration
     ap.add_argument("--base-url", default=default_base_url, help=f"API base URL (default: {default_base_url})")
     ap.add_argument("--api-key", default=default_api_key, help="API key (default: from OPENAI_API_KEY env or 'ollama')")
     ap.add_argument("--model", default=default_model, help=f"Model name (default: {default_model})")
@@ -895,23 +988,34 @@ def main() -> int:
         print(f"ERROR: Directory not found: {repo}", file=sys.stderr)
         return 2
 
-    client = OpenAICompatClient(
-        base_url=args.base_url,
-        api_key=args.api_key,
-        model=args.model,
-        timeout_s=args.timeout_s,
-        temperature=args.temperature,
-        max_tokens=args.max_tokens,
-        extra_headers_json=args.extra_headers_json,
-        extra_body_json=args.extra_body_json,
-        endpoint=args.endpoint,
-    )
+    # Create client based on provider
+    client: Union[OpenAICompatClient, ClaudeCodeClient]
+    if args.provider == "claude":
+        print(f"Using Claude Code CLI (model: {args.claude_model})")
+        client = ClaudeCodeClient(
+            model=args.claude_model,
+            timeout_s=args.timeout_s,
+            claude_path=args.claude_path,
+        )
+    else:
+        print(f"Using OpenAI-compatible API (model: {args.model})")
+        client = OpenAICompatClient(
+            base_url=args.base_url,
+            api_key=args.api_key,
+            model=args.model,
+            timeout_s=args.timeout_s,
+            temperature=args.temperature,
+            max_tokens=args.max_tokens,
+            extra_headers_json=args.extra_headers_json,
+            extra_body_json=args.extra_body_json,
+            endpoint=args.endpoint,
+        )
 
-    # Validate API configuration at startup
-    print("Validating API configuration...")
-    if not validate_api_config(client):
-        print("\nPlease check your API configuration and try again.", file=sys.stderr)
-        return 1
+        # Validate API configuration at startup (only for API provider)
+        print("Validating API configuration...")
+        if not validate_api_config(client):
+            print("\nPlease check your API configuration and try again.", file=sys.stderr)
+            return 1
 
     # Build canonical/global IDK index from docs frontmatter
     domain_idk = build_docs_idk_index(repo)
