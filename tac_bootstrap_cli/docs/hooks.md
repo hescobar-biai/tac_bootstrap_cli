@@ -91,6 +91,142 @@ Tracks Read/Write operations for context recovery.
 
 **Bundle location:** `agents/context_bundles/`
 
+## Security Hooks
+
+Security hooks protect against destructive operations that could cause data loss or system damage. They run in the `PreToolUse` phase to validate and block dangerous commands before execution.
+
+### Dangerous Command Blocker
+
+Intercepts and blocks dangerous bash commands that could cause data loss, system damage, or security vulnerabilities.
+
+**Location:** `.claude/hooks/dangerous_command_blocker.py`
+
+**Features:**
+- Validates bash commands before execution
+- Blocks destructive operations (rm -rf /, dd to devices, mkfs, etc.)
+- Prevents security vulnerabilities (chmod -R 777, etc.)
+- Provides safer alternatives for blocked commands
+- Logs all blocked operations to security audit trail
+- Uses exit code 2 for blocking (see [Exit Code Strategy](#exit-code-strategy))
+
+**Blocked Operations:**
+
+The hook protects against the following dangerous command patterns:
+
+| Category | Examples | Risk |
+|----------|----------|------|
+| **Recursive rm** | `rm -rf /`, `rm -rf /etc`, `rm -rf $VAR` | Data loss, system destruction |
+| **Device writes** | `dd of=/dev/sda`, `dd of=/dev/nvme0n1` | Disk wipe, data loss |
+| **Filesystem creation** | `mkfs.ext4 /dev/sda`, `mkfs.xfs /dev/nvme0n1` | Data destruction |
+| **Insecure permissions** | `chmod -R 777 /`, `chmod -R 777 /var` | Security vulnerabilities |
+| **Ownership changes** | `chown -R user:group /`, `chown -R user /etc` | System access issues |
+| **Data destruction** | `shred /dev/sda`, `wipefs /dev/nvme0n1`, `format C:` | Permanent data loss |
+
+**Critical Paths Protected:**
+
+The hook provides extra protection for these system paths: `/`, `/etc`, `/usr`, `/bin`, `/sbin`, `/lib`, `/lib64`, `/boot`, `/home`, `/root`, `/var`, `/sys`, `/proc`, `/dev`
+
+**Safer Alternatives:**
+
+When a command is blocked, the hook suggests safer alternatives:
+
+```bash
+# Instead of: rm -rf /
+# Use: rm -rf ./specific_folder
+
+# Instead of: chmod -R 777 /var
+# Use: chmod -R 755 ./project_directory
+
+# Instead of: dd of=/dev/sda
+# Use: dd if=source.img of=/path/to/file.img
+
+# Instead of: chown -R user:group /
+# Use: chown -R user:group ./project_dir
+```
+
+**Configuration:**
+
+Add to `.claude/settings.json` in the `PreToolUse` hook chain:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/dangerous_command_blocker.py || true"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+For multiple PreToolUse hooks, chain them together:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/universal_hook_logger.py --event PreToolUse && uv run $CLAUDE_PROJECT_DIR/.claude/hooks/dangerous_command_blocker.py && uv run $CLAUDE_PROJECT_DIR/.claude/hooks/pre_tool_use.py || true"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Security Logs:**
+
+All blocked commands are logged to a security audit trail for review:
+
+- **Location:** `agents/security_logs/blocked_commands.jsonl`
+- **Format:** JSON Lines (JSONL) - one JSON object per line for easy parsing
+- **Contents:** Each entry includes:
+  - `timestamp` - ISO 8601 timestamp with timezone
+  - `command` - The full blocked command
+  - `reason` - Why it was blocked
+  - `suggested_alternative` - Safer alternative to use
+  - `blocked` - Always `true`
+
+Example log entry:
+```json
+{
+  "timestamp": "2026-01-27T10:30:45.123456+00:00",
+  "command": "rm -rf /etc",
+  "reason": "Command matches dangerous pattern and targets critical path '/etc'",
+  "suggested_alternative": "Use specific paths in /tmp or project directories: rm -rf /tmp/myapp_temp",
+  "blocked": true
+}
+```
+
+**Customization:**
+
+To temporarily disable the hook:
+- Remove `dangerous_command_blocker.py` from the PreToolUse hook chain in `.claude/settings.json`
+
+To customize blocked patterns:
+- Edit `DANGEROUS_PATTERNS` list in `.claude/hooks/dangerous_command_blocker.py`
+- Add or remove critical paths in `CRITICAL_PATHS` list
+- Modify safer alternatives in `SAFER_ALTERNATIVES` dictionary
+
+**Warning:** Only modify the hook if you fully understand the security implications. The default patterns protect against common destructive operations.
+
+**See Also:**
+- [Pre-Tool Use Hook](#pre-tool-use-hook) - General pre-execution validation
+- [Exit Code Strategy](#exit-code-strategy) - Understanding hook exit codes
+- [Hook Configuration](#hook-configuration) - How to configure hooks in settings.json
+
 ### Pre-Tool Use Hook
 
 Validates and controls tool execution.
@@ -347,6 +483,7 @@ if __name__ == '__main__':
 project/
 ├── .claude/
 │   └── hooks/
+│       ├── dangerous_command_blocker.py
 │       ├── pre_tool_use.py
 │       ├── post_tool_use.py
 │       ├── stop.py
@@ -362,7 +499,8 @@ project/
 │           └── tts/        # TTS utilities
 └── agents/
     ├── hook_logs/          # Universal logger output
-    └── context_bundles/    # Context bundle storage
+    ├── context_bundles/    # Context bundle storage
+    └── security_logs/      # Security audit trail
 ```
 
 ## Expert Hook Development
