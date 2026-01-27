@@ -8,27 +8,13 @@ Summary metrics across all ADW runs.
 
 | Metric            | Value          | Last Updated                 |
 | ----------------- | -------------- | ---------------------------- |
-| Current Streak    | 173            | Tue Jan 27 12:44:17 -05 2026 |
-| Longest Streak    | 173            | Tue Jan 27 12:44:17 -05 2026 |
-| Total Plan Size   | 26940 lines    | Tue Jan 27 12:44:17 -05 2026 |
-| Largest Plan Size | 673 lines      | Tue Jan 27 12:44:17 -05 2026 |
-| Total Diff Size   | 121185 lines   | Tue Jan 27 12:44:17 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 12:44:17 -05 2026 |
-| Average Presence  | 1.00           | Tue Jan 27 12:44:17 -05 2026 |
-| Current Streak    | 140            | Tue Jan 27 12:47:38 -05 2026 |
-| Longest Streak    | 140            | Tue Jan 27 12:47:38 -05 2026 |
-| Total Plan Size   | 25603 lines    | Tue Jan 27 12:47:38 -05 2026 |
-| Largest Plan Size | 673 lines      | Tue Jan 27 12:47:38 -05 2026 |
-| Total Diff Size   | 117064 lines   | Tue Jan 27 12:47:38 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 12:47:38 -05 2026 |
-| Average Presence  | 1.00           | Tue Jan 27 12:47:38 -05 2026 |
-| Current Streak    | 174            | Tue Jan 27 12:56:08 -05 2026 |
-| Longest Streak    | 174            | Tue Jan 27 12:56:08 -05 2026 |
-| Total Plan Size   | 27032 lines    | Tue Jan 27 12:56:08 -05 2026 |
-| Largest Plan Size | 673 lines      | Tue Jan 27 12:56:08 -05 2026 |
-| Total Diff Size   | 121554 lines   | Tue Jan 27 12:56:08 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 12:56:08 -05 2026 |
-| Average Presence  | 1.00           | Tue Jan 27 12:56:08 -05 2026 |
+| Current Streak    | 190            | Tue Jan 27 13:10:55 -05 2026 |
+| Longest Streak    | 190            | Tue Jan 27 13:10:55 -05 2026 |
+| Total Plan Size   | 27112 lines    | Tue Jan 27 13:10:55 -05 2026 |
+| Largest Plan Size | 673 lines      | Tue Jan 27 13:10:55 -05 2026 |
+| Total Diff Size   | 123539 lines   | Tue Jan 27 13:10:55 -05 2026 |
+| Largest Diff Size | 6832 lines     | Tue Jan 27 13:10:55 -05 2026 |
+| Average Presence  | 1.00           | Tue Jan 27 13:10:55 -05 2026 |
 
 ## ADW KPIs
 
@@ -148,7 +134,7 @@ Detailed metrics for individual ADW workflow runs.
 | Mon Jan 26 2026  | chore_Tac_9_task_16      | 257 | /chore      | 1        | 82                | 307/6/7                         | Mon Jan 26 14:21:35 -05 2026 | -       |
 | Mon Jan 26 2026  | feature_Tac_9_task_17    | 258 | /feature    | 1        | 267               | 971/2/7                         | Mon Jan 26 14:51:07 -05 2026 | -       |
 | Mon Jan 26 2026  | feature_Tac_9_task_18_v2 | 259 | /feature    | 1        | 274               | 1713/2/7                        | Mon Jan 26 15:39:38 -05 2026 | -       |
-| Mon Jan 26 2026  | feature_Tac_9_task_19    | 260 | /feature    | 1        | 478/2/7                         | Mon Jan 26 15:58:23 -05 2026 | -       |
+| Mon Jan 26 2026  | feature_Tac_9_task_19    | 260 | /feature    | 1        | 0                 | 478/2/7                         | Mon Jan 26 15:58:23 -05 2026 | -       |
 | Mon Jan 26 2026  | feature_Tac_9_task_20    | 261 | /feature    | 1        | 299               | 842/2/7                         | Mon Jan 26 16:19:31 -05 2026 | -       |
 | Mon Jan 26 2026  | feature_Tac_9_task_21    | 262 | /feature    | 1        | 186               | 702/2/8                         | Mon Jan 26 16:37:53 -05 2026 | -       |
 | Mon Jan 26 2026  | feature_Tac_9_task_22    | 263 | /feature    | 1        | 188               | 909/2/7                         | Mon Jan 26 16:57:43 -05 2026 | -       |
@@ -187,3 +173,4 @@ Detailed metrics for individual ADW workflow runs.
 | Tue Jan 27 2026  | chore_Tac_11_task_10_v2  | 351 | /chore      | 1        | 49                | 195/2/6                         | Tue Jan 27 12:44:17 -05 2026 | -       |
 | Tue Jan 27 2026  | chore_Tac_11_task_15     | 344 | /chore      | 1        | 54                | 261/2230/28                     | Tue Jan 27 12:47:38 -05 2026 | -       |
 | Tue Jan 27 2026  | chore_Tac_11_task_12_v2  | 343 | /chore      | 1        | 46                | 178/191/11                      | Tue Jan 27 12:56:08 -05 2026 | -       |
+| Tue Jan 27 2026  | chore_Tac_11_task_16     | 356 | /chore      | 1        | 72                | 308/2/6                         | Tue Jan 27 13:10:55 -05 2026 | -       |
