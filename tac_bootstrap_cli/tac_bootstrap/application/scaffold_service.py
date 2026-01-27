@@ -119,6 +119,8 @@ class ScaffoldService:
             ("agents", "ADW agent state"),
             ("agents/hook_logs", "Hook execution logs"),
             ("agents/context_bundles", "Agent context bundles"),
+            ("agents/security_logs", "Security hook execution logs"),
+            ("agents/scout_files", "Scout command state and cache"),
             (config.paths.worktrees_dir, "Git worktrees"),
             ("app_docs", "Application documentation"),
             ("ai_docs", "AI-generated documentation"),
@@ -136,6 +138,18 @@ class ScaffoldService:
         )
         plan.add_file(
             "agents/context_bundles/.gitkeep",
+            action=FileAction.CREATE,
+            content="",
+            reason="Keep empty directory in Git",
+        )
+        plan.add_file(
+            "agents/security_logs/.gitkeep",
+            action=FileAction.CREATE,
+            content="",
+            reason="Keep empty directory in Git",
+        )
+        plan.add_file(
+            "agents/scout_files/.gitkeep",
             action=FileAction.CREATE,
             content="",
             reason="Keep empty directory in Git",
@@ -289,6 +303,8 @@ class ScaffoldService:
             "in_loop_review",
             "github_check",
             "conditional_docs",
+            "scout",
+            "question",
         ]
 
         for cmd in commands:
@@ -308,6 +324,7 @@ class ScaffoldService:
             ("pre_compact.py", "Pre-compact logging"),
             ("subagent_stop.py", "Subagent stop handler"),
             ("user_prompt_submit.py", "User prompt validation and logging"),
+            ("dangerous_command_blocker.py", "Security validation hook"),
         ]
 
         for hook, reason in hooks:

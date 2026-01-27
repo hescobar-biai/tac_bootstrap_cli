@@ -1721,3 +1721,11 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When understanding SCALE parameter patterns for configurable parallel execution
     - When implementing read-only exploration workflows
     - When needing reference for structured markdown report generation from agent results
+- app_docs/feature-chore_Tac_11_task_13-scaffold-template-rendering.md
+  - Conditions:
+    - When extending scaffold_service.py to include new templates
+    - When adding new slash commands to the scaffold rendering process
+    - When adding new hooks to the scaffold rendering process
+    - When adding new agent directories with .gitkeep files
+    - When verifying template paths and structure for scaffold generation
+    - When understanding how to maintain patterns for commands, hooks, and directories in scaffold service
