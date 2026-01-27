@@ -2,25 +2,25 @@
 doc_type: folder
 domain: tac-bootstrap_cli/mypy_cache/3.10/markdown_it/common
 owner: UNKNOWN
-level: L4
+level: L5
 tags:
-  - expert:frontend
-  - level:L4
-  - topic:routing
+  - expert:backend
+  - level:L5
+  - topic:caching
 idk:
-  - routing
-  - caching
-  - performance
-  - api
-  - frontend
-  - cli
+  - mypy-cache
+  - type-checking
+  - markdown-it
+  - python-types
+  - intermediate-representation
+  - ast-cache
+  - incremental-analysis
+  - build-artifacts
 related_code:
-  - tac_bootstrap_cli/
-children:
-  - 
-source_readmes:
-  - README.md
-last_reviewed: UNKNOWN
+  - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/common
+children: []
+source_readmes: []
+last_reviewed: 2026-01-27
 ---
 
 # Overview

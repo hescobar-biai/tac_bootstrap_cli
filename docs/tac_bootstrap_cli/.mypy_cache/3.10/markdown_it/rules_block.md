@@ -2,27 +2,26 @@
 doc_type: folder
 domain: tac-bootstrap_cli/mypy_cache/3.10/markdown_it/rules_block
 owner: UNKNOWN
-level: L2
+level: L5
 tags:
-  - expert:frontend
-  - level:L2
-  - topic:routing
+  - expert:backend
+  - level:L5
+  - topic:caching
+  - topic:performance
 idk:
-  - routing
-  - caching
-  - performance
-  - api
-  - queue
-  - db
-  - auth
-  - logging
+  - mypy-cache
+  - type-checking-artifacts
+  - markdown-it-parser
+  - block-rules
+  - python-3.10
+  - static-analysis
+  - ast-cache
+  - incremental-typing
 related_code:
-  - tac_bootstrap_cli/
-children:
-  - 
-source_readmes:
-  - README.md
-last_reviewed: UNKNOWN
+  - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/rules_block
+children: []
+source_readmes: []
+last_reviewed: 2026-01-27
 ---
 
 # Overview

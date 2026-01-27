@@ -2,25 +2,25 @@
 doc_type: folder
 domain: tac-bootstrap_cli/mypy_cache/3.10/importlib/metadata
 owner: UNKNOWN
-level: L4
+level: L5
 tags:
   - expert:infra
-  - level:L4
-  - topic:api
+  - level:L5
+  - topic:caching
 idk:
-  - caching
-  - db
-  - importlib
-  - metadata
-  - mypy
-  - python
-  - typescript
+  - mypy-cache
+  - type-checking
+  - importlib-metadata
+  - python-3.10
+  - static-analysis
+  - type-stub
+  - metadata-api
+  - package-metadata
+  - version-discovery
 related_code:
-  - tac_bootstrap_cli/
-children:
-- 
-source_readmes:
-- README.md
+  - tac_bootstrap_cli/.mypy_cache/3.10/importlib/metadata
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 

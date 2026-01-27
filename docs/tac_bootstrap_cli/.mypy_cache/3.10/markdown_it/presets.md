@@ -1,29 +1,24 @@
 ---
 doc_type: folder
-domain: tac-bootstrap_cli/mypy_cache/3.10/markdown_it/presets
+domain: tac_bootstrap_cli/mypy_cache/3.10/markdown_it/presets
 owner: UNKNOWN
-level: L4
+level: L5
 tags:
-  - expert:frontend
-  - level:L4
-  - topic:routing
+  - expert:backend
+  - level:L5
+  - topic:caching
 idk:
-  - preset
-  - markdown
-  - it
-  - cache
-  - build
-  - cli
-  - config
+  - mypy-cache
+  - markdown-it-presets
+  - type-checking-artifacts
+  - python-3.10
+  - preset-configurations
+  - build-cache
+  - static-analysis
 related_code:
-  - tac_bootstrap_cli/
-  - mypy_cache/
-  - 3.10/
-  - markdown_it/
-children:
-  - 
-source_readmes:
-  - README.md
+  - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/presets
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 
