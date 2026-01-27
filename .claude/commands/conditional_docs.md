@@ -1688,3 +1688,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con scaffold template discovery mechanism
     - Cuando necesites mantener directorios vacíos en Git
     - Cuando sigas el patrón dual-location (templates + direct files) para structure consistency
+
+- app_docs/feature-feature_Tac_11_task_3-scout-slash-command.md
+  - Conditions:
+    - When working on slash commands that involve parallel agent orchestration
+    - When implementing codebase exploration or file discovery features
+    - When using Task tool with Explore subagent_type
+    - When designing multi-strategy search patterns (file patterns, content search, architecture, dependencies)
+    - When implementing frequency-based relevance scoring or aggregation
+    - When creating delegation prompts (TAC-10 Level 4 pattern)
+    - When working with agents/scout_files/ output directory
+    - When understanding SCALE parameter patterns for configurable parallel execution
+    - When implementing read-only exploration workflows
+    - When needing reference for structured markdown report generation from agent results
