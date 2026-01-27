@@ -117,6 +117,8 @@ class ScaffoldService:
             (config.paths.prompts_dir, "Prompt templates"),
             (f"{config.paths.prompts_dir}/templates", "Document templates"),
             ("agents", "ADW agent state"),
+            ("agents/hook_logs", "Hook execution logs"),
+            ("agents/context_bundles", "Agent context bundles"),
             (config.paths.worktrees_dir, "Git worktrees"),
             ("app_docs", "Application documentation"),
             ("ai_docs", "AI-generated documentation"),
@@ -124,6 +126,20 @@ class ScaffoldService:
 
         for path, reason in directories:
             plan.add_directory(path, reason)
+
+        # Add .gitkeep files to preserve empty agent directories
+        plan.add_file(
+            "agents/hook_logs/.gitkeep",
+            action=FileAction.CREATE,
+            content="",
+            reason="Keep empty directory in Git",
+        )
+        plan.add_file(
+            "agents/context_bundles/.gitkeep",
+            action=FileAction.CREATE,
+            content="",
+            reason="Keep empty directory in Git",
+        )
 
     def _add_shared_infrastructure(self, plan: ScaffoldPlan, config: TACConfig) -> None:
         """Add shared infrastructure base classes for DDD/Clean/Hexagonal architectures."""
