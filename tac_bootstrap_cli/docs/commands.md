@@ -104,6 +104,7 @@ Uses the `docs-scraper` and `research-docs-fetcher` agents to:
 | `/prime_cc` | Claude Code-specific context priming |
 | `/load_bundle [bundle]` | Load context from saved bundle |
 | `/tools` | List available built-in tools |
+| `/question <query>` | Answer questions about project structure using read-only exploration |
 
 ### `/prime_cc`
 
@@ -136,6 +137,7 @@ Recovers context from previously saved session bundles.
 |---------|-------------|
 | `/background <task>` | Delegate task to background agent |
 | `/parallel_subagents <task> [count]` | Launch multiple agents in parallel |
+| `/scout <task> [scale]` | Find relevant files using parallel exploration strategies |
 
 ### `/background`
 
@@ -165,6 +167,46 @@ Launches multiple specialized agents in parallel for complex tasks.
 2. Design specialized prompts for each agent
 3. Launch agents in parallel
 4. Collect and summarize results
+
+### `/scout`
+
+Find files relevant to a specific task using parallel exploration strategies.
+
+```
+/scout "add authentication to API endpoints"
+/scout "implement caching layer" 6
+/scout "fix database connection pooling" 2
+```
+
+**Parameters:**
+- `<task>` (required): Description of the task or feature to search for
+- `[scale]` (optional): Number of parallel search strategies (2-10, default: 4)
+
+**Search Strategies:**
+The command launches multiple parallel exploration agents using different approaches:
+1. **File Pattern Search**: Glob-based discovery using naming conventions
+2. **Content Search**: Grep-based keyword and code search
+3. **Architectural Analysis**: Structure understanding through module mapping
+4. **Dependency Mapping**: Tracing imports and cross-file references
+
+Higher SCALE values (5-10) add specialized strategies for test files, configuration, type definitions, and documentation.
+
+**Output:**
+- Generates detailed report: `agents/scout_files/relevant_files_{timestamp}.md`
+- Files grouped by confidence level (high/medium/low)
+- Frequency scoring based on how many strategies found each file
+- Priority files list and next steps recommendations
+
+**When to Use:**
+- Starting work on unfamiliar areas of the codebase
+- Understanding scope of changes for a feature or bug fix
+- Mapping dependencies before refactoring
+- Identifying all potentially affected files
+
+**When NOT to Use:**
+- You already know exactly which files to modify
+- Single file, trivial changes
+- Looking for specific needle queries (use Grep/Glob directly)
 
 ## Meta & Generation Commands
 
