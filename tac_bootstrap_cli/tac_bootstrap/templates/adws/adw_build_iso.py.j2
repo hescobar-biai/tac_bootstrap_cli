@@ -6,8 +6,11 @@
 """
 ADW Build Iso - AI Developer Workflow for agentic building in isolated worktrees
 
-Usage: 
-  uv run adw_build_iso.py <issue-number> <adw-id>
+Usage:
+  uv run adw_build_iso.py <issue-number> <adw-id> [--with-report]
+
+Options:
+  --with-report    Use /build_w_report for structured YAML change tracking (TAC-10)
 
 Workflow:
 1. Load state and validate worktree exists
@@ -33,6 +36,7 @@ from adw_modules.git_ops import commit_changes, finalize_git_operations, get_cur
 from adw_modules.github import fetch_issue, make_issue_comment, get_repo_url, extract_repo_path
 from adw_modules.workflow_ops import (
     implement_plan,
+    implement_plan_with_report,
     create_commit,
     format_issue_message,
     AGENT_IMPLEMENTOR,
@@ -49,16 +53,23 @@ def main():
     # Load environment variables
     load_dotenv()
     
-    # Parse command line args
-    # INTENTIONAL: adw-id is REQUIRED - we need it to find the worktree
-    if len(sys.argv) < 3:
-        print("Usage: uv run adw_build_iso.py <issue-number> <adw-id>")
-        print("\nError: adw-id is required to locate the worktree and plan file")
-        print("Run adw_plan_iso.py or adw_patch_iso.py first to create the worktree")
-        sys.exit(1)
-    
-    issue_number = sys.argv[1]
-    adw_id = sys.argv[2]
+    # Parse command line args using argparse
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="ADW Build Iso - Implement solutions in isolated worktrees"
+    )
+    parser.add_argument("issue_number", help="GitHub issue number")
+    parser.add_argument("adw_id", help="ADW ID to locate worktree and plan file")
+    parser.add_argument(
+        "--with-report",
+        action="store_true",
+        help="Use /build_w_report for structured YAML change tracking (TAC-10)"
+    )
+
+    args = parser.parse_args()
+    issue_number = args.issue_number
+    adw_id = args.adw_id
+    use_report = args.with_report
     
     # Try to load existing state
     temp_logger = setup_logger(adw_id, "adw_build_iso")
@@ -156,12 +167,18 @@ def main():
     
     # Implement the plan (executing in worktree)
     logger.info("Implementing solution in worktree")
-    make_issue_comment(
-        issue_number,
-        format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementing solution in isolated environment")
-    )
-    
-    implement_response = implement_plan(plan_file, adw_id, logger, working_dir=worktree_path)
+    if use_report:
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementing solution with YAML report tracking (TAC-10)")
+        )
+        implement_response = implement_plan_with_report(plan_file, adw_id, logger, working_dir=worktree_path)
+    else:
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementing solution in isolated environment")
+        )
+        implement_response = implement_plan(plan_file, adw_id, logger, working_dir=worktree_path)
     
     if not implement_response.success:
         logger.error(f"Error implementing solution: {implement_response.output}")

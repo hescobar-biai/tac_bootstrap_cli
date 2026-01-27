@@ -7,16 +7,21 @@
 ADW Plan Iso - AI Developer Workflow for agentic planning in isolated worktrees
 
 Usage:
-  uv run adw_plan_iso.py <issue-number> [adw-id]
+  uv run adw_plan_iso.py <issue-number> [adw-id] [--load-docs TOPIC] [--skip-clarify]
+
+Options:
+  --load-docs TOPIC   Load AI documentation for topic before planning (TAC-9)
+  --skip-clarify      Skip clarification phase
 
 Workflow:
 1. Fetch GitHub issue details
-2. Check/create worktree for isolated execution
-3. Classify issue type (/chore, /bug, /feature)
-4. Create feature branch in worktree
-5. Generate implementation plan in worktree
-6. Commit plan in worktree
-7. Push and create/update PR
+2. (Optional) Load AI documentation for relevant topics
+3. Check/create worktree for isolated execution
+4. Classify issue type (/chore, /bug, /feature)
+5. Create feature branch in worktree
+6. Generate implementation plan in worktree
+7. Commit plan in worktree
+8. Push and create/update PR
 
 This workflow creates an isolated git worktree under trees/<adw_id>/ for
 parallel execution without interference.
@@ -46,6 +51,7 @@ from adw_modules.workflow_ops import (
     create_commit,
     format_issue_message,
     ensure_adw_id,
+    load_ai_docs,
     AGENT_PLANNER,
 )
 from adw_modules.utils import setup_logger, check_env_vars
@@ -69,12 +75,15 @@ def main():
     parser.add_argument("issue_number", help="GitHub issue number")
     parser.add_argument("adw_id", nargs="?", default=None, help="ADW ID (optional, will be generated if not provided)")
     parser.add_argument("--skip-clarify", action="store_true", help="Skip clarification phase")
+    parser.add_argument("--load-docs", type=str, default=None,
+                       help="Load AI documentation for topic before planning (TAC-9)")
 
     args = parser.parse_args()
 
     issue_number = args.issue_number
     adw_id = args.adw_id
     skip_clarify = args.skip_clarify
+    load_docs_topic = args.load_docs
 
     # Ensure ADW ID exists with initialized state
     temp_logger = setup_logger(adw_id, "adw_plan_iso") if adw_id else None
@@ -123,6 +132,31 @@ def main():
         issue_number,
         f"{adw_id}_ops: 🔍 Using state\n```json\n{json.dumps(state.data, indent=2)}\n```",
     )
+
+    # Load AI documentation if requested (TAC-9)
+    if load_docs_topic:
+        logger.info(f"Loading AI documentation for: {load_docs_topic}")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", f"📚 Loading AI documentation: {load_docs_topic} (TAC-9)"),
+        )
+
+        docs_response = load_ai_docs(load_docs_topic, adw_id, logger)
+
+        if docs_response.success:
+            logger.info("AI documentation loaded successfully")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"✅ AI documentation loaded for: {load_docs_topic}"),
+            )
+            state.update(loaded_docs_topic=load_docs_topic)
+            state.save("adw_plan_iso")
+        else:
+            logger.warning(f"Failed to load AI docs (continuing anyway): {docs_response.output}")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"⚠️ AI docs loading failed (continuing): {docs_response.output[:200]}"),
+            )
 
     # Clarification phase (optional)
     clarification_text = None

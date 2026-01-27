@@ -7,7 +7,10 @@
 ADW Plan Iso - AI Developer Workflow for agentic planning in isolated worktrees
 
 Usage:
-  uv run adw_plan_iso.py <issue-number> [adw-id]
+  uv run adw_plan_iso.py <issue-number> [adw-id] [--load-docs TOPIC]
+
+Options:
+  --load-docs TOPIC    Load AI documentation for TOPIC before planning (TAC-9)
 
 Workflow:
 1. Fetch GitHub issue details
@@ -45,6 +48,7 @@ from adw_modules.workflow_ops import (
     create_commit,
     format_issue_message,
     ensure_adw_id,
+    load_ai_docs,
     AGENT_PLANNER,
 )
 from adw_modules.utils import setup_logger, check_env_vars
@@ -69,12 +73,19 @@ def main():
     parser.add_argument("issue_number", help="GitHub issue number")
     parser.add_argument("adw_id", nargs="?", default=None, help="ADW ID (optional, will be generated if not provided)")
     parser.add_argument("--skip-clarify", action="store_true", help="Skip clarification phase")
+    parser.add_argument(
+        "--load-docs",
+        dest="load_docs_topic",
+        default=None,
+        help="Load AI documentation for TOPIC before planning (TAC-9)"
+    )
 
     args = parser.parse_args()
 
     issue_number = args.issue_number
     adw_id = args.adw_id
     skip_clarify = args.skip_clarify
+    load_docs_topic = args.load_docs_topic
 
     # Ensure ADW ID exists with initialized state
     temp_logger = setup_logger(adw_id, "adw_plan_iso") if adw_id else None
@@ -285,6 +296,29 @@ def main():
         issue_number,
         format_issue_message(adw_id, "ops", f"✅ Working in isolated worktree: {worktree_path}"),
     )
+
+    # Load AI documentation if requested (TAC-9)
+    if load_docs_topic:
+        logger.info(f"Loading AI documentation for: {load_docs_topic}")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", f"📚 Loading AI documentation for: {load_docs_topic}"),
+        )
+
+        docs_response = load_ai_docs(load_docs_topic, adw_id, logger, working_dir=worktree_path)
+
+        if not docs_response.success:
+            logger.warning(f"Failed to load AI docs (continuing anyway): {docs_response.output}")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"⚠️ Failed to load AI docs (continuing): {docs_response.output}"),
+            )
+        else:
+            logger.info(f"AI documentation loaded successfully")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"✅ AI documentation loaded for: {load_docs_topic}"),
+            )
 
     # Build the implementation plan (now executing in worktree)
     logger.info("Building implementation plan in worktree")

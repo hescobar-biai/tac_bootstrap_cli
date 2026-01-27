@@ -9,650 +9,184 @@ Transform any repository into an AI-assisted development environment in minutes.
 - **Quick Setup**: Add complete agentic layer to any project in minutes
 - **Auto-Detection**: Automatically detects language, framework, and package manager
 - **Smart Defaults**: Sensible defaults based on your tech stack
-- **Idempotent**: Safe to run multiple times without duplicating files
-- **Customizable**: Full control via config.yml
+- **25+ Slash Commands**: Comprehensive command library for development workflows
+- **Hook System**: Automated actions for logging, validation, and context tracking
+- **Sub-Agents**: Specialized AI agents for documentation, research, and expert tasks
+- **ADW Workflows**: AI Developer Workflows for complete SDLC automation
+- **Output Styles**: Token optimization with configurable response formats
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Commands](docs/commands.md) | Complete slash command reference |
+| [Hooks](docs/hooks.md) | Hook system and automation |
+| [Agents](docs/agents.md) | Sub-agents and expert pattern |
+| [Output Styles](docs/output-styles.md) | Response format control |
+| [Utilities](docs/utilities.md) | LLM and TTS utilities |
 
 ## Installation
 
-### Option 1: Global Install from Source (Recommended)
+### Global Install (Recommended)
 
 ```bash
-# Clone the release
 git clone --branch v0.5.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
 make install-dev
 
-# Install globally with uv tool
 export CLAUDE_CODE_PATH=$(which claude)
 uv tool install .
 
-# Now works from ANY directory
-cd ..
-tac-bootstrap --help  # ✅ Works everywhere
-tac-bootstrap init my-awesome-app
+# Works from any directory
+tac-bootstrap --help
 ```
 
-### Option 2: Development Install (for contributing)
+### Development Install
 
 ```bash
 git clone --branch v0.5.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
 make install-dev
 
-# Only works inside tac-cli-dist directory with "uv run"
-uv run tac-bootstrap --help  # ✅ Works
-cd ..
-uv run tac-bootstrap --help  # ❌ Fails - must be in project dir
-```
-
-### Option 3: From PyPI (when published)
-
-```bash
-# With uv tool (recommended)
-uv tool install tac-bootstrap
-
-# With pipx
-pipx install tac-bootstrap
-
-# With pip
-pip install tac-bootstrap
-```
-
-> **Note**: Check [releases](https://github.com/celes-app/tac-cli-dist/releases) for the latest version.
-
-## Environment Setup
-
-Copy the example environment file and configure your variables:
-
-```bash
-cp .env.example .env
-```
-
-### Required Variables
-
-| Variable | Description |
-|----------|-------------|
-| `CLAUDE_CODE_PATH` | Path to Claude Code executable. Run `which claude` to find it. |
-
-### Optional Variables
-
-| Variable | Description |
-|----------|-------------|
-| `ANTHROPIC_API_KEY` | For running ADWs in programmatic mode |
-| `GITHUB_PAT` | GitHub token for ADW integrations |
-| `E2B_API_KEY` | For cloud sandbox execution |
-| `CLOUDFLARED_TUNNEL_TOKEN` | For webhook triggers |
-
-See [.env.example](.env.example) for the complete list with documentation.
-
-## Development
-
-### Quick Commands
-
-| Command | Description |
-|---------|-------------|
-| `make install` | Install dependencies |
-| `make install-dev` | Install with dev dependencies |
-| `make test` | Run all tests |
-| `make test-v` | Run tests with verbose output |
-| `make test-cov` | Run tests with coverage report |
-| `make lint` | Run ruff linter |
-| `make lint-fix` | Run linter with auto-fix |
-| `make format` | Format code with ruff |
-| `make typecheck` | Run mypy type checker |
-| `make build` | Build package wheel |
-| `make clean` | Clean generated files |
-| `make help` | Show all commands |
-
-### Development Workflow
-
-```bash
-# 1. Clone latest release and install
-git clone --branch v0.5.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
-cd tac-cli-dist
-make install-dev
-
-# 2. Make changes to the code
-
-# 3. Lint and format
-make lint-fix
-make format
-
-# 4. Run tests
-make test
-
-# 5. Commit your changes
-```
-
-### Running the CLI Locally
-
-```bash
-make cli-help           # Show CLI help
-make cli-version        # Show version
-make cli-init-dry       # Example init with dry-run
-make cli-doctor         # Example doctor command
+# Use with "uv run" in project directory
+uv run tac-bootstrap --help
 ```
 
 ## Quick Start
 
-> **Note**: If you installed globally with `uv tool install .`, use `tac-bootstrap` directly.
-> If you installed with `make install-dev`, use `uv run tac-bootstrap` from the project directory.
-
-### For New Projects
+### New Project
 
 ```bash
-# Interactive wizard (recommended)
-tac-bootstrap init my-awesome-app
+# Interactive wizard
+tac-bootstrap init my-app
 
-# Preview what will be created (dry-run)
-tac-bootstrap init my-app --dry-run
-
-# Non-interactive with all options
+# With options
 tac-bootstrap init my-api \
   --language python \
   --framework fastapi \
-  --package-manager uv \
-  --architecture ddd \
-  --output ./projects/my-api \
-  --no-interactive
+  --architecture ddd
 ```
 
-#### Available Options for `init`
-
-| Option | Short | Values | Default |
-|--------|-------|--------|---------|
-| `--language` | `-l` | python, typescript, javascript, go, rust, java | python |
-| `--framework` | `-f` | fastapi, django, flask, nextjs, express, nestjs, react, vue, gin, echo, axum, actix, spring, none | none |
-| `--package-manager` | `-p` | uv, poetry, pip, pipenv, pnpm, npm, yarn, bun, go, cargo, maven, gradle | auto |
-| `--architecture` | `-a` | simple, layered, ddd, clean, hexagonal | simple |
-| `--output` | `-o` | PATH | ./{name} |
-| `--interactive` | | | enabled |
-| `--dry-run` | | | disabled |
-
-#### Examples by Language
+### Existing Project
 
 ```bash
-# Python + FastAPI + UV + DDD
-tac-bootstrap init my-api -l python -f fastapi -p uv -a ddd --no-interactive
-
-# Python + Django + Poetry
-tac-bootstrap init my-webapp -l python -f django -p poetry --no-interactive
-
-# TypeScript + Next.js + pnpm
-tac-bootstrap init my-frontend -l typescript -f nextjs -p pnpm --no-interactive
-
-# TypeScript + NestJS + npm
-tac-bootstrap init my-backend -l typescript -f nestjs -p npm --no-interactive
-
-# Go + Gin
-tac-bootstrap init my-service -l go -f gin --no-interactive
-
-# Rust + Axum
-tac-bootstrap init my-rust-api -l rust -f axum --no-interactive
-
-# Java + Spring + Maven
-tac-bootstrap init my-java-app -l java -f spring -p maven --no-interactive
-```
-
-### For Existing Projects
-
-```bash
-# Add Agentic Layer to existing repository
-cd your-existing-project
+cd your-project
 tac-bootstrap add-agentic
 
-# This will:
-# - Auto-detect language, framework, package manager
-# - Create .claude/commands/ with 25+ slash commands
-# - Create .claude/hooks/ with automation hooks
-# - Create adws/ with AI Developer Workflows
-# - Create scripts/ with utility scripts
-# - Create config.yml with detected settings
-# - Create constitution.md with project principles
-
-# Safe for existing repos:
-# - Only creates files that don't exist
-# - Never overwrites your existing files
-# - Run multiple times safely (idempotent)
-
-# Other usage examples:
-# Add to specific path
-tac-bootstrap add-agentic /path/to/your/repo
-
-# Preview changes without applying (dry-run)
+# Preview changes
 tac-bootstrap add-agentic --dry-run
-
-# Force overwrite existing agentic files
-tac-bootstrap add-agentic --force
-
-# Non-interactive with auto-detection
-tac-bootstrap add-agentic --no-interactive
-
-# Combine options
-tac-bootstrap add-agentic /path/to/repo --force --no-interactive
 ```
-
-#### Available Options for `add-agentic`
-
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--interactive` | | Use interactive wizard (default) |
-| `--no-interactive` | | Skip wizard, use auto-detection |
-| `--dry-run` | | Preview changes without applying |
-| `--force` | `-f` | Overwrite existing files |
-
-### Utility Commands
-
-```bash
-# Validate your agentic setup
-tac-bootstrap doctor /path/to/repo
-
-# Auto-fix common issues
-tac-bootstrap doctor /path/to/repo --fix
-
-# Regenerate from config.yml
-tac-bootstrap render config.yml --output ./my-project
-
-# Regenerate with force overwrite
-tac-bootstrap render config.yml --force --dry-run
-
-# Show version
-tac-bootstrap version
-```
-
-### Entity Generation (DDD Projects)
-
-Generate complete CRUD entities with vertical slice architecture:
-
-```bash
-# Interactive wizard (recommended)
-tac-bootstrap generate entity Product
-
-# Non-interactive with fields
-tac-bootstrap generate entity Product \
-  --capability catalog \
-  --fields "name:str:required,price:float:required,description:text,is_available:bool" \
-  --no-interactive
-
-# With authorization (row-level security)
-tac-bootstrap generate entity Order \
-  --capability orders \
-  --fields "total:decimal:required,status:str:required" \
-  --authorized \
-  --no-interactive
-
-# Preview without creating files
-tac-bootstrap generate entity User --dry-run
-
-# Force overwrite existing entity
-tac-bootstrap generate entity Product -c catalog --force
-```
-
-#### Available Options for `generate entity`
-
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--capability` | `-c` | Capability/module name (default: entity name in kebab-case) |
-| `--fields` | `-f` | Field definitions: "name:type[:required]" comma-separated |
-| `--authorized` | | Generate with row-level security templates |
-| `--async` | | Use async repository (AsyncSession) |
-| `--with-events` | | Generate domain events |
-| `--interactive` | | Interactive wizard (default) |
-| `--dry-run` | | Preview without creating files |
-| `--force` | | Overwrite existing entity files |
-
-#### Field Types
-
-| Type | Python Type | SQLAlchemy Type |
-|------|------------|-----------------|
-| `str` | `str` | `String(max_length)` |
-| `int` | `int` | `Integer` |
-| `float` | `float` | `Float` |
-| `bool` | `bool` | `Boolean` |
-| `datetime` | `datetime` | `DateTime` |
-| `uuid` | `str` | `String(36)` |
-| `text` | `str` | `Text` |
-| `decimal` | `Decimal` | `Numeric` |
-| `json` | `dict` | `JSON` |
-
-#### Generated Structure
-
-```
-src/{capability}/
-├── domain/
-│   └── {entity}.py          # Domain model (extends BaseEntity)
-├── application/
-│   ├── schemas.py            # Create/Update/Response DTOs
-│   └── service.py            # CRUD service (extends BaseService)
-├── infrastructure/
-│   ├── models.py             # SQLAlchemy ORM model
-│   └── repository.py         # Data access (extends BaseRepository)
-└── api/
-    └── routes.py             # FastAPI CRUD endpoints
-```
-
-> **Requirement**: Entity generation requires `--architecture ddd|clean|hexagonal` and `--framework fastapi`. The shared base classes in `src/shared/` must exist (generated automatically with `init`).
-
-### Shared Base Classes (DDD Architecture)
-
-When using `--architecture ddd` with `--framework fastapi`, the CLI generates shared infrastructure in `src/shared/`:
-
-| File | Purpose |
-|------|---------|
-| `domain/base_entity.py` | Entity base with audit trail, soft delete, state management |
-| `domain/base_schema.py` | BaseCreate, BaseUpdate, BaseResponse DTOs |
-| `application/base_service.py` | Generic CRUD service with typed generics |
-| `infrastructure/base_repository.py` | Generic SQLAlchemy repository (sync) |
-| `infrastructure/base_repository_async.py` | Generic async repository |
-| `infrastructure/database.py` | SQLAlchemy session management |
-| `infrastructure/exceptions.py` | Typed exceptions with HTTP handlers |
-| `infrastructure/responses.py` | PaginatedResponse, ErrorResponse models |
-| `infrastructure/dependencies.py` | FastAPI dependency injection factories |
-| `api/health.py` | Health check endpoint |
-
-These classes eliminate ~80% of boilerplate per entity. Each new entity inherits from them.
-
-## Upgrading Projects
-
-If you have a project created with an older version of TAC Bootstrap, you can upgrade it to the latest templates:
-
-```bash
-# Check what would be upgraded
-tac-bootstrap upgrade --dry-run
-
-# Upgrade with backup (default)
-tac-bootstrap upgrade
-
-# Upgrade without backup
-tac-bootstrap upgrade --no-backup
-
-# Force upgrade even if versions match
-tac-bootstrap upgrade --force
-
-# Upgrade specific project
-tac-bootstrap upgrade ./path/to/project
-```
-
-### What Gets Upgraded
-
-The upgrade command updates:
-- `adws/` - AI Developer Workflows
-- `.claude/` - Claude Code configuration
-- `scripts/` - Utility scripts
-
-It preserves:
-- `src/` - Your application code
-- `config.yml` - Your configuration (only version is updated)
-- Any custom files you've added
-
-### Backup
-
-By default, a backup is created at `.tac-backup-{timestamp}/` before upgrading.
-Delete it manually after confirming the upgrade works correctly.
-
-## Commands
-
-### `init`
-
-Create a new project with Agentic Layer.
-
-```bash
-tac-bootstrap init <name> [options]
-
-Options:
-  -l, --language          Programming language (python, typescript, go, rust, java)
-  -f, --framework         Web framework (fastapi, nextjs, etc.)
-  -p, --package-manager   Package manager (uv, npm, pnpm, etc.)
-  -a, --architecture      Architecture pattern (simple, layered, ddd)
-  -o, --output            Output directory
-  -i/-I, --interactive    Enable/disable interactive wizard
-  --dry-run               Preview without creating files
-```
-
-### `add-agentic`
-
-Inject Agentic Layer into existing repository.
-
-```bash
-tac-bootstrap add-agentic [path] [options]
-
-Options:
-  -i/-I, --interactive    Enable/disable interactive wizard
-  -f, --force             Overwrite existing files
-  --dry-run               Preview without creating files
-```
-
-### `doctor`
-
-Validate Agentic Layer setup.
-
-```bash
-tac-bootstrap doctor [path] [options]
-
-Options:
-  --fix                   Attempt to fix issues automatically
-```
-
-### `render`
-
-Regenerate Agentic Layer from config.yml.
-
-```bash
-tac-bootstrap render [config.yml] [options]
-
-Options:
-  -o, --output            Output directory
-  -f, --force             Overwrite existing files
-  --dry-run               Preview without creating files
-```
-
-### `upgrade`
-
-Upgrade an existing project to the latest TAC Bootstrap templates.
-
-```bash
-tac-bootstrap upgrade [path] [options]
-
-Options:
-  --dry-run               Preview changes without applying
-  --no-backup             Skip creating backup before upgrade
-  --force                 Force upgrade even if versions match
-```
-
-### Multi-layer Validation
-
-The CLI validates configurations in multiple layers before generating:
-
-1. **Schema** - Pydantic type validation
-2. **Domain** - Framework/language compatibility rules
-3. **Template** - Referenced templates exist
-4. **Filesystem** - Output directory writable, no conflicts
-5. **Git** - Repository state warnings
 
 ## Generated Structure
-
-After running `tac-bootstrap`, your project will have:
 
 ```
 project/
 ├── .claude/
-│   ├── settings.json     # Claude Code settings
-│   ├── commands/         # Slash commands (/prime, /test, etc.)
-│   └── hooks/            # Execution hooks
+│   ├── settings.json        # Claude Code configuration
+│   ├── commands/            # 25+ slash commands
+│   ├── hooks/               # Automation hooks
+│   ├── agents/              # Sub-agent definitions
+│   └── output-styles/       # Response format presets
 ├── adws/
-│   ├── adw_modules/      # Shared workflow modules
-│   ├── adw_triggers/     # Webhook and cron triggers
-│   └── adw_*_iso.py      # Isolated workflow scripts
-├── scripts/              # Utility scripts
-├── specs/                # Feature/bug specifications
-├── ai_docs/              # AI reference documentation
-├── app_docs/             # Application documentation
-├── logs/                 # Execution logs
-├── config.yml            # TAC configuration
-└── .mcp.json             # MCP server config
+│   ├── adw_modules/         # Shared workflow modules
+│   ├── adw_triggers/        # Webhook and cron triggers
+│   └── adw_*_iso.py         # Isolated workflow scripts
+├── agents/
+│   ├── hook_logs/           # Hook execution logs
+│   └── context_bundles/     # Session context storage
+├── scripts/                 # Utility scripts
+├── specs/                   # Feature specifications
+├── ai_docs/                 # AI reference documentation
+└── config.yml               # TAC configuration
 ```
 
-## ADW (AI Developer Workflows)
+## Commands
 
-The `adws/` directory contains isolated workflow scripts that automate the software development lifecycle. Each workflow runs in an isolated git worktree for parallel execution.
+### CLI Commands
 
-### Core Workflows (Single Phase)
+| Command | Description |
+|---------|-------------|
+| `tac-bootstrap init <name>` | Create new project |
+| `tac-bootstrap add-agentic` | Add to existing project |
+| `tac-bootstrap upgrade` | Upgrade templates |
+| `tac-bootstrap doctor` | Validate setup |
+| `tac-bootstrap render` | Regenerate from config |
+| `tac-bootstrap generate entity` | Generate CRUD entity |
 
-| Workflow | Description | Usage |
-|----------|-------------|-------|
-| `adw_plan_iso.py` | Planning phase: fetch issue, classify type, create branch, generate implementation plan | `uv run adws/adw_plan_iso.py <issue> [adw-id]` |
-| `adw_build_iso.py` | Build phase: implement solution based on plan, commit changes | `uv run adws/adw_build_iso.py <issue> <adw-id>` |
-| `adw_test_iso.py` | Test phase: run unit and E2E tests, report results | `uv run adws/adw_test_iso.py <issue> <adw-id> [--skip-e2e]` |
-| `adw_review_iso.py` | Review phase: review implementation against spec, capture screenshots, resolve issues | `uv run adws/adw_review_iso.py <issue> <adw-id> [--skip-resolution]` |
-| `adw_document_iso.py` | Documentation phase: analyze changes, generate feature docs | `uv run adws/adw_document_iso.py <issue> <adw-id>` |
-| `adw_ship_iso.py` | Ship phase: validate state, merge PR to main | `uv run adws/adw_ship_iso.py <issue> <adw-id>` |
-| `adw_patch_iso.py` | Quick patch: create worktree, implement patch from issue comment with `adw_patch` keyword | `uv run adws/adw_patch_iso.py <issue> [adw-id]` |
+### Key Slash Commands
 
-### Composite Workflows (Multi-Phase)
+| Command | Description |
+|---------|-------------|
+| `/prime` | Load project context |
+| `/feature <desc>` | Plan new feature |
+| `/implement <plan>` | Execute implementation |
+| `/test` | Run tests |
+| `/commit` | Create git commit |
+| `/quick-plan` | Rapid planning |
+| `/background <task>` | Background agent delegation |
+| `/parallel_subagents` | Multi-agent parallel execution |
 
-| Workflow | Phases | Usage |
-|----------|--------|-------|
-| `adw_plan_build_iso.py` | Plan → Build | `uv run adws/adw_plan_build_iso.py <issue> [adw-id]` |
-| `adw_plan_build_test_iso.py` | Plan → Build → Test | `uv run adws/adw_plan_build_test_iso.py <issue> [adw-id] [--skip-e2e]` |
-| `adw_plan_build_review_iso.py` | Plan → Build → Review | `uv run adws/adw_plan_build_review_iso.py <issue> [adw-id] [--skip-resolution]` |
-| `adw_plan_build_test_review_iso.py` | Plan → Build → Test → Review | `uv run adws/adw_plan_build_test_review_iso.py <issue> [adw-id] [--skip-e2e] [--skip-resolution]` |
-| `adw_plan_build_document_iso.py` | Plan → Build → Document | `uv run adws/adw_plan_build_document_iso.py <issue> [adw-id]` |
-| `adw_sdlc_iso.py` | Plan → Build → Test → Review → Document (full SDLC) | `uv run adws/adw_sdlc_iso.py <issue> [adw-id] [--skip-e2e] [--skip-resolution]` |
-| `adw_sdlc_zte_iso.py` | Plan → Build → Test → Review → Document → Ship (Zero Touch Execution) | `uv run adws/adw_sdlc_zte_iso.py <issue> [adw-id] [--skip-e2e] [--skip-resolution]` |
+See [Commands Documentation](docs/commands.md) for the complete reference.
 
-### Shared Modules (`adw_modules/`)
+## Hooks
 
-| Module | Description |
-|--------|-------------|
-| `agent.py` | Agent execution and template management |
-| `data_types.py` | Pydantic models for ADW state and configuration |
-| `git_ops.py` | Git operations (commit, push, branch) |
-| `github.py` | GitHub API integration (issues, PRs, comments, user validation) |
-| `r2_uploader.py` | Cloudflare R2 upload for screenshots |
-| `state.py` | Persistent ADW state management (`adw_state.json`) |
-| `utils.py` | Common utilities and helpers |
-| `workflow_ops.py` | Workflow orchestration utilities |
-| `worktree_ops.py` | Git worktree management for isolation |
+Automated actions during Claude Code sessions:
 
-### Triggers (`adw_triggers/`)
+| Hook | Purpose |
+|------|---------|
+| `PreToolUse` | Validate before tool execution |
+| `PostToolUse` | Log and track operations |
+| `UserPromptSubmit` | Capture user prompts |
+| `Stop` | Session cleanup |
+| `universal_hook_logger` | Comprehensive event logging |
+| `context_bundle_builder` | Context preservation |
+
+See [Hooks Documentation](docs/hooks.md) for details.
+
+## Agents
+
+Specialized AI agents for autonomous tasks:
+
+| Agent | Purpose |
+|-------|---------|
+| `docs-scraper` | Fetch external documentation |
+| `meta-agent` | Generate new agent definitions |
+| `research-docs-fetcher` | Discover documentation sources |
+| `cc_hook_expert` | Expert pattern for hook development |
+
+See [Agents Documentation](docs/agents.md) for details.
+
+## ADW Workflows
+
+AI Developer Workflows automate the SDLC:
+
+```bash
+# Full SDLC
+uv run adws/adw_sdlc_iso.py --issue 123
+
+# Plan + Build
+uv run adws/adw_plan_build_iso.py --issue 123
+
+# Quick patch
+uv run adws/adw_patch_iso.py --issue 456
+```
+
+### Workflow Phases
+
+| Workflow | Phases |
+|----------|--------|
+| `adw_sdlc_iso.py` | Plan → Build → Test → Review → Document |
+| `adw_sdlc_zte_iso.py` | Full SDLC + Ship (Zero Touch) |
+| `adw_plan_build_iso.py` | Plan → Build |
+| `adw_patch_iso.py` | Quick implementation |
+
+### Triggers
 
 | Trigger | Description |
 |---------|-------------|
-| `trigger_webhook.py` | HTTP webhook server for GitHub events |
-| `trigger_cron.py` | Scheduled execution via cron |
-| `trigger_issue_chain.py` | Ordered issue chain execution (waits for prior issue to close) |
-
-#### User Assignment Validation
-
-**All triggers only process issues assigned to the currently authenticated GitHub user.** This prevents workflows from executing on issues belonging to other developers in multi-developer environments.
-
-When a trigger detects an ADW command:
-1. It checks if the issue is assigned to the user logged in via `gh auth login`
-2. If not assigned to current user, the workflow is **skipped**
-3. If assigned, the workflow proceeds and the issue is re-assigned (confirmed) to the current user
-
-To see which user is currently authenticated:
-```bash
-gh api user --jq '.login'
-```
-
-**Example scenario:**
-- Developer A creates issue #123 with `adw_plan_iso` and assigns it to themselves
-- Developer B runs the cron trigger on their machine
-- The trigger detects the command but skips it because #123 is not assigned to Developer B
-- Only Developer A's trigger will process issue #123
-
-#### Webhook Trigger Setup
-
-The webhook trigger receives GitHub issue/comment events and launches ADW workflows automatically.
-
-**Prerequisites:**
-
-- GitHub CLI (`gh`) authenticated: `gh auth login`
-- GitHub CLI webhook extension:
-  ```bash
-  gh extension install cli/gh-webhook
-  ```
-
-**Running locally (no public IP required):**
-
-1. Start the webhook server:
-   ```bash
-   uv run adws/adw_triggers/trigger_webhook.py
-   ```
-
-2. In another terminal, forward GitHub events to your local server:
-   ```bash
-   gh webhook forward \
-     --repo=<owner>/<repo> \
-     --events=issues,issue_comment \
-     --url=http://localhost:8001/gh-webhook \
-     --secret=<your-secret>
-   ```
-
-The `gh webhook forward` command creates a WebSocket tunnel to GitHub, so your machine doesn't need a public IP or tools like ngrok.
-
-> **Note**: The forward only works while the command is running. For persistent production setups, configure a webhook in GitHub repo Settings with a publicly accessible URL.
-
-> **Important**: The webhook trigger only processes issues assigned to the currently authenticated `gh` user. Issues assigned to other developers are ignored.
-
-#### Cron Trigger Setup
-
-The cron trigger polls GitHub issues at a configurable interval, detecting ADW workflow commands in issue bodies or comments.
-
-```bash
-# Start with default 20s interval
-uv run adws/adw_triggers/trigger_cron.py
-
-# Custom 30s interval
-uv run adws/adw_triggers/trigger_cron.py -i 30
-
-# Custom 60s interval
-uv run adws/adw_triggers/trigger_cron.py --interval 60
-```
-
-The cron trigger detects the same workflow commands as the webhook (e.g., `/adw_sdlc_zte_iso`, `/adw_plan_build_iso`). Write the command in an issue body or comment to trigger it.
-
-> **Important**: The cron trigger only processes issues assigned to the currently authenticated `gh` user. Issues assigned to other developers are skipped silently.
-
-#### Issue Chain Trigger Setup
-
-The issue chain trigger processes a fixed, ordered list of issues. It only works on the first open issue in the list and will not start the next issue until the current one is closed. Each cycle checks for ADW workflow commands in the issue body or latest comment.
-
-```bash
-# Pass ordered issue numbers as arguments
-uv run adws/adw_triggers/trigger_issue_chain.py 123 456 789
-
-# Or pass as a comma-separated list
-uv run adws/adw_triggers/trigger_issue_chain.py --issues 123,456,789
-
-# Custom interval
-uv run adws/adw_triggers/trigger_issue_chain.py --issues 123,456,789 --interval 30
-```
-
-The issue chain trigger detects the same workflow commands as the cron/webhook triggers. If issue `123` is still open, issue `456` will not be processed until `123` is closed.
-
-> **Important**: The issue chain trigger only processes issues assigned to the currently authenticated `gh` user. If an issue in the chain is open but not assigned to the current user, it will be skipped and the trigger will check the next issue.
-
-#### Trigger Polling Configuration
-
-| Trigger | Default Interval | Recommended Range | Notes |
-|---------|------------------|-------------------|-------|
-| `trigger_cron.py` | 20s | 15s - 60s | Lower intervals increase API usage |
-| `trigger_issue_chain.py` | 20s | 20s - 120s | Sequential processing, less frequent OK |
-
-**GitHub API Rate Limiting:**
-- Authenticated requests: 5,000/hour
-- Each polling cycle makes 1-3 API calls per open issue
-- For repos with many open issues, use longer intervals (30s+)
-- Monitor rate limits: `gh api rate_limit`
-
-### Key Concepts
-
-- **Isolation**: Each workflow runs in a dedicated git worktree under `trees/<adw-id>/`
-- **State**: Workflows share state via `adw_state.json` for multi-phase execution
-- **Ports**: Isolated port allocation (9100-9114 backend, 9200-9214 frontend) to avoid conflicts
-- **Parallel**: Multiple workflows can run simultaneously on different issues
+| `trigger_webhook.py` | GitHub webhook events |
+| `trigger_cron.py` | Scheduled polling |
+| `trigger_issue_chain.py` | Sequential issue processing |
 
 ## Configuration
 
@@ -677,100 +211,50 @@ agentic:
   model_policy:
     default: "sonnet"
     heavy: "opus"
-  worktrees:
-    enabled: true
-    max_parallel: 5
 ```
 
-## Fractal Documentation
+### Environment Variables
 
-Projects include automatic documentation generation tools:
+| Variable | Description |
+|----------|-------------|
+| `CLAUDE_CODE_PATH` | Path to Claude Code executable |
+| `ANTHROPIC_API_KEY` | For programmatic mode |
+| `GITHUB_PAT` | GitHub integration |
 
-### Generate Documentation
+## Entity Generation
+
+Generate CRUD entities for DDD projects:
 
 ```bash
-# Run fractal documentation generators
-bash scripts/run_generators.sh
-
-# Only process changed files
-bash scripts/run_generators.sh --changed-only
-
-# Preview without writing
-bash scripts/run_generators.sh --dry-run
+tac-bootstrap generate entity Product \
+  --capability catalog \
+  --fields "name:str:required,price:float" \
+  --architecture ddd
 ```
 
-### What It Does
+Generates:
+- Domain model
+- Schemas (DTOs)
+- Service layer
+- Repository
+- API routes
 
-1. **Step 1: Docstring Enrichment** (`gen_docstring_jsdocs.py`)
-   - Adds IDK-first docstrings to Python/TypeScript files
-   - Keywords, Responsibility, Invariants, Failure Modes
-
-2. **Step 2: Fractal Docs** (`gen_docs_fractal.py`)
-   - Generates one markdown per folder in `docs/`
-   - Bottom-up processing (deeper folders first)
-   - Frontmatter with IDK keywords, tags, and relationships
-
-### Slash Command
-
-Use `/generate_fractal_docs` in Claude Code:
-```
-/generate_fractal_docs changed   # Only changed files
-/generate_fractal_docs full      # All files
-```
-
-### Canonical IDK Vocabulary
-
-Edit `canonical_idk.yml` to define approved keywords for your domain. The generators use this vocabulary for consistent terminology across all documentation.
-
-## Workflows
-
-### SDLC Workflow
-
-Complete development lifecycle: Plan → Build → Test → Review → Ship
+## Development
 
 ```bash
-uv run adws/adw_sdlc_iso.py --issue 123
+make install-dev   # Install dependencies
+make test          # Run tests
+make lint          # Check code
+make format        # Format code
+make typecheck     # Type checking
 ```
-
-### Patch Workflow
-
-Quick fixes: Build → Test → Ship
-
-```bash
-uv run adws/adw_patch_iso.py --issue 456 --fix "Fix typo in README"
-```
-
-## Slash Commands
-
-After setup, use these commands with Claude Code:
-
-| Command | Description |
-|---------|-------------|
-| `/prime` | Load project context |
-| `/start` | Start the application |
-| `/test` | Run tests |
-| `/feature <desc>` | Plan a new feature |
-| `/bug <desc>` | Plan a bug fix |
-| `/implement <plan>` | Implement from plan |
-| `/commit` | Create git commit |
-| `/review <plan>` | Review implementation |
 
 ## Requirements
 
 - Python 3.10+
 - Git
 - Claude Code CLI
-- SQLAlchemy (for generated DDD projects)
-- FastAPI (for generated API projects)
-
-### Optional (for Fractal Documentation)
-
-- OpenAI-compatible API (Ollama local recommended)
-- `OPENAI_BASE_URL` and `OPENAI_API_KEY` environment variables
-
-## Contributing
-
-Contributions welcome! Please read CONTRIBUTING.md first.
+- uv (recommended)
 
 ## License
 

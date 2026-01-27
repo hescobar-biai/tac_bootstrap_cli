@@ -429,6 +429,81 @@ def implement_plan(
     return implement_response
 
 
+def implement_plan_with_report(
+    plan_file: str,
+    adw_id: str,
+    logger: logging.Logger,
+    agent_name: Optional[str] = None,
+    working_dir: Optional[str] = None,
+) -> AgentPromptResponse:
+    """Implement the plan using /build_w_report command (TAC-10).
+
+    This variant generates a structured YAML report of all changes made,
+    useful for tracking and documentation purposes.
+
+    Returns:
+        AgentPromptResponse with output containing YAML work_changes report
+    """
+    implementor_name = agent_name or AGENT_IMPLEMENTOR
+
+    implement_template_request = AgentTemplateRequest(
+        agent_name=implementor_name,
+        slash_command="/build_w_report",
+        args=[plan_file],
+        adw_id=adw_id,
+        working_dir=working_dir,
+    )
+
+    logger.debug(
+        f"implement_with_report_request: {implement_template_request.model_dump_json(indent=2, by_alias=True)}"
+    )
+
+    implement_response = execute_template(implement_template_request)
+
+    logger.debug(
+        f"implement_with_report_response: {implement_response.model_dump_json(indent=2, by_alias=True)}"
+    )
+
+    return implement_response
+
+
+def load_ai_docs(
+    topic: str,
+    adw_id: str,
+    logger: logging.Logger,
+    working_dir: Optional[str] = None,
+) -> AgentPromptResponse:
+    """Load AI documentation for a topic using /load_ai_docs command (TAC-9).
+
+    This fetches and integrates external documentation into project context
+    before planning or implementation phases.
+
+    Args:
+        topic: Documentation topic to load (e.g., "FastAPI authentication")
+        adw_id: ADW session ID
+        logger: Logger instance
+        working_dir: Optional working directory
+
+    Returns:
+        AgentPromptResponse with loaded documentation summary
+    """
+    request = AgentTemplateRequest(
+        agent_name="docs_loader",
+        slash_command="/load_ai_docs",
+        args=[topic],
+        adw_id=adw_id,
+        working_dir=working_dir,
+    )
+
+    logger.debug(f"Loading AI docs for topic: {topic}")
+
+    response = execute_template(request)
+
+    logger.debug(f"load_ai_docs response: {response.output[:200] if response.output else 'empty'}")
+
+    return response
+
+
 def clean_model_output(output: str) -> str:
     """Clean model output by removing markdown code blocks and extra whitespace.
 

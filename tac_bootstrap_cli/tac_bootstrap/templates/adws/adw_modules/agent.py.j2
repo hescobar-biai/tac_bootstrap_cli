@@ -28,24 +28,44 @@ CLAUDE_PATH = os.getenv("CLAUDE_CODE_PATH", "claude")
 # Model selection mapping for slash commands
 # Maps each command to its model configuration for base and heavy model sets
 SLASH_COMMAND_MODEL_MAP: Final[Dict[SlashCommand, Dict[ModelSet, str]]] = {
+    # Classification and generation (lightweight)
     "/classify_issue": {"base": "sonnet", "heavy": "sonnet"},
     "/classify_adw": {"base": "sonnet", "heavy": "sonnet"},
     "/generate_branch_name": {"base": "sonnet", "heavy": "sonnet"},
+    # Implementation (can benefit from opus for complex tasks)
     "/implement": {"base": "sonnet", "heavy": "opus"},
+    "/build_w_report": {"base": "sonnet", "heavy": "opus"},  # TAC-10: Build with YAML report
+    # Testing
     "/test": {"base": "sonnet", "heavy": "sonnet"},
     "/resolve_failed_test": {"base": "sonnet", "heavy": "opus"},
     "/test_e2e": {"base": "sonnet", "heavy": "sonnet"},
     "/resolve_failed_e2e_test": {"base": "sonnet", "heavy": "opus"},
+    # Review and documentation
     "/review": {"base": "sonnet", "heavy": "sonnet"},
     "/document": {"base": "sonnet", "heavy": "opus"},
+    "/in_loop_review": {"base": "sonnet", "heavy": "sonnet"},  # TAC-9: Quick review
+    # Git operations (lightweight)
     "/commit": {"base": "sonnet", "heavy": "sonnet"},
     "/pull_request": {"base": "sonnet", "heavy": "sonnet"},
+    # Planning (can benefit from opus for complex planning)
     "/chore": {"base": "sonnet", "heavy": "opus"},
     "/bug": {"base": "sonnet", "heavy": "opus"},
     "/feature": {"base": "sonnet", "heavy": "opus"},
     "/patch": {"base": "sonnet", "heavy": "opus"},
+    "/quick-plan": {"base": "sonnet", "heavy": "opus"},  # TAC-10: Rapid planning
+    # Worktree and utilities
     "/install_worktree": {"base": "sonnet", "heavy": "sonnet"},
     "/track_agentic_kpis": {"base": "sonnet", "heavy": "sonnet"},
+    "/health_check": {"base": "sonnet", "heavy": "sonnet"},  # TAC-9: Health check
+    # TAC-9/10: Context and documentation loading
+    "/load_ai_docs": {"base": "sonnet", "heavy": "sonnet"},  # TAC-9: Load AI docs
+    "/load_bundle": {"base": "sonnet", "heavy": "sonnet"},  # TAC-9: Load context bundle
+    "/prime_cc": {"base": "sonnet", "heavy": "sonnet"},  # TAC-9: Claude Code priming
+    # TAC-10: Agent delegation (opus for complex orchestration)
+    "/background": {"base": "sonnet", "heavy": "opus"},  # TAC-10: Background delegation
+    "/parallel_subagents": {"base": "sonnet", "heavy": "opus"},  # TAC-10: Parallel agents
+    # TAC-10: Meta-prompting (opus for prompt generation)
+    "/t_metaprompt_workflow": {"base": "sonnet", "heavy": "opus"},  # TAC-10: Meta-prompt
 }
 
 
