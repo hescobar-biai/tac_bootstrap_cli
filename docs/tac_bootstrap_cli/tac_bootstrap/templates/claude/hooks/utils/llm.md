@@ -2,23 +2,24 @@
 doc_type: folder
 domain: tac-bootstrap-cli/tac-bootstrap/templates/claude/hooks/utils/llm
 owner: UNKNOWN
-level: L3
+level: L5
 tags:
-  - expert:frontend
-  - level:L3
-  - topic:routing
+  - expert:backend
+  - level:L5
+  - topic:api
+last_reviewed: UNKNOWN
 idk:
-  - routing
-  - hooks
-  - llm
-  - template
-  - util
-  - cli
+  - llm-utilities
+  - hook-helpers
+  - template-utils
+  - claude-integration
+  - ai-operations
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm
-children:
-  - 
+children: []
+source_readmes: []
 ---
+
 # Overview
 
 This folder contains utility functions for the LLM (Large Language Model) hook in the Claude template.
