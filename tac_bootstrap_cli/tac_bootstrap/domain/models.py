@@ -425,7 +425,7 @@ class BootstrapMetadata(BaseModel):
 
         generated_by: Identifier string for the TAC Bootstrap version that created
             the project. Format: "tac-bootstrap v{version}"
-            Example: "tac-bootstrap v0.4.1"
+            Example: "tac-bootstrap v0.5.0"
 
         last_upgrade: Optional ISO8601 timestamp string for the last time the project
             was upgraded or regenerated. None if never upgraded.
@@ -445,7 +445,7 @@ class BootstrapMetadata(BaseModel):
     Example:
         metadata = BootstrapMetadata(
             generated_at="2024-01-15T10:30:00.123456",
-            generated_by="tac-bootstrap v0.4.1",
+            generated_by="tac-bootstrap v0.5.0",
             last_upgrade=None,
             schema_version=2,
             template_checksums={
@@ -492,7 +492,7 @@ class TACConfig(BaseModel):
 
     Example:
         config = TACConfig(
-            version="0.4.1",
+            version="0.5.0",
             schema_version=1,
             project=ProjectSpec(
                 name="my-app",
