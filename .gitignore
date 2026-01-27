@@ -64,6 +64,7 @@ agents/*
 !agents/context_bundles/
 !agents/hook_logs/
 !agents/scout_files/
+!agents/security_logs/
 !tac_bootstrap_cli/tac_bootstrap/templates/claude/agents/
 
 claude-max-output.json
@@ -120,6 +121,7 @@ agents/*
 !agents/context_bundles/
 !agents/hook_logs/
 !agents/scout_files/
+!agents/security_logs/
 !tac_bootstrap_cli/tac_bootstrap/templates/claude/agents/
 
 # Git worktrees
