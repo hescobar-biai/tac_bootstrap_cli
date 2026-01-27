@@ -5,6 +5,39 @@ All notable changes to TAC Bootstrap will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-01-27
+
+### Added
+
+#### Security Features (TAC-11)
+- Security hook: `dangerous_command_blocker.py` - Pre-execution validation for Bash commands that blocks destructive operations (rm -rf, dd to devices, mkfs, chmod -R 777, etc.) with safer alternative suggestions and audit trail logging
+- Directory: `agents/security_logs/` - Audit trail for blocked dangerous commands (JSON lines format)
+- Template: `tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/dangerous_command_blocker.py.j2` - Hook template for generated projects
+
+#### New Commands (TAC-11)
+- `/scout` command - Multi-model parallel codebase exploration using TAC-10 Level 4 delegation pattern. Launches 2-10 parallel Explore agents with different search strategies (file patterns, content search, architecture analysis, dependency mapping, tests, configs, types, docs) to identify relevant files for a task. Produces frequency-scored aggregated reports saved to `agents/scout_files/`
+- `/question` command - Read-only Q&A mode for answering questions about project structure, architecture, and documentation using git ls-files exploration and Read tool
+- Directory: `agents/scout_files/` - Storage for scout exploration reports with timestamps
+- Template: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/scout.md.j2` - Scout command template for generated projects
+- Template: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/question.md.j2` - Question command template for generated projects
+- Template: `tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/scout_files/.gitkeep.j2` - Scout files directory template
+
+#### Parallel Workflow Execution (TAC-11)
+- Trigger: `adws/adw_triggers/trigger_issue_parallel.py` - Parallel ADW trigger that processes multiple GitHub issues simultaneously using ThreadPoolExecutor. Unlike sequential `trigger_issue_chain.py`, this trigger launches workflows concurrently for all open assigned issues, with configurable max concurrent workers (default: 5) and polling interval (default: 20s). Includes graceful shutdown, thread-safe tracking, and `--once` flag for single-cycle testing
+- Template: `tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers/trigger_issue_parallel.py.j2` - Parallel trigger template for generated projects
+
+### Changed
+- settings.json now includes dangerous_command_blocker.py in hooks configuration with blockIfNonzeroExit behavior
+- Scaffold service creates `agents/security_logs/` and `agents/scout_files/` directories with .gitkeep files
+- Extended ADW trigger capabilities from sequential-only to concurrent parallel processing
+
+### Technical Details
+All TAC-11 features follow established patterns:
+- Security hook uses pre-execution blocking (exit code 2) with comprehensive pattern matching
+- Scout command implements TAC-10 Level 4 delegation with Haiku agents for cost efficiency
+- Parallel trigger uses thread-safe tracking with locks for concurrent workflow management
+- All features include Jinja2 templates for seamless integration in generated projects
+
 ## [0.5.1] - 2026-01-26
 
 ### Added
