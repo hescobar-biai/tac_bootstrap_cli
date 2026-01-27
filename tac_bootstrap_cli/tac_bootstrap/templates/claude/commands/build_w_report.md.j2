@@ -1,0 +1,183 @@
+---
+allowed-tools: Read, Write, Edit, Bash
+description: Implement a plan and generate a detailed YAML report of all code changes
+---
+
+# Build with Report
+
+Implement a plan from a specification file and automatically generate a detailed YAML report documenting all code changes made during implementation.
+
+## Variables
+
+PATH_TO_PLAN: $ARGUMENTS (path to the plan/spec file to implement)
+
+## Instructions
+
+### 1. Validate Plan File
+
+First, verify that the plan file exists:
+
+```bash
+if [ ! -f "$PATH_TO_PLAN" ]; then
+    echo "Error: Plan file not found at: $PATH_TO_PLAN"
+    exit 1
+fi
+```
+
+If the file doesn't exist, stop immediately with a clear error message.
+
+### 2. Read and Analyze the Plan
+
+Read the plan file to understand:
+- The feature or task requirements
+- Implementation steps
+- Files that need to be modified or created
+- Any validation commands specified
+
+### 3. Implement the Changes
+
+Follow the plan carefully:
+- Follow {{ config.project.architecture.value }} architecture patterns if applicable
+- Create or modify files as specified in the plan
+- Ensure code quality and adherence to project conventions
+- Handle edge cases appropriately
+
+### 4. Run Validation Commands (if specified in plan)
+
+If the plan includes validation commands, run them:
+
+{% if config.commands.test %}
+- `{{ config.commands.test }}` - Run tests
+{% endif %}
+{% if config.commands.lint %}
+- `{{ config.commands.lint }}` - Run linter
+{% endif %}
+{% if config.commands.typecheck %}
+- `{{ config.commands.typecheck }}` - Run type checker
+{% endif %}
+
+### 5. Generate Change Report
+
+After implementation, generate a detailed YAML report of all changes:
+
+#### Step 5.1: Get Git Statistics
+
+Run git diff to collect change statistics:
+
+```bash
+git diff --numstat
+```
+
+This outputs: `<lines_added> <lines_deleted> <file_path>` for each changed file.
+
+#### Step 5.2: Get Current Git Context
+
+Get the current branch name and timestamp:
+
+```bash
+git branch --show-current
+date -u +"%Y-%m-%dT%H:%M:%SZ"
+```
+
+#### Step 5.3: Parse Git Diff for Descriptions
+
+For each changed file, extract meaningful descriptions from the git diff context:
+
+```bash
+git diff <file_path>
+```
+
+Look for:
+- Function or method names that were added/modified
+- Class names
+- Significant code blocks
+- Comments explaining the changes
+
+For binary files, note "Binary file changed"
+
+#### Step 5.4: Create YAML Report Structure
+
+Build the YAML report with this structure:
+
+```yaml
+metadata:
+  timestamp: "<ISO 8601 timestamp>"
+  branch: "<current branch name>"
+  plan_file: "<PATH_TO_PLAN>"
+
+work_changes:
+  - file: "<relative/path/to/file>"
+    lines_added: <integer>
+    lines_deleted: <integer>
+    description: "<brief description of changes>"
+
+  - file: "<another/file>"
+    lines_added: <integer>
+    lines_deleted: <integer>
+    description: "<brief description>"
+
+summary:
+  total_files_changed: <integer>
+  total_lines_added: <integer>
+  total_lines_deleted: <integer>
+```
+
+#### Step 5.5: Handle Edge Cases
+
+- **No changes detected**: Create report with empty `work_changes: []` array and add note "No changes detected"
+- **Binary files**: Set `lines_added: 0`, `lines_deleted: 0`, `description: "Binary file changed"`
+- **Large diffs**: Summarize the main changes rather than listing every detail
+
+#### Step 5.6: Write Report to File
+
+Save the report with a timestamped filename:
+
+```
+build_report_YYYY-MM-DD_HHMMSS.yaml
+```
+
+Example: `build_report_2026-01-26_143022.yaml`
+
+### 6. Report Results
+
+After generating the report, inform the user:
+
+- Report file location and name
+- Summary of changes:
+  - Total files changed
+  - Total lines added
+  - Total lines deleted
+- List of modified files
+- Status of implementation (success/partial/failed)
+
+If any validation commands failed, note that in the output.
+
+## Example Output
+
+```
+Implementation complete!
+
+Generated report: build_report_2026-01-26_143022.yaml
+
+Summary:
+- Files changed: 5
+- Lines added: 247
+- Lines deleted: 89
+
+Modified files:
+- tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/build_w_report.md.j2
+- .claude/commands/build_w_report.md
+- tests/test_templates.py
+- README.md
+- docs/commands.md
+
+All validation commands passed.
+```
+
+## Notes
+
+- This command requires a git repository to generate the report
+- The YAML report is machine-readable and can be used for CI/CD pipelines, documentation generation, or audit trails
+- Report files are timestamped to maintain a complete history without overwriting previous reports
+- Binary file changes are tracked but line counts are set to 0
+- The report generation happens AFTER implementation is complete
