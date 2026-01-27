@@ -1,0 +1,288 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.8"
+# ///
+
+"""
+Dangerous Command Blocker Security Hook
+
+This hook intercepts Bash tool calls and validates them against dangerous command patterns
+before execution. It protects users from accidentally running destructive operations like
+`rm -rf /`, `dd` to critical devices, `mkfs`, and other commands that could cause data loss
+or system damage.
+
+The hook operates in pre-execution blocking mode, analyzing the full command string and
+blocking dangerous operations with informative error messages that include safer alternatives.
+All blocked commands are logged to a security audit trail.
+
+Exit Codes:
+    0: Command is safe, allow execution
+    2: Command is dangerous, block execution
+"""
+
+import json
+import sys
+import re
+import os
+from pathlib import Path
+from datetime import datetime, timezone
+
+# Comprehensive list of dangerous command patterns
+DANGEROUS_PATTERNS = [
+    # rm -rf variants (comprehensive matching)
+    r'\brm\s+.*-[a-z]*[rf][a-z]*[rf]',  # rm -rf, rm -fr, etc.
+    r'\brm\s+--recursive\s+--force',     # rm --recursive --force
+    r'\brm\s+--force\s+--recursive',     # rm --force --recursive
+
+    # dd to devices (can wipe disks)
+    r'\bdd\s+.*of=/dev/',                # dd to any device
+
+    # mkfs (filesystem creation - destroys data)
+    r'\bmkfs\.',                         # mkfs.ext4, mkfs.xfs, etc.
+
+    # format commands (destructive)
+    r'\bformat\s+',                      # format command
+
+    # shred (secure file deletion)
+    r'\bshred\s+',                       # shred command
+
+    # wipefs (wipe filesystem signatures)
+    r'\bwipefs\s+',                      # wipefs command
+
+    # Recursive chmod 777 (security vulnerability) - case insensitive patterns
+    r'\bchmod\s+.*-r.*777',              # chmod -r 777 (lowercase after normalize)
+    r'\bchmod\s+-r.*777',                # chmod -r 777 (any order)
+
+    # Recursive chown on critical paths
+    r'\bchown\s+.*-r.*/',                # chown -r on any absolute path
+]
+
+# Critical system paths that should never be modified destructively
+CRITICAL_PATHS = [
+    '/',
+    '/etc',
+    '/usr',
+    '/bin',
+    '/sbin',
+    '/lib',
+    '/lib64',
+    '/boot',
+    '/home',
+    '/root',
+    '/var',
+    '/sys',
+    '/proc',
+    '/dev',
+]
+
+# Mapping of dangerous operations to safer alternatives
+SAFER_ALTERNATIVES = {
+    'rm_root': 'Use specific paths instead of root: rm -rf ./specific_folder',
+    'rm_critical': 'Use specific paths in /tmp or project directories: rm -rf /tmp/myapp_temp',
+    'dd_device': 'Verify device paths carefully and use dd with appropriate flags: dd if=source of=/path/to/file',
+    'mkfs': 'Double-check device path and backup data: mkfs.ext4 /dev/specific_device',
+    'chmod_777': 'Use appropriate permissions like 755 or 644: chmod -R 755 ./directory',
+    'chown_critical': 'Use specific non-system paths: chown -R user:group ./project_dir',
+    'format': 'Verify disk path and backup data before formatting',
+    'shred': 'Use rm for normal deletion, shred only for sensitive data on specific files',
+    'wipefs': 'Verify device path carefully and backup data before wiping signatures',
+}
+
+
+def is_dangerous_command(command: str) -> tuple[bool, str]:
+    """
+    Check if a command is dangerous based on patterns and critical paths.
+
+    Args:
+        command: The bash command string to validate
+
+    Returns:
+        Tuple of (is_dangerous: bool, reason: str)
+        - (True, reason) if dangerous pattern detected
+        - (False, "") if safe
+    """
+    # Normalize command for analysis
+    normalized = ' '.join(command.lower().split())
+
+    # Special cases that are always dangerous (check first)
+    # dd to devices (always dangerous)
+    if re.search(r'\bdd\s+.*of=/dev/', normalized):
+        reason = f"Command uses 'dd' to write directly to a device, which can cause data loss"
+        return (True, reason)
+
+    # mkfs always requires careful validation
+    if re.search(r'\bmkfs\.', normalized):
+        reason = f"Command uses 'mkfs' which destroys existing filesystem data"
+        return (True, reason)
+
+    # chmod -R 777 (security vulnerability) - note: -R becomes -r in normalized lowercase
+    if re.search(r'\bchmod\s+.*-r.*777', normalized) or re.search(r'\bchmod\s+-r.*777', normalized):
+        reason = f"Command uses 'chmod -R 777' which creates severe security vulnerabilities"
+        return (True, reason)
+
+    # shred, wipefs, format
+    if re.search(r'\b(shred|wipefs|format)\s+', normalized):
+        reason = f"Command uses data destruction tool that can cause permanent data loss"
+        return (True, reason)
+
+    # Check for dangerous patterns that need critical path validation
+    for pattern in DANGEROUS_PATTERNS:
+        if re.search(pattern, normalized):
+            # Found a dangerous pattern, now check context
+
+            # Check if command involves critical paths
+            for critical_path in CRITICAL_PATHS:
+                # Match critical path as standalone or with wildcards
+                path_patterns = [
+                    rf'\s{re.escape(critical_path)}\s',  # Exact path with spaces
+                    rf'\s{re.escape(critical_path)}$',   # Path at end
+                    rf'\s{re.escape(critical_path)}/\*', # Path with wildcard
+                    rf'={re.escape(critical_path)}',     # Path after =
+                ]
+
+                for path_pattern in path_patterns:
+                    if re.search(path_pattern, normalized):
+                        reason = f"Command matches dangerous pattern '{pattern}' and targets critical path '{critical_path}'"
+                        return (True, reason)
+
+            # Special case: rm -rf with variables or command substitution
+            if re.search(r'\brm\s+.*-[a-z]*r', normalized):
+                if re.search(r'\$\w+|\$\{|\$\(', command):
+                    reason = f"Command uses rm -rf with variables/command substitution which could expand to dangerous paths"
+                    return (True, reason)
+
+    return (False, "")
+
+
+def suggest_safer_alternative(command: str, reason: str) -> str:
+    """
+    Suggest a safer alternative for a dangerous command.
+
+    Args:
+        command: The dangerous command
+        reason: The reason it was blocked
+
+    Returns:
+        String with suggested safer alternative
+    """
+    normalized = command.lower()
+
+    # Match specific dangerous operations
+    if 'rm' in normalized and 'rf' in reason.lower():
+        # Check for critical paths
+        for critical in CRITICAL_PATHS:
+            if critical in normalized:
+                return SAFER_ALTERNATIVES['rm_critical']
+        return SAFER_ALTERNATIVES['rm_root']
+
+    if 'dd' in normalized and 'of=/dev/' in normalized:
+        return SAFER_ALTERNATIVES['dd_device']
+
+    if 'mkfs.' in normalized:
+        return SAFER_ALTERNATIVES['mkfs']
+
+    if 'chmod' in normalized and '777' in normalized:
+        return SAFER_ALTERNATIVES['chmod_777']
+
+    if 'chown' in normalized and '-r' in normalized:
+        return SAFER_ALTERNATIVES['chown_critical']
+
+    if 'format' in normalized:
+        return SAFER_ALTERNATIVES['format']
+
+    if 'shred' in normalized:
+        return SAFER_ALTERNATIVES['shred']
+
+    if 'wipefs' in normalized:
+        return SAFER_ALTERNATIVES['wipefs']
+
+    # Generic fallback
+    return "Review the command carefully and use specific paths in project or /tmp directories"
+
+
+def log_blocked_command(command: str, reason: str, alternative: str):
+    """
+    Log a blocked command to the security audit trail.
+
+    Args:
+        command: The blocked command
+        reason: Why it was blocked
+        alternative: Suggested safer alternative
+    """
+    try:
+        # Create security logs directory if it doesn't exist
+        log_dir = Path('agents/security_logs')
+        log_dir.mkdir(parents=True, exist_ok=True, mode=0o755)
+
+        # Prepare log entry
+        log_entry = {
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'command': command,
+            'reason': reason,
+            'suggested_alternative': alternative,
+            'blocked': True
+        }
+
+        # Append to JSON lines file
+        log_file = log_dir / 'blocked_commands.jsonl'
+        with open(log_file, 'a') as f:
+            f.write(json.dumps(log_entry) + '\n')
+
+    except Exception as e:
+        # Log to stderr but don't fail the hook
+        print(f"Warning: Failed to log blocked command: {e}", file=sys.stderr)
+
+
+def main():
+    """
+    Main hook logic: read stdin, validate command, block if dangerous.
+    """
+    try:
+        # Read JSON input from stdin
+        input_data = json.load(sys.stdin)
+
+        tool_name = input_data.get('tool_name', '')
+        tool_input = input_data.get('tool_input', {})
+
+        # Only process Bash tool calls
+        if tool_name != 'Bash':
+            sys.exit(0)
+
+        # Extract command from tool input
+        command = tool_input.get('command', '')
+
+        # Check if command is dangerous
+        is_dangerous, reason = is_dangerous_command(command)
+
+        if is_dangerous:
+            # Generate safer alternative suggestion
+            alternative = suggest_safer_alternative(command, reason)
+
+            # Log the blocked command
+            log_blocked_command(command, reason, alternative)
+
+            # Write error message to stderr
+            print("=" * 80, file=sys.stderr)
+            print("BLOCKED: Dangerous command detected", file=sys.stderr)
+            print("=" * 80, file=sys.stderr)
+            print(f"\nReason: {reason}", file=sys.stderr)
+            print(f"\nBlocked command:\n{command}", file=sys.stderr)
+            print(f"\nSafer alternative:\n{alternative}", file=sys.stderr)
+            print("\n" + "=" * 80, file=sys.stderr)
+
+            # Exit with code 2 to block execution
+            sys.exit(2)
+
+        # Command is safe, allow execution
+        sys.exit(0)
+
+    except json.JSONDecodeError:
+        # Gracefully handle JSON decode errors (allow execution)
+        sys.exit(0)
+    except Exception:
+        # Handle any other errors gracefully (allow execution)
+        sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()
