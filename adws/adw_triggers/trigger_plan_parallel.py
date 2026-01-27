@@ -1,0 +1,559 @@
+#!/usr/bin/env uv run
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "pydantic",
+#     "python-dotenv",
+# ]
+# ///
+
+"""
+Plan-based parallel ADW trigger that processes tasks from a markdown plan file.
+
+This trigger reads a structured plan file (like plan_tasks_Tac_12.md), extracts
+tasks from it, and executes them in parallel using ADW workflows or direct
+Claude Code execution.
+
+Usage:
+    uv run trigger_plan_parallel.py plan.md
+    uv run trigger_plan_parallel.py plan.md --workflow adw_sdlc_zte_iso
+    uv run trigger_plan_parallel.py plan.md --max-concurrent 5
+    uv run trigger_plan_parallel.py plan.md --tasks 1,2,3,4,5
+    uv run trigger_plan_parallel.py plan.md --group P1
+    uv run trigger_plan_parallel.py plan.md --dry-run
+
+Plan File Format:
+    Tasks are extracted from markdown with pattern:
+    #### Task N
+    **[TYPE] Description**
+    - **Description:** ...
+    - **File:** ...
+
+Example:
+    uv run adws/adw_triggers/trigger_plan_parallel.py ai_docs/doc/plan_tasks_Tac_12.md --group P1
+"""
+
+import argparse
+import os
+import re
+import signal
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
+from pathlib import Path
+from threading import Lock
+from typing import Dict, List, Optional, Set, Tuple
+
+from dotenv import load_dotenv
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from adw_modules.state import ADWState
+from adw_modules.utils import get_safe_subprocess_env, make_adw_id, setup_logger
+
+# Load environment variables
+load_dotenv()
+
+# Thread-safe tracking
+active_tasks: Dict[int, str] = {}  # task_number -> adw_id
+completed_tasks: Set[int] = set()
+failed_tasks: Set[int] = set()
+tracking_lock = Lock()
+
+# Graceful shutdown
+shutdown_requested = False
+
+
+@dataclass
+class PlanTask:
+    """Represents a task extracted from a plan file."""
+    number: int
+    task_type: str  # FEATURE, CHORE, BUG, etc.
+    title: str
+    description: str
+    file_path: Optional[str] = None
+    changes: Optional[str] = None
+    dependencies: List[int] = field(default_factory=list)
+    group: Optional[str] = None  # P1, P2, etc.
+
+    def to_prompt(self) -> str:
+        """Convert task to a prompt for Claude Code."""
+        prompt_parts = [
+            f"# Task {self.number}: {self.title}",
+            f"\n## Type: {self.task_type}",
+            f"\n## Description\n{self.description}",
+        ]
+
+        if self.file_path:
+            prompt_parts.append(f"\n## Target File\n{self.file_path}")
+
+        if self.changes:
+            prompt_parts.append(f"\n## Changes Required\n{self.changes}")
+
+        prompt_parts.append("\n## Instructions")
+        prompt_parts.append("1. Implement the task as described above")
+        prompt_parts.append("2. Follow existing code patterns in the codebase")
+        prompt_parts.append("3. Create any necessary files or directories")
+        prompt_parts.append("4. Report completion status")
+
+        return "\n".join(prompt_parts)
+
+
+def signal_handler(signum, frame):
+    """Handle shutdown signals gracefully."""
+    global shutdown_requested
+    print(f"\nINFO: Received signal {signum}, initiating graceful shutdown...")
+    shutdown_requested = True
+
+
+def parse_plan_file(plan_path: str) -> List[PlanTask]:
+    """Parse a markdown plan file and extract tasks."""
+    tasks: List[PlanTask] = []
+
+    with open(plan_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # Find all task blocks
+    # Pattern: #### Task N followed by content until next #### Task or ## Wave
+    task_pattern = re.compile(
+        r'####\s+Task\s+(\d+)\s*\n'
+        r'\*\*\[([A-Z]+)\]\s*(.+?)\*\*\s*\n'
+        r'(.*?)(?=####\s+Task\s+\d+|##\s+Wave|---|\Z)',
+        re.DOTALL
+    )
+
+    # Find group mappings from the parallel execution section
+    group_pattern = re.compile(
+        r'\|\s*\*\*P(\d+)\*\*\s*\|\s*([\d,-]+)\s*\|',
+        re.MULTILINE
+    )
+
+    task_to_group: Dict[int, str] = {}
+    for match in group_pattern.finditer(content):
+        group_name = f"P{match.group(1)}"
+        task_range = match.group(2)
+        # Parse task numbers (e.g., "1-9" or "10-13" or "21-22")
+        for part in task_range.split(','):
+            part = part.strip()
+            if '-' in part:
+                start, end = map(int, part.split('-'))
+                for t in range(start, end + 1):
+                    task_to_group[t] = group_name
+            elif part.isdigit():
+                task_to_group[int(part)] = group_name
+
+    for match in task_pattern.finditer(content):
+        task_number = int(match.group(1))
+        task_type = match.group(2)
+        title = match.group(3).strip()
+        body = match.group(4).strip()
+
+        # Extract description
+        desc_match = re.search(r'\*\*Description:\*\*\s*(.+?)(?=\n-\s*\*\*|\n\n|$)', body, re.DOTALL)
+        description = desc_match.group(1).strip() if desc_match else body[:500]
+
+        # Extract file path
+        file_match = re.search(r'\*\*File[s]?:\*\*\s*[`]?([^`\n]+)[`]?', body)
+        file_path = file_match.group(1).strip() if file_match else None
+
+        # Extract changes
+        changes_match = re.search(r'\*\*Changes:\*\*\s*(.+?)(?=\n-\s*\*\*|\n\n|$)', body, re.DOTALL)
+        changes = changes_match.group(1).strip() if changes_match else None
+
+        task = PlanTask(
+            number=task_number,
+            task_type=task_type,
+            title=title,
+            description=description,
+            file_path=file_path,
+            changes=changes,
+            group=task_to_group.get(task_number),
+        )
+        tasks.append(task)
+
+    return sorted(tasks, key=lambda t: t.number)
+
+
+def filter_tasks(
+    tasks: List[PlanTask],
+    task_numbers: Optional[List[int]] = None,
+    group: Optional[str] = None,
+    exclude_completed: bool = True,
+) -> List[PlanTask]:
+    """Filter tasks based on criteria."""
+    filtered = tasks
+
+    if task_numbers:
+        filtered = [t for t in filtered if t.number in task_numbers]
+
+    if group:
+        filtered = [t for t in filtered if t.group == group.upper()]
+
+    if exclude_completed:
+        with tracking_lock:
+            filtered = [t for t in filtered if t.number not in completed_tasks]
+
+    return filtered
+
+
+def execute_task_with_workflow(
+    task: PlanTask,
+    workflow: str,
+    adw_id: str,
+    repo_root: Path,
+) -> Tuple[bool, str]:
+    """Execute a task using an ADW workflow."""
+    logger = setup_logger(adw_id, f"plan_task_{task.number}")
+    logger.info(f"Executing Task {task.number} with workflow {workflow}")
+
+    try:
+        adws_dir = repo_root / "adws"
+        workflow_script = adws_dir / f"{workflow}.py"
+
+        if not workflow_script.exists():
+            return False, f"Workflow script not found: {workflow_script}"
+
+        # Create a temporary issue-like context for the workflow
+        # For now, we'll pass the task number as a pseudo-issue
+        cmd = ["uv", "run", str(workflow_script), str(task.number), adw_id]
+
+        print(f"INFO: Running: {' '.join(cmd)}")
+
+        result = subprocess.run(
+            cmd,
+            cwd=str(repo_root),
+            env=get_safe_subprocess_env(),
+            capture_output=True,
+            text=True,
+            timeout=1800,  # 30 minute timeout per task
+        )
+
+        if result.returncode == 0:
+            return True, f"Task {task.number} completed successfully"
+        else:
+            return False, f"Task {task.number} failed: {result.stderr[:500]}"
+
+    except subprocess.TimeoutExpired:
+        return False, f"Task {task.number} timed out after 30 minutes"
+    except Exception as e:
+        return False, f"Task {task.number} error: {str(e)}"
+
+
+def execute_task_with_claude(
+    task: PlanTask,
+    adw_id: str,
+    repo_root: Path,
+    model: str = "sonnet",
+) -> Tuple[bool, str]:
+    """Execute a task directly using Claude Code CLI."""
+    logger = setup_logger(adw_id, f"plan_task_{task.number}")
+    logger.info(f"Executing Task {task.number} with Claude Code")
+
+    try:
+        prompt = task.to_prompt()
+
+        # Create log directory
+        log_dir = repo_root / "agents" / adw_id / f"task_{task.number}"
+        log_dir.mkdir(parents=True, exist_ok=True)
+
+        # Write prompt to file
+        prompt_file = log_dir / "prompt.md"
+        with open(prompt_file, 'w') as f:
+            f.write(prompt)
+
+        # Build claude command
+        cmd = [
+            "claude",
+            "--model", model,
+            "--dangerously-skip-permissions",
+            "--print",
+            "-p", prompt,
+        ]
+
+        print(f"INFO: Running Claude for Task {task.number}")
+
+        result = subprocess.run(
+            cmd,
+            cwd=str(repo_root),
+            env=get_safe_subprocess_env(),
+            capture_output=True,
+            text=True,
+            timeout=1800,  # 30 minute timeout
+        )
+
+        # Write output to log
+        output_file = log_dir / "output.md"
+        with open(output_file, 'w') as f:
+            f.write(f"# Task {task.number} Output\n\n")
+            f.write(f"## Exit Code: {result.returncode}\n\n")
+            f.write(f"## STDOUT\n```\n{result.stdout}\n```\n\n")
+            if result.stderr:
+                f.write(f"## STDERR\n```\n{result.stderr}\n```\n")
+
+        if result.returncode == 0:
+            return True, f"Task {task.number} completed successfully"
+        else:
+            return False, f"Task {task.number} failed with exit code {result.returncode}"
+
+    except subprocess.TimeoutExpired:
+        return False, f"Task {task.number} timed out after 30 minutes"
+    except FileNotFoundError:
+        return False, "Claude CLI not found. Install with: npm install -g @anthropic-ai/claude-code"
+    except Exception as e:
+        return False, f"Task {task.number} error: {str(e)}"
+
+
+def process_single_task(
+    task: PlanTask,
+    workflow: Optional[str],
+    repo_root: Path,
+    model: str = "sonnet",
+) -> Tuple[int, bool, str]:
+    """Process a single task - designed for parallel execution."""
+    if shutdown_requested:
+        return task.number, False, "Shutdown requested"
+
+    # Check if already running
+    with tracking_lock:
+        if task.number in active_tasks:
+            return task.number, False, "Task already running"
+        if task.number in completed_tasks:
+            return task.number, True, "Task already completed"
+
+    # Generate ADW ID for this task
+    adw_id = make_adw_id()
+
+    with tracking_lock:
+        active_tasks[task.number] = adw_id
+
+    try:
+        if workflow:
+            success, message = execute_task_with_workflow(task, workflow, adw_id, repo_root)
+        else:
+            success, message = execute_task_with_claude(task, adw_id, repo_root, model)
+
+        with tracking_lock:
+            active_tasks.pop(task.number, None)
+            if success:
+                completed_tasks.add(task.number)
+            else:
+                failed_tasks.add(task.number)
+
+        return task.number, success, message
+
+    except Exception as e:
+        with tracking_lock:
+            active_tasks.pop(task.number, None)
+            failed_tasks.add(task.number)
+        return task.number, False, f"Exception: {str(e)}"
+
+
+def execute_tasks_parallel(
+    tasks: List[PlanTask],
+    max_concurrent: int,
+    workflow: Optional[str],
+    repo_root: Path,
+    model: str = "sonnet",
+) -> Tuple[List[Tuple[int, bool, str]], int, int]:
+    """Execute multiple tasks in parallel."""
+    if not tasks:
+        print("INFO: No tasks to execute")
+        return [], 0, 0
+
+    print(f"INFO: Executing {len(tasks)} tasks with max {max_concurrent} concurrent")
+
+    results = []
+    with ThreadPoolExecutor(max_workers=max_concurrent) as executor:
+        future_to_task = {
+            executor.submit(process_single_task, task, workflow, repo_root, model): task
+            for task in tasks
+        }
+
+        for future in as_completed(future_to_task):
+            task = future_to_task[future]
+            try:
+                result = future.result()
+                results.append(result)
+                task_num, success, message = result
+                status = "✓" if success else "✗"
+                print(f"  {status} Task {task_num}: {message[:80]}")
+            except Exception as e:
+                print(f"  ✗ Task {task.number}: Exception - {e}")
+                results.append((task.number, False, str(e)))
+
+    succeeded = sum(1 for _, success, _ in results if success)
+    failed = sum(1 for _, success, _ in results if not success)
+
+    return results, succeeded, failed
+
+
+def print_tasks_summary(tasks: List[PlanTask]):
+    """Print a summary of tasks."""
+    print("\n" + "=" * 60)
+    print("TASKS SUMMARY")
+    print("=" * 60)
+
+    groups: Dict[str, List[PlanTask]] = {}
+    for task in tasks:
+        group = task.group or "Ungrouped"
+        if group not in groups:
+            groups[group] = []
+        groups[group].append(task)
+
+    for group_name in sorted(groups.keys()):
+        group_tasks = groups[group_name]
+        print(f"\n{group_name} ({len(group_tasks)} tasks):")
+        for task in group_tasks:
+            print(f"  - Task {task.number}: [{task.task_type}] {task.title[:50]}")
+
+    print("\n" + "=" * 60)
+
+
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Execute tasks from a plan file in parallel",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+    uv run trigger_plan_parallel.py plan.md --dry-run
+    uv run trigger_plan_parallel.py plan.md --group P1
+    uv run trigger_plan_parallel.py plan.md --tasks 1,2,3,4,5
+    uv run trigger_plan_parallel.py plan.md --workflow adw_build_iso
+    uv run trigger_plan_parallel.py plan.md --max-concurrent 3
+""",
+    )
+
+    parser.add_argument(
+        "plan_file",
+        type=str,
+        help="Path to the plan markdown file",
+    )
+    parser.add_argument(
+        "--workflow",
+        type=str,
+        default=None,
+        help="ADW workflow to use (e.g., adw_sdlc_zte_iso). If not specified, uses Claude CLI directly.",
+    )
+    parser.add_argument(
+        "--tasks",
+        type=str,
+        default=None,
+        help="Comma-separated list of task numbers to execute (e.g., 1,2,3)",
+    )
+    parser.add_argument(
+        "--group",
+        type=str,
+        default=None,
+        help="Execute only tasks in a specific group (e.g., P1, P2)",
+    )
+    parser.add_argument(
+        "-m", "--max-concurrent",
+        type=int,
+        default=5,
+        help="Maximum number of concurrent tasks (default: 5)",
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="sonnet",
+        choices=["haiku", "sonnet", "opus"],
+        help="Model to use for Claude CLI execution (default: sonnet)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Parse and display tasks without executing",
+    )
+
+    return parser.parse_args()
+
+
+def main():
+    """Main entry point."""
+    args = parse_args()
+
+    # Validate plan file
+    plan_path = Path(args.plan_file)
+    if not plan_path.exists():
+        print(f"ERROR: Plan file not found: {plan_path}")
+        sys.exit(1)
+
+    # Get repository root
+    repo_root = Path(__file__).parent.parent.parent
+
+    print("=" * 60)
+    print("PLAN PARALLEL TRIGGER")
+    print("=" * 60)
+    print(f"Plan file: {plan_path}")
+    print(f"Repository: {repo_root}")
+    print(f"Max concurrent: {args.max_concurrent}")
+    print(f"Workflow: {args.workflow or 'Claude CLI direct'}")
+    print(f"Model: {args.model}")
+
+    # Parse plan file
+    print("\nParsing plan file...")
+    all_tasks = parse_plan_file(str(plan_path))
+    print(f"Found {len(all_tasks)} tasks in plan")
+
+    # Parse task filter
+    task_numbers = None
+    if args.tasks:
+        task_numbers = [int(t.strip()) for t in args.tasks.split(',') if t.strip().isdigit()]
+
+    # Filter tasks
+    tasks = filter_tasks(all_tasks, task_numbers=task_numbers, group=args.group)
+    print(f"Filtered to {len(tasks)} tasks")
+
+    if not tasks:
+        print("INFO: No tasks match the filter criteria")
+        sys.exit(0)
+
+    # Print summary
+    print_tasks_summary(tasks)
+
+    # Dry run mode
+    if args.dry_run:
+        print("\n[DRY RUN] Would execute the above tasks")
+        print("\nTo execute, run without --dry-run")
+        sys.exit(0)
+
+    # Set up signal handlers
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    # Execute tasks
+    print("\n" + "=" * 60)
+    print("EXECUTING TASKS")
+    print("=" * 60 + "\n")
+
+    start_time = time.time()
+    results, succeeded, failed = execute_tasks_parallel(
+        tasks,
+        args.max_concurrent,
+        args.workflow,
+        repo_root,
+        args.model,
+    )
+    elapsed = time.time() - start_time
+
+    # Print results
+    print("\n" + "=" * 60)
+    print("EXECUTION RESULTS")
+    print("=" * 60)
+    print(f"Total tasks: {len(tasks)}")
+    print(f"Succeeded: {succeeded}")
+    print(f"Failed: {failed}")
+    print(f"Time elapsed: {elapsed:.1f}s")
+
+    if failed_tasks:
+        print(f"\nFailed tasks: {sorted(failed_tasks)}")
+
+    sys.exit(0 if failed == 0 else 1)
+
+
+if __name__ == "__main__":
+    main()

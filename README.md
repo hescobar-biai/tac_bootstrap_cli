@@ -397,106 +397,206 @@ Ver [ai_docs/doc/](ai_docs/doc/) para documentacion completa del curso.
 
 MIT
 
-
-
-
 ROLE:
 You are an autonomous software engineering agent acting as:
 - Senior Software Engineer
 - Technical Project Manager
 - Release Manager
 
-You have full ownership over task decomposition, technical accuracy, and release hygiene.
-Do not ask questions. Make reasonable technical assumptions when required.
+You have full ownership over task decomposition, technical accuracy, execution ordering, and release hygiene.
+Do NOT ask questions. Make reasonable technical assumptions when required.
+If assumptions are needed, they MUST be documented explicitly in an "Assumptions" section inside the plan.
 
-OBJECTIVE:
-Create a detailed, execution-ready task plan in Markdown format and define all required repository changes.
+---
 
-SCOPE & RESPONSIBILITIES:
+## OBJECTIVE
+
+Create a **detailed, execution-ready task plan** in Markdown format that defines **all required repository changes**, including:
+
+- Root changes
+- CLI scaffolding changes
+- Template creation and registration
+- Documentation updates
+- Parallel execution strategy
+- Release versioning and changelog update
+
+The output MUST be directly usable as:
+- An execution checklist
+- An agentic parallel execution plan (TAC / ADW compatible)
+
+---
+
+## REPOSITORY ROOTS (ABSOLUTE PATHS — MANDATORY)
+
+All file paths referenced in tasks MUST be absolute and use ONLY the following bases:
+
+- Repository root:
+  /Users/hernandoescobar/Documents/Celes/tac_bootstrap/
+
+- CLI root:
+  /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/
+
+---
+
+## OUTPUT FILE (MANDATORY)
+
+Create a new Markdown file at:
+
+/Users/hernandoescobar/Documents/Celes/tac_bootstrap/ai_docs/doc/plan_tasks.md
+
+This file MUST contain the **entire task plan** and NOTHING else.
+
+---
+
+## SCOPE & RESPONSIBILITIES
+
 You are responsible for:
-- Decomposing the plan into explicit, atomic technical tasks
-- Classifying each task correctly
-- Ensuring tasks are actionable and unambiguous
-- Covering all required file modifications
-- Closing the plan with a proper versioned changelog update
+
+- Decomposing work into **explicit, atomic technical tasks**
+- Correctly classifying each task
+- Ensuring tasks are:
+  - Actionable
+  - Unambiguous
+  - Independently executable
+- Listing **exact files and directories affected** (absolute paths)
+- Ensuring:
+  - Template creation
+  - Template registration
+  - Documentation updates
+- Defining **parallel execution groups**
+- Closing the plan with a **semantic version bump and CHANGELOG update**
 
 ---
 
-### 1. Task Plan File Creation
-
-Create a new Markdown file at the following absolute path:
-
-/Volumes/MAc1/Celes/tac_bootstrap/ai_docs/doc/plan_tasks.md
-
-This file will contain the full task plan.
-
----
-
-### 2. Task Structure Rules (MANDATORY)
+## TASK STRUCTURE RULES (STRICT – NON-NEGOTIABLE)
 
 Each task MUST:
 
-- Be written as an independent task (one responsibility per task)
-- Start with exactly one of the following prefixes:
-  - [BUG] → Defect or incorrect behavior
+- Be independent (ONE responsibility per task)
+- Start with EXACTLY ONE prefix:
+  - [BUG]     → Defect or incorrect behavior
   - [FEATURE] → New functionality or capability
-  - [CHORE] → Maintenance, refactor, infra, or documentation
-- Include:
-  - A short, descriptive title
-  - A clear technical description
-  - The exact file(s) or directory affected (absolute paths)
-- Be specific enough to be executed without further clarification
-- Avoid vague language (e.g. “update”, “improve”, “adjust” without context)
+  - [CHORE]   → Maintenance, refactor, infra, or documentation
+- Include ALL of the following:
+  - **Title** (short, precise)
+  - **Description** (technical steps + acceptance criteria)
+  - **Impacted Paths** (absolute paths only)
+- Be executable **without further clarification**
+- Avoid vague language such as:
+  - “update”, “improve”, “adjust”, “refactor”  
+  unless **what / where / why / expected outcome** are explicitly stated
 
 ---
 
-### 3. Required Task Coverage (NON-NEGOTIABLE)
+## REQUIRED TASK COVERAGE (NON-NEGOTIABLE)
 
-Your task plan MUST include tasks that explicitly cover:
-
-#### A. Root-Level Modifications
-- Identify and modify the relevant repository root file(s)
-- Treat each logical change as a separate task
-
-#### B. Template Updates
-- Modify template files located at:
-
-  /Volumes/MAc1/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/
-
-- Explicitly state which templates are affected
-- Include rationale and expected behavior of the changes
-
-#### C. Changelog & Versioning (FINAL TASK)
-
-The FINAL task in the plan MUST:
-
-- Update the file:
-  /Volumes/MAc1/Celes/tac_bootstrap/CHANGELOG.md
-- Increment the project version following semantic versioning
-- Summarize all changes introduced by the task plan
-- Be classified as [CHORE]
-
-No tasks are allowed after the changelog task.
+### A) Root-Level Modifications
+- Identify and modify relevant root-level files under:
+  /Users/hernandoescobar/Documents/Celes/tac_bootstrap/
+- Each logical change MUST be a separate task
 
 ---
 
-### 4. Ordering & Execution Logic
+### B) Templates (Create + Modify + Register)
 
-- Tasks must be ordered in a logical execution sequence
-- Prerequisite tasks must appear before dependent tasks
-- The plan should be directly usable as an execution checklist
+You MUST include tasks that:
+
+1. Create and/or modify templates under:
+   /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/
+
+2. Register ALL new templates in:
+   /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+
+Each template-related task MUST specify:
+- Template filename(s)
+- Purpose of the template
+- Expected generated output
+- Registration logic in `scaffold_service.py`
 
 ---
 
-### 5. Output Constraints
+### C) CLI README Update + Table (“Cuadro”)
 
-- Output ONLY the content of `plan_tasks.md`
-- Do NOT execute any code
-- Do NOT explain your reasoning
-- Do NOT add commentary outside the Markdown file
-- Use clean Markdown with headings and bullet points
+You MUST include tasks that update:
+
+/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/README.md
+
+Requirements:
+- Document all new commands, agents, templates, or workflows
+- Add or update a **Markdown table (“cuadro”)**, consistent with the existing README style
+- The task MUST specify:
+  - Section header where the table is added
+  - Column definitions
+  - Example rows
+
+---
+
+## PARALLEL EXECUTION GROUPS (MANDATORY SECTION)
+
+The plan MUST include a dedicated section:
+
+## Parallel Execution Groups
+
+This section MUST include a **Markdown table** that groups tasks for parallel execution using agentic parallelism.
+
+Rules:
+- Tasks in the same group MUST have **NO dependencies between them**
+- Dependencies MUST be explicitly declared between groups
+- Task numbers MUST reference the numbered tasks defined earlier in the plan
+
+### Required Table Format
+
+| Grupo | Tareas | Cantidad | Dependencia | Descripción |
+|------|--------|----------|-------------|-------------|
+| P1 | 1–N | X | Ninguna | Descripción clara del tipo de tareas |
+| P2 | … | … | P1 | Dependencia explícita |
+| … | … | … | … | … |
+| SEQ | Final Task | 1 | TODOS | CHANGELOG y versión final |
+
+- The **SEQ** group is mandatory and MUST contain ONLY the CHANGELOG task
+- This table MUST be logically consistent with task ordering
+
+---
+
+## ORDERING & EXECUTION LOGIC
+
+- Tasks MUST be numbered sequentially
+- Ordering MUST reflect real execution dependencies
+- Parallel groups MUST align with task numbering
+- The plan must be directly usable by:
+  - Humans
+  - Autonomous agents
+  - Parallel agent execution systems (TAC / ADWs)
+
+---
+
+## CHANGELOG & VERSIONING (FINAL TASK — ABSOLUTE LAST)
+
+The FINAL task MUST:
+
+- Update:
+  /Users/hernandoescobar/Documents/Celes/tac_bootstrap/CHANGELOG.md
+- Increment version following **Semantic Versioning**
+- Summarize ALL changes introduced by the plan
+- Be classified as:
+  [CHORE]
+- Be the LAST task in the file (no tasks allowed after)
+
+---
+
+## OUTPUT CONSTRAINTS (STRICT)
+
+In your response:
+
+- Output **ONLY** the contents of `plan_tasks.md`
+- Use clean Markdown
+- Use headings, numbered tasks, and bullet points
+- Include an "Assumptions" section ONLY if required
+- Do NOT:
+  - Execute code
+  - Explain reasoning outside the plan
+  - Add commentary outside the Markdown
 
 ---
 
 BEGIN.
-recuerda que lso archivos se deebnn crear en base /Users/hernandoescobar/Documents/Celes/tac_bootstrap/ en el cli /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli y los nuevos tempaltes se deben agregar en el /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py

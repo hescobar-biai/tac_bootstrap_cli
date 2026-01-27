@@ -569,6 +569,13 @@ class ScaffoldService:
             reason="Parallel processing for GitHub issues",
             executable=True,
         )
+        plan.add_file(
+            f"{adws_dir}/adw_triggers/trigger_plan_parallel.py",
+            action=action,
+            template="adws/adw_triggers/trigger_plan_parallel.py.j2",
+            reason="Parallel execution of tasks from plan files",
+            executable=True,
+        )
 
     def _add_script_files(self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool) -> None:
         """Add scripts/ utility files."""

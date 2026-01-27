@@ -215,6 +215,49 @@ uv run adws/adw_triggers/trigger_issue_parallel.py --issues 123,456,789 --once
 | `--interval` | 20 | Polling interval (seconds) |
 | `--once` | false | Run single cycle and exit |
 
+#### Plan Parallel Trigger
+
+Execute tasks from a plan markdown file in parallel. Parses plan files with `#### Task N` format and runs them using Claude Code or ADW workflows:
+
+```bash
+# Execute all tasks from a plan file
+uv run adws/adw_triggers/trigger_plan_parallel.py plan_tasks.md
+
+# Execute only tasks from a specific group (P1, P2, etc.)
+uv run adws/adw_triggers/trigger_plan_parallel.py plan_tasks.md --group P1
+
+# Execute specific tasks by number
+uv run adws/adw_triggers/trigger_plan_parallel.py plan_tasks.md --tasks 1,2,3,5
+
+# Dry run to preview tasks without executing
+uv run adws/adw_triggers/trigger_plan_parallel.py plan_tasks.md --dry-run
+
+# Use ADW workflow instead of Claude Code
+uv run adws/adw_triggers/trigger_plan_parallel.py plan_tasks.md --workflow adw_sdlc_zte_iso
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--group` | None | Filter tasks by group (P1, P2, etc.) |
+| `--tasks` | None | Comma-separated task numbers to execute |
+| `--max-concurrent` | 5 | Maximum parallel executions |
+| `--workflow` | claude | Execution mode: `claude` or ADW workflow name |
+| `--dry-run` | false | Preview tasks without executing |
+| `--verbose` | false | Show detailed execution logs |
+
+**Plan File Format:**
+```markdown
+## Wave 1 - Group P1
+#### Task 1
+**[FEATURE] Implement user authentication**
+Description of the task...
+File: `src/auth/login.py`
+
+#### Task 2
+**[CHORE] Update configuration**
+...
+```
+
 ## Configuration
 
 ### config.yml
