@@ -8,13 +8,13 @@ Summary metrics across all ADW runs.
 
 | Metric            | Value          | Last Updated                 |
 | ----------------- | -------------- | ---------------------------- |
-| Current Streak    | 146            | Mon Jan 26 19:12:16 -05 2026 |
-| Longest Streak    | 146            | Mon Jan 26 19:12:16 -05 2026 |
-| Total Plan Size   | 23405 lines    | Mon Jan 26 19:12:16 -05 2026 |
-| Largest Plan Size | 673 lines      | Mon Jan 26 19:12:16 -05 2026 |
-| Total Diff Size   | 103980 lines   | Mon Jan 26 19:12:16 -05 2026 |
-| Largest Diff Size | 6832 lines     | Mon Jan 26 19:12:16 -05 2026 |
-| Average Presence  | 1.00           | Mon Jan 26 19:12:16 -05 2026 |
+| Current Streak    | 147            | Mon Jan 26 19:28:48 -05 2026 |
+| Longest Streak    | 147            | Mon Jan 26 19:28:48 -05 2026 |
+| Total Plan Size   | 23590 lines    | Mon Jan 26 19:28:48 -05 2026 |
+| Largest Plan Size | 673 lines      | Mon Jan 26 19:28:48 -05 2026 |
+| Total Diff Size   | 104600 lines   | Mon Jan 26 19:28:48 -05 2026 |
+| Largest Diff Size | 6832 lines     | Mon Jan 26 19:28:48 -05 2026 |
+| Average Presence  | 1.00           | Mon Jan 26 19:28:48 -05 2026 |
 
 ## ADW KPIs
 
@@ -140,7 +140,8 @@ Detailed metrics for individual ADW workflow runs.
 | Mon Jan 26 2026  | feature_Tac_9_task_22    | 263 | /feature    | 1        | 188               | 909/2/7                         | Mon Jan 26 16:57:43 -05 2026 | -       |
 | Mon Jan 26 2026  | feature_Tac_9_task_23    | 264 | /feature    | 1        | 151               | 463/2/8                         | Mon Jan 26 17:16:56 -05 2026 | -       |
 | Mon Jan 26 2026  | chore_Tac_9_task_24      | 265 | /chore      | 1        | 56                | 207/4/8                         | Mon Jan 26 17:30:22 -05 2026 | -       |
-| Mon Jan 26 2026  | feature_Tac_9_task_25_v2 | 266 | /feature    | 1        | 134               | 473/2/6                         | Mon Jan 26 18:17:55 -05 2026 | -       |
+| Mon Jan 26 2026  | feature_Tac_9_task_25_v2 | 266 | /feature    | 1        | 473/2/6           | 473/2/6                         | Mon Jan 26 18:17:55 -05 2026 | -       |
 | Mon Jan 26 2026  | feature_Tac_9_task_26    | 267 | /feature    | 1        | 164               | 449/2/6                         | Mon Jan 26 18:32:57 -05 2026 | -       |
 | Mon Jan 26 2026  | feature_Tac_9_task_27    | 268 | /feature    | 1        | 165               | 927/2/7                         | Mon Jan 26 18:56:54 -05 2026 | -       |
 | Mon Jan 26 2026  | chore_Tac_9_task_28      | 269 | /chore      | 1        | 59                | 238/2/8                         | Mon Jan 26 19:12:16 -05 2026 | -       |
+| Mon Jan 26 2026  | feature_Tac_9_task_29    | 270 | /feature    | 1        | 185               | 618/2/6                         | Mon Jan 26 19:28:48 -05 2026 | -       |
