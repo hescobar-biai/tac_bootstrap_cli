@@ -6,7 +6,7 @@
         "@playwright/mcp@latest",
         "--isolated",
         "--config",
-        "/Users/hernandoescobar/Documents/Celes/tac_bootstrap/trees/chore_Tac_10_task_10/playwright-mcp-config.json"
+        "/Users/hernandoescobar/Documents/Celes/tac_bootstrap/trees/chore_Tac_11_task_9/playwright-mcp-config.json"
       ]
     }
   }
