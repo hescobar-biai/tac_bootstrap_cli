@@ -23,6 +23,16 @@
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{ config.project.package_manager.value }} run $CLAUDE_PROJECT_DIR/.claude/hooks/dangerous_command_blocker.py",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
         "matcher": "",
         "hooks": [
           {

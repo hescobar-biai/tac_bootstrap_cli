@@ -220,6 +220,17 @@ class TestSettingsTemplateWithHooks:
                     return hook_entry["hooks"][0].get("command", "")
             return ""
 
+        # Helper function to extract all commands from a hook type
+        def get_all_hook_commands(hook_name: str) -> list[str]:
+            hook_list = hooks.get(hook_name, [])
+            commands = []
+            for hook_entry in hook_list:
+                if "hooks" in hook_entry:
+                    for hook in hook_entry["hooks"]:
+                        if "command" in hook:
+                            commands.append(hook["command"])
+            return commands
+
         # Verify PostToolUse and UserPromptSubmit mention context_bundle_builder.py
         post_tool_use = get_hook_command("PostToolUse")
         assert (
@@ -243,7 +254,40 @@ class TestSettingsTemplateWithHooks:
         ]
 
         for hook_name in universal_logger_hooks:
-            hook_command = get_hook_command(hook_name)
-            assert (
-                "universal_hook_logger.py" in hook_command
-            ), f"{hook_name} should reference universal_hook_logger.py"
+            # PreToolUse has multiple entries, check all commands
+            if hook_name == "PreToolUse":
+                all_commands = get_all_hook_commands(hook_name)
+                assert any(
+                    "universal_hook_logger.py" in cmd for cmd in all_commands
+                ), f"{hook_name} should reference universal_hook_logger.py in at least one entry"
+            else:
+                hook_command = get_hook_command(hook_name)
+                assert (
+                    "universal_hook_logger.py" in hook_command
+                ), f"{hook_name} should reference universal_hook_logger.py"
+
+        # Verify PreToolUse includes dangerous_command_blocker
+        pre_tool_use_commands = get_all_hook_commands("PreToolUse")
+        assert any(
+            "dangerous_command_blocker.py" in cmd for cmd in pre_tool_use_commands
+        ), "PreToolUse should reference dangerous_command_blocker.py"
+
+        # Verify dangerous_command_blocker has correct configuration
+        pre_tool_use_hooks = hooks.get("PreToolUse", [])
+        blocker_entry = None
+        for entry in pre_tool_use_hooks:
+            if entry.get("matcher") == "Bash":
+                blocker_entry = entry
+                break
+
+        assert blocker_entry is not None, (
+            "PreToolUse should have a Bash matcher entry for dangerous_command_blocker"
+        )
+        blocker_hook = blocker_entry.get("hooks", [])[0] if blocker_entry.get("hooks") else None
+        assert blocker_hook is not None, "Bash matcher entry should have a hook"
+        assert "dangerous_command_blocker.py" in blocker_hook.get("command", ""), (
+            "Bash hook should run dangerous_command_blocker.py"
+        )
+        assert blocker_hook.get("timeout") == 5000, (
+            "dangerous_command_blocker should have 5000ms timeout"
+        )
