@@ -2,20 +2,6 @@
 doc_type: folder
 domain: tac-bootstrap-cli-templates-claude-hooks-utils
 owner: UNKNOWN
-level: L4
-tags:
-  - expert:backend
-  - level:L4
-  - topic:api
-idk:
-  - llm-integration
-  - text-to-speech
-  - ai-utilities
-  - hook-helpers
-  - claude-hooks
-  - template-utils
-  - tts-service
-  - llm-client
 level: L5
 tags:
   - expert:backend
@@ -23,13 +9,13 @@ tags:
   - topic:api
 idk:
   - claude-hooks-utilities
-  - llm-integration
-  - text-to-speech
+  - llm-api-integration
+  - text-to-speech-services
   - ai-service-clients
-  - template-hook-helpers
-  - tac-bootstrap
-  - jinja2-templates
-  - automation-utils
+  - hook-helper-modules
+  - jinja2-template-hooks
+  - automation-utilities
+  - tac-bootstrap-templates
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils
 children:

@@ -110,6 +110,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When implementing template directory structure
     - When understanding the foundation of TAC Bootstrap CLI package
 
+- app_docs/feature-a5839b7d-python-package-structure.md
+  - Conditions:
+    - When planning or reviewing Python package structure features
+    - When creating feature specifications with DDD architecture
+    - When validating package structure and configuration
+    - When running validation commands for CLI entry points
+    - When understanding version evolution and acceptance criteria
+    - When using SDLC planning workflow with ADW ID a5839b7d
+    - When working with issue #1 TAREA 1.1 specification
+
 - app_docs/feature-chore_Tac_11_task_7-dangerous-command-blocker-hook.md
   - Conditions:
     - When working with dangerous command blocker configuration
