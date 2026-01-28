@@ -1,6 +1,6 @@
 ---
 doc_type: folder
-domain: security-logs/agents/tac-bootstrap_cli/templates/structure
+domain: security-logs/agents/template-structure
 owner: UNKNOWN
 level: L5
 tags:
