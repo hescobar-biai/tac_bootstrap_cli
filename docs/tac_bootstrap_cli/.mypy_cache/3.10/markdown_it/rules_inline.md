@@ -2,30 +2,24 @@
 doc_type: folder
 domain: tac-bootstrap_cli/mypy_cache/3.10/markdown_it/rules_inline
 owner: UNKNOWN
-level: L2
+level: L5
 tags:
-  - expert:frontend
-  - level:L2
-  - topic:routing
+  - expert:backend
+  - level:L5
+  - topic:caching
 idk:
+  - mypy-cache
+  - type-checking
   - markdown-it
-  - rules
-  - inline
-  - syntax
-  - highlighting
-  - parser
-  - cache
-  - optimization
+  - inline-rules
+  - python-3.10
+  - ast-cache
+  - incremental-analysis
+  - parser-metadata
 related_code:
-  - tac_bootstrap_cli/
-  - mypy_cache/
-  - 3.10/
-  - markdown_it/
-  - rules_inline/
-children:
-  - 
-source_readmes:
-  - README.md
+  - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/rules_inline
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 
