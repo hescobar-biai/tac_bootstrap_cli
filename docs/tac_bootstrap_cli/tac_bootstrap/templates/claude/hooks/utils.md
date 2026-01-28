@@ -9,13 +9,13 @@ tags:
   - topic:api
 idk:
   - claude-hooks-utilities
-  - llm-integration
-  - text-to-speech
+  - llm-api-integration
+  - text-to-speech-services
   - ai-service-clients
-  - template-hook-helpers
-  - jinja2-templates
-  - automation-utils
-  - tac-bootstrap
+  - hook-helper-modules
+  - jinja2-template-hooks
+  - automation-utilities
+  - tac-bootstrap-templates
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils
 children:
