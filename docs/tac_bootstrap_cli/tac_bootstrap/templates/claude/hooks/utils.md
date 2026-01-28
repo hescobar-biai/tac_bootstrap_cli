@@ -12,9 +12,9 @@ idk:
   - llm-api-integration
   - text-to-speech-services
   - ai-service-clients
-  - hook-helper-modules
-  - jinja2-template-hooks
-  - automation-utilities
+  - template-hook-helpers
+  - jinja2-template-utils
+  - automation-helpers
   - tac-bootstrap-templates
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils
