@@ -6,34 +6,20 @@ level: L5
 tags:
   - expert:backend
   - level:L5
-  - topic:auth
+  - topic:api
 idk:
   - claude-code-hooks
-  - expert-agent-template
-  - hook-implementation
-  - plan-build-improve-workflow
-  - skill-command-integration
-  - template-generation
-  - jinja2-templates
-  - agent-methodology
-  - code-generation
-level: L4
-tags:
-  - expert:backend
-  - level:L4
-  - topic:auth
-idk:
-  - claude-code-hooks
-  - expert-agents
-  - hook-methodology
-  - implementation-planning
-  - knowledge-capture
-  - multi-agent-systems
-  - plan-build-improve
-  - slash-commands
-  - specialized-agents
-  - template-generation
-  - workflow-automation
+  - expert-agent-methodology
+  - hook-implementation-workflow
+  - plan-build-improve-cycle
+  - skill-command-system
+  - specialized-agent-template
+  - jinja2-template-generation
+  - knowledge-driven-development
+  - multi-step-workflows
+  - agent-collaboration-patterns
+  - hook-lifecycle-management
+  - template-driven-code-generation
 related_code: ['tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cc_hook_expert']
 children: []
 source_readmes: []

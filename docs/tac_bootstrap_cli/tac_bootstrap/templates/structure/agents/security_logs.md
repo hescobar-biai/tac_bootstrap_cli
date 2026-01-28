@@ -1,26 +1,27 @@
 ---
 doc_type: folder
-domain: security-logs/agents/tac-bootstrap_cli/templates/structure
+domain: security-logs/agents/templates/structure
 owner: UNKNOWN
-level: L3
+level: L4
 tags:
   - expert:infra
-  - level:L3
+  - expert:observability
+  - level:L4
   - topic:logging
 idk:
-  - logging-system
-  - security-agent
-  - monitoring-component
+  - security-logging
+  - agent-security-logs
   - audit-trail
   - threat-detection
+  - template-structure
+  - log-collection
+  - monitoring-infrastructure
+  - jinja2-template
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/security_logs
-  - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/
-children:
-  - 
-source_readmes:
-  - tac_bootstrap_cli/tac_bootstrap/templates/structure/README.md
-last_reviewed: UNKNOWN
+children: []
+source_readmes: []
+last_reviewed: 2026-01-27
 ---
 
 # Overview
