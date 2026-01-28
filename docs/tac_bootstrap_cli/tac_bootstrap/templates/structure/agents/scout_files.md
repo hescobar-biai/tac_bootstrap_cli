@@ -2,27 +2,24 @@
 doc_type: folder
 domain: tac-bootstrap_cli/tac_bootstrap/templates/structure/agents/scout_files
 owner: UNKNOWN
-level: L3
+level: L5
 tags:
-  - expert:frontend
-  - level:L3
+  - expert:infra
+  - level:L5
   - topic:routing
 idk:
-  - routing
-  - frontend
-  - api
-  - performance
-  - caching
-  - queue
-  - db
-  - logging
+  - scout-agent-templates
+  - jinja2-structure
+  - file-discovery
+  - agent-scaffolding
+  - template-generation
+  - codebase-exploration
+  - bootstrap-cli
+  - agent-infrastructure
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/scout_files
-  - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/routing_files
-children:
-  - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/routing_files
-source_readmes:
-  - tac_bootstrap_cli/README.md
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 
