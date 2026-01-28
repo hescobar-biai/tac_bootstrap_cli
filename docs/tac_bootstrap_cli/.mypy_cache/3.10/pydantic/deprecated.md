@@ -2,26 +2,24 @@
 doc_type: folder
 domain: tac-bootstrap_cli/mypy_cache/3.10/pydantic/deprecated
 owner: UNKNOWN
-level: L4
+level: L5
 tags:
   - expert:backend
-  - level:L4
+  - level:L5
   - topic:db
 idk:
-  - caching
-  - db
-  - mypy
-  - pydantic
-  - deprecated
-  - cache
-  - database
-  - type-checking
+  - mypy-cache
+  - pydantic-deprecated
+  - type-checking-artifacts
+  - python-3.10
+  - static-analysis
+  - cache-metadata
+  - type-stubs
+  - deprecated-api
 related_code:
-  - tac_bootstrap_cli/
-children:
-- 
-source_readmes:
-- README.md
+  - tac_bootstrap_cli/.mypy_cache/3.10/pydantic/deprecated
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 
