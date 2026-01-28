@@ -2,26 +2,22 @@
 doc_type: folder
 domain: tac-bootstrap-cli-templates-claude-commands-experts
 owner: UNKNOWN
-level: L4
+level: L5
 tags:
   - expert:backend
-  - level:L4
+  - level:L5
   - topic:api
 idk:
-  - claude-code-expert-commands
-  - hook-methodology-experts
-  - template-generation
-  - expert-workflows
-  - implementation-planning
-  - code-review-automation
-  - knowledge-capture
-  - iterative-improvement
-  - claude-command-experts
-  - hook-expert-system
-  - ai-agent-templates
-  - expert-knowledge-base
-  - command-generation
-  - context-aware-planning
+  - claude-code-hook-experts
+  - expert-command-templates
+  - methodology-capture
+  - plan-build-improve-cycle
+  - knowledge-iteration
+  - hook-implementation-patterns
+  - ai-agent-specialization
+  - template-slash-commands
+  - expert-workflow-automation
+  - jinja2-command-templates
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts
 children:

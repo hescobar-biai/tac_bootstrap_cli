@@ -2,24 +2,25 @@
 doc_type: folder
 domain: security-logs/agents/tac-bootstrap_cli/templates/structure
 owner: UNKNOWN
-level: L3
+level: L5
 tags:
   - expert:infra
-  - level:L3
+  - expert:observability
+  - level:L5
   - topic:logging
 idk:
-  - logging-system
-  - security-agent
-  - monitoring-component
+  - security-logging
+  - agent-template
   - audit-trail
   - threat-detection
+  - monitoring-component
+  - log-aggregation
+  - security-events
+  - template-structure
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/security_logs
-  - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/
-children:
-  - 
-source_readmes:
-  - tac_bootstrap_cli/tac_bootstrap/templates/structure/README.md
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 
