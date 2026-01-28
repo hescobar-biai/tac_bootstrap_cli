@@ -14,12 +14,12 @@ idk:
   - template-utilities
   - audio-synthesis
   - speech-generation
-  - jinja2-templates
-  - voice-output
-  - audio-processing
-  - claude-hooks-tts
-  - speech-synthesis
-  - template-hooks
+  - claude-hooks-integration
+  - jinja2-template-tts
+  - voice-generation
+  - audio-output
+  - tts-hook-handlers
+  - speech-processing
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts
 children: []

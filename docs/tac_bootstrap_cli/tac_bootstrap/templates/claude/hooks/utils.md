@@ -8,9 +8,9 @@ tags:
   - level:L5
   - topic:api
 idk:
+  - llm-integration
+  - text-to-speech
   - claude-hooks-utilities
-  - llm-api-integration
-  - text-to-speech-services
   - ai-service-clients
   - template-hook-helpers
   - jinja2-template-utils

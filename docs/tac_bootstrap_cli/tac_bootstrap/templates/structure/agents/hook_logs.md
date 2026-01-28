@@ -2,22 +2,20 @@
 doc_type: folder
 domain: tac-bootstrap_cli/tac_bootstrap/templates/structure/agents/hook_logs
 owner: UNKNOWN
-level: L4
+level: L5
 tags:
   - expert:observability
-  - level:L4
+  - level:L5
   - topic:logging
 idk:
   - hook-execution-logs
-  - agent-hook-tracing
-  - template-logging-structure
-  - jinja2-template-logging
-  - generated-log-directory
-  - cli-hook-observability
-  - automation-audit-trail
-  - pre-post-hook-logs
-  - agent-lifecycle-events
-  - template-generation-logs
+  - agent-hook-output
+  - template-structure
+  - log-storage-template
+  - jinja2-template
+  - claude-hook-logs
+  - observability-template
+  - hook-event-capture
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/hook_logs
 children: []

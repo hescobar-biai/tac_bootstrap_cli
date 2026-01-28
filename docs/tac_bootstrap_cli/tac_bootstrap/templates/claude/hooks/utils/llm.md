@@ -11,14 +11,12 @@ last_reviewed: UNKNOWN
 idk:
   - llm-utilities
   - hook-helpers
-  - claude-integration
-  - ai-operations
+  - claude-hooks
+  - template-utilities
   - jinja2-templates
-  - template-generation
-  - utility-functions
+  - ai-model-integration
   - hook-routing
-  - model-helpers
-  - ai-tooling
+  - llm-config
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm
 children: []

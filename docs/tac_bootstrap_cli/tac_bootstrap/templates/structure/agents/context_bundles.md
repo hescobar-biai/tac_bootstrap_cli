@@ -10,12 +10,12 @@ tags:
 idk:
   - context-bundles
   - agent-context
-  - template-structure
-  - preloaded-context
+  - pre-loaded-context
+  - context-templates
   - agent-initialization
-  - context-loading
-  - template-generation
-  - claude-agent
+  - bootstrap-templates
+  - structure-templates
+  - agent-artifacts
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/
 children: []

@@ -8,17 +8,16 @@ tags:
   - level:L5
   - topic:api
 idk:
-  - claude-code-hooks
+  - claude-code-hook-expert
   - expert-agent-methodology
-  - hook-implementation-patterns
-  - plan-build-improve-workflow
-  - skill-command-system
-  - specialized-agent-templates
-  - jinja2-hook-generation
-  - agent-knowledge-capture
-  - multi-phase-development
+  - hook-implementation-planning
+  - plan-build-improve-cycle
+  - skill-command-templates
+  - specialized-agent-workflow
+  - hook-knowledge-capture
+  - jinja2-template-generation
+  - multi-step-agent-pattern
   - slash-command-integration
-  - workflow-orchestration
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cc_hook_expert
 children: []
