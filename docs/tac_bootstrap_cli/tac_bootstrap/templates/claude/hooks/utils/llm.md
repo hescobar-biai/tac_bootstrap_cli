@@ -14,7 +14,10 @@ idk:
   - claude-integration
   - jinja2-templates
   - template-generation
-  - ai-model-helpers
+  - ai-model-routing
+  - hook-utils
+  - llm-config
+  - template-rendering
   - utility-functions
   - hook-automation
   - template-infrastructure
