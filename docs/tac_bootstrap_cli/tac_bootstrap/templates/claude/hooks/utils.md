@@ -8,14 +8,16 @@ tags:
   - level:L5
   - topic:api
 idk:
+  - claude-hook-utilities
   - llm-integration
   - text-to-speech
-  - claude-hooks-utilities
-  - ai-service-clients
-  - template-hook-helpers
-  - jinja2-templates
-  - automation-utils
-  - hook-utilities
+  - ai-service-helpers
+  - jinja2-template-utilities
+  - automation-helpers
+  - template-hook-utils
+  - tac-bootstrap-templates
+  - claude-hooks-framework
+  - ai-service-abstractions
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils
 children:

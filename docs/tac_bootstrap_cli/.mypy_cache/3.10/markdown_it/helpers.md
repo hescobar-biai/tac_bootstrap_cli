@@ -2,23 +2,23 @@
 doc_type: folder
 domain: tac-bootstrap_cli/mypy_cache/3.10/markdown_it/helpers
 owner: UNKNOWN
-level: L2
+level: L5
 tags:
-- expert:frontend
-- level:L2
-- topic:routing
+- expert:backend
+- level:L5
+- topic:caching
 idk:
-- markdown-it
-- helpers
+- mypy-cache
+- type-stubs
+- markdown-it-helpers
+- python-3.10
+- static-analysis
+- type-checking-artifacts
+- build-cache
 related_code:
-- tac_bootstrap_cli/
-- mypy_cache/
-- 3.10/
-- markdown_it/
-children:
-- []
-source_readmes:
-- README.md
+- tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/helpers
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 

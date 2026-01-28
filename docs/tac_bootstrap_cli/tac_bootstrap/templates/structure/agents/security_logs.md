@@ -1,6 +1,6 @@
 ---
 doc_type: folder
-domain: security-logs/agents/template-structure
+domain: security-logs/agents/templates/structure
 owner: UNKNOWN
 level: L4
 tags:
@@ -10,18 +10,18 @@ tags:
   - topic:logging
 idk:
   - security-logging
+  - agent-security-logs
   - audit-trail
-  - threat-monitoring
-  - log-aggregation
-  - template-security
-  - agent-logs
-  - security-events
-  - log-storage
+  - threat-detection
+  - template-structure
+  - log-collection
+  - monitoring-infrastructure
+  - jinja2-template
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/security_logs
 children: []
 source_readmes: []
-last_reviewed: UNKNOWN
+last_reviewed: 2026-01-27
 ---
 
 # Overview

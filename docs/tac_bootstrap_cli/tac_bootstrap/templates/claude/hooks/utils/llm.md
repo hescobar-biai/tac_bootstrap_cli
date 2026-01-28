@@ -9,16 +9,14 @@ tags:
   - topic:api
 last_reviewed: UNKNOWN
 idk:
-  - llm-utilities
-  - hook-helpers
-  - claude-integration
-  - ai-model-operations
-  - jinja2-template-utils
-  - routing-logic
-  - prompt-handling
-  - template-generation
-  - hook-infrastructure
-  - ai-workflow-utils
+  - llm-hook-utilities
+  - claude-template-helpers
+  - jinja2-template-generation
+  - hook-routing-logic
+  - ai-model-integration
+  - template-rendering-utils
+  - claude-hooks-utils
+  - llm-configuration
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm
 children: []

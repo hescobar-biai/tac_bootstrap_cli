@@ -11,16 +11,17 @@ idk:
   - context-bundles
   - agent-context
   - template-structure
-  - configuration-presets
-  - context-initialization
-  - agent-templates
-  - bootstrap-templates
-  - context-management
+  - bundle-management
+  - context-loading
+  - agent-initialization
+  - pre-packaged-context
+  - session-bootstrapping
+  - jinja2-templates
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/
 children: []
 source_readmes: []
-last_reviewed: UNKNOWN
+last_reviewed: 2026-01-27
 ---
 
 # Overview
