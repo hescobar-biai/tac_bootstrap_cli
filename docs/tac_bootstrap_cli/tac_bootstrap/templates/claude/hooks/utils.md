@@ -9,8 +9,8 @@ tags:
   - topic:api
 idk:
   - claude-hooks-utilities
-  - llm-integration
-  - text-to-speech
+  - llm-api-integration
+  - text-to-speech-services
   - ai-service-clients
   - template-hook-helpers
   - jinja2-template-utils
