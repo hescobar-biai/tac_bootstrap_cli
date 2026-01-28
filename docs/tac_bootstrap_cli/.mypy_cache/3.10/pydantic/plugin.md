@@ -2,25 +2,25 @@
 doc_type: folder
 domain: tac-bootstrap_cli/mypy_cache/3.10/pydantic/plugin
 owner: UNKNOWN
-level: L4
+level: L5
 tags:
-  - expert:frontend
-  - level:L4
-  - topic:routing
+  - expert:backend
+  - level:L5
+  - topic:caching
+  - topic:performance
 idk:
-  - routing
-  - plugin
-  - caching
-  - performance
-  - api
-  - frontend
-  - mypy
+  - mypy-cache
+  - pydantic-plugin
+  - type-checking
+  - static-analysis
+  - build-artifacts
+  - python-typing
+  - compiler-cache
+  - validation-types
 related_code:
-  - tac_bootstrap_cli
-children:
-- 
-source_readmes:
-- README.md
+  - tac_bootstrap_cli/.mypy_cache/3.10/pydantic/plugin
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 

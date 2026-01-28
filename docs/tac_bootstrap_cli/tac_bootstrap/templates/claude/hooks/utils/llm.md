@@ -19,6 +19,8 @@ idk:
   - llm-config
   - template-rendering
   - utility-functions
+  - hook-automation
+  - template-infrastructure
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm
 children: []

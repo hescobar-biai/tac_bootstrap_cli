@@ -2,26 +2,26 @@
 doc_type: folder
 domain: tac-bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles
 owner: UNKNOWN
-level: L3
+level: L5
 tags:
-  - expert:frontend
-  - level:L3
-  - topic:routing
+  - expert:backend
+  - level:L5
+  - topic:api
 idk:
-  - routing
-  - frontend
-  - context
-  - bundles
-  - agent
-  - structure
-  - templates
+  - context-bundles
+  - agent-context
+  - template-structure
+  - bundle-management
+  - context-loading
+  - agent-initialization
+  - pre-packaged-context
+  - session-bootstrapping
+  - jinja2-templates
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/
-children:
-  - 
-source_readmes:
-  - tac_bootstrap_cli/README.md
-last_reviewed: UNKNOWN
+children: []
+source_readmes: []
+last_reviewed: 2026-01-27
 ---
 
 # Overview

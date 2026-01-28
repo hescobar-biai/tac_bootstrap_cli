@@ -6,54 +6,19 @@ level: L4
 tags:
   - expert:backend
   - level:L4
-  - topic:db
+  - topic:caching
 idk:
-  - caching
-  - db
-  - mypy
-  - pydantic
-  - cache
-  - database
-  - type-checking
-  - validation
+  - mypy-cache
+  - pydantic-internal
+  - type-checking-artifacts
+  - validation-metadata
+  - static-analysis
+  - cache-storage
+  - incremental-typing
 related_code:
-  - tac_bootstrap_cli/mypy_cache/3.10/pydantic/_internal
-children:
-  -
-    doc_type: folder
-    domain: tac-bootstrap_cli/mypy_cache/3.10/pydantic/_internal/routing
-    owner: UNKNOWN
-    level: L5
-    tags:
-      - expert:backend
-      - level:L5
-      - topic:routing
-    idk:
-      - routing
-      - backend
-      - api
-      - http
-      - server
-      - client
-      - middleware
-  -
-    doc_type: folder
-    domain: tac-bootstrap_cli/mypy_cache/3.10/pydantic/_internal/logging
-    owner: UNKNOWN
-    level: L5
-    tags:
-      - expert:backend
-      - level:L5
-      - topic:logging
-    idk:
-      - logging
-      - backend
-      - api
-      - server
-      - client
-      - middleware
-source_readmes:
-  - tac_bootstrap_cli/README.md
+  - tac_bootstrap_cli/.mypy_cache/3.10/pydantic/_internal
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 

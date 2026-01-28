@@ -1,56 +1,24 @@
 ---
 doc_type: folder
-domain: tac-bootstrap_cli/mypy_cache/3.10/concurrent/futures
+domain: tac_bootstrap_cli/.mypy_cache/3.10/concurrent/futures
 owner: UNKNOWN
-level: L4
+level: L5
 tags:
   - expert:infra
-  - level:L4
+  - level:L5
   - topic:queue
 idk:
-  - concurrent-execution
-  - futures-library
-  - thread-pooling
-  - async-io
-  - task-scheduling
-  - thread-safety
-  - deadlock-prevention
+  - mypy-cache
+  - type-checking-artifacts
+  - concurrent-futures-types
+  - python-stdlib-stubs
+  - build-cache
+  - incremental-checking
+  - futures-type-annotations
 related_code:
-  - tac_bootstrap_cli/
-children:
-  -
-    path: tac_bootstrap_cli/mypy_cache/3.10/concurrent/futures/routing
-    doc_type: folder
-    domain: tac_bootstrap_cli/mypy_cache/3.10/concurrent/futures/routing
-    owner: UNKNOWN
-    level: L5
-    tags:
-      - expert:routing
-      - level:L5
-      - topic:routing
-    idk:
-      - routing-library
-      - route-matching
-      - request-routing
-      - response-routing
-      - middleware
-  -
-    path: tac_bootstrap_cli/mypy_cache/3.10/concurrent/futures/db
-    doc_type: folder
-    domain: tac_bootstrap_cli/mypy_cache/3.10/concurrent/futures/db
-    owner: UNKNOWN
-    level: L5
-    tags:
-      - expert:data
-      - level:L5
-      - topic:db
-    idk:
-      - database-connection
-      - query-execution
-      - transaction-management
-      - data-caching
-source_readmes:
-  - tac_bootstrap_cli/README.md
+  - tac_bootstrap_cli/.mypy_cache/3.10/concurrent/futures
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 
