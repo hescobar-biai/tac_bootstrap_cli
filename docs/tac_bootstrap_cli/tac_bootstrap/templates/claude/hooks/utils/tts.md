@@ -4,25 +4,20 @@ domain: tac-bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts
 owner: UNKNOWN
 level: L5
 tags:
-  - expert:frontend
   - expert:backend
   - level:L5
   - topic:api
 idk:
   - text-to-speech
-  - tts
-  - hooks-utils
-  - template-utilities
-  - audio-synthesis
-  - speech-generation
-  - claude-hooks
-  - jinja2-templates
-  - audio-synthesis
-  - voice-generation
-  - speech-output
-  - template-utils
-  - hook-utilities
-  - audio-processing
+  - tts-template-utilities
+  - jinja2-hooks-tts
+  - claude-hooks-templates
+  - voice-synthesis-templates
+  - tts-integration-scaffold
+  - audio-generation-templates
+  - hook-utils-tts
+  - speech-output-bootstrap
+  - tac-bootstrap-tts
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts
 children: []
