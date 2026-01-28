@@ -6,6 +6,15 @@ Performance metrics for the AI Developer Workflow (ADW) system.
 
 Summary metrics across all ADW runs.
 
+| Metric            | Value          | Last Updated                 |
+| ----------------- | -------------- | ---------------------------- |
+| Current Streak    | 158            | Tue Jan 27 21:41:15 -05 2026 |
+| Longest Streak    | 158            | Tue Jan 27 21:41:15 -05 2026 |
+| Total Plan Size   | 27575 lines    | Tue Jan 27 21:41:15 -05 2026 |
+| Largest Plan Size | 673 lines      | Tue Jan 27 21:41:15 -05 2026 |
+| Total Diff Size   | 131244 lines   | Tue Jan 27 21:41:15 -05 2026 |
+| Largest Diff Size | 6832 lines     | Tue Jan 27 21:41:15 -05 2026 |
+| Average Presence  | 1.00           | Tue Jan 27 21:41:15 -05 2026 |
 | Metric            | Value          | Last Updated             |
 | ----------------- | -------------- | ------------------------ |
 | Current Streak    | 193            | Tue Jan 27 21:34:52 -05 2026 |
@@ -212,6 +221,7 @@ Detailed metrics for individual ADW workflow runs.
 | Tue Jan 27 2026  | chore_Tac_11_task_13     | 362 | /chore      | 1        | 62                | 256/2/7                         | Tue Jan 27 13:45:30 -05 2026 | -       |
 | Tue Jan 27 2026  | fa800122     | 4            | /chore      | 1        | 74                | 375/94/12                       | Tue Jan 27 18:10:38 -05 2026 | -       |
 | Tue Jan 27 2026  | ac5b5582                 | 1            | /feature    | 1        | 163               | 507/94/14                       | Tue Jan 27 18:12:44 -05 2026 | -       |
+| Tue Jan 27 2026  | c0c91505     | 6            | /chore      | 1        | 123               | 60/2/3                          | Tue Jan 27 21:41:15 -05 2026 | -       |
 | Tue Jan 27 2026  | 5eb8f822                 | 5            | /feature    | 1        | 166               | 732/421/27                      | Tue Jan 27 21:34:52 -05 2026 | -       |
 | Tue Jan 27 2026  | b6714dad                 | 4            | /chore      | 1        | 87                | 325/120/13                      | Tue Jan 27 21:25:38 -05 2026 | -       |
 | Tue Jan 27 2026  | 6fe74a31     | 3            | /chore      | 1        | 91                | 378/137/14                      | Tue Jan 27 21:28:18 -05 2026 | -       |
