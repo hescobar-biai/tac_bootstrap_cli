@@ -13,9 +13,9 @@ idk:
   - claude-hooks-utilities
   - ai-service-clients
   - template-hook-helpers
-  - jinja2-template-utils
-  - automation-helpers
-  - tac-bootstrap-templates
+  - jinja2-templates
+  - automation-utils
+  - hook-utilities
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils
 children:

@@ -9,13 +9,16 @@ tags:
   - expert:backend
 idk:
   - e2e-test-templates
-  - playwright-automation
-  - slash-command-generation
-  - browser-test-scenarios
+  - playwright-command-templates
+  - end-to-end-test-scenarios
+  - slash-command-e2e
+  - browser-automation-templates
   - integration-test-commands
-  - template-based-testing
-  - jinja2-test-templates
-  - ui-api-validation
+  - template-jinja2-e2e
+  - test-scenario-sql-injection
+  - test-scenario-export
+  - test-scenario-query-execution
+  - claude-code-test-templates
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/e2e
 children: []

@@ -2,21 +2,21 @@
 doc_type: folder
 domain: security-logs/agents/template-structure
 owner: UNKNOWN
-level: L5
+level: L4
 tags:
   - expert:infra
   - expert:observability
-  - level:L5
+  - level:L4
   - topic:logging
 idk:
   - security-logging
-  - agent-template
   - audit-trail
-  - threat-detection
-  - monitoring-component
+  - threat-monitoring
   - log-aggregation
+  - template-security
+  - agent-logs
   - security-events
-  - template-structure
+  - log-storage
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/security_logs
 children: []
