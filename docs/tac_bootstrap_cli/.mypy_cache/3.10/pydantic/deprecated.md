@@ -12,12 +12,12 @@ idk:
   - pydantic-deprecated
   - type-checking-artifacts
   - python-3.10
-  - static-analysis
-  - cache-metadata
-  - type-stubs
-  - deprecated-api
-  - legacy-compatibility
-  - migration-tracking
+  - static-analysis-cache
+  - type-stubs-deprecated
+  - pydantic-v1-compat
+  - legacy-type-info
+  - incremental-cache
+  - metadata-storage
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/pydantic/deprecated
 children: []

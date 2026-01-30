@@ -4,25 +4,23 @@ domain: agents/claude/templates/tac_bootstrap_cli
 owner: UNKNOWN
 level: L3
 tags:
-  - expert:frontend
+  - expert:backend
   - level:L3
-  - topic:routing
+  - topic:api
 idk:
-  - routing-engine
-  - agent-template
-  - cli-templates
-  - template-management
-  - route-configurator
-  - frontend-routing
+  - agent-templates
+  - context-bundles
+  - hook-logs
+  - security-logs
+  - template-infrastructure
+  - cli-generation
+  - jinja2-templates
+  - agent-scaffolding
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/agents
-  - tac_bootstrap_cli/tac_bootstrap/templates/claude/routing-engine
-children:
-  - routing-engine
-source_readmes:
-  - tac_bootstrap_cli/README.md
-  - tac_bootstrap_cli/templates/README.md
-last_reviewed: UNKNOWN
+children: []
+source_readmes: []
+last_reviewed: 2026-01-30
 ---
 
 # Overview

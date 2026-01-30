@@ -9,20 +9,20 @@ tags:
   - topic:caching
 idk:
   - mypy-cache
-  - pydantic-internal
+  - pydantic-internals
   - type-checking-artifacts
-  - static-analysis-cache
-  - incremental-typing
+  - incremental-analysis
   - validation-metadata
-  - compiled-artifacts
-  - dependency-tracking
-  - runtime-schema-cache
-  - type-inference-data
+  - static-analysis-cache
+  - compiled-schemas
+  - dependency-graph
+  - type-inference-cache
+  - runtime-artifacts
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/pydantic/_internal
 children: []
 source_readmes: []
-last_reviewed: UNKNOWN
+last_reviewed: 2026-01-30
 ---
 
 # Overview

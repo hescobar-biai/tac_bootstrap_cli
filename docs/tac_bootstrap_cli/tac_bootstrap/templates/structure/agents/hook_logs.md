@@ -9,7 +9,6 @@ tags:
   - topic:logging
 idk:
   - hook-execution-logs
-  - agent-hook-output
   - claude-hook-telemetry
   - pre-post-hook-events
   - hook-lifecycle-tracking
@@ -18,6 +17,7 @@ idk:
   - hook-invocation-capture
   - agent-automation-observability
   - runtime-hook-diagnostics
+  - template-output-structure
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/hook_logs
 children: []

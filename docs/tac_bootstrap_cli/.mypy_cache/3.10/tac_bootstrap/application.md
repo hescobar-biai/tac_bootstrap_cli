@@ -9,10 +9,13 @@ tags:
   - topic:performance
 idk:
   - mypy-cache
-  - type-checking-cache
+  - type-checking
   - python-3.10
   - static-analysis
-  - incremental-typing
+  - incremental-build
+  - tac-bootstrap
+  - application-layer
+  - cache-artifacts
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/tac_bootstrap/application
 children: []

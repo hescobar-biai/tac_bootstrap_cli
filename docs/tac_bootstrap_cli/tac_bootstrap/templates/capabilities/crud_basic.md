@@ -1,34 +1,28 @@
 ---
 doc_type: folder
-domain: crud-basic-capabilities
+domain: crud-basic-template-capabilities
 owner: UNKNOWN
-level: L3
+level: L4
 tags:
   - expert:backend
-  - level:L3
+  - level:L4
   - topic:db
+  - topic:api
 idk:
-  - api-endpoint
-  - backend-service
   - crud-operations
-  - database-access
-  - data-modeling
-  - endpoint-security
-  - file-system-interaction
-  - http-requests
-  - interface-definition
-  - model-validation
-  - query-language
-  - resource-management
-  - schema-design
-  - service-layer
-  - storage-mechanism
+  - template-generation
+  - database-schema
+  - api-endpoint-template
+  - service-layer-template
+  - model-generation
+  - repository-pattern
+  - jinja2-templates
+  - code-scaffolding
+  - ddd-infrastructure
 related_code:
-  - tac_bootstrap_cli/tac_bootstrap/templates/capabilities/crud_basic/repo
-children:
-  - 
-source_readmes:
-  - tac_bootstrap_cli/README.md
+  - tac_bootstrap_cli/tac_bootstrap/templates/capabilities/crud_basic
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 

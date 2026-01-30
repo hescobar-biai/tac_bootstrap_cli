@@ -2,27 +2,24 @@
 doc_type: folder
 domain: tac-bootstrap-cli/mypy_cache/3.10/tac_bootstrap/interfaces
 owner: UNKNOWN
-level: L2
+level: L5
 tags:
-  - expert:frontend
-  - level:L2
-  - topic:routing
+  - expert:backend
+  - level:L5
+  - topic:api
 idk:
-  - routing
-  - interfaces
-  - cli
-  - mypy
-  - cache
-  - bootstrap
+  - mypy-type-cache
+  - cli-interfaces
+  - type-stubs
+  - static-analysis
+  - python-3.10
+  - bootstrap-interfaces
+  - cached-annotations
+  - type-checking-artifacts
 related_code:
-  - tac_bootstrap_cli/
-children:
-  -
-    path: tac_bootstrap_cli/tac_bootstrap/interfaces/folder1
-  -
-    path: tac_bootstrap_cli/tac_bootstrap/interfaces/folder2
-source_readmes:
-  - README.md
+  - tac_bootstrap_cli/.mypy_cache/3.10/tac_bootstrap/interfaces
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 

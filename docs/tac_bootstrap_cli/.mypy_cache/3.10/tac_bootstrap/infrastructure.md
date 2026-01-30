@@ -2,19 +2,22 @@
 doc_type: folder
 domain: tac-bootstrap/infra/mypy-cache-infrastructure
 owner: UNKNOWN
-level: L4
+level: L5
 tags:
   - expert:infra
-  - level:L4
+  - level:L5
   - topic:caching
 last_reviewed: UNKNOWN
 idk:
   - mypy-cache
   - type-checking-artifacts
-  - build-cache
-  - python-typing
-  - incremental-compilation
+  - infrastructure-layer
+  - python-typing-cache
+  - incremental-type-checking
+  - build-artifacts
+  - mypy-3.10
   - infrastructure-stubs
+  - type-cache-persistence
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/tac_bootstrap/infrastructure
 children: []

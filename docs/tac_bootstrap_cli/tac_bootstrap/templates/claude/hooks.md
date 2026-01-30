@@ -2,24 +2,25 @@
 doc_type: folder
 domain: tac-bootstrap-cli-tac-bootstrap-templates-claude-hooks
 owner: UNKNOWN
-level: L3
+level: L4
 tags:
-  - expert:frontend
-  - level:L3
-  - topic:routing
+  - expert:backend
+  - level:L4
+  - topic:api
 idk:
-  - routing
-  - hooks
-  - cli
-  - templates
-  - claude
+  - claude-hooks
+  - template-hooks
+  - cli-automation
+  - event-handlers
+  - jinja2-templates
+  - hook-utilities
   - tac-bootstrap
+  - python-hooks
 related_code:
-  - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils.md
+  - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks
 children:
   - docs/tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils.md
-source_readmes:
-  - README.md
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 

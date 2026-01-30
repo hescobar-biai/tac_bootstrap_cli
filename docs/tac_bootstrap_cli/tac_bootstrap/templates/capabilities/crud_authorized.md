@@ -7,22 +7,25 @@ tags:
   - expert:backend
   - level:L3
   - topic:auth
+  - topic:api
 idk:
-  - api-gateway
-  - auth-server
+  - crud-authorized
   - authorization
-  - crud
   - endpoint-security
-  - identity-management
   - permission-system
-  - routing
-  - security
+  - identity-management
+  - resource-access-control
+  - auth-middleware
+  - role-based-access
+  - api-security
   - user-authentication
 related_code:
-  - tac_bootstrap_cli/tac_bootstrap/templates/capabilities/crud_authorized/repo
-children:
-  - 
+  - tac_bootstrap_cli/tac_bootstrap/templates/capabilities/crud_authorized
+children: []
+source_readmes: []
+last_reviewed: UNKNOWN
 ---
+
 # Overview
 
 This folder contains the CRUD Authorized capabilities for the Tac Bootstrap CLI.

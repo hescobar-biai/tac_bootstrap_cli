@@ -2,26 +2,27 @@
 doc_type: folder
 domain: tac-bootstrap_cli/mypy_cache/3.10/tac_bootstrap/domain
 owner: UNKNOWN
-level: L4
+level: L5
 tags:
   - expert:infra
-  - level:L4
-  - topic:db
+  - level:L5
+  - topic:caching
+last_reviewed: UNKNOWN
 idk:
-  - database
-  - caching
-  - performance
-  - scalability
-  - reliability
-  - fault-tolerance
-  - data-availability
-  - storage
-  - indexing
+  - mypy-cache
+  - type-checking-artifacts
+  - static-analysis
+  - domain-layer-types
+  - pydantic-models
+  - type-stubs
+  - incremental-compilation
+  - build-cache
 related_code:
-  - tac_bootstrap_cli/mypy_cache/3.10/tac_bootstrap/domain/
-children:
-  - 
+  - tac_bootstrap_cli/.mypy_cache/3.10/tac_bootstrap/domain/
+children: []
+source_readmes: []
 ---
+
 # Overview
 
 This folder contains the database and caching layer for the Tac Bootstrap CLI.
