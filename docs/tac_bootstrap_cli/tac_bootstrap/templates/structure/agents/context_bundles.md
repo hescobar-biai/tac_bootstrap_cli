@@ -9,16 +9,17 @@ tags:
   - topic:api
 idk:
   - context-bundle-templates
-  - jinja2-agent-templates
-  - session-initialization-artifacts
-  - pre-packaged-knowledge
-  - load-bundle-skill
-  - agent-memory-bootstrap
-  - context-injection-templates
+  - jinja2-template-generation
+  - agent-session-initialization
+  - pre-loaded-context-artifacts
+  - load-bundle-skill-integration
+  - agent-memory-seeding
   - file-read-parameter-preservation
-  - knowledge-seeding-templates
-  - session-context-generation
-  - bundle-template-output
+  - knowledge-injection-templates
+  - session-bootstrap-templates
+  - claude-agent-context
+  - bundle-metadata-templates
+  - agent-priming-artifacts
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/
 children: []

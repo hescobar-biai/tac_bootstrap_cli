@@ -18,8 +18,6 @@ idk:
   - speech-synthesis-scaffold
   - cli-generator-tts-layer
   - tts-integration-templates
-  - template-rendering-utilities
-  - hook-infrastructure-templates
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts
 children: []
