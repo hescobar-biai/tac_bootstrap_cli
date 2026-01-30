@@ -13,11 +13,14 @@ idk:
   - text-to-speech
   - ai-service-helpers
   - jinja2-template-utilities
-  - automation-helpers
   - template-hook-utils
   - anthropic-api
   - openai-api
   - tts-streaming
+  - automation-helpers
+  - tac-bootstrap-templates
+  - claude-hooks-framework
+  - ai-service-abstractions
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils
 children:

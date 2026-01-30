@@ -308,6 +308,7 @@ class ScaffoldService:
             "test_e2e",
             # Utility commands
             "tools",
+            "all_tools",
             "in_loop_review",
             "github_check",
             "conditional_docs",

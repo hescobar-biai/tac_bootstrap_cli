@@ -17,11 +17,72 @@ import subprocess
 import sys
 import os
 import json
+import time
 from typing import Dict, List, Optional
 from .data_types import GitHubIssue, GitHubIssueListItem, GitHubComment
 
 # Bot identifier to prevent webhook loops and filter bot comments
 ADW_BOT_IDENTIFIER = "[ADW-AGENTS]"
+
+# Rate limiting to avoid GitHub API rate limits
+MIN_DELAY_BETWEEN_COMMENTS = 5.0  # seconds
+INITIAL_DELAY = 3.0  # seconds delay before first comment
+MAX_RETRIES = 5
+RETRY_BACKOFF = 10.0  # seconds between retries
+_last_comment_time = 0
+_first_call_made = False
+
+
+def _rate_limit_delay():
+    """Enforce minimum delay between API calls to avoid rate limiting."""
+    global _last_comment_time, _first_call_made
+    current_time = time.time()
+    time_since_last = current_time - _last_comment_time
+
+    # Initial delay for first call
+    if not _first_call_made:
+        print(f"⏱️  First API call - waiting {INITIAL_DELAY}s...", file=sys.stderr)
+        time.sleep(INITIAL_DELAY)
+        _first_call_made = True
+        _last_comment_time = time.time()
+        return
+
+    if time_since_last < MIN_DELAY_BETWEEN_COMMENTS:
+        sleep_time = MIN_DELAY_BETWEEN_COMMENTS - time_since_last
+        time.sleep(sleep_time)
+
+    _last_comment_time = time.time()
+
+
+def _execute_with_retry(cmd, env, operation_name="operation"):
+    """Execute command with retries on rate limit errors."""
+    global _last_comment_time
+    result = None
+
+    for attempt in range(MAX_RETRIES):
+        # Rate limiting delay
+        _rate_limit_delay()
+
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+
+        if result.returncode == 0:
+            return result
+
+        # Check if it's a rate limit error
+        stderr = result.stderr.lower()
+        if "too quickly" in stderr or "rate limit" in stderr:
+            wait_time = RETRY_BACKOFF * (attempt + 1)
+            print(
+                f"⏱️  Rate limited. Waiting {wait_time}s before retry {attempt + 1}/{MAX_RETRIES}...",
+                file=sys.stderr,
+            )
+            time.sleep(wait_time)
+        else:
+            # Not a rate limit error, fail immediately
+            return result
+
+    # All retries failed
+    return result
 
 
 def get_github_env() -> Optional[dict]:
@@ -149,7 +210,10 @@ def make_issue_comment(issue_id: str, comment: str) -> None:
     env = get_github_env()
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        result = _execute_with_retry(cmd, env, "make_issue_comment")
+
+        if result is None:
+            raise RuntimeError("Failed to get result from command execution")
 
         if result.returncode == 0:
             print(f"Successfully posted comment to issue #{issue_id}")
