@@ -1769,3 +1769,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When working with Explore agent integration for documentation loading
     - When maintaining default fallback paths in templates
     - When creating commands that need project-specific path configuration
+- specs/issue-463-adw-feature_Tac_12_task_11_2-sdlc_planner-load-bundle-command.md
+  - Conditions:
+    - When working with /load_bundle command implementation
+    - When implementing session recovery and context restoration features
+    - When debugging agent behavior from previous sessions
+    - When working with context_bundle_builder hook infrastructure
+    - When implementing JSONL parsing and file deduplication logic
+    - When creating commands that handle missing files gracefully
+    - When understanding bundle file format and operation tracking
+    - When working with logs/context_bundles/ directory structure
