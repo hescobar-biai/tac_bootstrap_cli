@@ -11,15 +11,15 @@ idk:
   - e2e-test-command-templates
   - playwright-browser-automation
   - slash-command-test-definitions
-  - sql-injection-test-pattern
-  - export-functionality-validation
-  - query-execution-e2e
-  - input-debounce-testing
   - jinja2-test-templates
-  - browser-snapshot-validation
   - claude-code-integration
   - test-scenario-bootstrapping
   - command-template-generation
+  - browser-snapshot-validation
+  - sql-injection-test-pattern
+  - query-execution-e2e
+  - export-functionality-validation
+  - input-debounce-testing
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/e2e
 children: []
