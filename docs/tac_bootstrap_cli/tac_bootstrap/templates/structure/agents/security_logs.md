@@ -23,8 +23,8 @@ idk:
   - bootstrap-structure
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/security_logs
-children: []
-source_readmes: []
+children:[]
+source_readmes:[]
 last_reviewed: 2026-01-30
 ---
 

@@ -25,7 +25,7 @@ related_code:
 children:
   - docs/tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm.md
   - docs/tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts.md
-source_readmes: []
+source_readmes:[]
 last_reviewed: 2026-01-30
 ---
 

@@ -7,7 +7,6 @@ tags:
   - expert:backend
   - level:L5
   - topic:api
-last_reviewed: UNKNOWN
 idk:
   - llm-hook-utilities
   - claude-template-hooks
@@ -21,8 +20,9 @@ idk:
   - hook-infrastructure-layer
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm
-children: []
-source_readmes: []
+children:[]
+source_readmes:[]
+last_reviewed: UNKNOWN
 ---
 
 # Overview

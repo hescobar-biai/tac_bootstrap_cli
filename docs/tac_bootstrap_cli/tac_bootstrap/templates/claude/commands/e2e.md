@@ -22,8 +22,8 @@ idk:
   - random-query-generator
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/e2e
-children: []
-source_readmes: []
+children:[]
+source_readmes:[]
 last_reviewed: 2026-01-30
 ---
 

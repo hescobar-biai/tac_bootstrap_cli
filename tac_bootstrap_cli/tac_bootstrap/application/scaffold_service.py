@@ -414,6 +414,7 @@ class ScaffoldService:
             ("research-docs-fetcher.md", "Research and documentation fetcher agent"),
             ("build-agent.md", "Parallel build file implementation agent"),
             ("playwright-validator.md", "Playwright E2E validation agent"),
+            ("scout-report-suggest.md", "Codebase scouting and analysis agent"),
         ]
         for agent, reason in agents:
             plan.add_file(
