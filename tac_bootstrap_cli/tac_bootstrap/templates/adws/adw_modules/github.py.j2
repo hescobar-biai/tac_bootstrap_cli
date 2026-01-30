@@ -25,17 +25,27 @@ from .data_types import GitHubIssue, GitHubIssueListItem, GitHubComment
 ADW_BOT_IDENTIFIER = "[ADW-AGENTS]"
 
 # Rate limiting to avoid GitHub API rate limits
-MIN_DELAY_BETWEEN_COMMENTS = 2.0  # seconds
-MAX_RETRIES = 3
-RETRY_BACKOFF = 5.0  # seconds between retries
+MIN_DELAY_BETWEEN_COMMENTS = 5.0  # seconds
+INITIAL_DELAY = 3.0  # seconds delay before first comment
+MAX_RETRIES = 5
+RETRY_BACKOFF = 10.0  # seconds between retries
 _last_comment_time = 0
+_first_call_made = False
 
 
 def _rate_limit_delay():
     """Enforce minimum delay between API calls to avoid rate limiting."""
-    global _last_comment_time
+    global _last_comment_time, _first_call_made
     current_time = time.time()
     time_since_last = current_time - _last_comment_time
+
+    # Initial delay for first call
+    if not _first_call_made:
+        print(f"⏱️  First API call - waiting {INITIAL_DELAY}s...", file=sys.stderr)
+        time.sleep(INITIAL_DELAY)
+        _first_call_made = True
+        _last_comment_time = time.time()
+        return
 
     if time_since_last < MIN_DELAY_BETWEEN_COMMENTS:
         sleep_time = MIN_DELAY_BETWEEN_COMMENTS - time_since_last
