@@ -10,12 +10,13 @@ tags:
 idk:
   - scout-agent-templates
   - jinja2-structure
-  - file-discovery
-  - agent-scaffolding
-  - template-generation
-  - codebase-exploration
-  - bootstrap-cli
-  - agent-infrastructure
+  - file-discovery-scaffolding
+  - agent-template-infrastructure
+  - codebase-exploration-templates
+  - bootstrap-cli-generation
+  - scout-command-templates
+  - template-rendering-structure
+  - agent-file-scaffolds
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/scout_files
 children: []
