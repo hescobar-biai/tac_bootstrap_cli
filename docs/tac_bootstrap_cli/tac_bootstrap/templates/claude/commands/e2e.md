@@ -14,12 +14,12 @@ idk:
   - jinja2-test-templates
   - claude-code-integration
   - test-scenario-bootstrapping
-  - command-template-generation
-  - browser-snapshot-validation
   - sql-injection-test-pattern
   - query-execution-e2e
   - export-functionality-validation
   - input-debounce-testing
+  - browser-snapshot-validation
+  - command-template-generation
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/e2e
 children: []

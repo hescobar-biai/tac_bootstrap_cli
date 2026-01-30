@@ -18,8 +18,6 @@ idk:
   - knowledge-iteration-system
   - multi-phase-development
   - tac-bootstrap-cli-templates
-  - template-based-code-generation
-  - agile-expert-workflow
 related_code: ['tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cc_hook_expert']
 children: []
 source_readmes: []
