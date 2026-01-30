@@ -11,7 +11,7 @@ session_id: $ARGUMENT (optional) - Session ID to load (e.g., "abc123-def456")
 
 - Context bundles are JSONL files that track file operations during Claude Code sessions
 - They are automatically created by the `context_bundle_builder` hook
-- Bundles are stored at: `logs/context_bundles/session_{session_id}.jsonl`
+- Bundles are stored at: `{{ config.paths.logs_dir }}/context_bundles/session_{session_id}.jsonl`
 - Each JSONL entry represents a file operation (read, write, edit, notebookedit) with metadata
 
 **JSONL Entry Schema:**
@@ -42,9 +42,9 @@ session_id: $ARGUMENT (optional) - Session ID to load (e.g., "abc123-def456")
 
 1. **Locate the bundle file:**
    - If `bundle_path` is provided: Use it directly
-   - If `session_id` is provided: Construct path as `logs/context_bundles/session_{session_id}.jsonl`
-   - Otherwise: Find the most recent file in `logs/context_bundles/` directory
-   - Use Bash to list files: `ls -t logs/context_bundles/session_*.jsonl | head -1`
+   - If `session_id` is provided: Construct path as `{{ config.paths.logs_dir }}/context_bundles/session_{session_id}.jsonl`
+   - Otherwise: Find the most recent file in `{{ config.paths.logs_dir }}/context_bundles/` directory
+   - Use Bash to list files: `ls -t {{ config.paths.logs_dir }}/context_bundles/session_*.jsonl | head -1`
 
 2. **Verify bundle file exists:**
    - Use Read tool to check if the file exists
@@ -80,7 +80,7 @@ session_id: $ARGUMENT (optional) - Session ID to load (e.g., "abc123-def456")
 ```
 User: /load_bundle
 Agent: No arguments provided, loading most recent bundle...
-       Found: logs/context_bundles/session_abc123.jsonl
+       Found: {{ config.paths.logs_dir }}/context_bundles/session_abc123.jsonl
        Parsing 45 entries...
        Restoring context from 12 unique files...
 ```
@@ -89,15 +89,15 @@ Agent: No arguments provided, loading most recent bundle...
 ```
 User: /load_bundle session_id=abc123-def456-789012
 Agent: Loading bundle for session: abc123-def456-789012
-       Found: logs/context_bundles/session_abc123-def456-789012.jsonl
+       Found: {{ config.paths.logs_dir }}/context_bundles/session_abc123-def456-789012.jsonl
        Parsing 32 entries...
        Restoring context from 8 unique files...
 ```
 
 **Example 3: Load specific bundle file**
 ```
-User: /load_bundle bundle_path=logs/context_bundles/session_old_session.jsonl
-Agent: Loading bundle: logs/context_bundles/session_old_session.jsonl
+User: /load_bundle bundle_path={{ config.paths.logs_dir }}/context_bundles/session_old_session.jsonl
+Agent: Loading bundle: {{ config.paths.logs_dir }}/context_bundles/session_old_session.jsonl
        Parsing 18 entries...
        Restoring context from 5 unique files...
        Warning: 2 files no longer exist and were skipped
@@ -132,7 +132,7 @@ Report to the user:
 
 **Format:**
 ```
-Context bundle loaded: logs/context_bundles/session_{session_id}.jsonl
+Context bundle loaded: {{ config.paths.logs_dir }}/context_bundles/session_{session_id}.jsonl
 Total entries: {count}
 Session ID: {session_id}
 
