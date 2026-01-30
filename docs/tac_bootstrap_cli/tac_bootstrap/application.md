@@ -1,6 +1,6 @@
 ---
 doc_type: folder
-domain: tac-bootstrap_cli/tac_bootstrap/application
+domain: tac-bootstrap/application
 owner: UNKNOWN
 level: L3
 tags:
@@ -16,12 +16,8 @@ idk:
   - db
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/application
-  - tac_bootstrap_cli/tac_bootstrap/infra
-children:
-  - tac_bootstrap_cli/tac_bootstrap/routing
-  - tac_bootstrap_cli/tac_bootstrap/api
-source_readmes:
-  - tac_bootstrap_cli/tac_bootstrap/application/README.md
+children:[]
+source_readmes:[]
 last_reviewed: UNKNOWN
 ---
 

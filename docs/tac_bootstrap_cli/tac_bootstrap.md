@@ -1,6 +1,6 @@
 ---
 doc_type: folder
-domain: tac-bootstrap-cli
+domain: tac-bootstrap-cli-core
 owner: UNKNOWN
 level: L3
 tags:
@@ -16,19 +16,14 @@ idk:
   - scalability
   - caching
 related_code:
-  - docs/tac_bootstrap_cli/tac_bootstrap/application.md
-  - docs/tac_bootstrap_cli/tac_bootstrap/domain.md
-  - docs/tac_bootstrap_cli/tac_bootstrap/infrastructure.md
-  - docs/tac_bootstrap_cli/tac_bootstrap/interfaces.md
-  - docs/tac_bootstrap_cli/tac_bootstrap/templates.md
+  - tac_bootstrap_cli/tac_bootstrap
 children:
   - docs/tac_bootstrap_cli/tac_bootstrap/application.md
   - docs/tac_bootstrap_cli/tac_bootstrap/domain.md
   - docs/tac_bootstrap_cli/tac_bootstrap/infrastructure.md
   - docs/tac_bootstrap_cli/tac_bootstrap/interfaces.md
   - docs/tac_bootstrap_cli/tac_bootstrap/templates.md
-source_readmes:
-  - README.md
+source_readmes:[]
 last_reviewed: UNKNOWN
 ---
 

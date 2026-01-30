@@ -1,8 +1,8 @@
 ---
 doc_type: folder
-domain: tac-bootstrap_cli/tac_bootstrap/domain
+domain: tac-bootstrap/cli/domain
 owner: UNKNOWN
-level: L3
+level: L4
 tags:
   - expert:frontend
   - level:L3
@@ -16,12 +16,9 @@ idk:
   - queue
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/domain
-  - tac_bootstrap_cli/tac_bootstrap/cli
-children:
-  - tac-bootstrap_cli/tac_bootstrap/routing
-source_readmes:
-  - README.md
-last_reviewed: UNKNOWN
+children:[]
+source_readmes:[]
+last_reviewed: 2026-01-30
 ---
 
 # Overview

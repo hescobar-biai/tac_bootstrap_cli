@@ -1,25 +1,21 @@
 ---
 doc_type: folder
-domain: tac-bootstrap-cli/interfaces/tac_bootstrap_cli
+domain: tac-bootstrap-cli/interfaces
 owner: UNKNOWN
 level: L3
 tags:
-- expert:frontend
-- level:L3
-- topic:routing
+  - expert:frontend
+  - level:L3
+  - topic:routing
 idk:
-- routing
-- interfaces
-- cli
-- bootstrap
+  - routing
+  - interfaces
+  - cli
+  - bootstrap
 related_code:
-- tac_bootstrap_cli/tac_bootstrap/interfaces
-- tac_bootstrap_cli/tac_bootstrap/cli
-children:
-- tac_bootstrap_cli/tac_bootstrap/interfaces/components
-- tac_bootstrap_cli/tac_bootstrap/interfaces/routing
-source_readmes:
-- README.md
+  - tac_bootstrap_cli/tac_bootstrap/interfaces
+children:[]
+source_readmes:[]
 last_reviewed: UNKNOWN
 ---
 
