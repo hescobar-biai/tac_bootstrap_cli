@@ -18,6 +18,8 @@ idk:
   - context-injection
   - template-generation-output
   - session-context-templates
+  - file-read-parameters
+  - bundle-metadata
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/
 children: []

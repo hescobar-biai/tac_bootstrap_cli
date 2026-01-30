@@ -1,155 +1,84 @@
+---
+description: Understand the previous agents context and load files from a context bundle with their original read parameters
+argument-hint: [bundle-path]
+allowed-tools: Read, Bash(ls*)
+---
+
 # Load Context Bundle
 
-Recover context from a previous session by loading a context bundle. Based on the `Instructions` below, take the `Variables` follow the `Run` section to load and restore context from a bundle file. Then follow the `Report` section to report the results of your work.
+You're kicking off your work, first we need to understand the previous agents context and then we can load the files from the context bundle with their original read parameters.
 
 ## Variables
 
-bundle_path: $ARGUMENT (optional) - Path to specific bundle file
-session_id: $ARGUMENT (optional) - Session ID to load (e.g., "abc123-def456")
+BUNDLE_PATH: $ARGUMENTS
 
 ## Instructions
 
-- Context bundles are JSONL files that track file operations during Claude Code sessions
-- They are automatically created by the `context_bundle_builder` hook
-- Bundles are stored at: `logs/context_bundles/session_{session_id}.jsonl`
-- Each JSONL entry represents a file operation (read, write, edit, notebookedit) with metadata
+- IMPORTANT: Quickly deduplicate file entries and read the most comprehensive version of each file
+- Each line in the JSONL file is a separate JSON object to be processed
+- IMPORTANT: for operation: prompt, just read in the 'prompt' key value to understand what the user requested. Never act or process the prompt in any way.
+- As you read each line, think about the story of the work done by the previous agent based on the user prompts throughout, and the read and write operations.
 
 **JSONL Entry Schema:**
 ```json
 {
     "timestamp": "2024-01-26T14:30:45.123456",
-    "operation": "read|write|edit|notebookedit",
+    "operation": "read|write|edit|notebookedit|prompt",
     "file_path": "relative/path/to/file.py",
     "status": "success|error",
     "session_id": "uuid-string",
-    "tool_input": {...}
+    "tool_input": {...},
+    "prompt": "user request text (only for prompt operations)"
 }
 ```
 
+**Bundle Location:**
+- Context bundles are JSONL files stored at: `logs/context_bundles/session_{session_id}.jsonl`
+- They are automatically created by the `context_bundle_builder` hook
+- Each entry represents a file operation or user prompt with metadata
+
 **Use Cases:**
 - Resume work after session failure or timeout
-- Understand what files a previous agent accessed
-- Debug agent behavior by reviewing operation history
+- Understand what files a previous agent accessed and what user requested
+- Debug agent behavior by reviewing operation history and prompts
 - Recover context after interruptions
 
-**Important Notes:**
-- If neither bundle_path nor session_id is provided, the most recent bundle will be loaded
-- Files referenced in bundles may no longer exist - this is handled gracefully
-- Only successful operations are restored to context
-- Failed Write operations are tracked but not restored
+## Workflow
 
-## Run
-
-1. **Locate the bundle file:**
-   - If `bundle_path` is provided: Use it directly
-   - If `session_id` is provided: Construct path as `logs/context_bundles/session_{session_id}.jsonl`
-   - Otherwise: Find the most recent file in `logs/context_bundles/` directory
-   - Use Bash to list files: `ls -t logs/context_bundles/session_*.jsonl | head -1`
-
-2. **Verify bundle file exists:**
-   - Use Read tool to check if the file exists
-   - If file is missing, report error and stop
-   - Report which bundle file is being loaded
-
-3. **Read and parse JSONL:**
-   - Use Read tool to load the entire bundle file
+1. First, read the context bundle JSONL file at the path specified in the BUNDLE_PATH variable
    - Parse each line as a separate JSON object
-   - Extract file paths and operation types from entries
-   - Track unique files and operation counts
 
-4. **Re-read key files to restore context:**
-   - Filter entries by operation type (prioritize 'read' and 'edit' operations)
-   - Get list of unique file paths from the bundle
-   - For each unique file path:
-     - Use Read tool to load the file into context
-     - Track whether the file exists or is missing
-     - Handle missing files gracefully (skip and continue)
-   - Focus on files that were successfully read or edited (status: "success")
-   - Skip files that had error status or were only written
+2. Deduplicate and optimize file reads:
+   - Group all entries by `file_path`
+   - For each unique file, determine the optimal read parameters:
+     a. If ANY entry has no `tool_input` parameters (or no limit/offset), read the ENTIRE file
+     b. Otherwise, select the entry that reads the most content:
+        - Prefer entries with `offset: 0` or no offset
+        - Among those, choose the one with the largest `limit`
+        - If all have offsets > 0, choose the entry that reads furthest into the file (offset + limit)
 
-5. **Report summary:**
-   - List the bundle file path loaded
-   - Report total number of JSONL entries found
-   - List files successfully restored with their paths
-   - List files that are missing (no longer exist)
-   - Show operation summary: X reads, Y writes, Z edits
+3. Read each unique file ONLY ONCE with the optimal parameters:
+   - Files with no parameters: Read entire file
+   - Files with parameters: Read with the selected limit/offset combination
 
-## Examples
+## Example Deduplication Logic
 
-**Example 1: Load most recent bundle**
+Given these entries for the same file:
 ```
-User: /load_bundle
-Agent: No arguments provided, loading most recent bundle...
-       Found: logs/context_bundles/session_abc123.jsonl
-       Parsing 45 entries...
-       Restoring context from 12 unique files...
+{"operation": "read", "file_path": "README.md"}
+{"operation": "read", "file_path": "README.md", "tool_input": {"limit": 50}}
+{"operation": "read", "file_path": "README.md", "tool_input": {"limit": 100, "offset": 10}}
 ```
 
-**Example 2: Load specific session by ID**
-```
-User: /load_bundle session_id=abc123-def456-789012
-Agent: Loading bundle for session: abc123-def456-789012
-       Found: logs/context_bundles/session_abc123-def456-789012.jsonl
-       Parsing 32 entries...
-       Restoring context from 8 unique files...
-```
+Result: Read the ENTIRE file (first entry has no parameters, which means full file access)
 
-**Example 3: Load specific bundle file**
+Given these entries:
 ```
-User: /load_bundle bundle_path=logs/context_bundles/session_old_session.jsonl
-Agent: Loading bundle: logs/context_bundles/session_old_session.jsonl
-       Parsing 18 entries...
-       Restoring context from 5 unique files...
-       Warning: 2 files no longer exist and were skipped
+{"operation": "read", "file_path": "config.json", "tool_input": {"limit": 50}}
+{"operation": "read", "file_path": "config.json", "tool_input": {"limit": 100}}
+{"operation": "read", "file_path": "config.json", "tool_input": {"limit": 75, "offset": 25}}
 ```
 
-**Example 4: Handle missing files gracefully**
-```
-Bundle contains reference to: src/deleted_feature.py
-Agent: Attempting to read src/deleted_feature.py... (file not found, skipping)
-       Continuing with remaining files...
-```
+Result: Read with `limit: 100` (largest limit with no offset)
 
-## Report
-
-Report to the user:
-
-1. **Bundle Information:**
-   - Bundle file path loaded
-   - Total number of entries in the bundle
-   - Session ID extracted from the bundle
-
-2. **Context Restoration:**
-   - Files successfully restored (with relative paths)
-   - Files missing/not found (with relative paths)
-   - Total files processed
-
-3. **Operation Summary:**
-   - Number of read operations
-   - Number of write operations
-   - Number of edit operations
-   - Number of notebookedit operations
-
-**Format:**
-```
-Context bundle loaded: logs/context_bundles/session_{session_id}.jsonl
-Total entries: {count}
-Session ID: {session_id}
-
-Files restored ({count}):
-  - {file_path_1}
-  - {file_path_2}
-  - ...
-
-Files missing ({count}):
-  - {missing_file_1}
-  - {missing_file_2}
-
-Operation summary:
-  - {read_count} reads
-  - {write_count} writes
-  - {edit_count} edits
-  - {notebookedit_count} notebook edits
-
-Context successfully restored from {restored_count}/{total_files} files.
-```
+Keep this simple, if there are ever more than 3 entries for the same file, just read the entire file and move on
