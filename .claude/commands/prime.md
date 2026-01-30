@@ -66,3 +66,6 @@ El archivo PLAN_TAC_BOOTSTRAP.md contiene 9 fases:
 - Estado actual del desarrollo (qué fases están completas)
 - Siguiente tarea a implementar según el plan
 - Archivos clave para la tarea actual
+
+## Related Commands
+- `/prime_cc` - Claude Code-optimized version that includes this context plus Claude Code-specific configuration (commands, hooks, settings)
