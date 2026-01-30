@@ -8,27 +8,16 @@ tags:
   - level:L5
   - topic:api
 idk:
-<<<<<<< HEAD
   - text-to-speech
-  - tts-template-utils
-  - audio-synthesis
-  - speech-generation
+  - tts-templates
   - jinja2-hook-templates
-  - voice-output-utilities
-  - claude-hook-utils
-  - tts-integration
-=======
-  - jinja2-template-utils
-  - claude-hook-templates
-  - text-to-speech-stub
-  - tts-utilities
-  - template-generation
-  - bootstrap-cli-templates
-  - hook-utils
+  - claude-hooks-utils
   - audio-synthesis
-  - voice-output
-  - tac-bootstrap
->>>>>>> feature-issue-457-adw-feature_Tac_12_task_5-create-plan-w-docs-command
+  - voice-generation
+  - template-structure
+  - hook-utilities
+  - tac-bootstrap-templates
+  - tts-integration
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts
 children: []

@@ -15,8 +15,8 @@ idk:
   - ast-cache
   - static-analysis-cache
   - incremental-checking
-  - type-stub-cache
-  - build-artifacts
+  - common-utilities
+  - markdown-parser-cache
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/common
 children: []

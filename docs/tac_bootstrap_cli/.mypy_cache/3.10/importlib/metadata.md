@@ -17,6 +17,9 @@ idk:
   - type-stubs
   - incremental-compilation
   - stub-cache
+  - metadata-types
+  - cache-directory
+  - typing-information
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/importlib/metadata
 children: []

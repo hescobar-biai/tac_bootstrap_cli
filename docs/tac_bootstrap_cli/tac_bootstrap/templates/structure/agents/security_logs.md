@@ -10,20 +10,17 @@ tags:
   - topic:logging
 idk:
   - security-logging
-  - agent-security-logs
   - audit-trail
-  - threat-detection
   - template-structure
-  - log-aggregation
-  - monitoring-infrastructure
   - jinja2-template
-<<<<<<< HEAD
-  - centralized-logging
   - authentication-events
-=======
   - compliance-logs
   - security-events
->>>>>>> feature-issue-457-adw-feature_Tac_12_task_5-create-plan-w-docs-command
+  - threat-detection
+  - centralized-logging
+  - log-aggregation
+  - tac-bootstrap-templates
+  - agent-security
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/security_logs
 children: []

@@ -1,6 +1,6 @@
 ---
 doc_type: folder
-domain: tac-bootstrap-cli/mypy-cache/3.10/markdown-it/helpers
+domain: tac-bootstrap-cli/mypy-cache/markdown-it-helpers
 owner: UNKNOWN
 level: L5
 tags:
@@ -8,15 +8,13 @@ tags:
 - level:L5
 - topic:caching
 idk:
-- mypy-cache
-- type-stubs
-- markdown-it-helpers
-- python-3.10
-- static-analysis
+- mypy-incremental-cache
 - type-checking-artifacts
-- incremental-cache
-- type-inference
-- ast-metadata
+- markdown-it-helpers-stubs
+- python-3.10-cache
+- static-analysis-metadata
+- ast-type-inference
+- incremental-type-data
 related_code:
 - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/helpers
 children: []

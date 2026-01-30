@@ -10,13 +10,14 @@ tags:
 idk:
   - mypy-cache
   - type-checking-artifacts
-  - markdown-it-inline-parser
-  - python-3.10-cache
-  - ast-metadata
-  - incremental-type-analysis
-  - inline-rule-processing
-  - parser-rule-cache
-  - static-analysis-cache
+  - markdown-it-inline-rules
+  - python-3.10-incremental
+  - ast-metadata-cache
+  - inline-parser-rules
+  - static-analysis-artifacts
+  - incremental-type-checking
+  - parser-rule-metadata
+  - mypy-daemon-cache
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/rules_inline
 children: []

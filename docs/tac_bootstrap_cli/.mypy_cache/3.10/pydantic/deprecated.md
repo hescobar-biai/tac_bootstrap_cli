@@ -17,7 +17,7 @@ idk:
   - type-stubs
   - deprecated-api
   - legacy-compatibility
-  - migration-artifacts
+  - migration-tracking
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/pydantic/deprecated
 children: []

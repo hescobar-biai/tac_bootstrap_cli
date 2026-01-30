@@ -9,13 +9,15 @@ tags:
   - topic:caching
 idk:
   - mypy-type-cache
-  - python-3.10-artifacts
+  - python-3.10-runtime
   - markdown-it-parser
   - block-level-rules
-  - incremental-type-check
-  - ast-metadata
-  - compiled-cache
-  - type-stubs
+  - incremental-typecheck
+  - ast-cache-artifacts
+  - type-stub-cache
+  - markdown-block-grammar
+  - parser-rule-modules
+  - cached-type-info
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/rules_block
 children: []

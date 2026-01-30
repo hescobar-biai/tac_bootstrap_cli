@@ -13,12 +13,12 @@ idk:
   - pydantic-plugin
   - type-checking
   - static-analysis
+  - incremental-checking
+  - validation-metadata
   - build-artifacts
+  - type-stubs
   - python-typing
   - compiler-cache
-  - validation-metadata
-  - incremental-checking
-  - type-stubs
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/pydantic/plugin
 children: []
