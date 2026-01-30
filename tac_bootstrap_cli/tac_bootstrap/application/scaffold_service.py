@@ -326,6 +326,7 @@ class ScaffoldService:
             "build_w_report",
             # TAC-12: Enhanced planning commands
             "plan_w_docs",
+            "plan_w_scouters",
         ]
 
         for cmd in commands:

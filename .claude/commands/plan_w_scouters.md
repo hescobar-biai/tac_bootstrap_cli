@@ -1,0 +1,476 @@
+---
+allowed-tools: Task, Read, Glob, Grep, WebFetch
+description: Enhanced planning with parallel scout-based codebase exploration
+---
+
+# Planning with Scout Exploration
+
+Create an implementation plan by leveraging parallel scout agents to comprehensively explore the codebase before planning. This command combines the structured planning workflow with intelligent, parallel file discovery to ensure all relevant code patterns and architectural constraints are identified.
+
+## Variables
+
+issue_number: $1
+adw_id: $2
+issue_json: $3
+
+## Instructions
+
+- IMPORTANT: You are creating a plan to implement a new feature in TAC Bootstrap CLI.
+- The plan will be used to guide implementation with agentic coding.
+- CRITICAL: Create the plan using RELATIVE path `specs/issue-{issue_number}-adw-{adw_id}-sdlc_planner-{descriptive-name}.md`
+- CRITICAL: NEVER use absolute paths (starting with /). ALWAYS use relative paths to the current directory.
+- CRITICAL: When using the Write tool, use ONLY `specs/filename.md`, NOT `/Users/.../specs/filename.md`
+- IMPORTANT: Before planning, execute parallel scout exploration following the Scout Exploration Workflow.
+- IMPORTANT: Replace each <placeholder> in the format with real values.
+- Use the reasoning model: think carefully about requirements and approach.
+- Follow existing project patterns and conventions.
+- If you need a new library, use `uv add` and report it in Notes.
+- Maintain simplicity - don't use unnecessary decorators.
+
+## Scout Exploration Workflow
+
+Before creating the plan, execute this parallel scout exploration workflow:
+
+### Step 1: Parse Issue Metadata
+
+Extract details from `issue_json` variable:
+- Issue title and description
+- Key concepts and technical requirements
+- Scope and constraints
+
+Use this information to design targeted scout prompts.
+
+### Step 2: Launch Parallel Scout Agents
+
+CRITICAL: Use a single message with multiple Task tool invocations to launch ALL scouts in parallel.
+
+Deploy 3 scout agents with divide-and-conquer strategies:
+
+**Base Scout 1: Architectural Patterns & Domain Logic**
+```
+Explore the codebase to find files related to architectural patterns and domain logic for: {issue_title}
+
+Focus on:
+- Domain models, entities, and business logic
+- Service layer architecture and patterns
+- Application orchestration and workflows
+- Core abstractions and interfaces
+- Design patterns in use (DDD, repository, factory, etc.)
+
+Use Glob for directory structure, Grep for class/function definitions, and Read for understanding patterns.
+Set thoroughness to "medium" for balanced exploration.
+List all relevant files with architectural context.
+```
+
+**Base Scout 2: Infrastructure & Integration Patterns**
+```
+Explore the codebase to find files related to infrastructure and integration patterns for: {issue_title}
+
+Focus on:
+- Template systems and rendering logic
+- File system operations and I/O
+- External integrations and adapters
+- Configuration management
+- CLI interfaces and user interaction
+- Testing infrastructure and utilities
+
+Use Glob for file patterns, Grep for imports and function calls, and Read for implementation details.
+Set thoroughness to "medium" for balanced exploration.
+List all relevant files with integration context.
+```
+
+**Fast Scout: Surface-Level Pattern Scan**
+```
+Quickly scan the codebase for obvious patterns and files related to: {issue_title}
+
+Focus on:
+- File naming patterns matching the task
+- Common keywords in function/class names
+- Similar feature implementations
+- Test files and specifications
+- Documentation and examples
+
+Use Glob for quick pattern matching and Grep for keyword search.
+Set thoroughness to "quick" for rapid surface scanning.
+List all potentially relevant files with brief notes.
+```
+
+**Task Tool Parameters for Each Scout:**
+- `subagent_type: "Explore"`
+- `model: "haiku"` (fast, cost-effective exploration)
+- `description`: Strategy name (e.g., "Base Scout 1: Architecture")
+- `prompt`: Strategy-specific prompt with issue details interpolated
+
+### Step 3: Output Progress Message
+
+Immediately after launching scouts, inform the user:
+```
+Launching 3 parallel scout agents to explore the codebase for: "{issue_title}"
+
+Scout Strategies:
+- Base Scout 1: Architectural patterns and domain logic (medium thoroughness)
+- Base Scout 2: Infrastructure and integration patterns (medium thoroughness)
+- Fast Scout: Quick surface-level pattern scan (quick thoroughness)
+
+This will take 1-2 minutes as agents explore the codebase in parallel...
+```
+
+### Step 4: Wait for Scout Completion
+
+- Wait for all 3 scouts to complete
+- Handle failures gracefully:
+  - If 1 scout fails: continue with 2 successful results, note which failed
+  - If 2+ scouts fail: report pattern and continue with best effort
+  - Log all failures in the plan's Notes section
+
+### Step 5: Aggregate Scout Results
+
+For each successful scout:
+- Extract file paths mentioned in the scout's output
+- Extract relevance notes and context for each file
+- Build a unified file map: `file_path -> [scout_names, relevance_notes]`
+
+### Step 6: Create High-Confidence File List
+
+- Deduplicate files across all scouts
+- Count frequency: how many scouts found each file
+- Score files by confidence:
+  - **High Confidence**: Found by 2+ scouts (66%+)
+  - **Medium Confidence**: Found by 1 scout but with strong relevance notes
+  - **Low Confidence**: Found by 1 scout with weak relevance
+- Sort by confidence score, then alphabetically
+
+### Step 7: Identify Architectural Patterns
+
+Based on scout findings, identify:
+- Existing architectural patterns to follow (DDD layers, template patterns, etc.)
+- Similar features or modules to reference
+- Common abstractions and utilities available
+- Testing patterns and strategies in use
+- Integration points and extension mechanisms
+
+### Step 8: Summarize Scout Exploration
+
+Create a "Scout Exploration Summary" section for the plan with:
+1. Overall exploration status (scouts succeeded/failed)
+2. Top 5-10 most relevant files discovered (high confidence)
+3. Key architectural patterns identified
+4. Similar implementations to reference
+5. Gaps or missing patterns that may need to be created
+
+### Step 9: Proceed with Planning
+
+Use scout findings to inform all plan sections:
+- **Relevant Files**: Use high-confidence files from scout results
+- **Implementation Plan**: Align with identified architectural patterns
+- **Solution Statement**: Build on existing similar implementations
+- **Testing Strategy**: Follow testing patterns discovered
+- **Notes**: Document scout findings, reference files, and architectural insights
+
+## Graceful Handling of Scout Failures
+
+If scouts fail or return no results:
+- CONTINUE with planning using available information
+- Log warnings in the plan's Notes section
+- Base decisions on general knowledge and code analysis
+- Do NOT block plan creation due to scout failures
+- Note which scouts failed and potential reasons
+
+## Relevant Files
+
+Key files for TAC Bootstrap CLI:
+
+- `PLAN_TAC_BOOTSTRAP.md` - Master plan with all tasks
+- `CLAUDE.md` - Guide for agents
+- `config.yml` - Project configuration
+- `ai_docs/` - TAC course documentation and architectural guides
+- `app_docs/` - Project-specific documentation
+- `specs/` - Implementation specifications and plans
+- `tac_bootstrap_cli/` - CLI source code (if exists)
+  - `tac_bootstrap/domain/` - Pydantic models
+  - `tac_bootstrap/application/` - Services
+  - `tac_bootstrap/infrastructure/` - Templates, FS
+  - `tac_bootstrap/interfaces/` - CLI, Wizard
+
+Read `.claude/commands/conditional_docs.md` for additional required documentation.
+
+## Plan Format
+
+```md
+# Feature: <feature name>
+
+## Metadata
+issue_number: `{issue_number}`
+adw_id: `{adw_id}`
+issue_json: `{issue_json}`
+
+## Scout Exploration Summary
+
+Explored the codebase using 3 parallel scout agents (2 base + 1 fast) to identify relevant files and architectural patterns.
+
+### Exploration Status
+- Base Scout 1 (Architecture): {Success/Failed}
+- Base Scout 2 (Infrastructure): {Success/Failed}
+- Fast Scout (Surface Scan): {Success/Failed}
+
+### High-Confidence Files Discovered
+
+<List top 5-10 files found by multiple scouts, with relevance notes>
+
+1. **`path/to/file.py`** - Found by Base Scout 1, Base Scout 2
+   - Relevance: <why this file is critical>
+
+2. **`path/to/another_file.py`** - Found by Base Scout 1, Fast Scout
+   - Relevance: <relevance note>
+
+### Key Architectural Patterns Identified
+
+<List patterns discovered through scout exploration>
+
+- **Pattern 1**: <description, location in codebase>
+- **Pattern 2**: <description, location in codebase>
+
+### Similar Implementations to Reference
+
+<List similar features/modules that can serve as implementation references>
+
+- **Feature/Module 1** (`path/to/module/`) - <what to learn from it>
+- **Feature/Module 2** (`path/to/feature/`) - <what to learn from it>
+
+### Exploration Gaps
+
+<Note any gaps where scouts didn't find expected patterns or files>
+
+- <Gap 1>
+- <Gap 2>
+
+## Feature Description
+<Describe the feature in detail, its purpose and value>
+
+## User Story
+As a <user type>
+I want to <action/goal>
+So that <benefit/value>
+
+## Problem Statement
+<Clearly define the problem or opportunity this feature addresses>
+
+## Solution Statement
+<Describe the proposed approach and how it solves the problem, INFORMED BY SCOUT FINDINGS>
+
+<Explicitly reference architectural patterns, similar implementations, and high-confidence files discovered>
+
+## Relevant Files
+Files needed to implement the feature (informed by scout exploration):
+
+<List relevant files with description of why they're relevant, prioritizing high-confidence scout findings>
+
+### New Files
+<List new files to be created>
+
+## Implementation Plan
+
+### Phase 1: Foundation
+<Foundational work before implementing the main feature>
+
+### Phase 2: Core Implementation
+<Main feature implementation>
+
+### Phase 3: Integration
+<Integration with existing functionality>
+
+## Step by Step Tasks
+IMPORTANT: Execute each step in order.
+
+### Task 1: <name>
+- <detail>
+- <detail>
+
+### Task 2: <name>
+- <detail>
+
+<The last step should execute Validation Commands>
+
+## Testing Strategy
+
+### Unit Tests
+<Necessary unit tests>
+
+### Edge Cases
+<Edge cases to test>
+
+## Acceptance Criteria
+<Specific, measurable criteria to consider the feature complete>
+
+## Validation Commands
+Run all commands to validate with zero regressions:
+
+- `cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short` - Unit tests
+- `cd tac_bootstrap_cli && uv run ruff check .` - Linting
+- `cd tac_bootstrap_cli && uv run mypy tac_bootstrap/` - Type check
+- `cd tac_bootstrap_cli && uv run tac-bootstrap --help` - Smoke test
+
+## Notes
+<Additional notes, future considerations, or relevant context>
+<INCLUDE scout findings summary, architectural insights, and reference files discovered>
+<DOCUMENT any scout failures and potential impact on plan completeness>
+```
+
+## Feature
+Extract feature details from the `issue_json` variable (parse JSON and use title and body fields).
+
+## Report
+
+CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
+
+1. First, check if a plan file already exists in `specs/` matching pattern: `issue-{issue_number}-adw-{adw_id}-*.md`
+2. If plan file EXISTS: Return ONLY the relative path, nothing else
+3. If plan file does NOT exist: Create it using RELATIVE PATH (e.g., `specs/filename.md`), then return ONLY the path
+
+CRITICAL FILE CREATION RULES:
+- When using the Write tool, use RELATIVE paths only: `specs/filename.md`
+- NEVER use absolute paths like `/Users/.../specs/filename.md`
+- The file will be created in the current working directory
+
+YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the RELATIVE path like:
+```
+specs/issue-37-adw-e4dc9574-sdlc_planner-feature-name.md
+```
+
+DO NOT include:
+- Any explanation or commentary
+- Phrases like "Perfect!", "I can see that...", "The plan file is at..."
+- Markdown formatting around the path
+- Multiple lines
+- Absolute paths (starting with /)
+
+ONLY output the bare RELATIVE path. This is machine-parsed.
+
+## Examples
+
+### Example 1: Planning a New Command Feature
+
+```
+/plan_w_scouters 123 "feature_new_command" '{"number":123,"title":"Create new export command","body":"Add a command to export project configuration to JSON format"}'
+```
+
+Launches 3 parallel scouts to explore:
+1. Base Scout 1: Domain models, service patterns, command handlers
+2. Base Scout 2: CLI infrastructure, output formatting, JSON serialization
+3. Fast Scout: Similar export/output commands, configuration handling
+
+Aggregates findings to identify:
+- Existing command patterns to follow
+- Configuration model structure
+- JSON serialization utilities
+- Testing patterns for commands
+
+Creates plan informed by scout discoveries, ensuring consistency with existing architecture.
+
+### Example 2: Planning Infrastructure Enhancement
+
+```
+/plan_w_scouters 456 "feature_template_engine" '{"number":456,"title":"Enhance template engine with partials","body":"Add support for Jinja2 partials/includes in template rendering"}'
+```
+
+Scouts explore:
+1. Base Scout 1: Template rendering architecture, Jinja2 configuration
+2. Base Scout 2: File loading infrastructure, template resolution logic
+3. Fast Scout: Existing template files, include/import usage patterns
+
+Identifies:
+- Current template engine implementation
+- File system abstractions available
+- Template organization patterns
+- Testing approach for template features
+
+Creates plan leveraging discovered template infrastructure and patterns.
+
+## Notes
+
+### Scout Configuration Rationale
+
+**Why 2 base + 1 fast scout pattern?**
+- Base scouts (medium thoroughness): Deep analysis of architectural patterns and implementation details (~1-2 minutes each)
+- Fast scout (quick thoroughness): Rapid surface-level scan for obvious patterns and quick wins (~30-60 seconds)
+- Total of 3 scouts balances comprehensive coverage with reasonable execution time
+- Provides good coverage across different concerns (architecture, infrastructure, surface patterns)
+
+**Thoroughness Levels:**
+- Base scouts use "medium" thoroughness (standard for exploration tasks)
+- Fast scout uses "quick" thoroughness (rapid initial scan)
+- Haiku model for all scouts (cost-effective, fast execution)
+
+### Divide and Conquer Strategy
+
+Each scout focuses on different concerns to maximize coverage:
+- **Base Scout 1**: Domain layer, business logic, service patterns, core abstractions
+- **Base Scout 2**: Infrastructure layer, integrations, CLI interfaces, file operations
+- **Fast Scout**: Broad surface scan, naming patterns, quick keyword matches
+
+This separation ensures comprehensive exploration without redundant work.
+
+### High-Confidence File Scoring
+
+Files found by multiple independent scouts are more likely to be truly relevant:
+- **Found by 2+ scouts (High Confidence)**: Almost certainly needs to be read/modified
+- **Found by 1 scout with detailed notes (Medium Confidence)**: Likely relevant, worth reviewing
+- **Found by 1 scout with weak notes (Low Confidence)**: Possibly relevant, review if needed
+
+### Integration with Other Commands
+
+After running `/plan_w_scouters`:
+- Use `/implement` to execute the plan with identified files
+- Use `/review` to validate changes across discovered files
+- Use `/scout` for additional targeted exploration if needed
+- Reference high-confidence files during implementation
+
+### Advantages Over /plan_w_docs
+
+- **Discovers actual code patterns**, not just documentation
+- **Parallel execution** for faster exploration (vs sequential doc search)
+- **Finds undocumented patterns** and architectural decisions embedded in code
+- **Identifies similar implementations** to reference during development
+- **Better for mature codebases** where code patterns are more reliable than docs
+
+Use `/plan_w_docs` when documentation is comprehensive and up-to-date.
+Use `/plan_w_scouters` when you need to discover actual implementation patterns.
+
+### Performance Characteristics
+
+- **Scout launch**: ~5-10 seconds (parallel Task tool calls)
+- **Scout execution**: ~1-2 minutes (2 medium + 1 quick scouts running in parallel)
+- **Result aggregation**: ~10-20 seconds
+- **Total time**: ~2-3 minutes for complete scout exploration and planning
+
+Actual time depends on codebase size and complexity.
+
+### Troubleshooting
+
+**Problem:** Scouts return no files
+- **Solution:** Issue description may be too vague, scout prompts may need refinement, or feature is entirely new with no existing patterns
+
+**Problem:** Scouts return too many irrelevant files
+- **Solution:** Focus on high-confidence files (found by 2+ scouts), ignore low-confidence results
+
+**Problem:** Scout failures
+- **Solution:** Continue with successful scouts, document failures in Notes, use general knowledge for missing exploration
+
+### Future Enhancements
+
+- Support for configurable scout count (via template variable)
+- Custom scout strategy definitions per project type
+- Scout result caching to avoid re-exploring same prompts
+- Integration with `/implement` to auto-feed high-confidence files
+- ML-based relevance scoring beyond simple frequency counting
+
+### Related Commands
+
+- `/scout` - General-purpose parallel codebase exploration (no planning)
+- `/plan_w_docs` - Planning with sequential documentation exploration
+- `/quick-plan` - Fast planning with 8 parallel scouts (lighter weight, less thorough)
+- `/feature` - Basic planning without exploration (legacy)
+
+---
+
+*This command follows TAC-10 Level 4 (Delegation Prompt) pattern for parallel compute orchestration, specialized for exploration-informed planning.*

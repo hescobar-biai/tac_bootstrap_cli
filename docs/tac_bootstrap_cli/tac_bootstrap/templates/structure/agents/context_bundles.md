@@ -9,28 +9,17 @@ tags:
   - topic:api
 idk:
   - context-bundles
-  - agent-context
-<<<<<<< HEAD
-  - jinja2-templates
-  - template-structure
-  - session-bootstrapping
-  - agent-initialization
-  - pre-packaged-context
-  - session-bootstrapping
-  - jinja2-templates
-  - agent-templates
-  - context-injection
-  - template-generation
-=======
-  - jinja2-template-storage
+  - agent-context-templates
+  - jinja2-template-structure
   - pre-packaged-knowledge
   - session-initialization
   - agent-bootstrapping
-  - context-injection
+  - context-injection-templates
   - bundle-templates
-  - knowledge-base-fragments
-  - agent-memory-seeds
->>>>>>> feature-issue-457-adw-feature_Tac_12_task_5-create-plan-w-docs-command
+  - knowledge-seeding
+  - load-bundle-skill
+  - template-generation-structure
+  - agent-memory-initialization
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/
 children: []

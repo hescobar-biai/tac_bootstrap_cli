@@ -8,15 +8,16 @@ tags:
   - level:L5
   - topic:routing
 idk:
-  - scout-agent-templates
-  - jinja2-structure
-  - file-discovery-scaffolding
-  - agent-template-infrastructure
-  - codebase-exploration-templates
-  - bootstrap-cli-generation
-  - scout-command-templates
-  - template-rendering-structure
-  - agent-file-scaffolds
+  - scout-agent-output-templates
+  - jinja2-file-templates
+  - agent-discovery-results
+  - file-list-scaffolds
+  - codebase-exploration-output
+  - scout-result-templates
+  - template-generation-structure
+  - bootstrap-cli-scaffolding
+  - exploration-artifact-templates
+  - agent-file-discovery
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/scout_files
 children: []
