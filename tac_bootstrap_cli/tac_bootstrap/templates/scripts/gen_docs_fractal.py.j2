@@ -668,10 +668,57 @@ def normalize_section_headers(body: str) -> str:
     # Ensure sections are H1-ish (#). If model uses ##, we keep but validator uses substring.
     return body
 
+def merge_frontmatter(existing_fm: Optional[str], generated_fm: str) -> str:
+    """
+    Merge frontmatter conservatively:
+    - Use generated frontmatter as base
+    - Preserve existing IDK keywords (don't regenerate)
+    - Preserve existing tags if they exist
+    - Update structural fields (children, related_code) from generated
+    """
+    if not existing_fm:
+        return generated_fm
+
+    # Parse existing frontmatter fields we want to preserve
+    existing_idk = parse_list_block(existing_fm, "idk")
+    existing_tags = parse_list_block(existing_fm, "tags")
+    existing_owner = parse_scalar(existing_fm, "owner")
+    existing_last_reviewed = parse_scalar(existing_fm, "last_reviewed")
+
+    # Parse all generated fields
+    gen_fields: Dict[str, Any] = {}
+    for key in DEFAULT_FRONTMATTER_FIELDS:
+        if key in ["idk", "tags", "children", "related_code", "source_readmes"]:
+            gen_fields[key] = parse_list_block(generated_fm, key)
+        else:
+            val = parse_scalar(generated_fm, key)
+            if val:
+                gen_fields[key] = val
+
+    # Apply preservation rules:
+    # 1. Keep existing IDK if present (main fix for the user's issue)
+    if existing_idk:
+        gen_fields["idk"] = existing_idk
+
+    # 2. Keep existing tags if present
+    if existing_tags:
+        gen_fields["tags"] = existing_tags
+
+    # 3. Keep existing owner if not UNKNOWN
+    if existing_owner and existing_owner != "UNKNOWN":
+        gen_fields["owner"] = existing_owner
+
+    # 4. Keep existing last_reviewed if not UNKNOWN
+    if existing_last_reviewed and existing_last_reviewed != "UNKNOWN":
+        gen_fields["last_reviewed"] = existing_last_reviewed
+
+    return build_frontmatter(gen_fields)
+
+
 def complement_doc(existing_md: str, generated_md: str) -> str:
     """
     Conservative merge:
-    - Replace/normalize frontmatter with generated frontmatter
+    - Merge frontmatter conservatively (preserve IDK, tags, owner, last_reviewed)
     - Keep existing body verbatim
     - Append missing required sections from generated body (only those not present)
     """
@@ -683,6 +730,9 @@ def complement_doc(existing_md: str, generated_md: str) -> str:
     ex_fm, ex_body = split_frontmatter(existing_md)
     ex_body = ex_body or ""
     gen_body = gen_body or ""
+
+    # Merge frontmatter conservatively (preserving existing IDK, tags, etc.)
+    merged_fm = merge_frontmatter(ex_fm, gen_fm)
 
     # Append missing sections (naive: check header substring)
     merged_body = ex_body.rstrip() + "\n"
@@ -698,7 +748,7 @@ def complement_doc(existing_md: str, generated_md: str) -> str:
     if ex_body.strip() == "":
         merged_body = gen_body.strip() + "\n"
 
-    merged = "---\n" + gen_fm.strip() + "\n---\n\n" + merged_body.lstrip("\n")
+    merged = merged_fm + "\n\n" + merged_body.lstrip("\n")
     return merged
 
 def extract_md_section(md_body: str, header: str) -> Optional[str]:
