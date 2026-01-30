@@ -13,11 +13,13 @@ idk:
   - text-to-speech-integration
   - anthropic-claude-client
   - openai-api-client
-  - tts-streaming
-  - jinja2-template-rendering
+  - tts-streaming-response
+  - jinja2-prompt-templates
   - ai-service-wrapper
   - hook-automation-helpers
-  - prompt-template-utils
+  - multi-provider-llm
+  - async-tts-generation
+  - template-rendering-utils
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils
 children:
