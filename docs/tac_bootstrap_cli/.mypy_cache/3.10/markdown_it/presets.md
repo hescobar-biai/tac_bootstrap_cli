@@ -11,13 +11,13 @@ idk:
   - mypy-cache
   - markdown-it-presets
   - python-3.10
-  - type-stubs
-  - incremental-type-checking
-  - static-analysis-artifacts
-  - preset-configurations
+  - type-checking-artifacts
+  - incremental-analysis
+  - preset-type-stubs
+  - static-analysis-cache
   - markdown-parser-types
-  - build-cache
-  - type-inference-data
+  - build-artifacts
+  - type-inference-cache
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/presets
 children: []

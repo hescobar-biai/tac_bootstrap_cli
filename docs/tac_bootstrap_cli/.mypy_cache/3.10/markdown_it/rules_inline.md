@@ -14,12 +14,10 @@ idk:
   - incremental-type-checking
   - inline-parser-metadata
   - static-analysis-cache
-  - mypy-daemon-artifacts
+  - mypy-daemon-state
   - type-stub-cache
   - ast-metadata
   - markdown-it-parser
-  - inline-syntax-rules
-  - token-generation
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/rules_inline
 children: []

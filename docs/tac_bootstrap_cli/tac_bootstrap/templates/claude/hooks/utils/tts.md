@@ -14,10 +14,10 @@ idk:
   - tac-bootstrap-generator-templates
   - tts-utility-templates
   - hook-utils-jinja2
-  - template-based-tts-generation
+  - template-based-tts
   - speech-synthesis-scaffold
   - cli-generator-tts-layer
-  - tts-integration-templates
+  - agentic-layer-tts-templates
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts
 children: []

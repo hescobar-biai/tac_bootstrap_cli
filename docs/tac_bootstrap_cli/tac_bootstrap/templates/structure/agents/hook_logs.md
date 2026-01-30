@@ -14,12 +14,11 @@ idk:
   - pre-post-hook-events
   - automation-audit-trail
   - hook-lifecycle-tracking
-  - template-placeholder-structure
+  - template-generation-target
   - runtime-hook-diagnostics
   - agent-observability-infra
-  - generated-project-logging
-  - user-prompt-hook-output
-  - hook-stderr-stdout-capture
+  - stderr-stdout-capture
+  - generated-project-structure
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/hook_logs
 children: []
