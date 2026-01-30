@@ -113,7 +113,9 @@ IDK_RULES = (
 
 IGNORE_DIRS = {
     ".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build",
-    ".next", ".turbo", ".cache", "target", "vendor", ".idea", ".vscode"
+    ".next", ".turbo", ".cache", "target", "vendor", ".idea", ".vscode",
+    "templates",  # Exclude Jinja2 templates - they generate code, not source code
+    ".mypy_cache", ".pytest_cache", ".ruff_cache",  # Cache directories
 }
 
 README_NAMES = {
