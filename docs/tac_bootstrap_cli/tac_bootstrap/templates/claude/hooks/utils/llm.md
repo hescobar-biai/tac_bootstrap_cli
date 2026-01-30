@@ -9,6 +9,7 @@ tags:
   - topic:api
 last_reviewed: UNKNOWN
 idk:
+<<<<<<< HEAD
   - llm-hook-utilities
   - jinja2-template-generation
   - claude-hooks-infrastructure
@@ -19,6 +20,18 @@ idk:
   - llm-config-management
   - code-generation-templates
   - hook-template-library
+=======
+  - llm-utilities
+  - hook-helpers
+  - claude-integration
+  - jinja2-template-generation
+  - ai-model-routing
+  - llm-config-management
+  - hook-automation
+  - template-infrastructure
+  - utility-functions
+  - template-rendering-utils
+>>>>>>> feature-issue-457-adw-feature_Tac_12_task_5-create-plan-w-docs-command
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm
 children: []

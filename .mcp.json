@@ -6,7 +6,11 @@
         "@playwright/mcp@latest",
         "--isolated",
         "--config",
+<<<<<<< HEAD
         "/Users/hernandoescobar/Documents/Celes/tac_bootstrap/trees/feature_Tac_12_task_3/playwright-mcp-config.json"
+=======
+        "/Users/hernandoescobar/Documents/Celes/tac_bootstrap/trees/feature_Tac_12_task_5/playwright-mcp-config.json"
+>>>>>>> feature-issue-457-adw-feature_Tac_12_task_5-create-plan-w-docs-command
       ]
     }
   }

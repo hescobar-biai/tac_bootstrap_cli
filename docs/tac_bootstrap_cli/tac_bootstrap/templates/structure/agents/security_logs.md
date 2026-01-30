@@ -17,8 +17,13 @@ idk:
   - log-aggregation
   - monitoring-infrastructure
   - jinja2-template
+<<<<<<< HEAD
   - centralized-logging
   - authentication-events
+=======
+  - compliance-logs
+  - security-events
+>>>>>>> feature-issue-457-adw-feature_Tac_12_task_5-create-plan-w-docs-command
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/security_logs
 children: []

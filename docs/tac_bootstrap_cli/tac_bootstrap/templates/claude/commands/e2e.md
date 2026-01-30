@@ -18,6 +18,14 @@ idk:
   - jinja2-test-templates
   - browser-snapshot-validation
   - claude-code-e2e-integration
+  - playwright-automation-commands
+  - browser-test-scenarios
+  - sql-injection-e2e
+  - export-functionality-test
+  - query-execution-e2e
+  - input-debounce-validation
+  - jinja2-command-generation
+  - claude-code-slash-commands
   - test-scenario-bootstrapping
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/e2e

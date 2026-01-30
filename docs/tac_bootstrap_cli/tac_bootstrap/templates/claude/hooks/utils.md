@@ -11,8 +11,8 @@ idk:
   - claude-hook-utilities
   - llm-integration
   - text-to-speech
-  - ai-service-helpers
   - jinja2-template-utilities
+<<<<<<< HEAD
   - template-hook-utils
   - anthropic-api
   - openai-api
@@ -20,7 +20,14 @@ idk:
   - automation-helpers
   - tac-bootstrap-templates
   - claude-hooks-framework
+=======
+  - automation-helpers
+>>>>>>> feature-issue-457-adw-feature_Tac_12_task_5-create-plan-w-docs-command
   - ai-service-abstractions
+  - template-hook-framework
+  - tac-bootstrap-templates
+  - service-client-wrappers
+  - hook-helper-functions
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils
 children:

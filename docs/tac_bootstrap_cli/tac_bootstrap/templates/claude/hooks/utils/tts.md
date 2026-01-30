@@ -8,6 +8,7 @@ tags:
   - level:L5
   - topic:api
 idk:
+<<<<<<< HEAD
   - text-to-speech
   - tts-template-utils
   - audio-synthesis
@@ -16,6 +17,18 @@ idk:
   - voice-output-utilities
   - claude-hook-utils
   - tts-integration
+=======
+  - jinja2-template-utils
+  - claude-hook-templates
+  - text-to-speech-stub
+  - tts-utilities
+  - template-generation
+  - bootstrap-cli-templates
+  - hook-utils
+  - audio-synthesis
+  - voice-output
+  - tac-bootstrap
+>>>>>>> feature-issue-457-adw-feature_Tac_12_task_5-create-plan-w-docs-command
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts
 children: []

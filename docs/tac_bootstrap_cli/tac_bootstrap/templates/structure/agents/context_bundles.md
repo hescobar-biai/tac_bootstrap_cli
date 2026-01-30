@@ -10,6 +10,7 @@ tags:
 idk:
   - context-bundles
   - agent-context
+<<<<<<< HEAD
   - jinja2-templates
   - template-structure
   - session-bootstrapping
@@ -20,6 +21,16 @@ idk:
   - agent-templates
   - context-injection
   - template-generation
+=======
+  - jinja2-template-storage
+  - pre-packaged-knowledge
+  - session-initialization
+  - agent-bootstrapping
+  - context-injection
+  - bundle-templates
+  - knowledge-base-fragments
+  - agent-memory-seeds
+>>>>>>> feature-issue-457-adw-feature_Tac_12_task_5-create-plan-w-docs-command
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/
 children: []
