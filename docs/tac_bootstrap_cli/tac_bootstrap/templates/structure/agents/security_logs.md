@@ -17,11 +17,13 @@ idk:
   - log-collection
   - monitoring-infrastructure
   - jinja2-template
+  - centralized-logging
+  - authentication-events
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/security_logs
 children: []
 source_readmes: []
-last_reviewed: 2026-01-27
+last_reviewed: 2026-01-30
 ---
 
 # Overview

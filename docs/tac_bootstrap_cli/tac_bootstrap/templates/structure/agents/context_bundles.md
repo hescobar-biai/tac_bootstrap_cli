@@ -17,11 +17,14 @@ idk:
   - pre-packaged-context
   - session-bootstrapping
   - jinja2-templates
+  - agent-templates
+  - context-injection
+  - template-generation
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/
 children: []
 source_readmes: []
-last_reviewed: 2026-01-27
+last_reviewed: 2026-01-30
 ---
 
 # Overview
