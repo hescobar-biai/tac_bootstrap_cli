@@ -34,7 +34,7 @@ Before creating the plan, execute this documentation exploration workflow:
 
 Use Task tool with subagent_type="Explore" and thoroughness="medium" to:
 
-1. **Search {{ config.paths.ai_docs }}/** - Find architectural patterns, guidelines, and TAC course documentation (doc-1 to doc-8):
+1. **Search ai_docs/** - Find architectural patterns, guidelines, and TAC course documentation (doc-1 to doc-8):
    - Prompt: "Find architectural patterns, guidelines, and TAC course documentation relevant to {issue_title}. Focus on: design patterns, service architecture, template patterns, and any relevant TAC course content."
 
 2. **Search app_docs/** - Find project-specific documentation:
@@ -87,7 +87,7 @@ Key files for {{ config.project.name }}:
 
 - `CLAUDE.md` - Agent guide
 - `config.yml` - Project configuration
-- `{{ config.paths.ai_docs }}/` - TAC course documentation and architectural guides
+- `ai_docs/` - TAC course documentation and architectural guides
 - `app_docs/` - Project-specific documentation
 - `{{ config.paths.specs_dir }}/` - Implementation specifications and plans
 {% if config.paths.app_root %}
