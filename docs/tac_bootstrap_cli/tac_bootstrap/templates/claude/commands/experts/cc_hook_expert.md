@@ -18,6 +18,8 @@ idk:
   - knowledge-driven-development
   - multi-step-workflows
   - agent-collaboration-patterns
+  - tac-bootstrap-cli
+  - template-commands
 related_code: ['tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cc_hook_expert']
 children: []
 source_readmes: []

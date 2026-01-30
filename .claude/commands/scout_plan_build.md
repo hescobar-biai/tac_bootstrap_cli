@@ -1,0 +1,323 @@
+---
+allowed-tools: Task, Read, Write
+description: End-to-end workflow orchestrating scout, plan, and build phases
+model: claude-sonnet-4-5-20250929
+---
+
+# Scout-Plan-Build Orchestration
+
+Execute a complete implementation pipeline by orchestrating three sequential phases: scout exploration, implementation planning, and code generation. This command automates the entire workflow from file discovery through implementation.
+
+## Variables
+
+TASK_DESCRIPTION: $1 (required - description of what to implement)
+SCALE: $2 (optional - number of parallel scout strategies, default: 4, range: 2-10)
+THOROUGHNESS: $3 (optional - plan thoroughness level, default: medium, options: quick|medium|thorough)
+
+## Instructions
+
+This command orchestrates a complete end-to-end implementation workflow:
+
+### Purpose
+
+The `/scout_plan_build` command provides full-pipeline automation by:
+- Discovering all files relevant to your task through parallel exploration
+- Creating a comprehensive implementation plan based on scout findings
+- Executing the plan sequentially with clear progress tracking
+- Handling errors at each phase with fail-fast behavior
+
+### When to Use This Command
+
+Use `/scout_plan_build` when:
+- Starting a complete feature implementation from scratch
+- You want to go from task description to working code in one workflow
+- You need comprehensive file discovery before planning
+- You want automated orchestration without manual phase coordination
+- You have a clear task description and want end-to-end execution
+
+### When NOT to Use This Command
+
+Do NOT use `/scout_plan_build` when:
+- You already know which files to modify (use `/plan` + `/build` directly)
+- You only need file discovery (use `/scout` alone)
+- You only need a plan without implementation (use `/plan` alone)
+- The task is trivial or single-file (use direct editing)
+- You want to review/adjust the plan before building (use `/scout` + `/plan`, then `/build` separately)
+
+### Workflow Phases
+
+**Phase 1: Scout (Parallel Exploration)**
+- Launches multiple parallel exploration agents
+- Uses different search strategies to maximize file discovery
+- Aggregates results with relevance scoring
+- Read-only codebase analysis
+
+**Phase 2: Plan (Implementation Planning)**
+- Uses scout results to inform planning
+- Creates structured implementation plan
+- Identifies files to modify and create
+- Defines step-by-step tasks and validation commands
+
+**Phase 3: Build (Sequential Implementation)**
+- Implements the plan step-by-step
+- Shows clear progress for each step
+- Validates changes incrementally
+- Reports final status and changes made
+
+### Error Handling
+
+- Each phase must complete successfully before proceeding to the next
+- If any phase fails, the workflow halts immediately (fail-fast)
+- Clear error messages indicate which phase failed and why
+- No automatic retry - user can manually retry individual phases if needed
+
+## Workflow
+
+### Step 1: Validate Input Parameters
+
+Extract and validate all parameters:
+
+- Extract TASK_DESCRIPTION from $1
+- If TASK_DESCRIPTION is missing or empty:
+  - Report error: "ERROR: TASK_DESCRIPTION is required. Usage: /scout_plan_build \"task description\" [scale] [thoroughness]"
+  - STOP - do not continue
+
+- Extract SCALE from $2, default to 4 if not provided
+- Validate SCALE:
+  - If SCALE < 2: Report error: "ERROR: SCALE must be at least 2. Recommend using direct exploration instead."
+  - If SCALE > 10: Cap at 10 and warn: "WARNING: SCALE capped at 10 to manage resource constraints."
+  - Valid range: 2-10
+
+- Extract THOROUGHNESS from $3, default to "medium" if not provided
+- Validate THOROUGHNESS:
+  - Valid options: "quick", "medium", "thorough"
+  - If invalid value provided, default to "medium" and warn user
+
+### Step 2: Launch Scout Phase
+
+Output progress message:
+```
+=== SCOUT PHASE ===
+Launching parallel codebase exploration with {SCALE} strategies...
+Task: {TASK_DESCRIPTION}
+```
+
+Launch scout agent using Task tool:
+- `subagent_type: "Explore"`
+- `model: "haiku"` (fast, cost-effective)
+- `description: "Scout phase: parallel exploration"`
+- `prompt`:
+```
+Find all files relevant to: {TASK_DESCRIPTION}
+
+Use parallel exploration strategies based on SCALE={SCALE}:
+- File pattern search (Glob for naming conventions and directory structure)
+- Content search (Grep for keywords, functions, classes)
+- Architectural analysis (Read to understand module relationships)
+- Dependency mapping (imports, function calls, cross-file references)
+
+Aggregate results with frequency-based relevance scoring.
+List all relevant files with brief relevance notes.
+Use thoroughness level: medium
+```
+
+Wait for scout agent to complete.
+
+If scout fails:
+- Report error: "ERROR: Scout phase failed. Unable to explore codebase."
+- Show scout error details
+- STOP - do not continue to plan phase
+
+### Step 3: Process Scout Results and Launch Plan Phase
+
+Output progress message:
+```
+=== SCOUT PHASE COMPLETE ===
+Files discovered: [extract count from scout output]
+
+=== PLAN PHASE ===
+Creating implementation plan based on scout findings...
+```
+
+Parse scout agent output to extract:
+- List of relevant files found
+- Relevance notes and context for each file
+- Architectural patterns identified
+
+Launch plan agent using Task tool:
+- `subagent_type: "Plan"`
+- `model: "opus"` (high-quality planning)
+- `description: "Plan phase: implementation planning"`
+- `prompt`:
+```
+Create an implementation plan for: {TASK_DESCRIPTION}
+
+Scout exploration found these relevant files:
+{scout_results_summary}
+
+Follow the planning workflow:
+1. Understand requirements and scope
+2. Review the files identified by scout exploration
+3. Design implementation approach following existing patterns
+4. Create structured plan with:
+   - Feature description and user story
+   - Relevant files to modify/create
+   - Step-by-step implementation tasks
+   - Testing strategy
+   - Acceptance criteria
+   - Validation commands
+
+Save plan to specs/ directory using relative path: specs/scout-plan-build-{timestamp}.md
+Thoroughness level: {THOROUGHNESS}
+```
+
+Wait for plan agent to complete.
+
+If plan fails:
+- Report error: "ERROR: Plan phase failed. Unable to create implementation plan."
+- Show plan error details
+- Show what scout phase completed successfully
+- STOP - do not continue to build phase
+
+### Step 4: Extract Plan Path and Launch Build Phase
+
+Output progress message:
+```
+=== PLAN PHASE COMPLETE ===
+Plan saved to: {plan_file_path}
+
+=== BUILD PHASE ===
+Implementing plan sequentially...
+```
+
+Parse plan agent output to extract:
+- Path to saved plan file (should be in specs/ directory)
+
+If plan file path not found:
+- Report error: "ERROR: Plan file path not found in plan output."
+- STOP - do not continue to build phase
+
+Launch build agent using Task tool:
+- `subagent_type: "general-purpose"`
+- `model: "sonnet"` (balanced for implementation)
+- `description: "Build phase: sequential implementation"`
+- `prompt`:
+```
+Implement the plan located at: {plan_file_path}
+
+Follow the build workflow:
+1. Read and parse the complete plan
+2. Identify all implementation steps and dependencies
+3. Execute each step sequentially:
+   - Show clear progress (e.g., "Step 1/5: Creating models...")
+   - Complete each step fully before moving to next
+   - Verify each step works before proceeding
+   - Use appropriate tools (Read, Write, Edit, Bash, etc.)
+4. If any step fails:
+   - STOP immediately
+   - Report which step failed
+   - Show what was completed successfully
+5. After completion, report:
+   - Implementation status (success or failure)
+   - Steps completed
+   - Changes made (git diff --stat)
+   - Summary of implementation
+
+Follow best practices and coding standards.
+```
+
+Wait for build agent to complete.
+
+If build fails:
+- Report error: "ERROR: Build phase failed during implementation."
+- Show build error details
+- Show what scout and plan phases completed successfully
+- List steps completed before failure
+
+### Step 5: Report Final Status
+
+Output comprehensive completion report:
+
+```
+=== SCOUT-PLAN-BUILD COMPLETE ===
+
+Status: [SUCCESS or FAILED at {phase}]
+
+Phase Results:
+- Scout Phase: ✓ Complete ({file_count} files discovered)
+- Plan Phase: ✓ Complete (Plan saved to {plan_path})
+- Build Phase: [✓ Complete or ✗ Failed at step X/Y]
+
+Implementation Summary:
+{build_summary}
+
+Changes Made:
+{git_diff_stat_output}
+
+Next Steps:
+- Run validation commands from the plan
+- Review implementation with /review
+- Run tests with /test
+- Create commit with /commit
+```
+
+## Report
+
+Provide a structured report of the entire workflow execution:
+
+### Execution Status
+- Overall Status: [SUCCESS or FAILED]
+- Failed Phase: [None or Scout/Plan/Build]
+- Completion: [3/3 phases or X/3 phases]
+
+### Phase Details
+
+**Scout Phase:**
+- Status: [Complete/Failed]
+- Strategies Used: {SCALE}
+- Files Discovered: {count}
+- Relevant Files: {list or summary}
+
+**Plan Phase:**
+- Status: [Complete/Failed/Skipped]
+- Plan File: {path or N/A}
+- Thoroughness: {THOROUGHNESS}
+- Steps Planned: {count or N/A}
+
+**Build Phase:**
+- Status: [Complete/Failed/Skipped]
+- Steps Completed: {X/Y or N/A}
+- Files Modified: {count or N/A}
+- Lines Changed: {count or N/A}
+
+### Git Changes
+```
+{output of git diff --stat if build completed}
+```
+
+### Implementation Summary
+- Bullet point list of what was implemented (if build completed)
+- Any issues encountered and resolutions
+- Validation status (if applicable)
+
+### Recommendations
+
+If successful:
+- Run validation commands specified in the plan
+- Consider using `/review` to assess code quality
+- Run tests with `/test` before committing
+- Create commit with `/commit` after validation
+
+If failed:
+- Review error messages for the failed phase
+- Fix issues and retry the failed phase individually:
+  - Scout failed: Retry with `/scout "{TASK_DESCRIPTION}" {SCALE}`
+  - Plan failed: Retry with `/plan` after reviewing scout results
+  - Build failed: Fix issues and retry with `/build {plan_path}`
+- Consider adjusting parameters (SCALE, THOROUGHNESS) if appropriate
+
+### Notes
+- Total workflow time: [Estimate based on phase completions]
+- Parameter configuration: SCALE={SCALE}, THOROUGHNESS={THOROUGHNESS}
+- Scout-Plan-Build provides end-to-end automation but requires clear task descriptions
+- For complex tasks with uncertainty, consider running phases individually for better control

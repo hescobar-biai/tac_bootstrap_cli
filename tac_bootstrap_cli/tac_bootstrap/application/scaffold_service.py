@@ -329,6 +329,7 @@ class ScaffoldService:
             "plan_w_docs",
             "plan_w_scouters",
             "plan",
+            "scout_plan_build",
         ]
 
         for cmd in commands:
