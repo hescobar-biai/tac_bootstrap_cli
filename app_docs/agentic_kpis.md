@@ -8,52 +8,13 @@ Summary metrics across all ADW runs.
 
 | Metric            | Value          | Last Updated                 |
 | ----------------- | -------------- | ---------------------------- |
-| Current Streak    | 158            | Tue Jan 27 21:41:15 -05 2026 |
-| Longest Streak    | 158            | Tue Jan 27 21:41:15 -05 2026 |
-| Total Plan Size   | 27575 lines    | Tue Jan 27 21:41:15 -05 2026 |
-| Largest Plan Size | 673 lines      | Tue Jan 27 21:41:15 -05 2026 |
-| Total Diff Size   | 131244 lines   | Tue Jan 27 21:41:15 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 21:41:15 -05 2026 |
-| Average Presence  | 1.00           | Tue Jan 27 21:41:15 -05 2026 |
-| Metric            | Value          | Last Updated             |
-| ----------------- | -------------- | ------------------------ |
-| Current Streak    | 193            | Tue Jan 27 21:34:52 -05 2026 |
-| Longest Streak    | 193            | Tue Jan 27 21:34:52 -05 2026 |
-| Total Plan Size   | 27726 lines    | Tue Jan 27 21:34:52 -05 2026 |
-| Largest Plan Size | 673 lines      | Tue Jan 27 21:34:52 -05 2026 |
-| Total Diff Size   | 131812 lines   | Tue Jan 27 21:34:52 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 21:34:52 -05 2026 |
-| Average Presence  | 1.00           | Tue Jan 27 21:34:52 -05 2026 |
-| Current Streak    | 163            | Tue Jan 27 21:25:38 -05 2026 |
-| Longest Streak    | 163            | Tue Jan 27 21:25:38 -05 2026 |
-| Total Plan Size   | 28241 lines    | Tue Jan 27 21:25:38 -05 2026 |
-| Largest Plan Size | 702 lines      | Tue Jan 27 21:25:38 -05 2026 |
-| Total Diff Size   | 131629 lines   | Tue Jan 27 21:25:38 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 21:25:38 -05 2026 |
-| Average Presence  | 1.00           | Tue Jan 27 21:25:38 -05 2026 |
-| Current Streak    | 192            | Tue Jan 27 21:28:18 -05 2026 |
-| Longest Streak    | 192            | Tue Jan 27 21:28:18 -05 2026 |
-| Total Plan Size   | 27543 lines    | Tue Jan 27 21:28:18 -05 2026 |
-| Largest Plan Size | 673 lines      | Tue Jan 27 21:28:18 -05 2026 |
-| Total Diff Size   | 131699 lines   | Tue Jan 27 21:28:18 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 21:28:18 -05 2026 |
-| Average Presence  | 1.00           | Tue Jan 27 21:28:18 -05 2026 |
-| Current Streak    | 159            | Tue Jan 27 21:27:53 -05 2026 |
-| Longest Streak    | 159            | Tue Jan 27 21:27:53 -05 2026 |
-| Total Plan Size   | 27652 lines    | Tue Jan 27 21:27:53 -05 2026 |
-| Largest Plan Size | 673 lines      | Tue Jan 27 21:27:53 -05 2026 |
-| Total Diff Size   | 131818 lines   | Tue Jan 27 21:27:53 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 21:27:53 -05 2026 |
-| Average Presence  | 1.0            | Tue Jan 27 21:27:53 -05 2026 |
-| Metric            | Value          | Last Updated                 |
-| ----------------- | -------------- | ---------------------------- |
-| Current Streak    | 159            | Tue Jan 27 21:29:21 -05 2026 |
-| Longest Streak    | 159            | Tue Jan 27 21:29:21 -05 2026 |
-| Total Plan Size   | 27690 lines    | Tue Jan 27 21:29:21 -05 2026 |
-| Largest Plan Size | 673 lines      | Tue Jan 27 21:29:21 -05 2026 |
-| Total Diff Size   | 131858 lines   | Tue Jan 27 21:29:21 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 21:29:21 -05 2026 |
-| Average Presence  | 1.00           | Tue Jan 27 21:29:21 -05 2026 |
+| Current Streak    | 230            | Fri Jan 30 10:38:01 -05 2026 |
+| Longest Streak    | 230            | Fri Jan 30 10:38:01 -05 2026 |
+| Total Plan Size   | 29258 lines    | Fri Jan 30 10:38:01 -05 2026 |
+| Largest Plan Size | 702 lines      | Fri Jan 30 10:38:01 -05 2026 |
+| Total Diff Size   | 140920 lines   | Fri Jan 30 10:38:01 -05 2026 |
+| Largest Diff Size | 6832 lines     | Fri Jan 30 10:38:01 -05 2026 |
+| Average Presence  | 1.00           | Fri Jan 30 10:38:01 -05 2026 |
 
 ## ADW KPIs
 
@@ -188,7 +149,7 @@ Detailed metrics for individual ADW workflow runs.
 | Mon Jan 26 2026  | feature_Tac_9_task_29    | 270 | /feature    | 1        | 0                 | 618/2/6                         | Mon Jan 26 19:28:48 -05 2026 | -       |
 | Mon Jan 26 2026  | feature_Tac_9_task_30    | 271 | /feature    | 1        | 231               | 946/2/6                         | Mon Jan 26 19:50:47 -05 2026 | -       |
 | Mon Jan 26 2026  | feature_Tac_9_task_31    | 298 | /feature    | 1        | 198               | 1038/723/9                      | Mon Jan 26 20:07:39 -05 2026 | -       |
-| Mon Jan 26 2026  | feature_Tac_9_task_32    | 299 | /feature    | 1        | 151               | 351/2/7                         | Mon Jan 26 20:25:26 -05 2026 | -       |
+| Mon Jan 26 2026  | feature_Tac_9_task_32    | 299 | /feature    | 1        | 351               | 351/2/7                         | Mon Jan 26 20:25:26 -05 2026 | -       |
 | Mon Jan 26 2026  | chore_Tac_9_task_33      | 300 | /chore      | 1        | 48                | 256/30/9                        | Mon Jan 26 20:37:39 -05 2026 | -       |
 | Mon Jan 26 2026  | chore_Tac_9_task_34      | 301 | /chore      | 1        | 70                | 248/2/6                         | Mon Jan 26 20:57:31 -05 2026 | -       |
 | Mon Jan 26 2026  | feature_Tac_10_task_1    | 306 | /feature    | 1        | 164               | 615/3/8                         | Mon Jan 26 21:55:20 -05 2026 | -       |
@@ -227,3 +188,4 @@ Detailed metrics for individual ADW workflow runs.
 | Tue Jan 27 2026  | 6fe74a31     | 3            | /chore      | 1        | 91                | 378/137/14                      | Tue Jan 27 21:28:18 -05 2026 | -       |
 | Tue Jan 27 2026  | 5fd03d17     | 2            | /feature    | 1        | 200               | 501/133/14                      | Tue Jan 27 21:27:53 -05 2026 | -       |
 | Tue Jan 27 2026  | a5839b7d     | 1            | /feature    | 1        | 238               | 558/116/13                      | Tue Jan 27 21:29:21 -05 2026 | -       |
+| Fri Jan 30 2026  | feature_Tac_12_task_5    | 457          | /feature    | 1        | 199               | 1145/3700/56                    | Fri Jan 30 10:38:01 -05 2026 | -       |
