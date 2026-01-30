@@ -8,16 +8,16 @@ tags:
   - level:L5
   - expert:backend
 idk:
-  - e2e-test-templates
+  - e2e-test-command-templates
   - playwright-browser-automation
-  - slash-command-e2e
-  - sql-injection-test-template
+  - slash-command-definitions
+  - sql-injection-test
   - export-functionality-test
-  - query-validation-e2e
-  - input-debounce-test
-  - jinja2-command-templates
-  - test-scenario-definitions
-  - claude-code-e2e-commands
+  - query-execution-test
+  - input-debounce-validation
+  - jinja2-template-rendering
+  - test-scenario-bootstrapping
+  - claude-code-e2e-integration
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/e2e
 children: []

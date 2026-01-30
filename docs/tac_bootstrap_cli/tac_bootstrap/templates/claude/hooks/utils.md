@@ -14,6 +14,9 @@ idk:
   - ai-service-helpers
   - jinja2-template-utilities
   - template-hook-utils
+  - anthropic-api
+  - openai-api
+  - tts-streaming
   - automation-helpers
   - tac-bootstrap-templates
   - claude-hooks-framework

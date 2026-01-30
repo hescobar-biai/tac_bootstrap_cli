@@ -16,7 +16,9 @@ idk:
   - build-artifacts
   - python-typing
   - compiler-cache
-  - validation-types
+  - validation-metadata
+  - incremental-checking
+  - type-stubs
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/pydantic/plugin
 children: []

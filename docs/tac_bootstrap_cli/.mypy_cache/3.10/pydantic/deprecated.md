@@ -6,7 +6,7 @@ level: L5
 tags:
   - expert:backend
   - level:L5
-  - topic:db
+  - topic:api
 idk:
   - mypy-cache
   - pydantic-deprecated
@@ -16,6 +16,8 @@ idk:
   - cache-metadata
   - type-stubs
   - deprecated-api
+  - legacy-compatibility
+  - migration-artifacts
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/pydantic/deprecated
 children: []

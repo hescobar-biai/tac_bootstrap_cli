@@ -280,6 +280,7 @@ class ScaffoldService:
             "prime",
             "start",
             "build",
+            "build_in_parallel",
             "test",
             "lint",
             "feature",

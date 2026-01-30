@@ -14,11 +14,11 @@ idk:
   - audit-trail
   - threat-detection
   - template-structure
-  - log-collection
+  - log-aggregation
   - monitoring-infrastructure
   - jinja2-template
-  - centralized-logging
-  - security-alerts
+  - security-event-tracking
+  - compliance-logging
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/security_logs
 children: []

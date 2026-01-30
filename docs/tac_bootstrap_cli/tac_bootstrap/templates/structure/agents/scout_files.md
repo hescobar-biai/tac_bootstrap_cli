@@ -9,13 +9,15 @@ tags:
   - topic:routing
 idk:
   - scout-agent-templates
-  - jinja2-structure
-  - file-discovery
-  - agent-scaffolding
-  - template-generation
-  - codebase-exploration
-  - bootstrap-cli
+  - jinja2-template-structure
+  - file-discovery-scaffolding
+  - agent-directory-templates
+  - template-generation-infra
+  - codebase-exploration-agents
+  - bootstrap-cli-templates
   - agent-infrastructure
+  - scout-command-support
+  - template-filesystem
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/scout_files
 children: []

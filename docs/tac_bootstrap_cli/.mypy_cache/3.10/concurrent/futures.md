@@ -6,15 +6,15 @@ level: L5
 tags:
   - expert:infra
   - level:L5
-  - topic:queue
+  - topic:performance
 idk:
   - mypy-cache
-  - type-checking-artifacts
-  - concurrent-futures-types
-  - python-stdlib-stubs
-  - build-cache
-  - incremental-checking
-  - futures-type-annotations
+  - type-stubs
+  - concurrent-futures
+  - incremental-type-checking
+  - python-stdlib-typing
+  - build-artifacts
+  - type-annotations-cache
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/concurrent/futures
 children: []
