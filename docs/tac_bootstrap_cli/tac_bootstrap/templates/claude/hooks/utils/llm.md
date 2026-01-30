@@ -16,9 +16,11 @@ idk:
   - template-infrastructure
   - llm-integration
   - tac-bootstrap-hooks
-  - template-generation-utils
+  - template-generation
   - hook-utils-llm
   - claude-hook-system
+  - routing-utilities
+  - llm-config
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm
 children: []

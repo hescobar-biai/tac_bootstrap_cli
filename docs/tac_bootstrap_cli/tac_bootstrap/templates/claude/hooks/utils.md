@@ -14,10 +14,10 @@ idk:
   - anthropic-claude-client
   - openai-api-client
   - tts-streaming
-  - jinja2-template-helpers
+  - jinja2-template-rendering
   - ai-service-wrapper
-  - hook-automation-utils
-  - prompt-rendering
+  - hook-automation-helpers
+  - prompt-template-utils
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils
 children:
