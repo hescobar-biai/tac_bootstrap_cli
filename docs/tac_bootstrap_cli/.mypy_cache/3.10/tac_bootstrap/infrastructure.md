@@ -1,26 +1,26 @@
 ---
 doc_type: folder
-domain: tac-bootstrap/infra/infrastructure
+domain: tac-bootstrap/infra/mypy-cache-infrastructure
 owner: UNKNOWN
-level: L3
+level: L4
 tags:
   - expert:infra
-  - level:L3
-  - topic:infra
+  - level:L4
+  - topic:caching
+last_reviewed: UNKNOWN
 idk:
-  - caching
-  - db
-  - failure
-  - infra
-  - performance
-  - queue
-  - routing
-  - scaling
+  - mypy-cache
+  - type-checking-artifacts
+  - build-cache
+  - python-typing
+  - incremental-compilation
+  - infrastructure-stubs
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/tac_bootstrap/infrastructure
-children:
-- 
+children: []
+source_readmes: []
 ---
+
 # Overview
 
 Infrastructure folder for Tac Bootstrap.
