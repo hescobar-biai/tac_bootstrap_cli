@@ -13,8 +13,11 @@ idk:
   - text-to-speech
   - ai-service-helpers
   - jinja2-template-utilities
-  - automation-helpers
   - template-hook-utils
+  - anthropic-api
+  - openai-api
+  - tts-streaming
+  - automation-helpers
   - tac-bootstrap-templates
   - claude-hooks-framework
   - ai-service-abstractions
@@ -24,7 +27,7 @@ children:
   - docs/tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm.md
   - docs/tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts.md
 source_readmes: []
-last_reviewed: 2026-01-27
+last_reviewed: 2026-01-30
 ---
 
 # Overview

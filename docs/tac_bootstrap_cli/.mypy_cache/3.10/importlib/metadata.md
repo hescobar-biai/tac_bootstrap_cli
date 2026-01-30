@@ -15,11 +15,13 @@ idk:
   - static-analysis
   - build-artifact
   - type-stubs
+  - incremental-compilation
+  - stub-cache
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/importlib/metadata
 children: []
 source_readmes: []
-last_reviewed: UNKNOWN
+last_reviewed: 2026-01-30
 ---
 
 # Overview

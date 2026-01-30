@@ -8,52 +8,27 @@ Summary metrics across all ADW runs.
 
 | Metric            | Value          | Last Updated                 |
 | ----------------- | -------------- | ---------------------------- |
-| Current Streak    | 158            | Tue Jan 27 21:41:15 -05 2026 |
-| Longest Streak    | 158            | Tue Jan 27 21:41:15 -05 2026 |
-| Total Plan Size   | 27575 lines    | Tue Jan 27 21:41:15 -05 2026 |
-| Largest Plan Size | 673 lines      | Tue Jan 27 21:41:15 -05 2026 |
-| Total Diff Size   | 131244 lines   | Tue Jan 27 21:41:15 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 21:41:15 -05 2026 |
-| Average Presence  | 1.00           | Tue Jan 27 21:41:15 -05 2026 |
-| Metric            | Value          | Last Updated             |
-| ----------------- | -------------- | ------------------------ |
-| Current Streak    | 193            | Tue Jan 27 21:34:52 -05 2026 |
-| Longest Streak    | 193            | Tue Jan 27 21:34:52 -05 2026 |
-| Total Plan Size   | 27726 lines    | Tue Jan 27 21:34:52 -05 2026 |
-| Largest Plan Size | 673 lines      | Tue Jan 27 21:34:52 -05 2026 |
-| Total Diff Size   | 131812 lines   | Tue Jan 27 21:34:52 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 21:34:52 -05 2026 |
-| Average Presence  | 1.00           | Tue Jan 27 21:34:52 -05 2026 |
-| Current Streak    | 163            | Tue Jan 27 21:25:38 -05 2026 |
-| Longest Streak    | 163            | Tue Jan 27 21:25:38 -05 2026 |
-| Total Plan Size   | 28241 lines    | Tue Jan 27 21:25:38 -05 2026 |
-| Largest Plan Size | 702 lines      | Tue Jan 27 21:25:38 -05 2026 |
-| Total Diff Size   | 131629 lines   | Tue Jan 27 21:25:38 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 21:25:38 -05 2026 |
-| Average Presence  | 1.00           | Tue Jan 27 21:25:38 -05 2026 |
-| Current Streak    | 192            | Tue Jan 27 21:28:18 -05 2026 |
-| Longest Streak    | 192            | Tue Jan 27 21:28:18 -05 2026 |
-| Total Plan Size   | 27543 lines    | Tue Jan 27 21:28:18 -05 2026 |
-| Largest Plan Size | 673 lines      | Tue Jan 27 21:28:18 -05 2026 |
-| Total Diff Size   | 131699 lines   | Tue Jan 27 21:28:18 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 21:28:18 -05 2026 |
-| Average Presence  | 1.00           | Tue Jan 27 21:28:18 -05 2026 |
-| Current Streak    | 159            | Tue Jan 27 21:27:53 -05 2026 |
-| Longest Streak    | 159            | Tue Jan 27 21:27:53 -05 2026 |
-| Total Plan Size   | 27652 lines    | Tue Jan 27 21:27:53 -05 2026 |
-| Largest Plan Size | 673 lines      | Tue Jan 27 21:27:53 -05 2026 |
-| Total Diff Size   | 131818 lines   | Tue Jan 27 21:27:53 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 21:27:53 -05 2026 |
-| Average Presence  | 1.0            | Tue Jan 27 21:27:53 -05 2026 |
-| Metric            | Value          | Last Updated                 |
-| ----------------- | -------------- | ---------------------------- |
-| Current Streak    | 159            | Tue Jan 27 21:29:21 -05 2026 |
-| Longest Streak    | 159            | Tue Jan 27 21:29:21 -05 2026 |
-| Total Plan Size   | 27690 lines    | Tue Jan 27 21:29:21 -05 2026 |
-| Largest Plan Size | 673 lines      | Tue Jan 27 21:29:21 -05 2026 |
-| Total Diff Size   | 131858 lines   | Tue Jan 27 21:29:21 -05 2026 |
-| Largest Diff Size | 6832 lines     | Tue Jan 27 21:29:21 -05 2026 |
-| Average Presence  | 1.00           | Tue Jan 27 21:29:21 -05 2026 |
+| Current Streak    | 167            | Fri Jan 30 09:36:56 -05 2026 |
+| Longest Streak    | 167            | Fri Jan 30 09:36:56 -05 2026 |
+| Total Plan Size   | 29355 lines    | Fri Jan 30 09:36:56 -05 2026 |
+| Largest Plan Size | 702 lines      | Fri Jan 30 09:36:56 -05 2026 |
+| Total Diff Size   | 137981 lines   | Fri Jan 30 09:36:56 -05 2026 |
+| Largest Diff Size | 6832 lines     | Fri Jan 30 09:36:56 -05 2026 |
+| Average Presence  | 1.00           | Fri Jan 30 09:36:56 -05 2026 |
+| Current Streak    | 166            | Fri Jan 30 07:39:25 -05 2026 |
+| Longest Streak    | 166            | Fri Jan 30 07:39:25 -05 2026 |
+| Total Plan Size   | 29175 lines    | Fri Jan 30 07:39:25 -05 2026 |
+| Largest Plan Size | 702 lines      | Fri Jan 30 07:39:25 -05 2026 |
+| Total Diff Size   | 136624 lines   | Fri Jan 30 07:39:25 -05 2026 |
+| Largest Diff Size | 6832 lines     | Fri Jan 30 07:39:25 -05 2026 |
+| Average Presence  | 1.00           | Fri Jan 30 07:39:25 -05 2026 |
+| Current Streak    | 230            | Fri Jan 30 10:13:13 -05 2026 |
+| Longest Streak    | 230            | Fri Jan 30 10:13:13 -05 2026 |
+| Total Plan Size   | 27816 lines    | Fri Jan 30 10:13:13 -05 2026 |
+| Largest Plan Size | 673 lines      | Fri Jan 30 10:13:13 -05 2026 |
+| Total Diff Size   | 134763 lines   | Fri Jan 30 10:13:13 -05 2026 |
+| Largest Diff Size | 6832 lines     | Fri Jan 30 10:13:13 -05 2026 |
+| Average Presence  | 1.00           | Fri Jan 30 10:13:13 -05 2026 |
 
 ## ADW KPIs
 
@@ -227,3 +202,6 @@ Detailed metrics for individual ADW workflow runs.
 | Tue Jan 27 2026  | 6fe74a31     | 3            | /chore      | 1        | 91                | 378/137/14                      | Tue Jan 27 21:28:18 -05 2026 | -       |
 | Tue Jan 27 2026  | 5fd03d17     | 2            | /feature    | 1        | 200               | 501/133/14                      | Tue Jan 27 21:27:53 -05 2026 | -       |
 | Tue Jan 27 2026  | a5839b7d     | 1            | /feature    | 1        | 238               | 558/116/13                      | Tue Jan 27 21:29:21 -05 2026 | -       |
+| Fri Jan 30 2026  | feature_Tac_12_task_2    | 454 | /feature    | 1        | 296               | 1128/778/41                     | Fri Jan 30 09:36:56 -05 2026 | -       |
+| Fri Jan 30 2026  | chore_Tac_12_task_1 | 453          | /chore      | 1        | 116               | 513/36/14                       | Fri Jan 30 07:39:25 -05 2026 | -       |
+| Fri Jan 30 2026  | feature_Tac_12_task_4    | 456          | /feature    | 1        | 241               | 1367/2152/47                    | Fri Jan 30 10:13:13 -05 2026 | -       |

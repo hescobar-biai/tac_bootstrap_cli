@@ -280,6 +280,7 @@ class ScaffoldService:
             "prime",
             "start",
             "build",
+            "build_in_parallel",
             "test",
             "lint",
             "feature",
@@ -307,9 +308,11 @@ class ScaffoldService:
             "test_e2e",
             # Utility commands
             "tools",
+            "all_tools",
             "in_loop_review",
             "github_check",
             "conditional_docs",
+            "find_and_summarize",
             "scout",
             "question",
             # TAC-9/10: Context and agent delegation commands

@@ -2,28 +2,22 @@
 doc_type: folder
 domain: tac-bootstrap_cli/mypy_cache/3.10/tac_bootstrap/application
 owner: UNKNOWN
-level: L4
+level: L5
 tags:
   - expert:backend
-  - level:L4
-  - topic:db
+  - level:L5
+  - topic:performance
 idk:
-  - caching
-  - db
-  - mypy
-  - performance
-  - python
-  - routing
-  - typescript
+  - mypy-cache
+  - type-checking-cache
+  - python-3.10
+  - static-analysis
+  - incremental-typing
 related_code:
-  - tac_bootstrap_cli/
-  - tac_bootstrap/application/
-children:
-  - 
-children_docs:
-  - 
-source_readmes:
-  - README.md
+  - tac_bootstrap_cli/.mypy_cache/3.10/tac_bootstrap/application
+children: []
+children_docs: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 
