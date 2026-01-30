@@ -9,16 +9,15 @@ tags:
   - topic:api
 idk:
   - claude-hook-utilities
-  - llm-integration
-  - text-to-speech
-  - jinja2-template-utilities
-  - anthropic-api
-  - openai-api
+  - llm-api-abstraction
+  - text-to-speech-integration
+  - anthropic-claude-client
+  - openai-api-client
   - tts-streaming
-  - automation-helpers
-  - template-rendering
-  - ai-service-abstractions
-  - hook-helper-functions
+  - jinja2-template-helpers
+  - ai-service-wrapper
+  - hook-automation-utils
+  - prompt-rendering
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils
 children:

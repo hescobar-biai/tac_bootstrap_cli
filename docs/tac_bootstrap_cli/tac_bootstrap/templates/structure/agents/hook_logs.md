@@ -9,15 +9,15 @@ tags:
   - topic:logging
 idk:
   - hook-execution-logs
-  - agent-hook-output
   - claude-hook-telemetry
   - pre-post-hook-events
   - hook-lifecycle-tracking
   - automation-audit-trail
-  - jinja2-template-directory
+  - jinja2-template-structure
   - hook-invocation-capture
   - agent-automation-observability
   - runtime-hook-diagnostics
+  - template-directory-placeholder
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/hook_logs
 children: []

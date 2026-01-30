@@ -16,12 +16,13 @@ idk:
   - ast-cache-artifacts
   - static-analysis-metadata
   - type-inference-cache
-  - markdown-parser-rules
+  - build-artifact-cache
+  - markdown-parser-internals
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/rules_core
 children: []
 source_readmes: []
-last_reviewed: UNKNOWN
+last_reviewed: 2026-01-30
 ---
 
 # Overview

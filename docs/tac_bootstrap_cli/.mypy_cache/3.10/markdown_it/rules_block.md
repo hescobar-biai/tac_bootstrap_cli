@@ -14,10 +14,10 @@ idk:
   - block-level-rules
   - incremental-typecheck
   - ast-cache-artifacts
-  - type-stub-cache
+  - type-stub-resolution
   - markdown-block-grammar
-  - parser-rule-modules
-  - cached-type-info
+  - parser-rule-cache
+  - cached-type-metadata
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/rules_block
 children: []

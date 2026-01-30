@@ -16,9 +16,10 @@ idk:
   - domain-expert-pattern
   - multi-phase-agent-methodology
   - knowledge-capture-loop
-  - hook-development-automation
+  - template-based-skill-generation
   - context-driven-specialization
-  - template-based-command-generation
+  - claude-skill-framework
+  - expert-knowledge-accumulation
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts
 children:

@@ -2,20 +2,27 @@
 doc_type: folder
 domain: tac-bootstrap_cli/tac_bootstrap/templates/adws/adw_modules
 owner: UNKNOWN
-level: L3
+level: L4
 tags:
-  - expert:frontend
-  - level:L3
-  - topic:routing
+  - expert:backend
+  - level:L4
+  - topic:api
 idk:
-  - routing-module
-  - frontend-routing
-  - adw-module
+  - adw-modules
+  - workflow-modules
+  - reusable-components
+  - ai-developer-workflows
+  - template-adw-modules
+  - workflow-composition
+  - modular-adws
+  - automation-primitives
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_modules
-children:
-  - 
+children: []
+source_readmes: []
+last_reviewed: UNKNOWN
 ---
+
 # Overview
 
 Routing Module for Frontend

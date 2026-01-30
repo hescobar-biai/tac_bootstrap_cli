@@ -2,28 +2,24 @@
 doc_type: folder
 domain: tac-bootstrap-cli/templates/claude/output-styles
 owner: UNKNOWN
-level: L3
+level: L4
 tags:
   - expert:frontend
-  - level:L3
-  - topic:routing
+  - level:L4
+  - topic:api
 idk:
-  - routing
-  - frontend
-  - styles
-  - output
-  - cli
-  - templates
-  - claudes
+  - output-formatting
+  - template-rendering
+  - cli-presentation
+  - jinja2-templates
+  - claude-commands
+  - style-definitions
+  - rich-console
+  - markdown-output
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/output-styles
-children:
-  - 
-children:
-- 
-source_readmes:
-- tac_bootstrap_cli/README.md
-- tac_bootstrap_cli/templates/README.md
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 

@@ -2,25 +2,25 @@
 doc_type: folder
 domain: tac-bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers
 owner: UNKNOWN
-level: L3
+level: L4
 tags:
-  - expert:frontend
-  - level:L3
-  - topic:routing
+  - expert:backend
+  - level:L4
+  - topic:automation
+  - topic:workflow
 idk:
-  - routing
-  - triggers
-  - adw
-  - cli
-  - templates
-  - adws
+  - adw-triggers
+  - template-triggers
+  - workflow-automation
+  - event-driven
+  - jinja2-templates
+  - trigger-templates
+  - adw-automation
+  - bootstrap-templates
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_triggers
-  - tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_config
-children:
-  - tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_config
-source_readmes:
-  - README.md
+children: []
+source_readmes: []
 last_reviewed: UNKNOWN
 ---
 

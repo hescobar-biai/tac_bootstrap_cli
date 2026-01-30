@@ -8,18 +8,16 @@ tags:
   - level:L5
   - topic:api
 idk:
-  - context-bundles
-  - agent-context-templates
+  - context-bundle-templates
+  - agent-session-initialization
   - jinja2-template-structure
-  - pre-packaged-knowledge
-  - session-initialization
-  - agent-bootstrapping
-  - context-injection-templates
-  - bundle-templates
-  - knowledge-seeding
-  - load-bundle-skill
-  - template-generation-structure
-  - agent-memory-initialization
+  - knowledge-seeding-templates
+  - pre-packaged-context
+  - load-bundle-skill-target
+  - agent-memory-bootstrap
+  - context-injection-structure
+  - template-generation-output
+  - session-context-templates
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/
 children: []

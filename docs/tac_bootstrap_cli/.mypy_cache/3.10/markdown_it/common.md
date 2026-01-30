@@ -13,10 +13,11 @@ idk:
   - markdown-it-common
   - python-310
   - incremental-type-cache
-  - static-analysis
-  - parser-utilities-cache
+  - static-analysis-cache
+  - markdown-parser-types
   - ast-metadata
   - mypy-stubs
+  - build-artifacts
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/common
 children: []
