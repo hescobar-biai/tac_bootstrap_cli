@@ -1793,3 +1793,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When working with complex multi-domain tasks (backend + frontend + tests + docs)
     - When comparing orchestration patterns: /parallel_subagents vs /background vs /build_in_parallel vs /scout
     - When verifying specification-only deliverables with existing implementations
+- app_docs/feature-466-build-agent-definition.md
+  - Conditions:
+    - When working with build-agent definition or parallel build workflows
+    - When implementing file-by-file delegation in parallel builds
+    - When understanding the 6-step build-agent workflow (read spec, gather context, understand conventions, implement, verify, report)
+    - When creating or modifying Claude Code agent definitions
+    - When working with agent metadata (name, description, tools, model, color)
+    - When implementing structured reporting format for agent completions
+    - When adding new agents to scaffold_service.py agents list
+    - When creating Jinja2 templates for agent definitions
+    - When understanding integration between base repository agents and template generation
+    - When working with Task tool delegation patterns for file implementation
+    - When implementing production-quality code generation with verification steps

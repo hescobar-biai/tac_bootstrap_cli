@@ -18,6 +18,8 @@ idk:
   - runtime-hook-diagnostics
   - agent-observability-infra
   - generated-project-logging
+  - user-prompt-hook-output
+  - hook-stderr-stdout-capture
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/hook_logs
 children: []
