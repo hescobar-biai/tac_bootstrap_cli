@@ -412,6 +412,7 @@ class ScaffoldService:
             ("docs-scraper.md", "Documentation scraping agent"),
             ("meta-agent.md", "Meta-prompt generation agent"),
             ("research-docs-fetcher.md", "Research and documentation fetcher agent"),
+            ("build-agent.md", "Parallel build file implementation agent"),
         ]
         for agent, reason in agents:
             plan.add_file(
