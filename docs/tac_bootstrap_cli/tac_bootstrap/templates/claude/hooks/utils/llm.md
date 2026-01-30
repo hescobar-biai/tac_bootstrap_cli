@@ -12,15 +12,13 @@ idk:
   - llm-utilities
   - hook-helpers
   - claude-integration
-  - jinja2-templates
-  - template-generation
+  - jinja2-template-generation
   - ai-model-routing
-  - hook-utils
-  - llm-config
-  - template-rendering
-  - utility-functions
+  - llm-config-management
   - hook-automation
   - template-infrastructure
+  - utility-functions
+  - template-rendering-utils
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm
 children: []

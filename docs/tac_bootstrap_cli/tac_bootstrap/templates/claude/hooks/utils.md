@@ -11,20 +11,20 @@ idk:
   - claude-hook-utilities
   - llm-integration
   - text-to-speech
-  - ai-service-helpers
   - jinja2-template-utilities
   - automation-helpers
-  - template-hook-utils
-  - tac-bootstrap-templates
-  - claude-hooks-framework
   - ai-service-abstractions
+  - template-hook-framework
+  - tac-bootstrap-templates
+  - service-client-wrappers
+  - hook-helper-functions
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils
 children:
   - docs/tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm.md
   - docs/tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts.md
 source_readmes: []
-last_reviewed: 2026-01-27
+last_reviewed: 2026-01-30
 ---
 
 # Overview

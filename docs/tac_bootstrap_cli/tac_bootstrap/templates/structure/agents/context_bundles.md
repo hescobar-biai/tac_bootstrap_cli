@@ -10,18 +10,19 @@ tags:
 idk:
   - context-bundles
   - agent-context
-  - template-structure
-  - bundle-management
-  - context-loading
-  - agent-initialization
-  - pre-packaged-context
-  - session-bootstrapping
-  - jinja2-templates
+  - jinja2-template-storage
+  - pre-packaged-knowledge
+  - session-initialization
+  - agent-bootstrapping
+  - context-injection
+  - bundle-templates
+  - knowledge-base-fragments
+  - agent-memory-seeds
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/
 children: []
 source_readmes: []
-last_reviewed: 2026-01-27
+last_reviewed: 2026-01-30
 ---
 
 # Overview
