@@ -415,6 +415,7 @@ class ScaffoldService:
             ("build-agent.md", "Parallel build file implementation agent"),
             ("playwright-validator.md", "Playwright E2E validation agent"),
             ("scout-report-suggest.md", "Codebase scouting and analysis agent"),
+            ("scout-report-suggest-fast.md", "Fast codebase scouting agent (haiku)"),
         ]
         for agent, reason in agents:
             plan.add_file(

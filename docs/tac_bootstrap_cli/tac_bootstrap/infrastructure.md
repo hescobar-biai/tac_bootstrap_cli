@@ -16,11 +16,9 @@ idk:
   - hierarchy
   - routing
 related_code:
-  - infrastructure/tac_bootstrap_cli/tac_bootstrap/infrastructure/repo
-children:
-  - []
-source_readmes:
-  - README.md
+  - tac_bootstrap_cli/tac_bootstrap/infrastructure
+children:[]
+source_readmes:[]
 last_reviewed: UNKNOWN
 ---
 
