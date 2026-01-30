@@ -19,6 +19,7 @@ idk:
   - input-debounce-testing
   - browser-snapshot-assertion
   - test-scenario-templates
+  - random-query-generator
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/e2e
 children: []

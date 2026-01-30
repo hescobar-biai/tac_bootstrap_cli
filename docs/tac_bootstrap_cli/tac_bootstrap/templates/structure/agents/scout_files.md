@@ -6,18 +6,18 @@ level: L5
 tags:
   - expert:infra
   - level:L5
-  - topic:routing
+  - topic:caching
 idk:
-  - scout-agent-outputs
-  - exploration-result-templates
-  - jinja2-template-scaffolds
+  - scout-agent-output-templates
+  - exploration-result-scaffolds
+  - jinja2-template-directory
   - agent-discovery-artifacts
-  - codebase-scan-templates
-  - bootstrap-cli-structure
-  - file-discovery-templates
-  - scout-workflow-scaffolds
-  - agent-exploration-outputs
-  - template-generation-infra
+  - codebase-scan-output-templates
+  - bootstrap-cli-template-structure
+  - file-discovery-result-templates
+  - scout-workflow-output-scaffolds
+  - agent-exploration-template-storage
+  - template-generation-infrastructure
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/scout_files
 children: []

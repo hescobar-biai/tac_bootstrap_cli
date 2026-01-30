@@ -17,11 +17,13 @@ idk:
   - jinja2-template-generation
   - knowledge-iteration-system
   - multi-phase-development
-  - tac-bootstrap-cli-templates
+  - three-skill-workflow
+  - hook-expert-commands
+  - tac-bootstrap-templates
 related_code: ['tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cc_hook_expert']
 children: []
 source_readmes: []
-last_reviewed: UNKNOWN
+last_reviewed: 2026-01-30
 ---
 
 # Overview

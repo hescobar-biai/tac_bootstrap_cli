@@ -413,6 +413,7 @@ class ScaffoldService:
             ("meta-agent.md", "Meta-prompt generation agent"),
             ("research-docs-fetcher.md", "Research and documentation fetcher agent"),
             ("build-agent.md", "Parallel build file implementation agent"),
+            ("playwright-validator.md", "Playwright E2E validation agent"),
         ]
         for agent, reason in agents:
             plan.add_file(

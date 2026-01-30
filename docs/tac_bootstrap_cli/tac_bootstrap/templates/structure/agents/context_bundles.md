@@ -15,11 +15,11 @@ idk:
   - load-bundle-skill-integration
   - agent-memory-seeding
   - file-read-parameter-preservation
-  - knowledge-injection-templates
   - session-bootstrap-templates
-  - claude-agent-context
-  - bundle-metadata-templates
   - agent-priming-artifacts
+  - bundle-metadata-templates
+  - template-structure-agents
+  - generated-project-context-bundles
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/
 children: []

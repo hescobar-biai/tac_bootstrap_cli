@@ -9,17 +9,17 @@ tags:
   - topic:api
 idk:
   - claude-code-expert-systems
-  - hook-implementation-specialists
-  - plan-build-improve-workflow
-  - iterative-expertise-refinement
-  - jinja2-command-templates
-  - domain-expert-pattern
-  - multi-phase-agent-methodology
-  - knowledge-capture-loop
-  - template-based-skill-generation
-  - context-driven-specialization
-  - claude-agent-specialization
-  - expert-skill-scaffolding
+  - domain-specialist-agents
+  - plan-build-improve-methodology
+  - iterative-expertise-loop
+  - jinja2-skill-templates
+  - hook-implementation-experts
+  - multi-phase-workflow-pattern
+  - knowledge-refinement-cycle
+  - template-driven-agent-generation
+  - context-specialization
+  - playwright-e2e-validation
+  - agent-definition-framework
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts
 children:

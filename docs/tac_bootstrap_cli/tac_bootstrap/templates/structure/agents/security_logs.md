@@ -11,12 +11,12 @@ tags:
 idk:
   - security-logging
   - audit-trail
-  - jinja2-template
   - authentication-events
   - compliance-logs
   - threat-detection
   - agent-security
   - tac-bootstrap-templates
+  - jinja2-template
   - log-aggregation
   - centralized-logging
   - template-generation

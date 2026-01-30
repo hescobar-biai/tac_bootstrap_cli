@@ -16,10 +16,10 @@ idk:
   - tts-streaming-response
   - jinja2-prompt-templates
   - ai-service-wrapper
-  - hook-automation-helpers
   - multi-provider-llm
   - async-tts-generation
   - template-rendering-utils
+  - hook-automation-helpers
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils
 children:
