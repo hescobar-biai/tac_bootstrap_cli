@@ -6,7 +6,7 @@ model: claude-opus-4-1-20250805
 
 # Simple Planning Command
 
-Create an implementation plan using a streamlined 5-step workflow. This command provides quick planning without the overhead of parallel scout exploration, ideal for simple features or when you already know which files to work with.
+Create an implementation plan using a streamlined 5-step workflow.
 
 ## Variables
 
@@ -16,310 +16,135 @@ issue_json: $3
 
 ## Instructions
 
-- IMPORTANT: You are creating a plan to implement a new feature in TAC Bootstrap CLI.
-- The plan will be used to guide implementation with agentic coding.
-- CRITICAL: Create the plan using RELATIVE path `specs/issue-{issue_number}-adw-{adw_id}-sdlc_planner-{descriptive-name}.md`
-- CRITICAL: NEVER use absolute paths (starting with /). ALWAYS use relative paths to the current directory.
-- CRITICAL: When using the Write tool, use ONLY `specs/filename.md`, NOT `/Users/.../specs/filename.md`
-- IMPORTANT: Replace each <placeholder> in the format with real values.
-- Use the reasoning model: think carefully about requirements and approach.
-- Follow existing project patterns and conventions.
-- If you need a new library, use `uv add` and report it in Notes.
-- Maintain simplicity - don't use unnecessary decorators.
+- Create a plan to implement a feature in TAC Bootstrap CLI
+- CRITICAL: Use RELATIVE path `specs/issue-{issue_number}-adw-{adw_id}-sdlc_planner-{name}.md`
+- Follow existing project patterns and conventions
+- Keep solutions simple - don't over-engineer
 
 ## Planning Workflow
 
-Follow this 5-step workflow to create the implementation plan:
-
 ### Step 1: Understand Requirements
 
-Parse the `issue_json` variable to extract:
-- Issue number, title, and description
-- Key technical requirements and constraints
-- Scope and acceptance criteria
-- Any specific files or patterns mentioned
-
-Clarify the goal and expected outcome.
+Parse `issue_json` to extract:
+- Issue number, title, description
+- Key technical requirements
+- Acceptance criteria
 
 ### Step 2: Read Relevant Files
 
-Use Read, Glob, and Grep tools to explore the codebase:
-- Use Glob to find files matching patterns (e.g., `**/*service*.py`, `.claude/commands/*.md`)
-- Use Grep to search for specific keywords, classes, or functions
-- Use Read to examine relevant files and understand existing patterns
-- Focus on files mentioned in the issue or similar to the task at hand
+Use Read, Glob, Grep to explore:
+- Glob for file patterns (e.g., `**/*service*.py`)
+- Grep for keywords, classes, functions
+- Read relevant files to understand patterns
 
-Take notes on:
-- Existing architectural patterns to follow
-- Similar features or implementations to reference
-- Testing patterns and utilities available
-- Integration points and extension mechanisms
+Focus on: architecture patterns, similar features, testing patterns, integration points.
 
 ### Step 3: Design Approach
 
-Based on your exploration, design the implementation approach:
-- Identify which files need to be modified
-- Identify which files need to be created
-- Choose architectural patterns that align with existing code
-- Plan the sequence of implementation steps
-- Consider testing strategy and validation approach
+Based on exploration:
+- Identify files to modify/create
+- Choose patterns aligned with existing code
+- Plan implementation sequence
 
-### Step 4: Write Implementation Plan
+### Step 4: Write Plan
 
-Write a structured plan following the Plan Format below:
-- Fill in all required sections with specific details
-- Reference files discovered in your exploration
-- Break down the implementation into clear, sequential tasks
-- Include specific validation commands
-- Document architectural decisions and rationale
+Write structured plan with:
+- Metadata, Feature Description, User Story
+- Problem/Solution Statement
+- Relevant Files (existing + new)
+- Implementation Plan (phases)
+- Step by Step Tasks
+- Testing Strategy
+- Validation Commands
 
-### Step 5: Save to specs/ Directory
+### Step 5: Save to specs/
 
-- Create the `specs/` directory if it doesn't exist
-- Save the plan file using the relative path: `specs/issue-{issue_number}-adw-{adw_id}-sdlc_planner-{descriptive-name}.md`
-- If a file with similar name already exists, ask the user whether to overwrite or use a different name
-- Output ONLY the relative path to the created file (see Report section)
+Save to: `specs/issue-{issue_number}-adw-{adw_id}-sdlc_planner-{name}.md`
 
 ## Relevant Files
 
-Key files for TAC Bootstrap CLI:
+- `PLAN_TAC_BOOTSTRAP.md` - Master plan
+- `CLAUDE.md` - Agent guide
+- `tac_bootstrap_cli/tac_bootstrap/domain/` - Pydantic models
+- `tac_bootstrap_cli/tac_bootstrap/application/` - Services
+- `tac_bootstrap_cli/tac_bootstrap/infrastructure/` - Templates
+- `tac_bootstrap_cli/tac_bootstrap/interfaces/` - CLI
 
-- `PLAN_TAC_BOOTSTRAP.md` - Master plan with all tasks
-- `CLAUDE.md` - Guide for agents
-- `config.yml` - Project configuration
-- `ai_docs/` - TAC course documentation and architectural guides
-- `app_docs/` - Project-specific documentation
-- `specs/` - Implementation specifications and plans
-- `tac_bootstrap_cli/` - CLI source code (if exists)
-  - `tac_bootstrap/domain/` - Pydantic models
-  - `tac_bootstrap/application/` - Services
-  - `tac_bootstrap/infrastructure/` - Templates, FS
-  - `tac_bootstrap/interfaces/` - CLI, Wizard
-
-Read `.claude/commands/conditional_docs.md` for additional required documentation.
+Read `.claude/commands/conditional_docs.md` for additional docs.
 
 ## Plan Format
 
 ```md
-# Feature: <feature name>
+# Feature: <name>
 
 ## Metadata
 issue_number: `{issue_number}`
 adw_id: `{adw_id}`
-issue_json: `{issue_json}`
 
 ## Feature Description
-<Describe the feature in detail, its purpose and value>
+<Purpose and value>
 
 ## User Story
-As a <user type>
-I want to <action/goal>
-So that <benefit/value>
+As a <user>, I want <action>, so that <benefit>
 
 ## Problem Statement
-<Clearly define the problem or opportunity this feature addresses>
+<Problem this addresses>
 
 ## Solution Statement
-<Describe the proposed approach and how it solves the problem>
-
-<Explicitly reference architectural patterns and similar implementations discovered>
+<Approach and how it solves the problem>
 
 ## Relevant Files
-Files needed to implement the feature:
 
 ### Existing Files to Modify
-
-<List files that need to be modified with line numbers if known>
-
-1. **`path/to/file.py`** (lines X-Y)
-   - Why this file needs modification
+1. **`path/to/file.py`** - Why modification needed
 
 ### New Files
-
-<List files that need to be created>
-
-2. **`path/to/new_file.py`**
-   - Purpose and content of this new file
+2. **`path/to/new_file.py`** - Purpose
 
 ## Implementation Plan
 
 ### Phase 1: Foundation
-<Foundational work before implementing the main feature>
+<Foundational work>
 
 ### Phase 2: Core Implementation
-<Main feature implementation>
+<Main feature>
 
 ### Phase 3: Integration
-<Integration with existing functionality>
+<Integration>
 
 ## Step by Step Tasks
-IMPORTANT: Execute each step in order.
 
 ### Task 1: <name>
-- <detail>
 - <detail>
 
 ### Task 2: <name>
 - <detail>
 
-<The last step should execute Validation Commands>
-
 ## Testing Strategy
 
 ### Unit Tests
-<Necessary unit tests>
-
-### Integration Tests
-
-<Integration tests if applicable>
+<Tests needed>
 
 ### Edge Cases
-<Edge cases to test>
+<Edge cases>
 
 ## Acceptance Criteria
-<Specific, measurable criteria to consider the feature complete>
-
-1. **Criterion 1**
-   - Description
-
-2. **Criterion 2**
-   - Description
+1. **Criterion 1** - Description
 
 ## Validation Commands
-Run all commands to validate with zero regressions:
-
-- `cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short` - Unit tests
-- `cd tac_bootstrap_cli && uv run ruff check .` - Linting
-- `cd tac_bootstrap_cli && uv run mypy tac_bootstrap/` - Type check
-- `cd tac_bootstrap_cli && uv run tac-bootstrap --help` - Smoke test
+- `cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short`
+- `cd tac_bootstrap_cli && uv run ruff check .`
+- `cd tac_bootstrap_cli && uv run mypy tac_bootstrap/`
 
 ## Notes
-<Additional notes, future considerations, or relevant context>
-<Document architectural decisions and rationale>
-<List similar implementations referenced during planning>
+<Additional context>
 ```
-
-## Feature
-Extract feature details from the `issue_json` variable (parse JSON and use title and body fields).
 
 ## Report
 
-CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
-
-1. First, check if a plan file already exists in `specs/` matching pattern: `issue-{issue_number}-adw-{adw_id}-*.md`
-2. If plan file EXISTS: Return ONLY the relative path, nothing else
-3. If plan file does NOT exist: Create it using RELATIVE PATH (e.g., `specs/filename.md`), then return ONLY the path
-
-CRITICAL FILE CREATION RULES:
-- When using the Write tool, use RELATIVE paths only: `specs/filename.md`
-- NEVER use absolute paths like `/Users/.../specs/filename.md`
-- The file will be created in the current working directory
-
-YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the RELATIVE path like:
+Output ONLY the relative path to the plan file:
 ```
 specs/issue-37-adw-e4dc9574-sdlc_planner-feature-name.md
 ```
 
-DO NOT include:
-- Any explanation or commentary
-- Phrases like "Perfect!", "I can see that...", "The plan file is at..."
-- Markdown formatting around the path
-- Multiple lines
-- Absolute paths (starting with /)
-
-ONLY output the bare RELATIVE path. This is machine-parsed.
-
-## Examples
-
-### Example 1: Planning a New Command Feature
-
-```
-/plan 123 "feature_new_command" '{"number":123,"title":"Create new export command","body":"Add a command to export project configuration to JSON format"}'
-```
-
-Agent follows the workflow:
-1. Parses issue JSON to understand export command requirements
-2. Uses Glob to find existing command files in `.claude/commands/`
-3. Uses Grep to search for similar export/output functionality
-4. Reads example commands to understand the pattern
-5. Designs approach based on discovered patterns
-6. Writes structured plan referencing similar implementations
-7. Saves to `specs/issue-123-adw-feature_new_command-sdlc_planner-export-command.md`
-
-### Example 2: Planning Infrastructure Enhancement
-
-```
-/plan 456 "feature_template_engine" '{"number":456,"title":"Enhance template engine with partials","body":"Add support for Jinja2 partials/includes in template rendering"}'
-```
-
-Agent follows the workflow:
-1. Parses issue to understand Jinja2 partials requirement
-2. Uses Glob to find template-related files
-3. Uses Grep to search for Jinja2 configuration and rendering code
-4. Reads template service and infrastructure files
-5. Identifies current template engine implementation
-6. Designs partials support following existing patterns
-7. Creates plan with specific file modifications
-8. Saves to `specs/issue-456-adw-feature_template_engine-sdlc_planner-jinja2-partials.md`
-
-## Notes
-
-### When to Use This Command
-
-Use `/plan` when:
-- Simple, straightforward features where files are known
-- Small codebases where exploration is quick
-- Time-sensitive planning where scout overhead isn't justified
-- Developer already has good codebase familiarity
-- You want direct control over file exploration
-
-Use `/plan_w_scouters` when:
-- Complex features requiring comprehensive file discovery
-- Large codebases with many architectural layers
-- Unclear which files need modification
-- Want high-confidence file recommendations from parallel exploration
-
-### Simplifications from /plan_w_scouters
-
-This command removes:
-- Parallel scout agent exploration (Steps 1-9 of scout workflow)
-- Scout Exploration Summary section in plan format
-- Task tool invocations for exploration
-- Scout result aggregation and scoring
-- High-confidence file recommendations
-
-This command keeps:
-- Same plan format (metadata, description, user story, problem/solution, etc.)
-- Same validation commands structure
-- Same variable passing (issue_number, adw_id, issue_json)
-- Same output format requirements (relative path only)
-- Manual exploration using Read, Glob, Grep tools
-
-### File Exploration Tips
-
-For effective manual exploration:
-- Start with Glob patterns to identify relevant directories and files
-- Use Grep to search for keywords, class names, or function signatures
-- Read files that match your search to understand patterns
-- Look for similar features and follow their architectural patterns
-- Check test files to understand testing approaches
-- Review documentation for architectural guidelines
-
-### Integration with Other Commands
-
-After running `/plan`:
-- Use `/implement` to execute the plan
-- Use `/review` to validate changes
-- Use `/test` to run validation commands
-- Reference the plan during implementation
-
-### Related Commands
-
-- `/plan_w_scouters` - Planning with parallel scout exploration (more comprehensive)
-- `/plan_w_docs` - Planning with documentation exploration
-- `/quick-plan` - Fast planning with lightweight scout agents
-- `/feature` - Basic feature planning (legacy)
-
----
-
-*This command follows TAC-10 Level 3 (Tool-Assisted Prompt) pattern for manual exploration with structured planning output.*
+No explanation, no commentary, no markdown formatting. Just the bare path.

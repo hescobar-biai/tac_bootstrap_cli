@@ -21,6 +21,9 @@ from adw_modules.github import get_repo_url, extract_repo_path, ADW_BOT_IDENTIFI
 from adw_modules.state import ADWState
 from adw_modules.utils import parse_json, get_target_branch
 
+# Token optimization constants
+MAX_ISSUE_BODY_LENGTH = 2000  # Truncate issue body to reduce token usage
+
 
 # Agent name constants
 AGENT_PLANNER = "sdlc_planner"
@@ -57,6 +60,28 @@ def format_issue_message(
     if session_id:
         return f"{ADW_BOT_IDENTIFIER} {adw_id}_{agent_name}_{session_id}: {message}"
     return f"{ADW_BOT_IDENTIFIER} {adw_id}_{agent_name}: {message}"
+
+
+def get_minimal_issue_json(issue: GitHubIssue, max_body_length: int = MAX_ISSUE_BODY_LENGTH) -> str:
+    """Create minimal issue JSON with truncated body to reduce token usage.
+
+    Args:
+        issue: GitHubIssue object
+        max_body_length: Maximum length for body text (default 2000 chars)
+
+    Returns:
+        JSON string with only number, title, and truncated body
+    """
+    body = issue.body or ""
+    if len(body) > max_body_length:
+        body = body[:max_body_length] + "\n\n[TRUNCATED - body exceeds 2000 chars]"
+
+    minimal_data = {
+        "number": issue.number,
+        "title": issue.title,
+        "body": body
+    }
+    return json.dumps(minimal_data)
 
 
 def extract_adw_info(text: str, temp_adw_id: str) -> ADWExtractionResult:
@@ -117,9 +142,7 @@ def classify_issue(
 
     # Use the classify_issue slash command template with minimal payload
     # Only include the essential fields: number, title, body
-    minimal_issue_json = issue.model_dump_json(
-        by_alias=True, include={"number", "title", "body"}
-    )
+    minimal_issue_json = get_minimal_issue_json(issue)
 
     request = AgentTemplateRequest(
         agent_name=AGENT_CLASSIFIER,
@@ -367,9 +390,7 @@ def build_plan(
 ) -> AgentPromptResponse:
     """Build implementation plan for the issue using the specified command."""
     # Use minimal payload like classify_issue does
-    minimal_issue_json = issue.model_dump_json(
-        by_alias=True, include={"number", "title", "body"}
-    )
+    minimal_issue_json = get_minimal_issue_json(issue)
 
     # If clarifications are provided, add them to the args
     args = [str(issue.number), adw_id, minimal_issue_json]
@@ -552,9 +573,7 @@ def generate_branch_name(
     issue_type = issue_class.replace("/", "")
 
     # Use minimal payload like classify_issue does
-    minimal_issue_json = issue.model_dump_json(
-        by_alias=True, include={"number", "title", "body"}
-    )
+    minimal_issue_json = get_minimal_issue_json(issue)
 
     request = AgentTemplateRequest(
         agent_name=AGENT_BRANCH_GENERATOR,
@@ -592,9 +611,7 @@ def create_commit(
     unique_agent_name = f"{agent_name}_committer"
 
     # Use minimal payload like classify_issue does
-    minimal_issue_json = issue.model_dump_json(
-        by_alias=True, include={"number", "title", "body"}
-    )
+    minimal_issue_json = get_minimal_issue_json(issue)
 
     request = AgentTemplateRequest(
         agent_name=unique_agent_name,

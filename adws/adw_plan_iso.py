@@ -158,8 +158,22 @@ def main():
                 format_issue_message(adw_id, "ops", f"⚠️ AI docs loading failed (continuing): {docs_response.output[:200]}"),
             )
 
-    # Clarification phase (optional)
+    # Clarification phase (optional) - skip if already cached in state
     clarification_text = None
+    cached_clarification = state.get("clarification")
+    if cached_clarification and not skip_clarify:
+        logger.info("Using cached clarification from state (saving tokens)")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", "♻️ Using cached clarification (token optimization)"),
+        )
+        # Reconstruct clarification text from cached data
+        if cached_clarification.get("has_ambiguities"):
+            clarification_text = "## Cached Clarifications\n\n"
+            for a in cached_clarification.get("assumptions", []):
+                clarification_text += f"- {a}\n"
+        skip_clarify = True  # Skip API call since we have cached data
+
     if not skip_clarify:
         logger.info("Starting clarification phase")
         make_issue_comment(
@@ -239,37 +253,55 @@ def main():
                 format_issue_message(adw_id, "ops", "✅ No ambiguities detected - proceeding with planning"),
             )
 
-    # Classify the issue
-    issue_command, error = classify_issue(issue, adw_id, logger)
-
-    if error:
-        logger.error(f"Error classifying issue: {error}")
+    # Classify the issue - skip if already cached in state
+    cached_issue_class = state.get("issue_class")
+    if cached_issue_class:
+        logger.info(f"Using cached classification from state: {cached_issue_class} (saving tokens)")
+        issue_command = cached_issue_class
         make_issue_comment(
             issue_number,
-            format_issue_message(adw_id, "ops", f"❌ Error classifying issue: {error}"),
+            format_issue_message(adw_id, "ops", f"♻️ Using cached classification: {issue_command} (token optimization)"),
         )
-        sys.exit(1)
+    else:
+        issue_command, error = classify_issue(issue, adw_id, logger)
 
-    state.update(issue_class=issue_command)
-    state.save("adw_plan_iso")
-    logger.info(f"Issue classified as: {issue_command}")
-    make_issue_comment(
-        issue_number,
-        format_issue_message(adw_id, "ops", f"✅ Issue classified as: {issue_command}"),
-    )
+        if error:
+            logger.error(f"Error classifying issue: {error}")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"❌ Error classifying issue: {error}"),
+            )
+            sys.exit(1)
 
-    # Generate branch name
-    branch_name, error = generate_branch_name(issue, issue_command, adw_id, logger)
-
-    if error:
-        logger.error(f"Error generating branch name: {error}")
+        state.update(issue_class=issue_command)
+        state.save("adw_plan_iso")
+        logger.info(f"Issue classified as: {issue_command}")
         make_issue_comment(
             issue_number,
-            format_issue_message(
-                adw_id, "ops", f"❌ Error generating branch name: {error}"
-            ),
+            format_issue_message(adw_id, "ops", f"✅ Issue classified as: {issue_command}"),
         )
-        sys.exit(1)
+
+    # Generate branch name - skip if already cached in state
+    cached_branch_name = state.get("branch_name")
+    if cached_branch_name:
+        logger.info(f"Using cached branch name from state: {cached_branch_name} (saving tokens)")
+        branch_name = cached_branch_name
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", f"♻️ Using cached branch: {branch_name} (token optimization)"),
+        )
+    else:
+        branch_name, error = generate_branch_name(issue, issue_command, adw_id, logger)
+
+        if error:
+            logger.error(f"Error generating branch name: {error}")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(
+                    adw_id, "ops", f"❌ Error generating branch name: {error}"
+                ),
+            )
+            sys.exit(1)
 
     # Don't create branch here - let worktree create it
     # The worktree command will create the branch when we specify -b
