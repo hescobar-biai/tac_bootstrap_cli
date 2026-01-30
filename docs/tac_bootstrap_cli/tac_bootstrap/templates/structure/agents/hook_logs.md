@@ -14,10 +14,10 @@ idk:
   - pre-post-hook-events
   - hook-lifecycle-tracking
   - automation-audit-trail
-  - template-generated-structure
-  - log-directory-scaffold
-  - hook-event-capture
-  - jinja2-template-output
+  - jinja2-template-hooks
+  - log-directory-structure
+  - hook-invocation-capture
+  - agent-automation-observability
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/hook_logs
 children: []

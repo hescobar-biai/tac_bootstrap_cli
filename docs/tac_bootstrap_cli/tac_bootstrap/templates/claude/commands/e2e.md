@@ -10,14 +10,15 @@ tags:
 idk:
   - e2e-test-command-templates
   - playwright-browser-automation
-  - slash-command-definitions
-  - sql-injection-test
-  - export-functionality-test
-  - query-execution-test
-  - input-debounce-validation
-  - jinja2-template-rendering
-  - test-scenario-bootstrapping
+  - slash-command-test-definitions
+  - sql-injection-test-pattern
+  - export-functionality-validation
+  - query-execution-e2e
+  - input-debounce-testing
+  - jinja2-test-templates
+  - browser-snapshot-validation
   - claude-code-e2e-integration
+  - test-scenario-bootstrapping
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/e2e
 children: []

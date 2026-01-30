@@ -10,14 +10,14 @@ tags:
 idk:
   - claude-code-expert-system
   - hook-implementation-specialists
-  - template-command-generation
-  - iterative-knowledge-refinement
-  - plan-build-improve-methodology
-  - specialized-workflow-agents
-  - jinja2-expert-templates
-  - context-pattern-capture
-  - domain-expertise-automation
-  - progressive-enhancement-cycle
+  - template-command-patterns
+  - iterative-knowledge-capture
+  - plan-build-improve-workflow
+  - jinja2-expert-commands
+  - specialized-agent-methodology
+  - context-aware-code-generation
+  - domain-expert-templates
+  - knowledge-accumulation-cycle
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts
 children:

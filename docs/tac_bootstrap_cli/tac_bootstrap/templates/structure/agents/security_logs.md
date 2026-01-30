@@ -17,8 +17,8 @@ idk:
   - log-aggregation
   - monitoring-infrastructure
   - jinja2-template
-  - security-event-tracking
-  - compliance-logging
+  - centralized-logging
+  - authentication-events
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/security_logs
 children: []

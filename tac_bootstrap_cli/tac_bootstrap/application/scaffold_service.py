@@ -312,6 +312,7 @@ class ScaffoldService:
             "in_loop_review",
             "github_check",
             "conditional_docs",
+            "find_and_summarize",
             "scout",
             "question",
             # TAC-9/10: Context and agent delegation commands

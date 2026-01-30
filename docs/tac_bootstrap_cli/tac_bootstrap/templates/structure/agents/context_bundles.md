@@ -15,8 +15,11 @@ idk:
   - session-bootstrapping
   - agent-initialization
   - pre-packaged-context
-  - bundle-management
-  - context-loading
+  - session-bootstrapping
+  - jinja2-templates
+  - agent-templates
+  - context-injection
+  - template-generation
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/context_bundles/
 children: []
