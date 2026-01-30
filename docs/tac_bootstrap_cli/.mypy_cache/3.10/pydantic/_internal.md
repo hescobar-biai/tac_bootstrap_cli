@@ -2,19 +2,20 @@
 doc_type: folder
 domain: tac-bootstrap_cli/mypy_cache/3.10/pydantic/_internal
 owner: UNKNOWN
-level: L4
+level: L5
 tags:
   - expert:backend
-  - level:L4
+  - level:L5
   - topic:caching
 idk:
   - mypy-cache
   - pydantic-internal
   - type-checking-artifacts
-  - validation-metadata
-  - static-analysis
-  - cache-storage
+  - static-analysis-cache
   - incremental-typing
+  - validation-metadata
+  - compiled-artifacts
+  - dependency-tracking
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/pydantic/_internal
 children: []

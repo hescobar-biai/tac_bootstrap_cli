@@ -9,18 +9,19 @@ tags:
   - topic:caching
 idk:
   - mypy-cache
-  - type-checking
-  - markdown-it
-  - python-types
-  - build-artifacts
-  - static-analysis
-  - cache-metadata
+  - type-checking-artifacts
+  - markdown-it-types
+  - python-310
   - ast-cache
+  - static-analysis-cache
+  - incremental-checking
+  - type-stub-cache
+  - build-artifacts
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/common
 children: []
 source_readmes: []
-last_reviewed: 2026-01-27
+last_reviewed: 2026-01-30
 ---
 
 # Overview

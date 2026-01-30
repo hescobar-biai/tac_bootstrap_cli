@@ -8,14 +8,14 @@ tags:
   - level:L5
   - topic:caching
 idk:
-  - mypy-cache
-  - markdown-it
-  - type-checking
-  - rules-core
-  - python-3.10
-  - incremental-cache
-  - ast-cache
-  - type-stubs
+  - mypy-incremental-cache
+  - markdown-it-parser
+  - rules-core-module
+  - python-3.10-cache
+  - type-checking-artifacts
+  - ast-serialization
+  - cached-type-analysis
+  - parser-rule-cache
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/rules_core
 children: []

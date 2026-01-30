@@ -13,9 +13,11 @@ idk:
   - claude-hook-telemetry
   - pre-post-hook-events
   - hook-lifecycle-tracking
-  - automation-audit
-  - jinja2-template
-  - log-directory-structure
+  - automation-audit-trail
+  - template-generated-structure
+  - log-directory-scaffold
+  - hook-event-capture
+  - jinja2-template-output
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/hook_logs
 children: []

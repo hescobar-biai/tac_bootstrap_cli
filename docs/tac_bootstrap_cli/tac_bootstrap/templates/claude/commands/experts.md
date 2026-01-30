@@ -9,21 +9,21 @@ tags:
   - topic:api
 idk:
   - claude-code-expert-system
-  - hook-implementation-experts
-  - template-driven-workflows
-  - iterative-knowledge-capture
-  - plan-build-improve-cycle
-  - specialized-agent-workflows
-  - expert-command-templates
-  - context-aware-generation
-  - methodology-patterns
-  - jinja2-template-commands
+  - hook-implementation-specialists
+  - template-command-generation
+  - iterative-knowledge-refinement
+  - plan-build-improve-methodology
+  - specialized-workflow-agents
+  - jinja2-expert-templates
+  - context-pattern-capture
+  - domain-expertise-automation
+  - progressive-enhancement-cycle
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts
 children:
   - docs/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cc_hook_expert.md
 source_readmes: []
-last_reviewed: 2026-01-27
+last_reviewed: 2026-01-30
 ---
 
 # Overview

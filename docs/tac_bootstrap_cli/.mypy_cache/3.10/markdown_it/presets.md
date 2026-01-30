@@ -10,12 +10,12 @@ tags:
 idk:
   - mypy-cache
   - type-checking-artifacts
-  - markdown-it-library
-  - python-3.10
-  - presets-module
+  - markdown-it-presets
+  - python-3.10-runtime
   - build-cache
-  - type-inference
-  - metadata-storage
+  - type-inference-metadata
+  - static-analysis-cache
+  - transient-artifacts
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/presets
 children: []
