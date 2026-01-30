@@ -9,7 +9,8 @@ import os
 import sys
 import logging
 from typing import Dict, Any, Optional
-from adw_modules.data_types import ADWStateData
+from datetime import datetime
+from adw_modules.data_types import ADWStateData, AgentTokenRecord, TokenUsage
 
 
 class ADWState:
@@ -34,7 +35,12 @@ class ADWState:
     def update(self, **kwargs):
         """Update state with new key-value pairs."""
         # Filter to only our core fields
-        core_fields = {"adw_id", "issue_number", "branch_name", "plan_file", "issue_class", "worktree_path", "model_set", "all_adws"}
+        core_fields = {
+            "adw_id", "issue_number", "branch_name", "plan_file", "issue_class",
+            "worktree_path", "model_set", "all_adws",
+            # Token tracking fields
+            "total_input_tokens", "total_output_tokens", "total_cost_usd", "agent_token_records"
+        }
         for key, value in kwargs.items():
             if key in core_fields:
                 self.data[key] = value
@@ -49,6 +55,66 @@ class ADWState:
         if adw_id not in all_adws:
             all_adws.append(adw_id)
             self.data["all_adws"] = all_adws
+
+    def accumulate_tokens(self, agent_name: str, token_usage: Optional[TokenUsage]) -> None:
+        """Accumulate token usage from an agent execution.
+
+        Args:
+            agent_name: Name of the agent that executed
+            token_usage: TokenUsage object from the agent response
+        """
+        if not token_usage:
+            return
+
+        # Update cumulative totals
+        self.data["total_input_tokens"] = self.data.get("total_input_tokens", 0) + token_usage.total_input_tokens
+        self.data["total_output_tokens"] = self.data.get("total_output_tokens", 0) + token_usage.output_tokens
+        self.data["total_cost_usd"] = self.data.get("total_cost_usd", 0.0) + token_usage.total_cost_usd
+
+        # Add record for this agent
+        records = self.data.get("agent_token_records", [])
+        record = AgentTokenRecord(
+            agent_name=agent_name,
+            input_tokens=token_usage.total_input_tokens,
+            output_tokens=token_usage.output_tokens,
+            cost_usd=token_usage.total_cost_usd,
+            timestamp=datetime.now().isoformat(),
+        )
+        records.append(record.model_dump())
+        self.data["agent_token_records"] = records
+
+    def get_token_summary(self) -> str:
+        """Get a formatted summary of token usage for reporting.
+
+        Returns:
+            Formatted string with token usage summary
+        """
+        total_input = self.data.get("total_input_tokens", 0)
+        total_output = self.data.get("total_output_tokens", 0)
+        total_cost = self.data.get("total_cost_usd", 0.0)
+        records = self.data.get("agent_token_records", [])
+
+        lines = [
+            "## 📊 Token Usage Summary",
+            "",
+            f"**Total Input Tokens:** {total_input:,}",
+            f"**Total Output Tokens:** {total_output:,}",
+            f"**Total Cost:** ${total_cost:.4f} USD",
+            "",
+        ]
+
+        if records:
+            lines.append("### Agent Breakdown")
+            lines.append("")
+            lines.append("| Agent | Input | Output | Cost |")
+            lines.append("|-------|------:|-------:|-----:|")
+            for record in records:
+                lines.append(
+                    f"| {record['agent_name']} | {record['input_tokens']:,} | "
+                    f"{record['output_tokens']:,} | ${record['cost_usd']:.4f} |"
+                )
+
+        return "\n".join(lines)
 
     def get_working_directory(self) -> str:
         """Get the working directory for this ADW instance.
@@ -77,6 +143,13 @@ class ADWState:
         state_path = self.get_state_path()
         os.makedirs(os.path.dirname(state_path), exist_ok=True)
 
+        # Convert agent_token_records from dicts to AgentTokenRecord objects if needed
+        agent_records = self.data.get("agent_token_records", [])
+        token_records = [
+            AgentTokenRecord(**r) if isinstance(r, dict) else r
+            for r in agent_records
+        ]
+
         # Create ADWStateData for validation
         state_data = ADWStateData(
             adw_id=self.data.get("adw_id"),
@@ -87,6 +160,11 @@ class ADWState:
             worktree_path=self.data.get("worktree_path"),
             model_set=self.data.get("model_set", "base"),
             all_adws=self.data.get("all_adws", []),
+            # Token tracking fields
+            total_input_tokens=self.data.get("total_input_tokens", 0),
+            total_output_tokens=self.data.get("total_output_tokens", 0),
+            total_cost_usd=self.data.get("total_cost_usd", 0.0),
+            agent_token_records=token_records,
         )
 
         # Save as JSON
@@ -164,5 +242,10 @@ class ADWState:
             "issue_class": self.data.get("issue_class"),
             "worktree_path": self.data.get("worktree_path"),
             "all_adws": self.data.get("all_adws", []),
+            # Token tracking fields
+            "total_input_tokens": self.data.get("total_input_tokens", 0),
+            "total_output_tokens": self.data.get("total_output_tokens", 0),
+            "total_cost_usd": self.data.get("total_cost_usd", 0.0),
+            "agent_token_records": self.data.get("agent_token_records", []),
         }
         print(json.dumps(output_data, indent=2))

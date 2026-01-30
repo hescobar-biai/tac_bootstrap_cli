@@ -177,7 +177,11 @@ def main():
             format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementing solution in isolated environment")
         )
         implement_response = implement_plan(plan_file, adw_id, logger, working_dir=worktree_path)
-    
+
+    # Track token usage from implementation
+    state.accumulate_tokens(AGENT_IMPLEMENTOR, implement_response.token_usage)
+    state.save("adw_build_iso")
+
     if not implement_response.success:
         logger.error(f"Error implementing solution: {implement_response.output}")
         make_issue_comment(
@@ -251,11 +255,12 @@ def main():
     
     # Save final state
     state.save("adw_build_iso")
-    
-    # Post final state summary to issue
+
+    # Post final state summary with token usage to issue
+    token_summary = state.get_token_summary()
     make_issue_comment(
         issue_number,
-        f"{adw_id}_ops: 📋 Final build state:\n```json\n{json.dumps(state.data, indent=2)}\n```"
+        f"{adw_id}_ops: 📋 Build phase completed\n\n{token_summary}"
     )
 
 

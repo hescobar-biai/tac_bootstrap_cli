@@ -32,6 +32,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from adw_modules.workflow_ops import ensure_adw_id
 from adw_modules.github import make_issue_comment
 from adw_modules.utils import get_target_branch
+from adw_modules.state import ADWState
 
 
 def main():
@@ -235,6 +236,17 @@ def main():
     print(f"\nWorktree location: trees/{adw_id}/")
     print(f"To clean up: ./scripts/purge_tree.sh {adw_id}")
 
+    # Load final state to get token summary
+    token_summary = ""
+    try:
+        state = ADWState.load(adw_id)
+        if state:
+            token_summary = "\n\n" + state.get_token_summary()
+            # Print token summary to console
+            print(f"\n{state.get_token_summary()}")
+    except Exception as e:
+        print(f"Warning: Failed to load token summary: {e}")
+
     try:
         make_issue_comment(
             issue_number,
@@ -245,7 +257,8 @@ def main():
             "✅ Review phase completed\n"
             "✅ Documentation phase completed\n"
             "✅ Ship phase completed\n\n"
-            "🚢 **Code has been automatically shipped to production!**",
+            "🚢 **Code has been automatically shipped to production!**"
+            f"{token_summary}",
         )
     except:
         pass

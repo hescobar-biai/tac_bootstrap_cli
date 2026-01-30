@@ -163,6 +163,23 @@ class AgentPromptRequest(BaseModel):
     timeout_seconds: int = 600  # Default 10 minutes, configurable per request
 
 
+class TokenUsage(BaseModel):
+    """Token usage statistics from Claude Code execution."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
+    total_cost_usd: float = 0.0
+    duration_ms: int = 0
+    model_usage: dict = Field(default_factory=dict)  # Per-model breakdown
+
+    @property
+    def total_input_tokens(self) -> int:
+        """Total input tokens including cache operations."""
+        return self.input_tokens + self.cache_creation_input_tokens + self.cache_read_input_tokens
+
+
 class AgentPromptResponse(BaseModel):
     """Claude Code agent response."""
 
@@ -170,6 +187,7 @@ class AgentPromptResponse(BaseModel):
     success: bool
     session_id: Optional[str] = None
     retry_code: RetryCode = RetryCode.NONE
+    token_usage: Optional[TokenUsage] = None  # Token usage for this execution
 
 
 class AgentTemplateRequest(BaseModel):
@@ -222,6 +240,16 @@ class E2ETestResult(BaseModel):
         return self.status == "passed"
 
 
+class AgentTokenRecord(BaseModel):
+    """Token usage record for a single agent execution."""
+
+    agent_name: str
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cost_usd: float = 0.0
+    timestamp: Optional[str] = None
+
+
 class ADWStateData(BaseModel):
     """Minimal persistent state for ADW workflow.
 
@@ -237,6 +265,11 @@ class ADWStateData(BaseModel):
     worktree_path: Optional[str] = None
     model_set: Optional[ModelSet] = "base"  # Default to "base" model set
     all_adws: List[str] = Field(default_factory=list)
+    # Token tracking fields
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
+    total_cost_usd: float = 0.0
+    agent_token_records: List[AgentTokenRecord] = Field(default_factory=list)
 
 
 class ReviewIssue(BaseModel):

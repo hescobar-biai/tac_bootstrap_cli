@@ -26,6 +26,8 @@ import os
 # Add the parent directory to Python path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from adw_modules.workflow_ops import ensure_adw_id
+from adw_modules.github import make_issue_comment
+from adw_modules.state import ADWState
 
 
 def main():
@@ -152,6 +154,32 @@ def main():
     print(f"All phases completed successfully!")
     print(f"\nWorktree location: trees/{adw_id}/")
     print(f"To clean up: ./scripts/purge_tree.sh {adw_id}")
+
+    # Load final state to get token summary
+    token_summary = ""
+    try:
+        state = ADWState.load(adw_id)
+        if state:
+            token_summary = "\n\n" + state.get_token_summary()
+            # Print token summary to console
+            print(f"\n{state.get_token_summary()}")
+    except Exception as e:
+        print(f"Warning: Failed to load token summary: {e}")
+
+    try:
+        make_issue_comment(
+            issue_number,
+            f"{adw_id}_ops: 🎉 **SDLC Workflow Complete!**\n\n"
+            "✅ Plan phase completed\n"
+            "✅ Build phase completed\n"
+            "✅ Test phase completed\n"
+            "✅ Review phase completed\n"
+            "✅ Documentation phase completed\n\n"
+            "📋 PR is ready for review!"
+            f"{token_summary}",
+        )
+    except:
+        pass
 
 
 if __name__ == "__main__":

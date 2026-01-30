@@ -17,6 +17,7 @@ from .data_types import (
     SlashCommand,
     ModelSet,
     RetryCode,
+    TokenUsage,
 )
 
 # Load environment variables
@@ -184,11 +185,12 @@ def check_claude_installed() -> Optional[str]:
 
 def parse_jsonl_output(
     output_file: str,
-) -> Tuple[List[Dict[str, Any]], Optional[Dict[str, Any]]]:
-    """Parse JSONL output file and return all messages and the result message.
+) -> Tuple[List[Dict[str, Any]], Optional[Dict[str, Any]], Optional[TokenUsage]]:
+    """Parse JSONL output file and return all messages, result message, and token usage.
 
     Returns:
-        Tuple of (all_messages, result_message) where result_message is None if not found
+        Tuple of (all_messages, result_message, token_usage) where result_message and
+        token_usage are None if not found
     """
     try:
         with open(output_file, "r") as f:
@@ -197,14 +199,27 @@ def parse_jsonl_output(
 
             # Find the result message (should be the last one)
             result_message = None
+            token_usage = None
             for message in reversed(messages):
                 if message.get("type") == "result":
                     result_message = message
+                    # Extract token usage from result message
+                    usage = message.get("usage", {})
+                    model_usage = message.get("modelUsage", {})
+                    token_usage = TokenUsage(
+                        input_tokens=usage.get("input_tokens", 0),
+                        output_tokens=usage.get("output_tokens", 0),
+                        cache_creation_input_tokens=usage.get("cache_creation_input_tokens", 0),
+                        cache_read_input_tokens=usage.get("cache_read_input_tokens", 0),
+                        total_cost_usd=message.get("total_cost_usd", 0.0),
+                        duration_ms=message.get("duration_ms", 0),
+                        model_usage=model_usage,
+                    )
                     break
 
-            return messages, result_message
+            return messages, result_message, token_usage
     except Exception as e:
-        return [], None
+        return [], None, None
 
 
 def convert_jsonl_to_json(jsonl_file: str) -> str:
@@ -220,7 +235,7 @@ def convert_jsonl_to_json(jsonl_file: str) -> str:
     json_file = jsonl_file.replace(".jsonl", ".json")
 
     # Parse the JSONL file
-    messages, _ = parse_jsonl_output(jsonl_file)
+    messages, _, _ = parse_jsonl_output(jsonl_file)
 
     # Write as JSON array
     with open(json_file, "w") as f:
@@ -598,7 +613,7 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
         if result.returncode == 0:
 
             # Parse the JSONL file
-            messages, result_message = parse_jsonl_output(request.output_file)
+            messages, result_message, token_usage = parse_jsonl_output(request.output_file)
 
             # Convert JSONL to JSON array file
             json_file = convert_jsonl_to_json(request.output_file)
@@ -619,6 +634,7 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
                         success=False,
                         session_id=session_id,
                         retry_code=RetryCode.ERROR_DURING_EXECUTION,
+                        token_usage=token_usage,
                     )
 
                 result_text = result_message.get("result", "")
@@ -632,6 +648,7 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
                     success=not is_error,
                     session_id=session_id,
                     retry_code=RetryCode.NONE,  # No retry needed for successful or non-retryable errors
+                    token_usage=token_usage,
                 )
             else:
                 # No result message found, try to extract meaningful error
@@ -679,7 +696,7 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
             try:
                 if os.path.exists(request.output_file):
                     # Parse JSONL to find error message
-                    messages, result_message = parse_jsonl_output(request.output_file)
+                    messages, result_message, _ = parse_jsonl_output(request.output_file)
 
                     if result_message and result_message.get("is_error"):
                         # Found error in result message

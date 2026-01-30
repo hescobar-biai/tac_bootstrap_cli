@@ -363,6 +363,10 @@ def main():
 
     plan_response = build_plan(issue, issue_command, adw_id, logger, working_dir=worktree_path, clarifications=clarification_text)
 
+    # Track token usage from planning
+    state.accumulate_tokens(AGENT_PLANNER, plan_response.token_usage)
+    state.save("adw_plan_iso")
+
     if not plan_response.success:
         logger.error(f"Error building plan: {plan_response.output}")
         make_issue_comment(
@@ -457,11 +461,12 @@ def main():
 
     # Save final state
     state.save("adw_plan_iso")
-    
-    # Post final state summary to issue
+
+    # Post final state summary with token usage to issue
+    token_summary = state.get_token_summary()
     make_issue_comment(
         issue_number,
-        f"{adw_id}_ops: 📋 Final planning state:\n```json\n{json.dumps(state.data, indent=2)}\n```"
+        f"{adw_id}_ops: 📋 Planning phase completed\n\n{token_summary}"
     )
 
 
