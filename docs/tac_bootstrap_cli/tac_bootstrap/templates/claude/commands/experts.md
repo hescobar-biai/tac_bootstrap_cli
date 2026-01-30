@@ -24,7 +24,7 @@ related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts
 children:
   - docs/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cc_hook_expert.md
-source_readmes: []
+source_readmes:[]
 last_reviewed: 2026-01-30
 ---
 
