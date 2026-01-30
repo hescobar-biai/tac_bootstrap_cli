@@ -18,6 +18,8 @@ idk:
   - knowledge-capture-loop
   - template-based-skill-generation
   - context-driven-specialization
+  - claude-agent-specialization
+  - expert-skill-scaffolding
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts
 children:
