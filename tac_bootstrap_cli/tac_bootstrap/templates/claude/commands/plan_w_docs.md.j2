@@ -1,0 +1,226 @@
+---
+allowed-tools: Task, Read, Glob, Grep, WebFetch
+description: Enhanced planning with documentation exploration
+---
+
+# Planning with Documentation Exploration
+
+Create a plan to implement a new feature in {{ config.project.name }} by exploring relevant documentation before planning.
+
+## Variables
+issue_number: $1
+adw_id: $2
+issue_json: $3
+
+## Instructions
+
+- IMPORTANT: You are creating a plan to implement a new feature for {{ config.project.name }}.
+- The plan will be used to guide implementation with agentic coding.
+- CRITICAL: Create the plan using RELATIVE path `{{ config.paths.specs_dir }}/issue-{issue_number}-adw-{adw_id}-sdlc_planner-{descriptive-name}.md`
+- CRITICAL: NEVER use absolute paths (starting with /). ALWAYS use relative paths to current directory.
+- CRITICAL: When using the Write tool, use ONLY `{{ config.paths.specs_dir }}/filename.md`, NOT `/Users/.../{{ config.paths.specs_dir }}/filename.md`
+- IMPORTANT: Before planning, explore relevant documentation following the documentation exploration workflow.
+- IMPORTANT: Replace each <placeholder> in the format with real values.
+- Use the reasoning model: think carefully about requirements and approach.
+- Follow existing patterns and conventions in the project.
+- If you need a new library, use `{{ config.commands.install }}` and report it in Notes.
+- Keep it simple - don't use unnecessary decorators.
+
+## Documentation Exploration Workflow
+
+Before creating the plan, execute this documentation exploration workflow:
+
+### Step 1: Search Local Documentation
+
+Use Task tool with subagent_type="Explore" and thoroughness="medium" to:
+
+1. **Search {{ config.paths.ai_docs }}/** - Find architectural patterns, guidelines, and TAC course documentation (doc-1 to doc-8):
+   - Prompt: "Find architectural patterns, guidelines, and TAC course documentation relevant to {issue_title}. Focus on: design patterns, service architecture, template patterns, and any relevant TAC course content."
+
+2. **Search app_docs/** - Find project-specific documentation:
+   - Prompt: "Find project-specific documentation related to {issue_title}. Look for: API documentation, configuration guides, integration patterns, and implementation examples."
+
+3. **Search {{ config.paths.specs_dir }}/** - Find recent implementation patterns:
+   - Prompt: "Find recent implementation plans and specifications related to {issue_title}. Identify: similar features, common patterns, architectural decisions, and reusable approaches."
+
+### Step 2: Optional Web Documentation
+
+If the feature requires specific frameworks/libraries, use WebFetch for:
+- Official framework documentation
+- Library best practices
+- Integration guides
+- IMPORTANT: Only use WebFetch if necessary for the specific feature
+
+### Step 3: Summarize Documentation Findings
+
+Create a summary of the top 5-10 most relevant documentation sources:
+- Document title and location
+- Relevance to the feature (1 sentence)
+- Key insights or applicable patterns (2-3 bullet points)
+
+### Step 4: Identify Documentation Gaps
+
+Note any documentation gaps that might affect planning:
+- Missing documentation that would be useful
+- Areas where guides are incomplete
+- Inconsistencies between documentation and current code
+
+### Step 5: Proceed with Planning
+
+Use documentation insights to inform:
+- Implementation Plan - align with existing patterns
+- Solution Statement - incorporate documented best practices
+- Testing Strategy - follow documented strategies
+- Notes section - include references to relevant documentation and identified gaps
+
+## Graceful Handling of Missing Documentation
+
+If documentation is not available or Task/Explore fails:
+- CONTINUE with planning normally
+- Log warning in Notes section of the plan
+- Base decisions on general knowledge and code analysis
+- Do not block execution due to lack of documentation
+
+## Relevant Files
+
+Key files for {{ config.project.name }}:
+
+- `CLAUDE.md` - Agent guide
+- `config.yml` - Project configuration
+- `{{ config.paths.ai_docs }}/` - TAC course documentation and architectural guides
+- `app_docs/` - Project-specific documentation
+- `{{ config.paths.specs_dir }}/` - Implementation specifications and plans
+{% if config.paths.app_root %}
+- `{{ config.paths.app_root }}/` - Application source code
+{% endif %}
+
+Read `.claude/commands/conditional_docs.md` for additional documentation.
+
+## Plan Format
+
+```md
+# Feature: <feature name>
+
+## Metadata
+issue_number: `{issue_number}`
+adw_id: `{adw_id}`
+issue_json: `{issue_json}`
+
+## Documentation Exploration Summary
+<insert summary of explored documentation - top 5-10 sources>
+
+### Relevant Documentation Found
+1. **<doc title>** (`<path>`) - <relevance>
+   - <key insight 1>
+   - <key insight 2>
+
+2. **<doc title>** (`<path>`) - <relevance>
+   - <key insight>
+
+### Documentation Gaps
+- <gap 1>
+- <gap 2>
+
+## Feature Description
+<describe the feature in detail, its purpose and value>
+
+## User Story
+As a <user type>
+I want to <action/goal>
+So that <benefit/value>
+
+## Problem Statement
+<clearly define the problem or opportunity this feature addresses>
+
+## Solution Statement
+<describe the proposed approach and how it solves the problem, INFORMED BY EXPLORED DOCUMENTATION>
+
+## Relevant Files
+Files needed to implement the feature:
+
+<list relevant files with description of why they are relevant>
+
+### New Files
+<list new files to be created>
+
+## Implementation Plan
+
+### Phase 1: Foundation
+<foundational work before implementing the main feature>
+
+### Phase 2: Core Implementation
+<main feature implementation>
+
+### Phase 3: Integration
+<integration with existing functionality>
+
+## Step by Step Tasks
+IMPORTANT: Execute each step in order.
+
+### Task 1: <name>
+- <detail>
+- <detail>
+
+### Task 2: <name>
+- <detail>
+
+<The last step should execute Validation Commands>
+
+## Testing Strategy
+
+### Unit Tests
+<required unit tests>
+
+### Edge Cases
+<edge cases to test>
+
+## Acceptance Criteria
+<specific and measurable criteria to consider the feature complete>
+
+## Validation Commands
+Run all commands to validate with zero regressions:
+
+{% if config.commands.test %}
+- `{{ config.commands.test }}` - Run tests
+{% endif %}
+{% if config.commands.lint %}
+- `{{ config.commands.lint }}` - Linting
+{% endif %}
+{% if config.commands.typecheck %}
+- `{{ config.commands.typecheck }}` - Type check
+{% endif %}
+
+## Notes
+<additional notes, future considerations, or relevant context>
+<INCLUDE references to relevant documentation and identified gaps>
+```
+
+## Feature
+Extract feature details from the `issue_json` variable (parse JSON and use title and body fields).
+
+## Report
+
+CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
+
+1. First, check if a plan file already exists in `{{ config.paths.specs_dir }}/` matching pattern: `issue-{issue_number}-adw-{adw_id}-*.md`
+2. If plan file EXISTS: Return ONLY the relative path, nothing else
+3. If plan file does NOT exist: Create it using RELATIVE PATH (e.g., `{{ config.paths.specs_dir }}/filename.md`), then return ONLY the path
+
+CRITICAL FILE CREATION RULES:
+- When using the Write tool, use RELATIVE paths only: `{{ config.paths.specs_dir }}/filename.md`
+- NEVER use absolute paths like `/Users/.../{{ config.paths.specs_dir }}/filename.md`
+- The file will be created in the current working directory
+
+YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the RELATIVE path like:
+```
+{{ config.paths.specs_dir }}/issue-37-adw-e4dc9574-sdlc_planner-feature-name.md
+```
+
+DO NOT include:
+- Any explanation or commentary
+- Phrases like "Perfect!", "I can see that...", "The plan file is at..."
+- Markdown formatting around the path
+- Multiple lines
+- Absolute paths (starting with /)
+
+ONLY output the bare RELATIVE path. This is machine-parsed.
