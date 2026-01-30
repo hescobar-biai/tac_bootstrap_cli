@@ -321,6 +321,7 @@ class ScaffoldService:
             "parallel_subagents",
             "t_metaprompt_workflow",
             "build_w_report",
+            "scout_plan_build",
         ]
 
         for cmd in commands:

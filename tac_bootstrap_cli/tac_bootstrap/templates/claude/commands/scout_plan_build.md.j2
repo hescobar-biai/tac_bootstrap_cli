@@ -1,0 +1,216 @@
+# Scout Plan Build - End-to-End Implementation Workflow
+
+Orchestrate a complete implementation workflow from exploration to working code by automatically executing three sequential phases: scout (exploration) -> plan (design) -> build (implementation). Based on the `Variables` below, follow the `Workflow` section to execute all phases, and then follow the `Report` section to report the results.
+
+## Variables
+
+USER_PROMPT: $1 (required - task description for implementation)
+SCALE: $2 (optional - scout scale parameter, default: 4, range: 2-10)
+
+## Instructions
+
+This command implements TAC-10 Level 4 (Delegation Prompt) pattern for end-to-end workflow orchestration. It automates the complete development cycle by chaining together existing commands (`/scout`, `/feature`, `/build`) with automatic phase transitions and progress reporting.
+
+### Purpose
+
+The `/scout_plan_build` command enables you to go from task description to working implementation in a single command by:
+- Automatically discovering relevant files through parallel exploration
+- Creating a detailed implementation plan based on findings
+- Executing the plan to deliver working code
+- Providing transparent progress updates at each phase boundary
+- Failing fast on errors with clear messages
+
+### When to Use This Command
+
+Use `/scout_plan_build` when:
+- Implementing straightforward features with predictable workflow requirements
+- Working on tasks where file discovery + planning + implementation is the clear path
+- You want maximum automation for routine development tasks
+- The requirements are clear enough to proceed through all phases
+- You're comfortable with automated phase transitions
+
+### When NOT to Use This Command
+
+Do NOT use `/scout_plan_build` when:
+- The task is complex and requires manual oversight between phases
+- You need to review and adjust the plan before implementation
+- Requirements are unclear or ambiguous
+- You want granular control over each step
+- The task involves high-risk changes requiring careful validation
+- You're exploring unfamiliar code and need to learn before implementing
+
+For these cases, use individual commands (`/scout`, `/feature`, `/build`) instead.
+
+### Workflow Phases
+
+1. **Scout Phase**: Launches parallel exploration agents to identify all relevant files
+2. **Plan Phase**: Creates implementation plan using scout findings as context
+3. **Build Phase**: Executes the plan to implement the feature
+
+Each phase generates a summary markdown before transitioning to the next phase.
+
+### Error Handling
+
+- Fail-fast behavior: Stop immediately on first error
+- No retry logic: Errors require user intervention
+- No rollback: Scout and plan are read-only; build has its own error handling
+- Clear error messages: Each phase reports specific failure reasons
+
+## Workflow
+
+### Step 1: Scout Phase
+
+Parse and validate inputs:
+- Extract USER_PROMPT from $1
+- If USER_PROMPT missing: abort with error "Error: Task description (USER_PROMPT) is required as $1"
+- Extract SCALE from $2, default to 4 if not provided
+- Validate SCALE:
+  - If SCALE < 2: abort with error "Error: SCALE must be at least 2. Use direct exploration instead."
+  - If SCALE > 10: cap at 10 and warn "Warning: SCALE capped at 10 to avoid resource constraints"
+
+Launch scout phase:
+- Execute `/scout "$USER_PROMPT" $SCALE`
+- Wait for scout completion
+- If scout fails: abort with error message from scout phase
+- If scout succeeds: collect file discovery results
+
+Generate Phase 1 Summary:
+```markdown
+## Scout Phase - Completed
+
+**Status**: ✅ Completed
+**Files Discovered**: [count] files across [categories]
+**Key Findings**:
+- [Brief summary of file categories found]
+- [Main modules/areas identified]
+
+**Next**: Proceeding to plan phase...
+```
+
+### Step 2: Plan Phase
+
+Launch plan phase using scout context:
+- Use scout results to inform planning
+- Execute `/feature` command (delegate to feature planning logic)
+- Wait for plan completion
+- If plan fails: abort with error message from plan phase
+- If plan succeeds: capture plan file location
+
+Generate Phase 2 Summary:
+```markdown
+## Plan Phase - Completed
+
+**Status**: ✅ Completed
+**Plan File**: [path to plan file]
+**Major Steps**:
+- [Brief summary of implementation steps]
+- [Key files to be modified/created]
+
+**Next**: Proceeding to build phase...
+```
+
+### Step 3: Build Phase
+
+Launch build phase using plan:
+{% if config.commands.build %}
+- Execute `/build` or `/implement` with plan file
+- Run build command: `{{ config.commands.build }}`
+{% else %}
+- Execute `/implement` with plan file
+- Run default validation: `uv run pytest`
+{% endif %}
+- Wait for build completion
+- If build fails: report error with build output
+- If build succeeds: collect deliverables
+
+Generate Phase 3 Summary:
+```markdown
+## Build Phase - Completed
+
+**Status**: ✅ Completed
+**Files Modified**: [count] files
+**Files Created**: [count] files
+**Tests**: [status]
+
+**Deliverables**:
+- [List of created/modified files]
+- [Test results if applicable]
+```
+
+## Report
+
+Generate final workflow report:
+
+```markdown
+# Scout Plan Build Workflow - Complete
+
+## Overall Status
+✅ All phases completed successfully
+
+## Phase Summary
+
+### 1. Scout Phase
+- Files discovered: [count]
+- Main areas: [list]
+
+### 2. Plan Phase
+- Plan file: [path]
+- Implementation steps: [count]
+
+### 3. Build Phase
+- Files modified: [count]
+- Files created: [count]
+- Tests: [status]
+
+## Artifacts
+- Plan: [path to plan file]
+- Implementation files: [list of key files]
+
+## Next Steps
+- Review changes: `git diff`
+{% if config.commands.build %}
+- Run tests: {{ config.commands.build }}
+{% else %}
+- Run tests: `uv run pytest`
+{% endif %}
+- Commit changes: `/commit`
+```
+
+### Error Report Format
+
+If any phase fails, report:
+
+```markdown
+# Scout Plan Build Workflow - Failed
+
+## Failed Phase
+❌ [Phase Name] Phase
+
+## Error Details
+[Error message from failed phase]
+
+## Completed Phases
+[List of successfully completed phases]
+
+## Next Steps
+- Review error details above
+- Fix the issue manually
+- Resume using individual commands:
+  - If scout failed: Fix search criteria and run `/scout` again
+  - If plan failed: Run `/feature` with corrections
+  - If build failed: Run `/build` after fixing issues
+```
+
+### Common Error Messages
+
+**Scout Phase Errors:**
+- "Scout found no relevant files" - Task description may be too vague or files don't exist
+- "Scout timeout" - Reduce SCALE or narrow search scope
+
+**Plan Phase Errors:**
+- "Plan creation failed" - Review scout results and requirements
+- "Insufficient context" - May need manual exploration first
+
+**Build Phase Errors:**
+- "Build errors detected" - Review build output for compilation/test failures
+- "Plan file not found" - Plan phase may have failed silently
