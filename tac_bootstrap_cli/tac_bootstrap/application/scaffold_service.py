@@ -319,6 +319,7 @@ class ScaffoldService:
             "prime_cc",
             "quick-plan",
             "parallel_subagents",
+            "plan",
             "t_metaprompt_workflow",
             "build_w_report",
         ]
