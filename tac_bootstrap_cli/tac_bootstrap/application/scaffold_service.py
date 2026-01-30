@@ -318,6 +318,7 @@ class ScaffoldService:
             "load_bundle",
             "prime_cc",
             "quick-plan",
+            "plan_w_scouters",
             "parallel_subagents",
             "t_metaprompt_workflow",
             "build_w_report",
