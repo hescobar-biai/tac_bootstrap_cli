@@ -1760,3 +1760,12 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When adding commands to scaffold_service.py commands list
     - When needing comprehensive codebase understanding without parallel agents
     - When understanding differences between /prime, /prime_cc, /prime_3, and /scout commands
+- app_docs/feature-feature_Tac_12_task_10_2-load-ai-docs-command.md
+  - Conditions:
+    - When working with /load_ai_docs command template
+    - When implementing configurable AI documentation paths
+    - When using Jinja2 variables for documentation directory configuration
+    - When understanding ai_docs_path configuration in generated projects
+    - When working with Explore agent integration for documentation loading
+    - When maintaining default fallback paths in templates
+    - When creating commands that need project-specific path configuration
