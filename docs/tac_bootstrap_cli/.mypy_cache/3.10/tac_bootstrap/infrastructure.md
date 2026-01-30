@@ -7,17 +7,18 @@ tags:
   - expert:infra
   - level:L5
   - topic:caching
-last_reviewed: UNKNOWN
+last_reviewed: 2026-01-30
 idk:
   - mypy-cache
   - type-checking-artifacts
   - infrastructure-layer
-  - python-typing-cache
-  - incremental-type-checking
+  - python-3.10-stubs
+  - incremental-type-analysis
   - build-artifacts
-  - mypy-3.10
-  - infrastructure-stubs
+  - ddd-infrastructure-cache
+  - static-analysis-metadata
   - type-cache-persistence
+  - cached-module-analysis
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/tac_bootstrap/infrastructure
 children: []

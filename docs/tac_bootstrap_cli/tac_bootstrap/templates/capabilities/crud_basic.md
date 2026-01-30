@@ -9,16 +9,16 @@ tags:
   - topic:db
   - topic:api
 idk:
-  - crud-operations
-  - template-generation
-  - database-schema
-  - api-endpoint-template
-  - service-layer-template
-  - model-generation
-  - repository-pattern
-  - jinja2-templates
-  - code-scaffolding
-  - ddd-infrastructure
+  - crud-template-generation
+  - jinja2-scaffolding
+  - ddd-layer-templates
+  - repository-pattern-boilerplate
+  - service-layer-skeleton
+  - model-schema-templates
+  - endpoint-stubs
+  - database-migration-templates
+  - rest-api-scaffolding
+  - entity-crud-generator
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/capabilities/crud_basic
 children: []

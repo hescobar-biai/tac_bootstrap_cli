@@ -18,7 +18,7 @@ idk:
   - type-stubs
   - python-typing
   - build-artifacts
-  - compiler-cache
+  - compiler-optimization
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/pydantic/plugin
 children: []

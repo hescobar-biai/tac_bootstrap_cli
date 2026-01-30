@@ -8,16 +8,18 @@ tags:
   - level:L5
   - topic:caching
 idk:
-  - mypy-cache
+  - mypy-cache-artifacts
   - markdown-it-inline-rules
-  - python-3.10-type-artifacts
+  - python-3.10-type-cache
   - incremental-type-checking
-  - ast-metadata-cache
-  - inline-parser-cache
+  - inline-parser-metadata
   - static-analysis-cache
   - mypy-daemon-artifacts
-  - parser-rule-metadata
   - type-stub-cache
+  - ast-metadata
+  - markdown-it-parser
+  - inline-syntax-rules
+  - token-generation
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/rules_inline
 children: []

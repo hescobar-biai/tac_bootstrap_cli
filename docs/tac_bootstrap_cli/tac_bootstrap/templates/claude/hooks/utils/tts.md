@@ -8,14 +8,16 @@ tags:
   - level:L5
   - topic:api
 idk:
-  - jinja2-tts-templates
+  - jinja2-template-tts
   - text-to-speech-hook-utils
-  - claude-hook-template-layer
-  - tac-bootstrap-tts-generation
-  - speech-synthesis-templates
-  - hook-utility-jinja2
-  - tts-integration-scaffolding
-  - template-based-tts-config
+  - claude-hooks-tts-scaffold
+  - tac-bootstrap-generator-templates
+  - tts-utility-templates
+  - hook-utils-jinja2
+  - template-based-tts
+  - speech-synthesis-scaffold
+  - cli-generator-tts-layer
+  - tts-integration-templates
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/tts
 children: []

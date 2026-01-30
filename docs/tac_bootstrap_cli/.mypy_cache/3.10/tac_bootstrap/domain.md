@@ -11,12 +11,13 @@ last_reviewed: UNKNOWN
 idk:
   - mypy-cache
   - type-checking-artifacts
-  - static-analysis
+  - static-analysis-cache
   - domain-layer-types
-  - pydantic-models
-  - type-stubs
   - incremental-compilation
   - build-cache
+  - pydantic-stubs
+  - python-type-inference
+  - ddd-domain-cache
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/tac_bootstrap/domain/
 children: []

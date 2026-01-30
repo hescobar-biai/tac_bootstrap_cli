@@ -11,11 +11,11 @@ idk:
   - context-bundle-templates
   - agent-session-initialization
   - jinja2-template-structure
-  - knowledge-seeding-templates
+  - knowledge-seeding
   - pre-packaged-context
-  - load-bundle-skill-target
+  - load-bundle-skill
   - agent-memory-bootstrap
-  - context-injection-structure
+  - context-injection
   - template-generation-output
   - session-context-templates
 related_code:

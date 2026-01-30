@@ -15,14 +15,15 @@ idk:
   - static-analysis-cache
   - type-stubs-deprecated
   - pydantic-v1-compat
-  - legacy-type-info
-  - incremental-cache
-  - metadata-storage
+  - incremental-type-check
+  - legacy-pydantic-types
+  - backwards-compatibility
+  - deprecation-warnings
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/pydantic/deprecated
 children: []
 source_readmes: []
-last_reviewed: UNKNOWN
+last_reviewed: 2026-01-30
 ---
 
 # Overview
