@@ -320,6 +320,7 @@ class ScaffoldService:
             "load_ai_docs",
             "load_bundle",
             "prime_cc",
+            "prime_3",
             "quick-plan",
             "parallel_subagents",
             "t_metaprompt_workflow",

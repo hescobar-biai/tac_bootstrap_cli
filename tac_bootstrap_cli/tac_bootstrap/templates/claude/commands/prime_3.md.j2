@@ -1,0 +1,362 @@
+# Prime 3 - Deep Context Loading
+
+Load comprehensive codebase context through a progressive 3-level exploration strategy.
+
+## Variables
+
+None required - this command uses project configuration from {{ config.project.name }}.
+
+## Instructions
+
+**Purpose:**
+This command provides deep, comprehensive codebase understanding through three progressive exploration levels. It extends `/prime` with architectural analysis and pattern discovery, giving agents the context needed for complex implementation tasks without requiring parallel agent orchestration.
+
+**Exploration Strategy:**
+- **Level 1 (Base Context)**: Execute `/prime` to load project fundamentals
+- **Level 2 (Architectural Structure)**: Explore directory structure, module organization, and service boundaries
+- **Level 3 (Deep Patterns)**: Discover coding patterns, dependencies, testing conventions, and common utilities
+
+**When to Use:**
+- Before implementing complex features requiring architectural understanding
+- When you need to understand module patterns and dependencies
+- For tasks that will touch multiple parts of the codebase
+- When you want comprehensive context without the complexity of `/scout`
+
+**When NOT to Use:**
+- For simple, single-file tasks (use `/prime` instead)
+- When you need parallel exploration with custom search strategies (use `/scout` instead)
+- For quick orientation (use `/prime` or `/prime_cc` instead)
+
+## Run
+
+### Level 1: Base Context
+
+1. **Execute /prime command:**
+   - Read and execute `.claude/commands/prime.md` top to bottom
+   - This loads: README, CLAUDE.md, config.yml, constitution.md, plan files
+   - Establishes project purpose, architecture, and development conventions
+
+### Level 2: Architectural Structure
+
+2. **Explore directory structure:**
+   ```bash
+   git ls-tree -r --name-only HEAD | head -100
+   ```
+   - Understand overall project organization
+   - Identify main directories and their purposes
+   - Note module groupings and architectural layers
+
+3. **List key directories:**
+   ```bash
+   find . -type d -maxdepth 3 ! -path "*/\.*" ! -path "*/node_modules/*" ! -path "*/venv/*" ! -path "*/__pycache__/*" | sort
+   ```
+   - Map directory hierarchy
+   - Identify architectural boundaries (domain, application, infrastructure, etc.)
+   - Understand module organization patterns
+
+### Level 3: Deep Patterns & Dependencies
+
+4. **Discover class and function definitions:**
+   - Use Grep tool with pattern: `^class |^def |^function |^export (class|function)`
+   - Parameters: `output_mode: "files_with_matches"`, `-i: false`
+   - Identify key modules and their components
+   - Note frequently-used base classes or utilities
+
+5. **Analyze import patterns:**
+   - Use Grep tool with pattern: `^import |^from .* import|^require\(|^export .*from`
+   - Parameters: `output_mode: "files_with_matches"`
+   - Understand dependency relationships between modules
+   - Identify commonly-imported utilities and helpers
+
+6. **Find test patterns:**
+   - Use Glob tool with pattern: {% if config.project.language.value == "Python" %}`**/*test*.py` or `**/test_*.py`{% elif config.project.language.value == "TypeScript" %}`**/*test*.ts` or `**/*.spec.ts`{% elif config.project.language.value == "JavaScript" %}`**/*test*.js` or `**/*.spec.js`{% else %}`**/*test*.*`{% endif %}
+   - Understand testing conventions and structure
+   - Note test utilities and fixtures
+
+7. **Identify decorators and annotations:**
+   - Use Grep tool with pattern: `@[A-Za-z]|# type:|: [A-Z][a-zA-Z]*\[`
+   - Parameters: `output_mode: "files_with_matches"`
+   - Discover common decorators, type hints, and annotations
+   - Understand coding patterns and conventions
+
+## Read
+
+### Level 1 Files (from /prime)
+- README.md
+- CLAUDE.md
+{% if config.paths.plan_file %}
+- {{ config.paths.plan_file }}
+{% endif %}
+- config.yml
+- constitution.md
+{% if config.paths.adws_dir %}
+- {{ config.paths.adws_dir }}/README.md
+{% endif %}
+
+### Level 2 Files (Architectural Understanding)
+{% if config.project.language.value == "Python" %}
+- Main application entry point (main.py, __main__.py, app.py, etc.)
+- Top-level __init__.py files in main directories
+- Package configuration (pyproject.toml, setup.py, requirements.txt)
+{% elif config.project.language.value == "TypeScript" or config.project.language.value == "JavaScript" %}
+- Main application entry point (index.ts, main.ts, app.ts, server.ts, etc.)
+- Top-level index files in main directories
+- Package configuration (package.json, tsconfig.json)
+{% else %}
+- Main application entry point
+- Package/module configuration files
+{% endif %}
+- Key module README files (if they exist)
+
+### Level 3 Files (Pattern Discovery)
+- Base classes, abstract classes, or interfaces (identified via grep)
+- Common utility modules (utils.*, helpers.*, common/*, shared/*)
+- Configuration or constants files (config.*, constants.*, settings/*)
+{% if config.project.language.value == "Python" %}
+- Key test fixtures or test utilities (conftest.py, test_helpers.py)
+{% elif config.project.language.value == "TypeScript" or config.project.language.value == "JavaScript" %}
+- Key test fixtures or test utilities (test-helpers.ts, setup.ts)
+{% else %}
+- Key test fixtures or test utilities
+{% endif %}
+
+## Understand
+
+### After Level 1: Base Context
+You should understand:
+- Project name: {{ config.project.name }}
+- Language: {{ config.project.language.value }}
+{% if config.project.framework %}
+- Framework: {{ config.project.framework.value }}
+{% endif %}
+- Architecture: {{ config.project.architecture.value }}
+- Package Manager: {{ config.project.package_manager.value }}
+- Development commands (start, test, lint, build)
+- High-level project goals and structure
+- Constitutional principles and coding standards
+- Active development plan and current tasks
+
+### After Level 2: Architectural Structure
+You should understand:
+- Directory organization and module groupings
+- Architectural layers {% if config.project.architecture.value == "DDD" %}(domain, application, infrastructure, interfaces){% elif config.project.architecture.value == "MVC" %}(models, views, controllers){% elif config.project.architecture.value == "Layered" %}(core, services, api, data){% endif %}
+- Main application components and their locations
+- Service boundaries and module responsibilities
+- Package/dependency management approach
+
+### After Level 3: Deep Patterns & Dependencies
+You should understand:
+- Common coding patterns and conventions
+- Frequently-used base classes and utilities
+- Import patterns and module dependencies
+- Testing patterns and test organization
+- Decorators, annotations, and type usage patterns
+- Shared helpers and utility functions
+
+### Architectural Patterns to Identify
+
+{% if config.project.architecture.value == "DDD" %}
+**Domain-Driven Design (DDD):**
+- `domain/` - Models, entities, value objects
+- `application/` - Services, use cases
+- `infrastructure/` - External integrations, persistence
+- `interfaces/` - API, CLI, controllers
+{% elif config.project.architecture.value == "MVC" %}
+**Model-View-Controller (MVC):**
+- `models/` - Data models
+- `views/` - Templates, UI components
+- `controllers/` - Request handlers
+{% elif config.project.architecture.value == "Layered" %}
+**Layered Architecture:**
+- `core/` or `lib/` - Core business logic
+- `services/` - Application services
+- `api/` or `routes/` - API endpoints
+- `db/` or `data/` - Data access layer
+{% else %}
+**Project-Specific Architecture:**
+- Identify module groupings and their responsibilities
+- Note separation of concerns and boundaries
+- Understand how components interact
+{% endif %}
+
+## Examples
+
+### Example 1: Basic Usage
+```
+User: /prime_3
+Agent: Executing Level 1: Base Context...
+       Running /prime command...
+       [loads README, CLAUDE.md, config.yml, constitution.md, plan files]
+
+       Project: {{ config.project.name }} ({{ config.project.language.value }}/{{ config.project.architecture.value }}/{{ config.project.package_manager.value }})
+
+       Executing Level 2: Architectural Structure...
+       Exploring directory structure...
+       Found {% if config.project.architecture.value == "DDD" %}DDD structure: domain/, application/, infrastructure/, interfaces/{% elif config.project.architecture.value == "MVC" %}MVC structure: models/, views/, controllers/{% else %}project-specific structure{% endif %}
+       Reading main entry points...
+
+       Executing Level 3: Deep Patterns & Dependencies...
+       Discovering class definitions...
+       Found 45 classes across 23 files
+       Analyzing import patterns...
+       Common imports: {project-specific patterns}
+       Checking test patterns...
+       Found tests in tests/ directory
+
+       Summary:
+       - Project: {{ config.project.name }}
+       - Architecture: {{ config.project.architecture.value }}
+       - 45+ classes, 23+ modules
+       - Testing: {test framework} with tests
+       - Common patterns: {identified patterns}
+
+       Ready for complex implementation tasks.
+```
+
+### Example 2: Understanding Gained
+```
+After /prime_3, agent knows:
+  ✓ Project basics (name, language, architecture, commands)
+  ✓ Directory structure and module organization
+  ✓ Architectural layers and their purposes
+  ✓ Key classes and modules
+  ✓ Common coding patterns
+  ✓ Test structure and conventions
+  ✓ Dependencies and import patterns
+  ✓ Ready to implement features across multiple modules
+```
+
+### Example 3: Planning After Prime 3
+```
+User: /prime_3
+Agent: [executes all 3 levels]
+
+       Context loaded. Ready for implementation planning.
+
+User: Add a new validation service
+Agent: Based on prime_3 context, I understand:
+       - Project architecture: {{ config.project.architecture.value }}
+       - New service should go in {% if config.project.architecture.value == "DDD" %}application/ layer{% elif config.project.architecture.value == "MVC" %}models/ or services/{% else %}appropriate module{% endif %}
+       - Should follow existing service patterns
+       - Tests should go in tests/ directory
+       - Should use project conventions
+
+       I'll create the service following these patterns...
+```
+
+## Report
+
+Report to the user:
+
+**Level 1 Summary:**
+- Project name: {{ config.project.name }}
+- Language: {{ config.project.language.value }}
+{% if config.project.framework %}
+- Framework: {{ config.project.framework.value }}
+{% endif %}
+- Architecture: {{ config.project.architecture.value }}
+- Package Manager: {{ config.project.package_manager.value }}
+- Development commands available
+- Constitutional principles loaded
+- Current development state
+
+**Level 2 Summary:**
+- Directory structure and organization
+- Architectural pattern identified
+- Main modules and their locations
+- Key entry points and package structure
+
+**Level 3 Summary:**
+- Number of classes/functions discovered
+- Common coding patterns identified
+- Import patterns and dependencies
+- Testing conventions and structure
+- Frequently-used utilities and helpers
+
+**Overall Readiness:**
+- Comprehensive context loaded
+- Ready for complex implementation tasks
+- Architectural patterns understood
+- Coding conventions identified
+
+**Format:**
+```
+Prime 3 context loaded for: {{ config.project.name }}
+
+Level 1: Base Context
+  ✓ Project: {{ config.project.name }} ({{ config.project.language.value }}/{{ config.project.architecture.value }}/{{ config.project.package_manager.value }})
+  ✓ README, CLAUDE.md, config.yml, constitution.md loaded
+  ✓ Commands: {% if config.commands.start %}{{ config.commands.start }}{% endif %}{% if config.commands.test %}, {{ config.commands.test }}{% endif %}{% if config.commands.lint %}, {{ config.commands.lint }}{% endif %}{% if config.commands.build %}, {{ config.commands.build }}{% endif %}
+
+Level 2: Architectural Structure
+  ✓ Directory structure: {% if config.project.architecture.value == "DDD" %}DDD with domain/, application/, infrastructure/, interfaces/{% elif config.project.architecture.value == "MVC" %}MVC with models/, views/, controllers/{% else %}project-specific structure{% endif %}
+  ✓ Main modules: {list key modules}
+{% if config.paths.app_root %}
+  ✓ Entry point: {{ config.paths.app_root }}
+{% endif %}
+  ✓ Package manager: {{ config.project.package_manager.value }}
+
+Level 3: Deep Patterns & Dependencies
+  ✓ {N} classes across {M} files
+  ✓ Common patterns: {describe patterns}
+  ✓ Key utilities: {list common utilities}
+  ✓ Testing: {test framework} with {N} tests
+  ✓ Common imports: {list common dependencies}
+
+Architectural Understanding:
+{% if config.project.architecture.value == "DDD" %}
+  - Domain Layer: {describe}
+  - Application Layer: {describe}
+  - Infrastructure Layer: {describe}
+  - Interfaces Layer: {describe}
+{% elif config.project.architecture.value == "MVC" %}
+  - Models: {describe}
+  - Views: {describe}
+  - Controllers: {describe}
+{% else %}
+  - {describe architecture}
+{% endif %}
+
+Common Patterns Identified:
+  - {pattern 1}
+  - {pattern 2}
+  - {pattern 3}
+
+Ready for complex implementation tasks with full architectural context.
+Constitution principles and coding standards loaded.
+```
+
+## Notes
+
+**Progressive Loading:**
+Each level builds on the previous one. Level 1 provides foundation, Level 2 adds structure, Level 3 adds patterns. This progressive approach ensures you understand "why" (purpose) before "how" (architecture) before "what" (patterns).
+
+**Comparison to Other Commands:**
+- `/prime` - Quick, basic context loading (Level 1 only)
+- `/prime_cc` - Claude Code-specific optimizations (Level 1 + tooling)
+- `/prime_3` - Deep architectural and pattern understanding (Level 1 + 2 + 3)
+- `/scout` - Parallel exploration with custom search strategies (different use case)
+
+**Performance:**
+- Level 1: ~30 seconds (executes /prime)
+- Level 2: ~30 seconds (directory exploration, key file reads)
+- Level 3: ~60 seconds (pattern discovery via grep/glob)
+- Total: ~2 minutes for comprehensive context
+
+**Best Practices:**
+1. Use `/prime_3` at the start of complex implementation sessions
+2. Results give you enough context to plan multi-file changes
+3. Combine with `/scout` if you need task-specific file discovery
+4. Re-run if project structure has significantly changed
+
+**Limitations:**
+- Does not execute code or run dynamic analysis
+- May miss runtime-only patterns or dynamically loaded modules
+- Grep-based pattern discovery is static code analysis only
+- Large codebases (>1000 files) may take longer
+
+**Future Enhancements:**
+- Cache results to avoid re-exploration in same session
+- Add `/prime_5` with even deeper exploration (5 levels)
+- Support for language-specific pattern detection
+- Integration with code analysis tools (AST parsing)

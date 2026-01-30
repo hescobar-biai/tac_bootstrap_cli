@@ -9,15 +9,15 @@ tags:
   - topic:routing
 idk:
   - scout-agent-output-templates
-  - jinja2-file-templates
-  - agent-discovery-results
-  - file-list-scaffolds
+  - jinja2-template-scaffolds
+  - agent-discovery-artifacts
+  - file-list-templates
   - codebase-exploration-output
-  - scout-result-templates
-  - template-generation-structure
+  - scout-result-structure
   - bootstrap-cli-scaffolding
-  - exploration-artifact-templates
-  - agent-file-discovery
+  - exploration-template-generation
+  - agent-file-discovery-templates
+  - scout-workflow-outputs
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/scout_files
 children: []

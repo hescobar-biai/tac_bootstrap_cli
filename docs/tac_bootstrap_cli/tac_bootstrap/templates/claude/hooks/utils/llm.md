@@ -17,6 +17,8 @@ idk:
   - utility-layer
   - tac-bootstrap-hooks
   - llm-integration
+  - template-rendering
+  - hook-utils-llm
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm
 children: []
