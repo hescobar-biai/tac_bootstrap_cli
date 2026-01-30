@@ -1,0 +1,415 @@
+---
+description: Deep context loading with 3-level exploration for comprehensive codebase understanding
+---
+
+# Prime 3 - Deep Context Loading
+
+Execute a comprehensive 3-level exploration to build thorough understanding of the codebase for complex tasks.
+
+## Variables
+
+None required - this command uses project configuration from TAC Bootstrap.
+
+## Instructions
+
+**Purpose:**
+This command provides the deepest possible context loading through sequential exploration passes:
+- **Level 0 (Foundation)**: Execute /prime and /prime_cc for base context
+- **Level 1 (Architecture)**: High-level structure, directory organization, key entry points
+- **Level 2 (Components)**: Module interactions, dependency patterns, data flow
+- **Level 3 (Implementation)**: Code patterns, conventions, testing strategies
+
+**When to Use:**
+- Major architectural refactoring or redesign tasks
+- Complex feature implementation requiring deep understanding
+- Onboarding to large or complex codebases
+- Tasks spanning multiple architectural layers or modules
+- Before making significant changes to core systems
+
+**Execution Flow:**
+1. Execute foundation commands (/prime, /prime_cc)
+2. Level 1: Explore architecture and directory structure
+3. Level 2: Analyze module interactions and patterns
+4. Level 3: Study implementation details and conventions
+5. Report comprehensive summary with architectural insights
+
+## Run
+
+### Level 0: Foundation Context
+
+1. **Execute base prime commands:**
+   ```
+   /prime
+   /prime_cc
+   ```
+   This loads general project context and Claude Code configuration.
+
+### Level 1: Architecture Exploration
+
+**Goal:** Understand high-level structure, directory organization, and key entry points.
+
+**Actions:**
+1. **List all files in repository:**
+   ```bash
+   git ls-files
+   ```
+
+2. **Read architectural documentation:**
+   - README.md
+   - ARCHITECTURE.md (if exists)
+   - docs/architecture/** (if exists)
+   - Any design documents in docs/ or specs/
+
+3. **Identify entry points:**
+   - Main application file (main.py, app.py, index.ts, etc.)
+   - CLI entry points (if applicable)
+   - API entry points (if applicable)
+   - Key configuration files (config.yml, settings.py, etc.)
+
+4. **Analyze directory structure:**
+   - Map out top-level directories and their purposes
+   - Identify architectural patterns (DDD, Clean, Hexagonal, etc.)
+   - Note any monorepo structure or module organization
+
+**Level 1 Deliverable:** High-level architecture map and directory purpose understanding.
+
+### Level 2: Component Analysis
+
+**Goal:** Understand module interactions, dependency patterns, and data flow.
+
+**Actions:**
+1. **Map core modules:**
+   - Read key domain/service/component files
+   - Understand primary responsibilities of each module
+   - Identify module boundaries and interfaces
+
+2. **Analyze dependencies:**
+   - Review package dependencies (requirements.txt, package.json, pyproject.toml, etc.)
+   - Understand internal module dependencies
+   - Map data flow between components
+
+3. **Study data models:**
+   - Read database models (models.py, schema.ts, entities/, etc.)
+   - Understand data structures and relationships
+   - Review API contracts or interfaces
+
+4. **Explore integration points:**
+   - External API integrations
+   - Database connections
+   - Message queues or event systems
+   - Third-party service integrations
+
+**Level 2 Deliverable:** Component interaction map and dependency understanding.
+
+### Level 3: Implementation Deep Dive
+
+**Goal:** Study implementation details, code patterns, and technical conventions.
+
+**Actions:**
+1. **Analyze code patterns:**
+   - Read 3-5 representative implementation files from key modules
+   - Identify common patterns (factory, repository, service, etc.)
+   - Note coding conventions and style patterns
+
+2. **Study testing strategy:**
+   - Read test files to understand testing approach
+   - Identify test coverage areas
+   - Understand test utilities and fixtures
+
+3. **Review configuration:**
+   - Environment configuration (.env.example, config files)
+   - Feature flags or conditional behavior
+   - Build and deployment configuration
+
+4. **Examine utilities and helpers:**
+   - Common utility functions
+   - Shared helpers or libraries
+   - Internal tools or scripts
+
+5. **Sample exploration (token-efficient approach):**
+   - Instead of reading all files, sample representative files from each layer
+   - Focus on files modified most recently (git log --name-only -10)
+   - Prioritize files related to current task if known
+
+**Level 3 Deliverable:** Implementation pattern understanding and technical conventions.
+
+## Read
+
+### Foundation (Level 0)
+Execute via /prime and /prime_cc commands.
+
+### Level 1: Architecture
+- README.md
+- ARCHITECTURE.md (if exists)
+- docs/architecture/** (if exists)
+- Main entry points (main.py, app.py, etc.)
+- config.yml or configuration files
+- Directory structure overview
+
+### Level 2: Components
+- Core domain/service modules (domain/*, services/*, etc.)
+- Data models (models.py, entities/*, schema.ts, etc.)
+- API contracts (routes/*, controllers/*, api/*, etc.)
+- Integration points (integrations/*, external/*, etc.)
+- Package dependencies (requirements.txt, package.json, pyproject.toml)
+
+### Level 3: Implementation
+- Representative implementation files (3-5 per major module)
+- Test files (tests/*, **/*.test.ts, etc.)
+- Configuration files (.env.example, settings/*, config/*)
+- Utility modules (utils/*, helpers/*, lib/*)
+- Recent changes (git log --name-only -10)
+
+## Understand
+
+### Level 1: Architecture Understanding
+
+**Project Structure:**
+```
+<project_name>/
+├── <app_root>/              # Main application code
+│   ├── domain/              # Domain models and business logic
+│   ├── application/         # Application services
+│   ├── infrastructure/      # External integrations
+│   └── interfaces/          # API/CLI interfaces
+├── tests/                   # Test suite
+├── docs/                    # Documentation
+├── config/                  # Configuration
+└── scripts/                 # Utility scripts
+```
+
+**Architectural Pattern:** [DDD/Clean/Hexagonal/Layered/etc.]
+
+**Key Entry Points:**
+- Main application: <file>
+- CLI interface: <file>
+- API server: <file>
+
+**Technology Stack:**
+- Language: [Python/TypeScript/etc.]
+- Framework: [FastAPI/Express/etc.]
+- Database: [PostgreSQL/MongoDB/etc.]
+- Package Manager: [uv/npm/etc.]
+
+### Level 2: Component Understanding
+
+**Core Modules:**
+1. **Module Name** - Purpose and responsibilities
+2. **Module Name** - Purpose and responsibilities
+3. **Module Name** - Purpose and responsibilities
+
+**Data Flow:**
+```
+[Entry Point] → [Service Layer] → [Domain Layer] → [Data Layer]
+```
+
+**Key Dependencies:**
+- External: [list major external packages]
+- Internal: [list module dependencies]
+
+**Integration Points:**
+- [External API/Service]
+- [Database system]
+- [Message queue/Event system]
+
+### Level 3: Implementation Understanding
+
+**Code Patterns:**
+- Design patterns identified: [Factory, Repository, Service, etc.]
+- Error handling approach: [Try/catch, Result types, etc.]
+- Async patterns: [async/await, callbacks, promises, etc.]
+
+**Testing Strategy:**
+- Test framework: [pytest/jest/etc.]
+- Test types: [unit, integration, e2e]
+- Coverage approach: [areas with tests]
+
+**Conventions:**
+- Naming conventions: [snake_case, camelCase, etc.]
+- File organization: [by feature, by layer, etc.]
+- Import patterns: [absolute, relative, barrel exports]
+
+**Configuration:**
+- Environment variables: [list key vars]
+- Feature flags: [if applicable]
+- Build tools: [vite/webpack/etc.]
+
+## Report
+
+Report to the user:
+
+### 1. Project Summary
+- **Name:** [project name]
+- **Language:** [primary language]
+- **Architecture:** [architectural pattern]
+- **Package Manager:** [package manager]
+- **Primary Purpose:** [1-2 sentence description]
+
+### 2. Level 1: Architecture Insights
+- **Directory Structure:** [brief summary]
+- **Architectural Pattern:** [pattern identified with explanation]
+- **Entry Points:** [list main entry points]
+- **Technology Stack:** [key technologies]
+
+### 3. Level 2: Component Insights
+- **Core Modules:** [list with brief descriptions]
+- **Data Flow:** [brief data flow summary]
+- **Key Dependencies:** [major external and internal dependencies]
+- **Integration Points:** [external systems integrated]
+
+### 4. Level 3: Implementation Insights
+- **Code Patterns:** [identified patterns]
+- **Testing Strategy:** [testing approach summary]
+- **Conventions:** [naming, organization, import patterns]
+- **Configuration:** [environment, build, deployment]
+
+### 5. Key Discoveries
+- [Notable pattern or insight #1]
+- [Notable pattern or insight #2]
+- [Notable pattern or insight #3]
+
+### 6. Recommendations
+- [Any immediate observations about code quality]
+- [Any architectural considerations for current task]
+- [Any potential gotchas or areas requiring caution]
+
+### 7. Next Steps
+- Current development state: [if determinable]
+- Recommended focus areas for current task
+- Files to prioritize for immediate work
+
+**Format:**
+```
+Deep context loaded for: [project name]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LEVEL 1: ARCHITECTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Architecture Pattern: [pattern]
+Technology Stack: [stack]
+Directory Structure: [structure summary]
+Entry Points: [entry points]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LEVEL 2: COMPONENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Core Modules:
+  • [module] - [purpose]
+  • [module] - [purpose]
+
+Data Flow: [flow summary]
+Integrations: [integration points]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LEVEL 3: IMPLEMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Code Patterns: [patterns identified]
+Testing: [test framework] with [coverage areas]
+Conventions: [naming and organization]
+Configuration: [environment and build setup]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KEY DISCOVERIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  • [Discovery #1]
+  • [Discovery #2]
+  • [Discovery #3]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Constitution principles loaded from constitution.md.
+
+Ready for complex implementation tasks. All 3 levels of context loaded.
+```
+
+## Examples
+
+**Example 1: Using prime_3 for major refactoring**
+```
+User: /prime_3
+Agent: Executing Level 0 foundation...
+       Running /prime... ✓
+       Running /prime_cc... ✓
+
+       Executing Level 1 architecture exploration...
+       Reading architectural docs... ✓
+       Mapping directory structure... ✓
+       Identified: DDD architecture with 4 layers
+
+       Executing Level 2 component analysis...
+       Analyzing 12 core modules... ✓
+       Mapping dependencies... ✓
+       Data flow: REST API → Services → Domain → Repository
+
+       Executing Level 3 implementation deep dive...
+       Analyzing code patterns... ✓
+       Reviewing test strategy... ✓
+       Identified: Repository pattern, Factory pattern, Dependency Injection
+
+       [Comprehensive report generated]
+
+       Ready for refactoring task with full context.
+```
+
+**Example 2: Token-efficient sampling**
+```
+Agent (during Level 3):
+  Instead of reading all 200 files, I'll sample:
+  - 3 most recently modified files (git log)
+  - 2 representative files from each major module
+  - Key test files showing patterns
+  - Configuration files
+
+  This provides sufficient pattern understanding while
+  staying within token limits.
+```
+
+**Example 3: Focused exploration**
+```
+User: /prime_3 focusing on authentication module
+Agent: Executing standard prime_3 with Level 3 focus on authentication...
+
+       Level 1 & 2: Standard exploration
+       Level 3 Deep Dive: Prioritizing authentication-related files
+         - auth/service.py
+         - auth/models.py
+         - auth/middleware.py
+         - tests/test_auth.py
+         - integrations/oauth_provider.py
+
+       Authentication patterns identified:
+         - JWT-based authentication
+         - OAuth2 integration
+         - Role-based access control
+         - Token refresh mechanism
+```
+
+## Notes
+
+**Token Management:**
+- Level 3 uses sampling strategy to avoid token overflow
+- Prioritizes recently modified files
+- Focuses on representative examples rather than exhaustive coverage
+- Recommends file counts: ~5-10 files per major module
+
+**Customization:**
+- Can be focused on specific modules if user provides guidance
+- Depth can be adjusted based on codebase size
+- Sampling strategy adapts to repository size
+
+**Time Considerations:**
+- Level 0: ~2-3 minutes (via /prime, /prime_cc)
+- Level 1: ~3-5 minutes (architecture overview)
+- Level 2: ~5-10 minutes (component analysis)
+- Level 3: ~10-15 minutes (implementation patterns)
+- Total: ~20-30 minutes for comprehensive understanding
+
+**Best Practices:**
+- Use prime_3 before major architectural changes
+- Re-run after significant project structure changes
+- Combine with /scout for targeted deep dives on specific areas
+- Follow up with /question if clarification needed on discovered patterns
