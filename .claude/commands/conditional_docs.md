@@ -1748,3 +1748,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When adding new agent directories with .gitkeep files
     - When verifying template paths and structure for scaffold generation
     - When understanding how to maintain patterns for commands, hooks, and directories in scaffold service
+- app_docs/feature-feature_Tac_12_task_8_2-prime-3-deep-context-loading.md
+  - Conditions:
+    - When working on slash commands for codebase context loading
+    - When implementing progressive/multi-level exploration strategies
+    - When extending /prime or /prime_cc commands with deeper context
+    - When designing sequential exploration workflows (Level 1 -> Level 2 -> Level 3)
+    - When using Grep tool for pattern discovery (imports, classes, decorators, tests)
+    - When implementing architectural analysis via directory structure exploration
+    - When creating Jinja2 templates for context-loading commands
+    - When adding commands to scaffold_service.py commands list
+    - When needing comprehensive codebase understanding without parallel agents
+    - When understanding differences between /prime, /prime_cc, /prime_3, and /scout commands
