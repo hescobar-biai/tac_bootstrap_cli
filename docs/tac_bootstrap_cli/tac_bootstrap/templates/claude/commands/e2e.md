@@ -17,7 +17,7 @@ idk:
   - input-debounce-testing
   - jinja2-test-templates
   - browser-snapshot-validation
-  - claude-code-e2e-integration
+  - claude-code-integration
   - test-scenario-bootstrapping
   - command-template-generation
 related_code:

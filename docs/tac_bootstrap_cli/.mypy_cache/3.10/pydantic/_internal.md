@@ -17,7 +17,7 @@ idk:
   - compiled-schemas
   - dependency-graph
   - type-inference-cache
-  - runtime-artifacts
+  - build-cache
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/pydantic/_internal
 children: []

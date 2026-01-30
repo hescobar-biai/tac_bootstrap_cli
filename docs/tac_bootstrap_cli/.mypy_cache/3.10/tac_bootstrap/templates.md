@@ -15,8 +15,8 @@ idk:
   - tac-bootstrap-templates
   - build-artifacts
   - type-inference-cache
-  - static-analysis-cache
-  - dependency-graph
+  - static-analysis-metadata
+  - dependency-tracking
   - cache-invalidation
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/tac_bootstrap/templates

@@ -9,15 +9,15 @@ tags:
   - topic:api
 last_reviewed: UNKNOWN
 idk:
-  - llm-utilities
-  - claude-hooks-llm
-  - jinja2-template-utils
-  - hook-infrastructure
-  - template-generation
-  - utility-layer
+  - llm-hook-utilities
+  - claude-template-hooks
+  - jinja2-llm-templates
+  - hook-utility-layer
+  - template-infrastructure
+  - llm-integration-utils
   - tac-bootstrap-hooks
-  - llm-integration
-  - template-rendering
+  - template-generation
+  - routing-utilities
   - hook-utils-llm
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/claude/hooks/utils/llm

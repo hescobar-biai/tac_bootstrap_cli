@@ -11,11 +11,13 @@ idk:
   - mypy-cache
   - type-stubs
   - concurrent-futures
-  - python-stdlib-typing
+  - python-stdlib
   - incremental-type-checking
   - type-inference-artifacts
-  - build-cache
-  - static-analysis-output
+  - static-analysis-cache
+  - cached-type-metadata
+  - threadpool-executor-stubs
+  - future-protocol-types
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/concurrent/futures
 children: []

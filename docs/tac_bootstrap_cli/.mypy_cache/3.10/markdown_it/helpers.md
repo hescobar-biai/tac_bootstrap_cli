@@ -9,14 +9,15 @@ tags:
   - topic:caching
 idk:
   - mypy-incremental-cache
-  - type-checking-artifacts
   - markdown-it-helpers-stubs
-  - python-3.10-cache
-  - static-analysis-metadata
-  - ast-type-inference
-  - incremental-type-data
-  - type-stub-cache
+  - python-3.10-type-cache
+  - static-analysis-artifacts
+  - ast-type-metadata
+  - incremental-type-checking
+  - type-stub-persistence
   - dependency-graph-cache
+  - markdown-it-bindings-cache
+  - mypy-cache-artifacts
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/helpers
 children: []

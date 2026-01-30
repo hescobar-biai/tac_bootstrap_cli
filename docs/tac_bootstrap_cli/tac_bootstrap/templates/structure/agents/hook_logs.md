@@ -10,19 +10,19 @@ tags:
 idk:
   - hook-execution-logs
   - claude-hook-telemetry
-  - pre-post-hook-events
-  - hook-lifecycle-tracking
-  - automation-audit-trail
   - jinja2-template-directory
-  - hook-invocation-capture
-  - agent-automation-observability
-  - runtime-hook-diagnostics
+  - pre-post-hook-events
+  - automation-audit-trail
+  - hook-lifecycle-tracking
   - template-placeholder-structure
+  - runtime-hook-diagnostics
+  - agent-observability-infra
+  - generated-project-logging
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/hook_logs
 children: []
 source_readmes: []
-last_reviewed: UNKNOWN
+last_reviewed: 2026-01-30
 ---
 
 # Overview

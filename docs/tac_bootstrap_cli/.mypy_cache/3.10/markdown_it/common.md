@@ -15,9 +15,9 @@ idk:
   - incremental-type-cache
   - static-analysis-cache
   - markdown-parser-types
-  - ast-metadata
-  - mypy-stubs
+  - mypy-metadata
   - build-artifacts
+  - temporary-cache
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/common
 children: []

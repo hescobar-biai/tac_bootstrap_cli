@@ -12,14 +12,14 @@ idk:
   - expert-agent-methodology
   - hook-implementation-workflow
   - plan-build-improve-cycle
-  - skill-command-system
-  - specialized-agent-template
+  - skill-command-template
+  - specialized-agent-pattern
   - jinja2-template-generation
-  - knowledge-driven-development
-  - multi-step-workflows
-  - agent-collaboration-patterns
-  - tac-bootstrap-cli
-  - template-commands
+  - knowledge-iteration-system
+  - multi-phase-development
+  - tac-bootstrap-cli-templates
+  - template-based-code-generation
+  - agile-expert-workflow
 related_code: ['tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cc_hook_expert']
 children: []
 source_readmes: []

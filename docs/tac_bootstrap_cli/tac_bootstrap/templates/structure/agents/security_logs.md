@@ -19,6 +19,8 @@ idk:
   - tac-bootstrap-templates
   - log-aggregation
   - centralized-logging
+  - template-generation
+  - bootstrap-structure
 related_code:
   - tac_bootstrap_cli/tac_bootstrap/templates/structure/agents/security_logs
 children: []

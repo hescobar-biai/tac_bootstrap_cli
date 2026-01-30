@@ -9,20 +9,20 @@ tags:
   - topic:caching
 idk:
   - mypy-cache
-  - type-checking-artifacts
   - markdown-it-presets
   - python-3.10
-  - incremental-analysis
   - type-stubs
+  - incremental-type-checking
+  - static-analysis-artifacts
   - preset-configurations
+  - markdown-parser-types
   - build-cache
-  - static-type-inference
-  - metadata-storage
+  - type-inference-data
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/markdown_it/presets
 children: []
 source_readmes: []
-last_reviewed: UNKNOWN
+last_reviewed: 2026-01-30
 ---
 
 # Overview

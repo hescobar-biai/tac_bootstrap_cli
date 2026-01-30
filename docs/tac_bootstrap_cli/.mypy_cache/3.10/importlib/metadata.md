@@ -9,17 +9,16 @@ tags:
   - topic:caching
 idk:
   - mypy-cache
-  - type-checking
   - importlib-metadata
   - python-3.10
-  - static-analysis
-  - build-artifact
   - type-stubs
-  - incremental-compilation
+  - static-analysis
+  - incremental-typecheck
   - stub-cache
   - metadata-types
+  - build-artifact
+  - type-inference
   - cache-directory
-  - typing-information
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/importlib/metadata
 children: []

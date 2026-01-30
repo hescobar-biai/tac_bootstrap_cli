@@ -9,13 +9,13 @@ tags:
   - topic:api
 idk:
   - mypy-type-cache
-  - cli-interfaces
-  - type-stubs
-  - static-analysis
-  - python-3.10
-  - bootstrap-interfaces
-  - cached-annotations
+  - python-3.10-cache
   - type-checking-artifacts
+  - cli-interface-stubs
+  - static-analysis-cache
+  - typer-type-info
+  - cached-type-metadata
+  - interface-layer-types
 related_code:
   - tac_bootstrap_cli/.mypy_cache/3.10/tac_bootstrap/interfaces
 children: []
