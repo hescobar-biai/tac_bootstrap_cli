@@ -1779,3 +1779,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When creating commands that handle missing files gracefully
     - When understanding bundle file format and operation tracking
     - When working with logs/context_bundles/ directory structure
+- app_docs/feature-feature_Tac_12_task_12_2-parallel-subagents-command.md
+  - Conditions:
+    - When working with /parallel_subagents command specification or implementation
+    - When implementing TAC-10 Level 4 (Delegation Prompt) pattern for parallel orchestration
+    - When designing multi-agent coordination for divide-and-conquer tasks
+    - When implementing task decomposition strategies for parallel execution
+    - When working with COUNT parameter validation (range 2-10, default 3)
+    - When implementing tiered failure handling strategies (partial vs total failures)
+    - When creating single-message multiple Task tool call patterns for parallelization
+    - When understanding graceful degradation for agent failures
+    - When implementing result synthesis from multiple independent agents
+    - When working with complex multi-domain tasks (backend + frontend + tests + docs)
+    - When comparing orchestration patterns: /parallel_subagents vs /background vs /build_in_parallel vs /scout
+    - When verifying specification-only deliverables with existing implementations
