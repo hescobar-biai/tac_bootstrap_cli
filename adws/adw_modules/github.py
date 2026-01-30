@@ -17,33 +17,84 @@ import subprocess
 import sys
 import os
 import json
+import time
 from typing import Dict, List, Optional
 from .data_types import GitHubIssue, GitHubIssueListItem, GitHubComment
 
 # Bot identifier to prevent webhook loops and filter bot comments
 ADW_BOT_IDENTIFIER = "[ADW-AGENTS]"
 
+# Rate limiting to avoid GitHub API rate limits
+MIN_DELAY_BETWEEN_COMMENTS = 2.0  # seconds
+MAX_RETRIES = 3
+RETRY_BACKOFF = 5.0  # seconds between retries
+_last_comment_time = 0
+
+
+def _rate_limit_delay():
+    """Enforce minimum delay between API calls to avoid rate limiting."""
+    global _last_comment_time
+    current_time = time.time()
+    time_since_last = current_time - _last_comment_time
+
+    if time_since_last < MIN_DELAY_BETWEEN_COMMENTS:
+        sleep_time = MIN_DELAY_BETWEEN_COMMENTS - time_since_last
+        time.sleep(sleep_time)
+
+    _last_comment_time = time.time()
+
+
+def _execute_with_retry(cmd, env, operation_name="operation"):
+    """Execute command with retries on rate limit errors."""
+    global _last_comment_time
+    result = None
+
+    for attempt in range(MAX_RETRIES):
+        # Rate limiting delay
+        _rate_limit_delay()
+
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+
+        if result.returncode == 0:
+            return result
+
+        # Check if it's a rate limit error
+        stderr = result.stderr.lower()
+        if "too quickly" in stderr or "rate limit" in stderr:
+            wait_time = RETRY_BACKOFF * (attempt + 1)
+            print(
+                f"⏱️  Rate limited. Waiting {wait_time}s before retry {attempt + 1}/{MAX_RETRIES}...",
+                file=sys.stderr,
+            )
+            time.sleep(wait_time)
+        else:
+            # Not a rate limit error, fail immediately
+            return result
+
+    # All retries failed
+    return result
+
 
 def get_github_env() -> Optional[dict]:
     """Get environment with GitHub token set up. Returns None if no GITHUB_PAT.
-    
+
     Subprocess env behavior:
     - env=None → Inherits parent's environment (default)
     - env={} → Empty environment (no variables)
     - env=custom_dict → Only uses specified variables
-    
+
     So this will work with gh authentication:
     # These are equivalent:
     result = subprocess.run(cmd, capture_output=True, text=True)
     result = subprocess.run(cmd, capture_output=True, text=True, env=None)
-    
+
     But this will NOT work (no PATH, no auth):
     result = subprocess.run(cmd, capture_output=True, text=True, env={})
     """
     github_pat = os.getenv("GITHUB_PAT")
     if not github_pat:
         return None
-    
+
     # Only create minimal env with GitHub token
     env = {
         "GH_TOKEN": github_pat,
@@ -149,7 +200,10 @@ def make_issue_comment(issue_id: str, comment: str) -> None:
     env = get_github_env()
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        result = _execute_with_retry(cmd, env, "make_issue_comment")
+
+        if result is None:
+            raise RuntimeError("Failed to get result from command execution")
 
         if result.returncode == 0:
             print(f"Successfully posted comment to issue #{issue_id}")
@@ -331,9 +385,14 @@ def is_issue_assigned_to_me(issue_number: str, repo_path: Optional[str] = None) 
         env = get_github_env()
         result = subprocess.run(
             [
-                "gh", "issue", "view", issue_number,
-                "--repo", repo_path,
-                "--json", "assignees",
+                "gh",
+                "issue",
+                "view",
+                issue_number,
+                "--repo",
+                repo_path,
+                "--json",
+                "assignees",
             ],
             capture_output=True,
             text=True,
@@ -387,26 +446,28 @@ def assign_issue_to_me(issue_id: str) -> bool:
         return False
 
 
-def find_keyword_from_comment(keyword: str, issue: GitHubIssue) -> Optional[GitHubComment]:
+def find_keyword_from_comment(
+    keyword: str, issue: GitHubIssue
+) -> Optional[GitHubComment]:
     """Find the latest comment containing a specific keyword.
-    
+
     Args:
         keyword: The keyword to search for in comments
         issue: The GitHub issue containing comments
-        
+
     Returns:
         The latest GitHubComment containing the keyword, or None if not found
     """
     # Sort comments by created_at date (newest first)
     sorted_comments = sorted(issue.comments, key=lambda c: c.created_at, reverse=True)
-    
+
     # Search through sorted comments (newest first)
     for comment in sorted_comments:
         # Skip ADW bot comments to prevent loops
         if ADW_BOT_IDENTIFIER in comment.body:
             continue
-            
+
         if keyword in comment.body:
             return comment
-    
+
     return None
