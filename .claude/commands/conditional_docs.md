@@ -1851,3 +1851,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When understanding integration between base repository agents and template generation
     - When working with Task tool delegation patterns for file implementation
     - When implementing production-quality code generation with verification steps
+
+- app_docs/feature-478-subagent-stop-hook.md
+  - Conditions:
+    - When working with subagent_stop.py hook implementation
+    - When implementing subagent lifecycle tracking and result aggregation
+    - When creating hooks that log subagent execution events to JSON arrays
+    - When understanding hook patterns with stdin/stdout for Claude Code
+    - When working with session-specific logging directories
+    - When implementing silent failure patterns for hooks
+    - When configuring transcript export functionality for subagent sessions
+    - When working with hook templates in tac_bootstrap_cli for scaffold generation
+    - When debugging or auditing subagent execution patterns
+    - When understanding per-session isolation for hook logs
