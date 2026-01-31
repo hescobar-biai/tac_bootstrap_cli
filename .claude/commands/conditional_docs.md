@@ -215,6 +215,18 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When understanding output truncation strategies for log management
     - When aligning base implementations with Jinja2 templates for hooks
 
+- app_docs/feature-479-pre-compact-hook-template.md
+  - Conditions:
+    - When working with pre_compact.py hook or context compaction observability
+    - When implementing hooks that capture pre-compaction context state
+    - When working with session-specific logging in .claude/logs/
+    - When creating Jinja2 templates for hooks with {{ config.paths.logs_dir }}
+    - When understanding graceful error handling patterns in hook implementations
+    - When implementing JSON array logging format for hook events
+    - When integrating new hooks with scaffold_service.py
+    - When removing dependencies on external utilities in generated hooks
+    - When working with context management and debugging compaction processes
+
 - app_docs/feature-72bb26fe-scaffolding-plan-models.md
   - Conditions:
     - Cuando trabajes con modelos de plan de scaffolding
