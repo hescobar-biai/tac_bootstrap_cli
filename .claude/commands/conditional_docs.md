@@ -205,6 +205,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When debugging or monitoring tool usage patterns
     - When implementing structured text output for hooks
 
+- app_docs/feature-feature_Tac_12_task_23-post-tool-use-hook.md
+  - Conditions:
+    - When working with post_tool_use.py hook implementation
+    - When implementing post-tool execution logging and observability
+    - When creating hooks that capture tool output with truncation
+    - When working with structured JSON logging for tool executions
+    - When implementing best-effort logging patterns that never block workflows
+    - When understanding output truncation strategies for log management
+    - When aligning base implementations with Jinja2 templates for hooks
+
 - app_docs/feature-72bb26fe-scaffolding-plan-models.md
   - Conditions:
     - Cuando trabajes con modelos de plan de scaffolding
