@@ -1877,3 +1877,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When working with hook templates in tac_bootstrap_cli for scaffold generation
     - When configuring optional validation for user input in hooks
     - When understanding exit code semantics (0 for success, 2 for validation blocks)
+
+- app_docs/feature-482-model-extractor-utility.md
+  - Conditions:
+    - When working with model_extractor.py hook utility implementation
+    - When extracting Claude model names from session context files
+    - When implementing file-based caching for hook utilities
+    - When understanding model identification for event logging and analytics
+    - When creating hooks that need to track which Claude model executed a session
+    - When implementing session observability and event tracking
+    - When working with hook templates in tac_bootstrap_cli for scaffold generation
+    - When designing graceful error handling for utility functions with no exceptions
+    - When building zero-dependency hook utilities using only Python stdlib
+    - When understanding hook utility patterns and architectural patterns in TAC Bootstrap
