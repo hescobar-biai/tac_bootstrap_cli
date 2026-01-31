@@ -195,6 +195,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con el wizard interactivo y necesites defaults contextuales
     - Cuando implementes carga/guardado de config.yml
 
+- app_docs/feature-474-pre-tool-use-observability-hook.md
+  - Conditions:
+    - When working with pre_tool_use.py hook implementation
+    - When implementing observability or telemetry hooks for Claude Code
+    - When creating non-blocking hooks that log tool invocations
+    - When understanding the difference between security validation and observability hooks
+    - When working with hook templates in tac_bootstrap_cli
+    - When debugging or monitoring tool usage patterns
+    - When implementing structured text output for hooks
+
 - app_docs/feature-72bb26fe-scaffolding-plan-models.md
   - Conditions:
     - Cuando trabajes con modelos de plan de scaffolding

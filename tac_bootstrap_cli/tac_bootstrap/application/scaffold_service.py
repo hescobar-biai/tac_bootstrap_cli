@@ -342,7 +342,7 @@ class ScaffoldService:
 
         # Hooks
         hooks = [
-            ("pre_tool_use.py", "Pre-execution validation"),
+            ("pre_tool_use.py", "Pre-tool observability logging"),
             ("post_tool_use.py", "Post-execution logging"),
             ("stop.py", "Session cleanup"),
             ("notification.py", "Notification logging"),
