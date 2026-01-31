@@ -8,20 +8,13 @@ Summary metrics across all ADW runs.
 
 | Metric            | Value          | Last Updated                 |
 | ----------------- | -------------- | ---------------------------- |
-| Current Streak    | 191            | 2026-01-31 17:34:47          |
-| Longest Streak    | 191            | 2026-01-31 17:34:47          |
-| Total Plan Size   | 34468 lines    | 2026-01-31 17:34:47          |
-| Largest Plan Size | 702 lines      | 2026-01-31 17:34:47          |
-| Total Diff Size   | 155120 lines   | 2026-01-31 17:34:47          |
-| Largest Diff Size | 6832 lines     | 2026-01-31 17:34:47          |
-| Average Presence  | 1.00           | 2026-01-31 17:34:47          |
-| Current Streak    | 215            | 2026-01-31 17:26:39          |
-| Longest Streak    | 215            | 2026-01-31 17:26:39          |
-| Total Plan Size   | 33820 lines    | 2026-01-31 17:26:39          |
-| Largest Plan Size | 702 lines      | 2026-01-31 17:26:39          |
-| Total Diff Size   | 161869 lines   | 2026-01-31 17:26:39          |
-| Largest Diff Size | 6832 lines     | 2026-01-31 17:26:39          |
-| Average Presence  | 1.00           | 2026-01-31 17:26:39          |
+| Current Streak    | 193            | 2026-01-31 18:01:51          |
+| Longest Streak    | 193            | 2026-01-31 18:01:51          |
+| Total Plan Size   | 34532 lines    | 2026-01-31 18:01:51          |
+| Largest Plan Size | 702 lines      | 2026-01-31 18:01:51          |
+| Total Diff Size   | 164969 lines   | 2026-01-31 18:01:51          |
+| Largest Diff Size | 6832 lines     | 2026-01-31 18:01:51          |
+| Average Presence  | 1.00           | 2026-01-31 18:01:51          |
 
 ## ADW KPIs
 
@@ -221,3 +214,4 @@ Detailed metrics for individual ADW workflow runs.
 | Sat Jan 31 2026  | feature_Tac_12_task_25   | 477          | /feature    | 1        | 147               | 361/2/5                         | 2026-01-31 16:59:59          | -       |
 | Fri Jan 31 2026  | feature_Tac_12_task_27   | 479          | /feature    | 1        | 164               | 397/8/8                         | 2026-01-31 17:34:47          | -       |
 | Sat Jan 31 2026  | feature_Tac_12_task_26   | 478          | /feature    | 1        | 85                | 314/2/6                         | Sat Jan 31 17:26:39 -05 2026 | -       |
+| Fri Jan 31 2026  | feature_Tac_12_task_28   | 480          | /feature    | 1        | 206               | 457/2/6                         | 2026-01-31 18:01:51          | -       |
