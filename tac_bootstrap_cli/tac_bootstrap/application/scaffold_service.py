@@ -378,6 +378,12 @@ class ScaffoldService:
             template="claude/hooks/utils/constants.py.j2",
             reason="Shared constants for hooks",
         )
+        plan.add_file(
+            ".claude/hooks/utils/model_extractor.py",
+            action=action,
+            template="claude/hooks/utils/model_extractor.py.j2",
+            reason="Model extractor utility",
+        )
 
         # LLM provider utilities
         llm_utils = [
