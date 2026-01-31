@@ -352,6 +352,7 @@ class ScaffoldService:
             ("dangerous_command_blocker.py", "Security validation hook"),
             ("context_bundle_builder.py", "Context bundle building for session recovery"),
             ("universal_hook_logger.py", "Universal event logging for all hooks"),
+            ("send_event.py", "Event observability hook"),
         ]
 
         for hook, reason in hooks:
