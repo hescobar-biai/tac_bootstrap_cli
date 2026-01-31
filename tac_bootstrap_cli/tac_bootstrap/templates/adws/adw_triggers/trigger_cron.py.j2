@@ -14,6 +14,14 @@ Cron-based ADW trigger system for {{ config.project.name }}.
 Polls GitHub at a configurable interval to detect issues or comments
 containing ADW workflow commands (e.g., adw_plan_iso, adw_sdlc_iso, etc.).
 
+Only processes issues that have the 'cron-enabled' label.
+
+Label lifecycle:
+- cron-enabled  → Issue is ready to be processed
+- cron-running  → Workflow is currently executing
+- cron-completed → Workflow finished successfully
+- cron-failed   → Workflow failed
+
 When a qualifying issue/comment is found, it triggers the corresponding workflow
 using the same detection logic as the webhook trigger.
 
@@ -22,6 +30,13 @@ Usage:
     uv run trigger_cron.py --interval 30      # Custom 30s interval
     uv run trigger_cron.py -i 60              # Custom 60s interval
     uv run trigger_cron.py --once             # Single check cycle
+
+Setup:
+    1. Create an issue with ADW workflow command in the body (e.g., adw_plan_iso)
+    2. Add label 'cron-enabled' to the issue
+    3. The cron trigger will detect and execute the workflow
+    4. Label will change to 'cron-running' during execution
+    5. Label will change to 'cron-completed' or 'cron-failed' when done
 """
 
 import argparse
@@ -60,6 +75,14 @@ load_dotenv()
 # Default polling interval
 DEFAULT_INTERVAL = {{ config.agentic.cron_interval | default(20) }}
 
+# Cron trigger label configuration
+CRON_LABELS = {
+    "enabled": "cron-enabled",     # Issue ready to be processed
+    "running": "cron-running",     # Workflow is executing
+    "completed": "cron-completed", # Workflow finished successfully
+    "failed": "cron-failed",       # Workflow failed
+}
+
 # Get repository URL from git remote
 try:
     GITHUB_REPO_URL = get_repo_url()
@@ -91,6 +114,49 @@ def signal_handler(signum, frame):
     global shutdown_requested
     print(f"\nINFO: Received signal {signum}, initiating graceful shutdown...")
     shutdown_requested = True
+
+
+def has_cron_enabled_label(issue_number: int) -> bool:
+    """Check if an issue has the cron-enabled label."""
+    try:
+        result = subprocess.run(
+            ["gh", "issue", "view", str(issue_number), "--repo", REPO_PATH, "--json", "labels"],
+            capture_output=True,
+            text=True,
+            env=get_safe_subprocess_env(),
+        )
+        if result.returncode == 0:
+            import json
+            issue_data = json.loads(result.stdout)
+            labels = issue_data.get("labels", [])
+            return any(label.get("name") == CRON_LABELS["enabled"] for label in labels)
+    except Exception as e:
+        print(f"WARNING: Failed to check labels for issue #{issue_number}: {e}")
+    return False
+
+
+def update_issue_label(issue_number: int, new_label: str, remove_label: Optional[str] = None) -> bool:
+    """Update issue label (add new label, optionally remove old label)."""
+    try:
+        # Remove old label if specified
+        if remove_label:
+            subprocess.run(
+                ["gh", "issue", "edit", str(issue_number), "--remove-label", remove_label, "--repo", REPO_PATH],
+                capture_output=True,
+                env=get_safe_subprocess_env(),
+            )
+
+        # Add new label
+        result = subprocess.run(
+            ["gh", "issue", "edit", str(issue_number), "--add-label", new_label, "--repo", REPO_PATH],
+            capture_output=True,
+            text=True,
+            env=get_safe_subprocess_env(),
+        )
+        return result.returncode == 0
+    except Exception as e:
+        print(f"WARNING: Failed to update label for issue #{issue_number}: {e}")
+        return False
 
 
 def check_issue_for_workflow(issue_number: int) -> Optional[Dict]:
@@ -190,12 +256,17 @@ def trigger_workflow(issue_number: int, workflow_info: Dict) -> bool:
                     f"`{workflow} adw-12345678`\n\n"
                     f"The ADW ID should come from a previous workflow run (like `adw_plan_iso` or `adw_patch_iso`).",
                 )
+                # Mark as failed
+                update_issue_label(issue_number, CRON_LABELS["failed"], CRON_LABELS["enabled"])
             except Exception as e:
                 print(f"WARNING: Failed to post error comment: {e}")
             return False
 
     # Use provided ADW ID or generate a new one
     adw_id = provided_adw_id or make_adw_id()
+
+    # Update label to "running"
+    update_issue_label(issue_number, CRON_LABELS["running"], CRON_LABELS["enabled"])
 
     # Manage ADW state
     if provided_adw_id:
@@ -230,6 +301,7 @@ def trigger_workflow(issue_number: int, workflow_info: Dict) -> bool:
             f"Workflow: `{workflow}` 🏗️\n"
             f"Model Set: `{model_set}` ⚙️\n"
             f"Reason: {trigger_reason}\n\n"
+            f"Label changed: `{CRON_LABELS['enabled']}` → `{CRON_LABELS['running']}`\n"
             f"Logs will be available at: `agents/{adw_id}/{workflow}/`",
         )
     except Exception as e:
@@ -262,6 +334,8 @@ def trigger_workflow(issue_number: int, workflow_info: Dict) -> bool:
     except Exception as e:
         print(f"ERROR: Exception while triggering workflow for issue #{issue_number}: {e}")
         logger.error(f"Exception: {e}")
+        # Mark as failed
+        update_issue_label(issue_number, CRON_LABELS["failed"], CRON_LABELS["running"])
         return False
 
 
@@ -282,6 +356,7 @@ def check_and_process_issues():
             return
 
         triggered_count = 0
+        checked_count = 0
 
         for issue in issues:
             if shutdown_requested:
@@ -296,6 +371,13 @@ def check_and_process_issues():
             if not is_issue_assigned_to_me(str(issue_number), REPO_PATH):
                 continue
 
+            # Check if issue has the cron-enabled label
+            if not has_cron_enabled_label(issue_number):
+                continue
+
+            checked_count += 1
+            print(f"INFO: Checking issue #{issue_number} (has {CRON_LABELS['enabled']} label)")
+
             # Check if issue has a workflow trigger
             workflow_info = check_issue_for_workflow(issue_number)
             if workflow_info:
@@ -304,9 +386,9 @@ def check_and_process_issues():
 
         cycle_time = time.time() - start_time
         if triggered_count > 0:
-            print(f"INFO: Triggered {triggered_count} workflow(s) in {cycle_time:.2f}s")
+            print(f"INFO: Triggered {triggered_count} workflow(s) from {checked_count} cron-enabled issue(s) in {cycle_time:.2f}s")
         else:
-            print(f"INFO: No new triggers found ({cycle_time:.2f}s)")
+            print(f"INFO: No new triggers found (checked {checked_count} cron-enabled issues in {cycle_time:.2f}s)")
 
     except Exception as e:
         print(f"ERROR: Error during check cycle: {e}")
@@ -354,8 +436,10 @@ def main():
     print(f"INFO: Repository: {REPO_PATH}")
     print(f"INFO: Current user: {current_user or 'unknown'}")
     print(f"INFO: Only processing issues assigned to current user")
+    print(f"INFO: Only processing issues with label: '{CRON_LABELS['enabled']}'")
     print(f"INFO: Polling interval: {interval} seconds")
     print(f"INFO: Supported workflows: {len(AVAILABLE_ADW_WORKFLOWS)}")
+    print(f"INFO: Label lifecycle: {CRON_LABELS['enabled']} → {CRON_LABELS['running']} → {CRON_LABELS['completed']}/{CRON_LABELS['failed']}")
 
     # Set up signal handlers
     signal.signal(signal.SIGINT, signal_handler)
