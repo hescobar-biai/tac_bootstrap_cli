@@ -353,6 +353,7 @@ class ScaffoldService:
             ("context_bundle_builder.py", "Context bundle building for session recovery"),
             ("universal_hook_logger.py", "Universal event logging for all hooks"),
             ("send_event.py", "Event observability hook"),
+            ("session_start.py", "Session initialization context capture"),
         ]
 
         for hook, reason in hooks:
