@@ -410,7 +410,7 @@ class ScaffoldService:
         # Agent definitions
         agents = [
             ("docs-scraper.md", "Documentation scraping agent"),
-            ("meta-agent.md", "Meta-prompt generation agent"),
+            ("meta-agent.md", "Agent generation from specifications"),
             ("research-docs-fetcher.md", "Research and documentation fetcher agent"),
             ("build-agent.md", "Parallel build file implementation agent"),
             ("playwright-validator.md", "Playwright E2E validation agent"),
