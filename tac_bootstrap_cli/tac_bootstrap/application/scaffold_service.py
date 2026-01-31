@@ -378,6 +378,12 @@ class ScaffoldService:
             template="claude/hooks/utils/constants.py.j2",
             reason="Shared constants for hooks",
         )
+        plan.add_file(
+            ".claude/hooks/utils/summarizer.py",
+            action=action,
+            template="claude/hooks/utils/summarizer.py.j2",
+            reason="Event summarizer utility",
+        )
 
         # LLM provider utilities
         llm_utils = [
