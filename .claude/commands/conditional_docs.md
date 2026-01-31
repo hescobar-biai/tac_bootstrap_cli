@@ -1864,3 +1864,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When working with hook templates in tac_bootstrap_cli for scaffold generation
     - When debugging or auditing subagent execution patterns
     - When understanding per-session isolation for hook logs
+
+- app_docs/feature-480-user-prompt-submit-hook.md
+  - Conditions:
+    - When working with user_prompt_submit.py hook implementation
+    - When implementing prompt logging with append-only JSON patterns
+    - When creating hooks that read JSON from stdin and write to session logs
+    - When understanding hook validation frameworks with extensible blocked patterns
+    - When working with session-specific logging directories and isolation
+    - When implementing graceful error handling for non-blocking hooks
+    - When setting up prompt auditing and interaction tracking
+    - When working with hook templates in tac_bootstrap_cli for scaffold generation
+    - When configuring optional validation for user input in hooks
+    - When understanding exit code semantics (0 for success, 2 for validation blocks)
