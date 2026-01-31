@@ -747,6 +747,19 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con multi-tenancy usando organization_id y project_id
     - Cuando necesites entender el patrón de documentación IDK en entidades
     - Cuando modifiques src/shared/domain/base_entity.py o su template
+
+- app_docs/feature-feature_Tac_12_task_21-session-start-hook.md
+  - Conditions:
+    - When working with session_start.py hook or session initialization
+    - When implementing or modifying hooks that capture session metadata
+    - When working with session_context.json file
+    - When using uv run --script pattern with PyYAML dependency
+    - When implementing graceful error handling with "unknown" fallbacks
+    - When capturing git branch, model name, project metadata, or timestamps
+    - When creating Jinja2 templates for hooks with {{ config.project.name }}
+    - When working with scaffold_service.py hooks list integration
+    - When testing non-blocking, session-safe hooks
+    - When implementing session tracking or observability features
     - Cuando trabajes con Pydantic BaseModel y validators para entidades
     - Cuando implementes features de CRUD que requieran base entity functionality
     - Cuando necesites referencia sobre testing de state transitions y version management
