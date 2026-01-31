@@ -1,12 +1,17 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.8"
-# ///
+#!/usr/bin/env python3
+"""
+Pre-compact hook for {{ config.project.name }}.
+
+This hook runs when Claude Code begins context compaction.
+It captures pre-compaction context state for debugging and analysis.
+
+Logs are written to: {{ config.paths.logs_dir }}/{session_id}/pre_compact.json
+"""
 
 import json
 import sys
 from pathlib import Path
-from utils.constants import ensure_session_log_dir
+
 
 def main():
     try:
@@ -17,7 +22,10 @@ def main():
         session_id = input_data.get('session_id', 'unknown')
 
         # Ensure session log directory exists
-        log_dir = ensure_session_log_dir(session_id)
+        log_base_dir = Path("{{ config.paths.logs_dir }}")
+        log_dir = log_base_dir / session_id
+        log_dir.mkdir(parents=True, exist_ok=True)
+
         log_path = log_dir / 'pre_compact.json'
 
         # Read existing log data or initialize empty list
@@ -45,6 +53,7 @@ def main():
     except Exception:
         # Exit cleanly on any other error
         sys.exit(0)
+
 
 if __name__ == '__main__':
     main()
