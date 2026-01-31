@@ -534,6 +534,7 @@ def clean_model_output(output: str) -> str:
     ```
 
     This function removes those wrappers to get the clean content.
+    For branch names, it also extracts just the branch name from explanatory text.
     """
     import re
 
@@ -556,6 +557,17 @@ def clean_model_output(output: str) -> str:
         if lines and lines[-1].strip() == '```':
             lines = lines[:-1]
         cleaned = '\n'.join(lines).strip()
+
+    # Extract branch name from explanatory text
+    # Look for common patterns like "The branch name is:" or "Generated branch name:"
+    # Or extract the last line that looks like a valid branch name
+    branch_name_pattern = r'(?:branch name.*?:[\s]*)?([a-z][a-z0-9-]+(?:-issue-\d+)?(?:-adw-[a-zA-Z0-9_]+)?(?:-[a-z0-9-]+)?)\s*$'
+    match = re.search(branch_name_pattern, cleaned, re.IGNORECASE | re.MULTILINE)
+    if match:
+        potential_branch = match.group(1).strip()
+        # Validate it looks like a branch name (contains hyphens, no spaces, lowercase)
+        if '-' in potential_branch and ' ' not in potential_branch and '\n' not in potential_branch:
+            cleaned = potential_branch
 
     return cleaned
 
