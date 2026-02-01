@@ -115,6 +115,8 @@ class ScaffoldService:
             (".claude/hooks/utils", "Hook utilities"),
             (".claude/hooks/utils/llm", "LLM provider utilities"),
             (".claude/hooks/utils/tts", "Text-to-speech utilities"),
+            (".claude/data", "Session and data storage"),
+            (".claude/data/sessions", "Claude Code session data"),
             (config.paths.adws_dir, "AI Developer Workflows"),
             (f"{config.paths.adws_dir}/adw_modules", "ADW shared modules"),
             (f"{config.paths.adws_dir}/adw_triggers", "ADW triggers"),
@@ -157,6 +159,12 @@ class ScaffoldService:
         )
         plan.add_file(
             "agents/scout_files/.gitkeep",
+            action=FileAction.CREATE,
+            content="",
+            reason="Keep empty directory in Git",
+        )
+        plan.add_file(
+            ".claude/data/sessions/.gitkeep",
             action=FileAction.CREATE,
             content="",
             reason="Keep empty directory in Git",
