@@ -1890,3 +1890,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When designing graceful error handling for utility functions with no exceptions
     - When building zero-dependency hook utilities using only Python stdlib
     - When understanding hook utility patterns and architectural patterns in TAC Bootstrap
+
+- app_docs/feature-483-constants-hook-utility.md
+  - Conditions:
+    - When working with constants.py hook utility implementation
+    - When creating shared constant definitions for hook utilities
+    - When understanding centralized logging directory management
+    - When implementing session-specific logging in hooks
+    - When building Jinja2 templates for dynamic constants generation
+    - When integrating new hook utilities with scaffold_service.py
+    - When understanding project metadata and directory path configuration
+    - When implementing safety constraints for agentic path restrictions
+    - When designing hook utility patterns and architectural patterns in TAC Bootstrap
+    - When working with template variables using the config object pattern
