@@ -1903,3 +1903,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When implementing safety constraints for agentic path restrictions
     - When designing hook utility patterns and architectural patterns in TAC Bootstrap
     - When working with template variables using the config object pattern
+
+- app_docs/feature-484-llm-utilities-subdirectory.md
+  - Conditions:
+    - When working with LLM provider utilities (anth.py, oai.py, ollama.py)
+    - When implementing multi-provider LLM abstraction for hooks
+    - When creating Jinja2 templates for LLM utilities in scaffold_service.py
+    - When integrating Anthropic, OpenAI, or Ollama providers in hooks
+    - When understanding provider-specific API key management
+    - When implementing completion message generation with LLM
+    - When working with prompt_llm() and generate_completion_message() interfaces
+    - When designing fail-fast error handling patterns for hook utilities
+    - When understanding the llm/ subdirectory structure for generated projects
+    - When working with environment variable configuration for LLM providers
