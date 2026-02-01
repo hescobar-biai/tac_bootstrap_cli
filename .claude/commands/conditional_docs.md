@@ -1916,3 +1916,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When designing fail-fast error handling patterns for hook utilities
     - When understanding the llm/ subdirectory structure for generated projects
     - When working with environment variable configuration for LLM providers
+
+- app_docs/feature-485-create-tts-utilities-subdirectory.md
+  - Conditions:
+    - When working with text-to-speech (TTS) provider utilities (elevenlabs_tts, openai_tts, pyttsx3_tts)
+    - When implementing multi-provider TTS abstraction for hooks
+    - When creating Jinja2 templates for TTS utilities in scaffold_service.py
+    - When integrating ElevenLabs, OpenAI, or pyttsx3 TTS providers in hooks
+    - When understanding TTS provider-specific audio output formats (MP3, WAV)
+    - When implementing audio notification capabilities for automation workflows
+    - When working with synthesize_speech() and save_audio_file() interfaces
+    - When designing lenient error handling patterns for hook utilities
+    - When understanding the tts/ subdirectory structure for generated projects
+    - When working with environment variable configuration for TTS API providers
+    - When needing cross-platform offline TTS support via pyttsx3
