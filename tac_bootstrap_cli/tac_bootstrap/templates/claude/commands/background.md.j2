@@ -6,7 +6,7 @@ Execute user prompts in the background with structured reporting and automatic s
 
 - `USER_PROMPT` ($1): The prompt/command to execute in the background (required)
 - `MODEL` ($2): Claude model to use - 'haiku' (fast), 'sonnet' (balanced), 'opus' (powerful). Defaults to 'sonnet'
-- `REPORT_FILE` ($3): Output file path for structured report (required; must be in {{ config.directories.agents }}/background/ directory)
+- `REPORT_FILE` ($3): Output file path for structured report (required; must be in agents/background/ directory)
 
 ## Instructions
 
@@ -31,10 +31,10 @@ Execute user prompts in the background with structured reporting and automatic s
 
 ### Directory Structure Requirement
 
-The `{{ config.directories.agents }}/background/` directory must exist before running background commands:
+The `agents/background/` directory must exist before running background commands:
 
 ```bash
-mkdir -p {{ config.directories.agents }}/background/
+mkdir -p agents/background/
 ```
 
 This directory stores all timestamped report files. Report files are automatically renamed:
@@ -44,10 +44,10 @@ This directory stores all timestamped report files. Report files are automatical
 ### Output File Behavior
 
 - Reports are written to the path specified in `$REPORT_FILE`
-- Original filename structure: `{{ config.directories.agents }}/background/<task_name>_<timestamp>.md`
+- Original filename structure: `agents/background/<task_name>_<timestamp>.md`
 - After execution, file is automatically renamed based on completion status
 - If rename fails, the report remains with original filename and a warning is appended
-- Monitor progress: Use `tail -f {{ config.directories.agents }}/background/*.md` to watch report files
+- Monitor progress: Use `tail -f agents/background/*.md` to watch report files
 
 ## Run
 
@@ -61,11 +61,11 @@ REPORT_FILE="$3"
 TIMESTAMP=$(date +%a_%H_%M_%S)
 
 # Ensure directory exists
-mkdir -p {{ config.directories.agents }}/background/
+mkdir -p agents/background/
 
 # Build report file path with timestamp if not provided
 if [ -z "$REPORT_FILE" ]; then
-  REPORT_FILE="{{ config.directories.agents }}/background/analysis_${TIMESTAMP}.md"
+  REPORT_FILE="agents/background/analysis_${TIMESTAMP}.md"
 fi
 
 # Execute claude CLI in background with structured reporting
@@ -117,7 +117,7 @@ fi
 ```bash
 USER_PROMPT="Analyze the authentication system architecture and identify security gaps"
 MODEL="sonnet"
-REPORT_FILE="{{ config.directories.agents }}/background/auth_security_review.md"
+REPORT_FILE="agents/background/auth_security_review.md"
 
 # Execute in background
 ./background.sh "$USER_PROMPT" "$MODEL" "$REPORT_FILE" &
@@ -125,7 +125,7 @@ REPORT_FILE="{{ config.directories.agents }}/background/auth_security_review.md"
 
 Monitor the analysis:
 ```bash
-tail -f {{ config.directories.agents }}/background/auth_security_review*.md
+tail -f agents/background/auth_security_review*.md
 ```
 
 ### Example 2: Generate API Documentation
@@ -133,7 +133,7 @@ tail -f {{ config.directories.agents }}/background/auth_security_review*.md
 ```bash
 USER_PROMPT="Review all API endpoints in src/api/ and generate comprehensive documentation"
 MODEL="haiku"
-REPORT_FILE="{{ config.directories.agents }}/background/api_docs_generation.md"
+REPORT_FILE="agents/background/api_docs_generation.md"
 
 # Execute with quick model for faster turnaround
 ./background.sh "$USER_PROMPT" "$MODEL" "$REPORT_FILE" &
@@ -144,7 +144,7 @@ REPORT_FILE="{{ config.directories.agents }}/background/api_docs_generation.md"
 ```bash
 USER_PROMPT="Identify all occurrences of deprecated patterns in src/ and suggest refactoring strategy"
 MODEL="opus"
-REPORT_FILE="{{ config.directories.agents }}/background/refactoring_analysis.md"
+REPORT_FILE="agents/background/refactoring_analysis.md"
 
 # Use powerful model for comprehensive analysis
 ./background.sh "$USER_PROMPT" "$MODEL" "$REPORT_FILE" &
@@ -161,15 +161,15 @@ After executing a background task:
    - Completion status and exit code
 
 2. **File Status**:
-   - Check `{{ config.directories.agents }}/background/` directory for report files
+   - Check `agents/background/` directory for report files
    - `.complete.md` files indicate successful execution
    - `.failed.md` files indicate errors or failures
-   - Use `ls -ltr {{ config.directories.agents }}/background/` to see latest reports
+   - Use `ls -ltr agents/background/` to see latest reports
 
 3. **Monitor Progress**:
-   - Watch in real-time: `tail -f {{ config.directories.agents }}/background/<filename>`
-   - View completed reports: `cat {{ config.directories.agents }}/background/<filename>.complete.md`
-   - Review failed reports: `cat {{ config.directories.agents }}/background/<filename>.failed.md`
+   - Watch in real-time: `tail -f agents/background/<filename>`
+   - View completed reports: `cat agents/background/<filename>.complete.md`
+   - Review failed reports: `cat agents/background/<filename>.failed.md`
 
 4. **Expected Report Format**:
    - Header with task metadata
