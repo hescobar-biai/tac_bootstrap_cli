@@ -129,6 +129,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When working with dangerous_command_blocker.py hook
     - When configuring hook matchers and timeouts
 
+- app_docs/feature-chore_Tac_12_task_36-claude-model-cache-directory.md
+  - Conditions:
+    - When working with Claude model cache directory structure
+    - When configuring .claude/data directories for generated projects
+    - When understanding scaffold_service.py directory initialization
+    - When creating Jinja2 templates for project generation
+    - When implementing data storage directories following .gitkeep pattern
+    - When working with model_extractor.py cache functionality
+
 - app_docs/feature-chore_v_0_4_1_task_8-trigger-polling-interval-docs.md
   - Conditions:
     - When working with trigger polling configuration in tac_bootstrap_cli
