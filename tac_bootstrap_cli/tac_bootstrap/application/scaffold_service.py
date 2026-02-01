@@ -111,6 +111,7 @@ class ScaffoldService:
             (".claude/commands/experts/cc_hook_expert", "Claude Code hook expert commands"),
             (".claude/agents", "Agent definitions"),
             (".claude/output-styles", "Output style presets"),
+            (".claude/status_lines", "Claude Code status line definitions"),
             (".claude/hooks", "Execution hooks"),
             (".claude/hooks/utils", "Hook utilities"),
             (".claude/hooks/utils/llm", "LLM provider utilities"),
