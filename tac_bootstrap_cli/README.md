@@ -232,8 +232,11 @@ See [Agents Documentation](docs/agents.md) for details.
 AI Developer Workflows automate the SDLC:
 
 ```bash
-# Full SDLC
+# Full SDLC (auto-detects documentation)
 uv run adws/adw_sdlc_iso.py --issue 123
+
+# With manual documentation override
+uv run adws/adw_sdlc_iso.py --issue 123 --load-docs ddd,api
 
 # Plan + Build
 uv run adws/adw_plan_build_iso.py --issue 123
@@ -241,6 +244,44 @@ uv run adws/adw_plan_build_iso.py --issue 123
 # Quick patch
 uv run adws/adw_patch_iso.py --issue 456
 ```
+
+### Intelligent Documentation Loading (TAC-9)
+
+ADW workflows automatically detect and load relevant project documentation based on issue content. This provides context-aware guidance throughout all workflow phases.
+
+**How It Works:**
+
+1. **Auto-Detection**: Analyzes issue title and body for keywords
+2. **Smart Loading**: Loads only relevant documentation topics
+3. **Full Context**: Documentation available in all phases (clarify, plan, build, test, review)
+
+**Example - Automatic:**
+```bash
+# Issue: "Add JWT authentication to API endpoints"
+uv run adws/adw_sdlc_zte_iso.py 486 adw-id
+
+# Auto-detects: authentication, api
+# Loads: ai_docs/authentication.md, ai_docs/api.md
+```
+
+**Example - Manual Override:**
+```bash
+# Specify exact documentation topics
+uv run adws/adw_sdlc_zte_iso.py 486 adw-id --load-docs ddd,solid,design_patterns
+```
+
+**Supported Documentation Topics:**
+
+| Category | Topics | Keywords |
+|----------|--------|----------|
+| **Architecture** | `ddd`, `ddd_lite`, `design_patterns`, `solid` | domain-driven, aggregate, patterns, SOLID principles |
+| **AI/SDK** | `anthropic_quick_start`, `openai_quick_start`, `claude_code_cli_reference`, `claude_code_sdk`, `claude-code-hooks`, `mcp-python-sdk` | anthropic, claude api, openai, mcp, hooks |
+| **Tools** | `uv-scripts`, `e2b`, `fractal_docs` | uv run, sandbox, fractal documentation |
+| **Technical** | `authentication`, `api`, `database`, `testing`, `deployment` | jwt, oauth, endpoint, sql, pytest, docker |
+| **Development** | `frontend`, `backend`, `security`, `performance`, `monitoring` | react, microservice, xss, optimize, observability |
+
+**Add Your Own Documentation:**
+Place markdown files in `ai_docs/` directory with relevant content. The auto-detection system will identify and load them based on keyword matching.
 
 ## TAC-12 Multi-Agent Orchestration
 

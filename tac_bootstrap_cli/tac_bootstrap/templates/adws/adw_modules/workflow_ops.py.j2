@@ -558,6 +558,10 @@ def detect_relevant_docs(issue: GitHubIssue) -> list[str]:
     Analyzes the issue title and body to identify relevant documentation topics
     based on keyword matching. This enables automatic context loading for workflows.
 
+    Uses hybrid approach:
+    1. Static keyword mapping for common topics
+    2. Dynamic scanning of all .md files in ai_docs/ directory
+
     Args:
         issue: GitHub issue to analyze
 
@@ -571,9 +575,11 @@ def detect_relevant_docs(issue: GitHubIssue) -> list[str]:
     """
     text = f"{issue.title} {issue.body}".lower()
     topics = []
+    topics = []
 
     # Keyword mapping: doc_topic -> list of keywords that indicate relevance
     doc_keywords = {
+        # Technical domains
         "authentication": ["auth", "login", "jwt", "oauth", "session", "credential", "password", "token"],
         "testing": ["test", "pytest", "e2e", "unit test", "integration test", "coverage", "mock"],
         "deployment": ["deploy", "ci/cd", "docker", "kubernetes", "k8s", "container", "helm"],
@@ -589,12 +595,73 @@ def detect_relevant_docs(issue: GitHubIssue) -> list[str]:
         "error_handling": ["error", "exception", "handling", "validation", "retry"],
         "workflows": ["workflow", "pipeline", "automation", "ci", "github action"],
         "data_processing": ["etl", "pipeline", "stream", "batch", "processing", "transform"],
+
+        # Architecture & Design
+        "ddd": ["ddd", "domain-driven", "domain driven", "aggregate", "entity", "value object", "bounded context", "ubiquitous language"],
+        "ddd_lite": ["ddd lite", "lightweight ddd", "simplified domain", "domain model"],
+        "design_patterns": ["pattern", "singleton", "factory", "observer", "strategy", "decorator", "adapter", "facade"],
+        "solid": ["solid", "single responsibility", "open closed", "liskov", "interface segregation", "dependency inversion"],
+
+        # AI & SDK
+        "anthropic_quick_start": ["anthropic", "claude api", "anthropic api", "claude sdk"],
+        "openai_quick_start": ["openai", "gpt", "openai api", "chatgpt"],
+        "claude_code_cli_reference": ["claude code", "cli", "command line", "claude cli"],
+        "claude_code_sdk": ["claude code sdk", "sdk", "agent sdk"],
+        "claude-code-hooks": ["hooks", "claude hooks", "pre-commit", "post-commit", "hook script"],
+        "mcp-python-sdk": ["mcp", "model context protocol", "mcp sdk", "mcp server"],
+
+        # Tools & Utilities
+        "uv-scripts": ["uv", "uv run", "uv script", "python script", "dependencies"],
+        "e2b": ["e2b", "sandbox", "code execution", "environment"],
+        "fractal_docs": ["fractal", "fractal documentation", "recursive docs", "documentation structure"],
     }
 
     # Check each topic's keywords against the issue text
     for doc_topic, keywords in doc_keywords.items():
         if any(keyword in text for keyword in keywords):
             topics.append(doc_topic)
+
+    # DYNAMIC DETECTION: Scan all .md files in ai_docs/ directory
+    # This allows detection of custom documentation not in the hardcoded mapping
+    try:
+        # Find ai_docs directory (should be at project root)
+        # Assuming this file is in adws/adw_modules/, go up to project root
+        current_file = os.path.abspath(__file__)
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+        ai_docs_dir = os.path.join(project_root, "ai_docs")
+
+        if os.path.exists(ai_docs_dir):
+            # Scan for all .md files recursively
+            for root, dirs, files in os.walk(ai_docs_dir):
+                for file in files:
+                    if file.endswith(".md"):
+                        # Get topic name from filename (without .md extension)
+                        topic_name = file[:-3]
+
+                        # Skip if already detected via keyword mapping
+                        if topic_name in topics:
+                            continue
+
+                        # Check if filename (converted to lowercase with spaces/underscores)
+                        # appears in the issue text
+                        # Convert: "plan_tasks_Tac_12" -> "plan tasks tac 12"
+                        searchable_name = topic_name.lower().replace("_", " ").replace("-", " ")
+
+                        # Also check without common prefixes
+                        name_variants = [
+                            searchable_name,
+                            topic_name.lower(),
+                            # Remove common prefixes for matching
+                            searchable_name.replace("plan ", "").replace("tac ", ""),
+                        ]
+
+                        if any(variant in text for variant in name_variants if variant):
+                            topics.append(topic_name)
+
+    except Exception as e:
+        # If dynamic scanning fails, just use static keywords
+        # Don't fail the whole detection
+        pass
 
     # Remove duplicates and sort for consistency
     return sorted(list(set(topics)))
