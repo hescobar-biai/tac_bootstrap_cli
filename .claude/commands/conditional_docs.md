@@ -1939,3 +1939,21 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When understanding the tts/ subdirectory structure for generated projects
     - When working with environment variable configuration for TTS API providers
     - When needing cross-platform offline TTS support via pyttsx3
+
+- app_docs/feature-feature_Tac_12_task_34_2_3-status-lines-script.md
+  - Conditions:
+    - When working with Claude Code status line integration
+    - When implementing dynamic status display for agentic workflows
+    - When creating status_lines directory and status_line_main.py script
+    - When understanding environment variable handling (CLAUDE_AGENT_NAME, CLAUDE_MODEL)
+    - When implementing graceful fallback patterns for missing configuration
+    - When working with subprocess integration for git branch detection
+    - When creating executable Python scripts with shebang directives
+    - When implementing non-blocking status information collection
+    - When working with Jinja2 templates for scaffold generation (status_line_main.py.j2)
+    - When understanding hook patterns in .claude/ directories
+    - When integrating new files into scaffold_service.py
+    - When designing error handling that never fails (exit code 0 always)
+    - When implementing context-aware CLI status display
+    - When working with timeout-bounded subprocess execution
+    - When understanding TAC Bootstrap Wave 5, Task 34 implementation
