@@ -1836,26 +1836,57 @@ wc -l .claude/commands/experts/cli/expertise.yaml
 ```
 
 **Description:**
-Create question prompt for ADW expert that answers questions about AI Developer Workflows.
+Create question prompt for ADW expert as both Jinja2 template and implementation file.
 
 **Technical Steps:**
-1. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/adw/question.md`
-2. Define YAML frontmatter:
-   ```yaml
-   allowed-tools: Bash, Read, Grep, Glob, TodoWrite
-   description: Answer questions about ADW workflows without coding
-   argument-hint: [question]
+
+#### A) Create Jinja2 Template in CLI
+
+1. **Create template file**:
+   **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/adw/question.md.j2`
+
+2. **Register in scaffold_service.py**:
+   ```python
+   # TAC-13: ADW Expert Question
+   plan.add_file(
+       action="create",
+       template="claude/commands/experts/adw/question.md.j2",
+       path=".claude/commands/experts/adw/question.md",
+       reason="ADW expert question prompt for workflow queries"
+   )
    ```
-3. Implement 3-phase workflow (read expertise → validate → report)
-4. Use variables: `USER_QUESTION: $1`, `EXPERTISE_PATH: .claude/commands/experts/adw/expertise.yaml`
+
+#### B) Create Implementation File in Repo Root
+
+1. **Create prompt file**:
+   **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/adw/question.md`
+
+   Content: 3-phase workflow (read expertise → validate → report) similar to CLI expert
 
 **Acceptance Criteria:**
-- Follows TAC-13 question pattern
-- Validates expertise against ADW implementations
-- Reports on workflow patterns and integration
+- ✅ **Template (.j2)** created in CLI templates
+- ✅ **Template registered** in scaffold_service.py
+- ✅ **Implementation file** created in repo root
+- ✅ Follows TAC-13 question pattern
+- ✅ Validates expertise against ADW implementations
+- ✅ Reports on workflow patterns and integration
+
+**Validation Commands:**
+```bash
+# Verify template
+test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/adw/question.md.j2 && echo "✓ Template"
+
+# Verify registration
+grep -A 3 "experts/adw/question.md.j2" /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ Registered"
+
+# Verify repo file
+test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/adw/question.md && echo "✓ Repo file"
+```
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/adw/question.md`
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/adw/question.md.j2` (template)
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py` (registration)
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/adw/question.md` (repo root)
 
 ---
 
@@ -1869,21 +1900,49 @@ Create question prompt for ADW expert that answers questions about AI Developer 
 ```
 
 **Description:**
-Create self-improve prompt for ADW expert.
+Create self-improve prompt for ADW expert as both template and implementation.
 
 **Technical Steps:**
-1. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/adw/self-improve.md`
-2. Define YAML frontmatter (same pattern as CLI expert)
-3. Implement 7-phase workflow
-4. Variables: `CHECK_GIT_DIFF: $1`, `FOCUS_AREA: $2`, `EXPERTISE_FILE: .claude/commands/experts/adw/expertise.yaml`, `MAX_LINES: 1000`
 
-**Acceptance Criteria:**
-- Follows TAC-13 7-phase pattern
-- Enforces constraints
+#### A) Create Jinja2 Template in CLI
+
+1. **Create template**: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/adw/self-improve.md.j2`
+
+2. **Register in scaffold_service.py**:
+   ```python
+   # TAC-13: ADW Expert Self-Improve
+   plan.add_file(
+       action="create",
+       template="claude/commands/experts/adw/self-improve.md.j2",
+       path=".claude/commands/experts/adw/self-improve.md",
+       reason="ADW expert 7-phase self-improve workflow"
+   )
+   ```
+
+#### B) Create Implementation in Repo Root
+
+**File**: `.claude/commands/experts/adw/self-improve.md`
+- 7-phase workflow (same as CLI expert)
+- Variables: `CHECK_GIT_DIFF: $1`, `FOCUS_AREA: $2`, `MAX_LINES: 1000`
 - Focus areas: state management, GitHub integration, workflow orchestration
 
+**Acceptance Criteria:**
+- ✅ **Template (.j2)** created and registered
+- ✅ **Implementation** in repo root
+- ✅ Follows TAC-13 7-phase pattern
+- ✅ Focus areas documented: state, GitHub, orchestration
+
+**Validation Commands:**
+```bash
+test -f tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/adw/self-improve.md.j2 && echo "✓ Template"
+grep "experts/adw/self-improve.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ Registered"
+test -f .claude/commands/experts/adw/self-improve.md && echo "✓ Repo file"
+```
+
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/adw/self-improve.md`
+- `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/adw/self-improve.md.j2` (template)
+- `tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py` (registration)
+- `.claude/commands/experts/adw/self-improve.md` (repo root)
 
 ---
 
@@ -1897,28 +1956,55 @@ Create self-improve prompt for ADW expert.
 ```
 
 **Description:**
-Create initial expertise.yaml file for ADW expert.
+Create expertise seed template and populate for ADW expert.
 
 **Technical Steps:**
-1. Create empty `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/adw/expertise.yaml`
-2. Execute self-improve to populate
-3. Expert should document:
-   - ADW workflows: `adws/adw_*_iso.py` patterns
-   - Modules: `adws/adw_modules/` (state, workflow_ops, git_ops, github, agent)
-   - State management: ADWState class and persistence
-   - GitHub integration: issue fetching, PR creation, comments
-   - Orchestration: plan → build → test → review → document → ship
-   - TAC-9 (ai_docs), TAC-10 (build_w_report), TAC-12 (scout, parallel)
-4. Include key functions with file paths and signatures
+
+#### A) Create Seed Template in CLI
+
+1. **Create seed template**: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/adw/expertise.yaml.j2`
+
+2. **Register in scaffold_service.py**:
+   ```python
+   # TAC-13: ADW Expert Expertise Seed
+   plan.add_file(
+       action="skip_if_exists",
+       template="claude/commands/experts/adw/expertise.yaml.j2",
+       path=".claude/commands/experts/adw/expertise.yaml",
+       reason="ADW expert expertise seed file"
+   )
+   ```
+
+#### B) Populate in Repo Root
+
+Execute `/experts:adw:self-improve false` to populate.
+
+**Should document**:
+- ADW workflows: `adws/adw_*_iso.py` patterns
+- Modules: state, workflow_ops, git_ops, github, agent
+- State management: ADWState class
+- GitHub integration: issues, PRs, comments
+- Orchestration: plan → build → test → review → ship
+- TAC-9 (ai_docs), TAC-10 (build_w_report), TAC-12 (scout)
 
 **Acceptance Criteria:**
-- Valid YAML under 1000 lines
-- Documents all ADW patterns
-- References TAC-9, TAC-10, TAC-12 integrations
-- Accurate file paths and line numbers
+- ✅ **Seed template** created and registered with `skip_if_exists`
+- ✅ **Populated expertise** in repo root
+- ✅ Valid YAML under 1000 lines
+- ✅ Documents ADW patterns
+- ✅ References TAC-9, TAC-10, TAC-12
+
+**Validation Commands:**
+```bash
+test -f tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/adw/expertise.yaml.j2 && echo "✓ Seed template"
+grep "skip_if_exists.*experts/adw/expertise" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ Registered"
+python3 -c "import yaml; yaml.safe_load(open('.claude/commands/experts/adw/expertise.yaml'))" && echo "✓ Valid YAML"
+```
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/adw/expertise.yaml`
+- `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/adw/expertise.yaml.j2` (seed template)
+- `tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py` (registration)
+- `.claude/commands/experts/adw/expertise.yaml` (populated repo root)
 
 ---
 
@@ -1932,20 +2018,37 @@ Create initial expertise.yaml file for ADW expert.
 ```
 
 **Description:**
-Create question prompt for Commands expert that answers questions about slash commands.
+Create question prompt for Commands expert as template and implementation.
 
 **Technical Steps:**
-1. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/commands/question.md`
-2. Define YAML frontmatter (same pattern as other experts)
-3. Implement 3-phase workflow
-4. Use variables: `USER_QUESTION: $1`, `EXPERTISE_PATH: .claude/commands/experts/commands/expertise.yaml`
+
+#### A) Create Template in CLI
+**File**: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/commands/question.md.j2`
+
+**Register**:
+```python
+plan.add_file(
+    action="create",
+    template="claude/commands/experts/commands/question.md.j2",
+    path=".claude/commands/experts/commands/question.md",
+    reason="Commands expert question prompt"
+)
+```
+
+#### B) Create Implementation in Repo Root
+**File**: `.claude/commands/experts/commands/question.md`
+- 3-phase workflow
+- Variables: `USER_QUESTION: $1`, `EXPERTISE_PATH`
 
 **Acceptance Criteria:**
-- Follows TAC-13 question pattern
-- Answers questions about command structure, variables, workflows
+- ✅ Template + registration + repo file
+- ✅ Follows TAC-13 question pattern
+- ✅ Answers about command structure, variables, workflows
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/commands/question.md`
+- `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/commands/question.md.j2`
+- `tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py`
+- `.claude/commands/experts/commands/question.md`
 
 ---
 
@@ -1962,17 +2065,34 @@ Create question prompt for Commands expert that answers questions about slash co
 Create self-improve prompt for Commands expert.
 
 **Technical Steps:**
-1. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/commands/self-improve.md`
-2. Define YAML frontmatter (same pattern)
-3. Implement 7-phase workflow
-4. Variables: `CHECK_GIT_DIFF: $1`, `FOCUS_AREA: $2`, `EXPERTISE_FILE: .claude/commands/experts/commands/expertise.yaml`, `MAX_LINES: 1000`
+
+#### A) Create Template in CLI
+**File**: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/commands/self-improve.md.j2`
+
+**Register**:
+```python
+plan.add_file(
+    action="create",
+    template="claude/commands/experts/commands/self-improve.md.j2",
+    path=".claude/commands/experts/commands/self-improve.md",
+    reason="Commands expert 7-phase workflow"
+)
+```
+
+#### B) Create Implementation
+**File**: `.claude/commands/experts/commands/self-improve.md`
+- 7-phase workflow
+- Focus: command syntax, variable injection, patterns
 
 **Acceptance Criteria:**
-- Follows TAC-13 7-phase pattern
-- Focus areas: command syntax, variable injection, workflow patterns
+- ✅ Template + registration + repo file
+- ✅ 7-phase pattern
+- ✅ Focus areas documented
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/commands/self-improve.md`
+- `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/commands/self-improve.md.j2`
+- `tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py`
+- `.claude/commands/experts/commands/self-improve.md`
 
 ---
 
@@ -1986,28 +2106,44 @@ Create self-improve prompt for Commands expert.
 ```
 
 **Description:**
-Create initial expertise.yaml file for Commands expert.
+Create expertise seed template and populate for Commands expert.
 
 **Technical Steps:**
-1. Create empty `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/commands/expertise.yaml`
-2. Execute self-improve to populate
-3. Expert should document:
-   - Command structure: YAML frontmatter + Markdown body
-   - Variables: dynamic (`$1`, `$2`) vs static
-   - Allowed-tools: tool specifications
-   - Workflow sections: numbered steps
-   - Report sections: output format specifications
-   - Examples section: 2-4 concrete use cases
-4. Document 25+ existing commands in `.claude/commands/`
+
+#### A) Create Seed Template
+**File**: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/commands/expertise.yaml.j2`
+
+**Register**:
+```python
+plan.add_file(
+    action="skip_if_exists",
+    template="claude/commands/experts/commands/expertise.yaml.j2",
+    path=".claude/commands/experts/commands/expertise.yaml",
+    reason="Commands expert expertise seed"
+)
+```
+
+#### B) Populate via Self-Improve
+
+**Should document**:
+- Command structure: YAML frontmatter + Markdown
+- Variables: dynamic ($1, $2) vs static
+- Allowed-tools specifications
+- Workflow sections (numbered steps)
+- Report sections
+- 25+ existing commands
 
 **Acceptance Criteria:**
-- Valid YAML under 1000 lines
-- Documents command syntax patterns
-- References existing commands with examples
-- Explains variable injection patterns
+- ✅ Seed template + registration (skip_if_exists)
+- ✅ Populated repo file
+- ✅ Valid YAML under 1000 lines
+- ✅ Documents command patterns
+- ✅ Variable injection explained
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/commands/expertise.yaml`
+- `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/commands/expertise.yaml.j2`
+- `tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py`
+- `.claude/commands/experts/commands/expertise.yaml`
 
 ---
 
@@ -2021,11 +2157,29 @@ Create initial expertise.yaml file for Commands expert.
 ```
 
 **Description:**
-Create meta-prompt command that generates new slash commands from user descriptions. This is "prompts that create prompts" - the foundation of meta-agentics.
+Create meta-prompt command as template and implementation. This is "prompts that create prompts" - the foundation of meta-agentics.
 
 **Technical Steps:**
 
-1. **Create meta-prompt generator with complete implementation**:
+#### A) Create Jinja2 Template in CLI
+
+1. **Create template file**:
+   **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/meta-prompt.md.j2`
+
+2. **Register in scaffold_service.py**:
+   ```python
+   # TAC-13: Meta-Prompt Generator
+   plan.add_file(
+       action="create",
+       template="claude/commands/meta-prompt.md.j2",
+       path=".claude/commands/meta-prompt.md",
+       reason="Meta-prompt generator - prompts that create prompts"
+   )
+   ```
+
+#### B) Create Implementation File in Repo Root
+
+1. **Create complete meta-prompt generator**:
 
    **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/meta-prompt.md`
 
@@ -2439,41 +2593,48 @@ Create meta-prompt command that generates new slash commands from user descripti
    - Orchestration: build.md, scout_plan_build.md
 
 **Acceptance Criteria:**
-- ✅ Meta-prompt file is 250-350 lines of markdown
+- ✅ **Template (.j2)** created in CLI templates
+- ✅ **Template registered** in scaffold_service.py
+- ✅ **Implementation file** in repo root
+- ✅ Prompt is 250-350 lines
 - ✅ Generates commands with exact tac_bootstrap structure
-- ✅ Includes complete example generation (TODO finder)
-- ✅ Tool selection logic is documented with examples
+- ✅ Includes complete example (TODO finder)
+- ✅ Tool selection logic documented
 - ✅ Validation phase checks YAML syntax
-- ✅ Output is immediately usable without manual editing
-- ✅ Report documents generation rationale
+- ✅ Output immediately usable
 
 **Validation Commands:**
 ```bash
-# Verify meta-prompt exists
-test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/meta-prompt.md && echo "✓ File exists"
+# Verify template
+test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/meta-prompt.md.j2 && echo "✓ Template"
 
-# Check frontmatter
-head -10 /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/meta-prompt.md | python3 -c "import yaml, sys; yaml.safe_load(sys.stdin)"
+# Verify registration
+grep -A 3 "meta-prompt.md.j2" /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ Registered"
 
-# Verify model is opus (for complex generation)
+# Verify repo file
+test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/meta-prompt.md && echo "✓ Repo file"
+
+# Check model is opus
 grep "^model: opus" /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/meta-prompt.md && echo "✓ Uses opus"
-
-# Check line count
-wc -l /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/meta-prompt.md
 ```
 
-**Test Command:**
+**Test Commands:**
 ```bash
-# Test meta-prompt generation
+# Test local command
 cd /Users/hernandoescobar/Documents/Celes/tac_bootstrap
-/meta-prompt "Create a command that finds unused imports in Python files"
+/meta-prompt "Create a command that finds unused imports"
+test -f .claude/commands/find-unused-imports.md && echo "✓ Generated"
 
-# Verify generated command
-test -f .claude/commands/find-unused-imports.md && echo "✓ Command generated"
+# Test template generation
+cd /tmp/test-project
+tac-bootstrap add-agentic
+test -f .claude/commands/meta-prompt.md && echo "✓ Template works"
 ```
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/meta-prompt.md`
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/meta-prompt.md.j2` (template)
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py` (registration)
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/meta-prompt.md` (repo root)
 
 ---
 
