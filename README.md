@@ -372,6 +372,28 @@ Templates Jinja2 renderizados
 Archivos generados en disco
 ```
 
+## TAC-12 Integration
+
+TAC-12 transforms TAC Bootstrap into a complete agentic engineering platform with three core capabilities:
+
+**Agents** - Advanced orchestration with isolated workflows (`adw_*_iso.py` scripts) that enable parallel execution, safety isolation, and complete traceability. Each workflow runs independently in its own context.
+
+**Hooks** - Automated validation, logging, and event handling through hook scripts in `.claude/hooks/`. Hooks intercept tool execution, validate inputs, log outcomes, and send notifications—creating a complete feedback loop.
+
+**Observability** - KPI tracking and state management utilities providing visibility into agentic execution. Track metrics like execution time, tool invocations, and decision outcomes.
+
+### Quick Start
+
+Run your first TAC-12 workflow:
+
+```bash
+uv run adws/adw_sdlc_iso.py --issue 123
+```
+
+This executes a complete SDLC workflow: plan → implement → test → review → ship.
+
+For comprehensive guidance, see [CLAUDE.md](CLAUDE.md) for development commands, [adws/README.md](adws/README.md) for workflow details, and [ai_docs/](ai_docs/) for the complete TAC course.
+
 ---
 
 ## Referencia: Curso TAC
