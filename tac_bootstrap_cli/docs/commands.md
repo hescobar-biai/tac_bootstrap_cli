@@ -15,17 +15,57 @@ Complete reference for all slash commands available in TAC Bootstrap projects.
 
 ## Planning Commands
 
-| Command | Description |
-|---------|-------------|
-| `/feature <description>` | Plan a new feature implementation |
-| `/bug <description>` | Plan a bug fix |
-| `/chore <description>` | Plan a maintenance task |
-| `/patch <description>` | Plan a quick patch |
-| `/quick-plan <description>` | Rapid implementation planning with architect pattern |
+| Command | Description | Tools |
+|---------|-------------|-------|
+| `/plan <description>` | Basic planning without exploration (legacy variant) | Read, Write, Edit, Glob, Grep, MultiEdit |
+| `/feature <description>` | Plan a new feature implementation | (same as feature) |
+| `/bug <description>` | Plan a bug fix | (same as bug) |
+| `/chore <description>` | Plan a maintenance task | (same as chore) |
+| `/patch <description>` | Plan a quick patch | (same as patch) |
+| `/plan_w_docs <description>` | Planning with documentation exploration | Task, Read, Glob, Grep, WebFetch |
+| `/plan_w_scouters <description>` | Planning with parallel scout-based exploration | Task, Read, Glob, Grep, WebFetch |
+| `/quick-plan <description>` | Rapid implementation planning with architect pattern | Task, Read, Write, Edit, Glob, Grep, WebFetch |
+
+### `/plan`
+
+Creates an implementation plan using simple file exploration without parallel scouts.
+
+```
+/plan Add validation layer to authentication module
+```
+
+**Output:** Structured plan with metadata, requirements analysis, implementation steps, and testing strategy.
+
+### `/plan_w_docs`
+
+Creates a plan by exploring relevant documentation before planning.
+
+```
+/plan_w_docs Add WebSocket support to real-time notifications
+```
+
+**Approach:**
+1. Search local documentation (ai_docs/, app_docs/, specs/)
+2. Optionally fetch framework/library documentation
+3. Summarize findings
+4. Create plan informed by documentation
+
+### `/plan_w_scouters`
+
+Creates a plan using 3 parallel scout agents to comprehensively explore the codebase before planning.
+
+```
+/plan_w_scouters 123 "feature_export_config" '{"number":123,"title":"Export configuration","body":"Add command to export project config"}'
+```
+
+**Workflow:**
+- Base Scout 1: Architectural patterns and domain logic
+- Base Scout 2: Infrastructure and integration patterns
+- Fast Scout: Surface-level pattern scan
 
 ### `/quick-plan`
 
-Creates a concise engineering implementation plan and saves it to the `specs/` directory.
+Creates a concise engineering implementation plan and saves it to the `specs/` directory. Deploys 3 base + 5 fast scout agents in parallel for rapid exploration.
 
 ```
 /quick-plan Add user authentication with JWT tokens
@@ -36,15 +76,32 @@ Creates a concise engineering implementation plan and saves it to the `specs/` d
 - Implementation steps
 - File changes needed
 - Testing strategy
+- Scout exploration summary
 
 ## Implementation Commands
 
-| Command | Description |
-|---------|-------------|
-| `/implement <plan>` | Implement from a plan file |
-| `/build_w_report <plan>` | Implement with detailed YAML change report |
-| `/commit` | Create git commit with conventional format |
-| `/pull_request` | Create GitHub pull request |
+| Command | Description | Tools |
+|---------|-------------|-------|
+| `/implement <plan>` | Implement from a plan file | (core tools) |
+| `/build_in_parallel <plan>` | Parallel file creation delegation to build-agents | Task, Read, Write, Edit, Glob, Grep, MultiEdit |
+| `/build_w_report <plan>` | Implement with detailed YAML change report | Read, Write, Edit, Bash |
+| `/commit` | Create git commit with conventional format | (git tools) |
+| `/pull_request` | Create GitHub pull request | (git tools) |
+
+### `/build_in_parallel`
+
+Implements a plan by delegating individual file creation to specialized build-agents in parallel.
+
+```
+/build_in_parallel specs/feature-auth-plan.md
+```
+
+**Features:**
+- Analyzes plan dependencies
+- Launches multiple build-agents in parallel for independent files
+- Comprehensive context for each agent
+- Batch execution for dependent files
+- Final verification step
 
 ### `/build_w_report`
 
@@ -56,12 +113,19 @@ Implements a plan and generates a structured YAML report of all changes.
 
 **Output format:**
 ```yaml
+metadata:
+  timestamp: "2026-02-02T14:30:22Z"
+  branch: "feature/auth"
+  plan_file: "specs/feature-auth-plan.md"
+
 work_changes:
   - file: src/auth/service.py
-    lines_changed: 45
+    lines_added: 45
+    lines_deleted: 0
     description: Added JWT token generation
   - file: src/auth/routes.py
-    lines_changed: 30
+    lines_added: 30
+    lines_deleted: 12
     description: Added login/logout endpoints
 ```
 
@@ -76,12 +140,39 @@ work_changes:
 
 ## Documentation Commands
 
-| Command | Description |
-|---------|-------------|
-| `/document` | Generate feature documentation |
-| `/generate_fractal_docs` | Generate fractal documentation tree |
-| `/load_ai_docs <topic>` | Load AI documentation via sub-agents |
-| `/conditional_docs` | Update conditional documentation |
+| Command | Description | Tools |
+|---------|-------------|-------|
+| `/document` | Generate feature documentation | (documentation agent) |
+| `/find_and_summarize <pattern> [focus]` | Find files matching glob pattern and generate AI summary | Glob, Read |
+| `/generate_fractal_docs` | Generate fractal documentation tree | (documentation agent) |
+| `/load_ai_docs <topic>` | Load AI documentation via sub-agents | Task, WebFetch |
+| `/conditional_docs` | Update conditional documentation | (documentation agent) |
+
+### `/find_and_summarize`
+
+Find files matching a glob pattern and generate an AI-powered summary of their contents.
+
+```
+/find_and_summarize "**/*.py" "authentication logic"
+/find_and_summarize "src/**/*.service.ts"
+/find_and_summarize "docs/**/*.md"
+```
+
+**Features:**
+- Fast pattern-based file discovery
+- Automatic content summarization
+- Identifies patterns and relationships
+- Lightweight alternative to `/scout`
+
+**Parameters:**
+- `<pattern>` (required): Glob pattern (e.g., `**/*.py`, `src/**/service.ts`)
+- `[focus]` (optional): Specific aspect to emphasize in summary
+
+**Use when:**
+- You know the file pattern to examine
+- You need quick overview of a file group
+- You want to understand file relationships
+- Exploring new codebase areas with known patterns
 
 ### `/load_ai_docs`
 
@@ -99,12 +190,14 @@ Uses the `docs-scraper` and `research-docs-fetcher` agents to:
 
 ## Context Management Commands
 
-| Command | Description |
-|---------|-------------|
-| `/prime_cc` | Claude Code-specific context priming |
-| `/load_bundle [bundle]` | Load context from saved bundle |
-| `/tools` | List available built-in tools |
-| `/question <query>` | Answer questions about project structure using read-only exploration |
+| Command | Description | Tools |
+|---------|-------------|-------|
+| `/prime_cc` | Claude Code-specific context priming | (Read, Glob, Grep) |
+| `/prime_3` | Deep context loading (3-level exploration) | Task, Read, Write, Edit, Glob, Grep, Bash |
+| `/load_bundle [bundle]` | Load context from saved bundle | (task delegation) |
+| `/tools` | List available built-in tools | (reference) |
+| `/all_tools` | List all available tools (comprehensive reference) | (reference) |
+| `/question <query>` | Answer questions about project structure using read-only exploration | (Explore agent) |
 
 ### `/prime_cc`
 
@@ -116,6 +209,38 @@ Specialized context priming for Claude Code development:
 ```
 /prime_cc
 ```
+
+### `/prime_3`
+
+Load comprehensive codebase context through 3-level progressive exploration:
+- **Level 1**: Base context (project basics, documentation)
+- **Level 2**: Architectural structure (directory organization, modules)
+- **Level 3**: Deep patterns (coding conventions, dependencies, testing)
+
+```
+/prime_3
+```
+
+**Use when:**
+- Before complex multi-file implementations
+- You need architectural understanding
+- Planning changes across multiple modules
+
+### `/all_tools`
+
+Display comprehensive reference of all available tools including built-in development tools, MCP integrations, and specialized capabilities.
+
+```
+/all_tools
+```
+
+**Includes:**
+- File manipulation tools (Read, Write, Edit, Glob, Grep)
+- Task and planning tools
+- GitHub and web integration tools
+- Browser automation (Playwright)
+- Web scraping (Firecrawl)
+- Specialized tools
 
 ### `/load_bundle`
 
@@ -133,11 +258,12 @@ Recovers context from previously saved session bundles.
 
 ## Agent Delegation Commands
 
-| Command | Description |
-|---------|-------------|
-| `/background <task>` | Delegate task to background agent |
-| `/parallel_subagents <task> [count]` | Launch multiple agents in parallel |
-| `/scout <task> [scale]` | Find relevant files using parallel exploration strategies |
+| Command | Description | Tools |
+|---------|-------------|-------|
+| `/background <task>` | Delegate task to background agent | (general-purpose) |
+| `/parallel_subagents <task> [count]` | Launch multiple agents in parallel | (task delegation) |
+| `/scout <task> [scale]` | Find relevant files using parallel exploration strategies | (Explore agent) |
+| `/scout_plan_build <task> [scale] [thoroughness]` | End-to-end scout-plan-build orchestration | Task, Read, Write |
 
 ### `/background`
 
@@ -208,6 +334,31 @@ Higher SCALE values (5-10) add specialized strategies for test files, configurat
 - Single file, trivial changes
 - Looking for specific needle queries (use Grep/Glob directly)
 
+### `/scout_plan_build`
+
+End-to-end workflow orchestrating parallel file discovery, implementation planning, and code generation in three sequential phases.
+
+```
+/scout_plan_build "Add caching layer to API endpoints" 4
+/scout_plan_build "Implement dark mode support" 6 medium
+```
+
+**Workflow:**
+- **Phase 1 (Scout)**: Parallel exploration to discover relevant files
+- **Phase 2 (Plan)**: Create implementation plan informed by scout findings
+- **Phase 3 (Build)**: Execute plan sequentially with clear progress tracking
+
+**Parameters:**
+- `<task>` (required): Description of what to implement
+- `[scale]` (optional): Number of exploration strategies (2-10, default: 4)
+- `[thoroughness]` (optional): Plan depth (quick|medium|thorough, default: medium)
+
+**Use when:**
+- Starting complete feature implementation from scratch
+- You want end-to-end automation from discovery to code
+- You have a clear task description
+- You need comprehensive file discovery before planning
+
 ## Meta & Generation Commands
 
 | Command | Description |
@@ -261,11 +412,57 @@ Expert commands implement the Plan-Build-Improve cycle for specialized domains.
 
 ## Test Commands
 
-| Command | Description |
-|---------|-------------|
-| `/resolve_failed_test` | Analyze and fix failing tests |
-| `/resolve_failed_e2e_test` | Analyze and fix failing E2E tests |
-| `/track_agentic_kpis` | Track agentic development KPIs |
+| Command | Description | Tools |
+|---------|-------------|-------|
+| `/test` | Run test suite | (project-specific) |
+| `/test_e2e` | Run end-to-end tests | (project-specific) |
+| `/resolve_failed_test <failure_data>` | Analyze and fix failing unit tests | Read, Write, Edit, Bash |
+| `/resolve_failed_e2e_test <failure_data>` | Analyze and fix failing E2E tests | (Playwright, analysis) |
+| `/track_agentic_kpis <state_json>` | Track agentic development KPIs | Read, Write, Bash |
+
+### `/resolve_failed_test`
+
+Fixes a specific failing unit test using provided failure details.
+
+```
+/resolve_failed_test '{"test_name":"test_auth_login","test_path":"tests/test_auth.py","error":"AssertionError: expected True"}'
+```
+
+**Workflow:**
+1. Analyze test failure and understand purpose
+2. Review recent changes and relevant specs
+3. Reproduce the failure
+4. Fix the issue with minimal changes
+5. Validate the fix passes
+
+### `/resolve_failed_e2e_test`
+
+Fixes a specific failing end-to-end test using provided failure details and screenshots.
+
+```
+/resolve_failed_e2e_test '{"test_name":"test_user_login_flow","test_path":"tests/e2e/auth_flow.spec.ts","error":"TimeoutError"}'
+```
+
+**Workflow:**
+1. Analyze E2E test failure (element selectors, timing, layout)
+2. Review test file and user story
+3. Reproduce the failure in browser
+4. Fix element selectors, timing, or logic
+5. Validate test passes end-to-end
+
+### `/track_agentic_kpis`
+
+Update ADW performance tracking tables in `app_docs/agentic_kpis.md` with current run metrics.
+
+```
+/track_agentic_kpis '{"adw_id":"chore_Tac_12_task_43","issue_number":495,"issue_class":"chore","plan_file":"specs/issue-495.md"}'
+```
+
+**Metrics Tracked:**
+- Current/longest streak (attempts ≤ 2)
+- Plan size statistics
+- Diff statistics (lines added/removed)
+- Average attempt count
 
 ## Command Anatomy
 
