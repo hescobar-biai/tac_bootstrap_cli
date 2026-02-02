@@ -558,113 +558,110 @@ def detect_relevant_docs(issue: GitHubIssue) -> list[str]:
     Analyzes the issue title and body to identify relevant documentation topics
     based on keyword matching. This enables automatic context loading for workflows.
 
-    Uses hybrid approach:
-    1. Static keyword mapping for common topics
-    2. Dynamic scanning of all .md files in ai_docs/ directory
+    Optimized for speed and relevance:
+    1. Prioritizes exact matches in title (highest weight)
+    2. Uses strict keyword matching (requires specific terms)
+    3. Limits total documents to prevent slowdowns
+    4. Dynamic file scanning only for exact filename matches
 
     Args:
         issue: GitHub issue to analyze
 
     Returns:
-        List of detected documentation topic names (e.g., ["authentication", "testing"])
+        List of detected documentation topic names (max 8 topics for performance)
 
     Example:
         >>> issue = GitHubIssue(title="Add JWT authentication", body="...")
         >>> detect_relevant_docs(issue)
         ["authentication", "api"]
     """
-    text = f"{issue.title} {issue.body}".lower()
-    topics = []
-    topics = []
+    title = issue.title.lower()
+    body = (issue.body or "").lower()
+    text = f"{title} {body}"
 
-    # Keyword mapping: doc_topic -> list of keywords that indicate relevance
+    # Score-based detection: title matches are higher priority
+    topic_scores = {}
+    MAX_TOPICS = 8  # Limit to prevent loading too many docs
+
+    # Strict keyword mapping - only specific, non-generic keywords
     doc_keywords = {
-        # Technical domains
-        "authentication": ["auth", "login", "jwt", "oauth", "session", "credential", "password", "token"],
-        "testing": ["test", "pytest", "e2e", "unit test", "integration test", "coverage", "mock"],
-        "deployment": ["deploy", "ci/cd", "docker", "kubernetes", "k8s", "container", "helm"],
-        "database": ["db", "sql", "postgres", "mysql", "migration", "schema", "query", "orm"],
-        "api": ["api", "endpoint", "rest", "graphql", "request", "response", "route"],
-        "frontend": ["ui", "component", "react", "vue", "frontend", "css", "html", "tailwind"],
-        "backend": ["backend", "server", "microservice", "service", "handler"],
-        "security": ["security", "xss", "csrf", "sanitize", "vulnerability", "cve"],
-        "performance": ["performance", "optimize", "cache", "latency", "throughput", "bottleneck"],
-        "monitoring": ["monitor", "observability", "logging", "metrics", "tracing", "alert"],
-        "documentation": ["docs", "documentation", "readme", "guide", "tutorial"],
-        "configuration": ["config", "environment", "settings", "variables", ".env"],
-        "error_handling": ["error", "exception", "handling", "validation", "retry"],
-        "workflows": ["workflow", "pipeline", "automation", "ci", "github action"],
-        "data_processing": ["etl", "pipeline", "stream", "batch", "processing", "transform"],
+        # Technical domains - using stricter keywords
+        "authentication": ["jwt", "oauth", "authentication", "login flow", "auth system"],
+        "testing": ["pytest", "unit test", "integration test", "e2e test", "test coverage"],
+        "deployment": ["deployment", "docker", "kubernetes", "k8s", "ci/cd pipeline"],
+        "database": ["database", "postgres", "mysql", "migration", "schema design"],
+        "api": ["api endpoint", "rest api", "graphql", "api design"],
 
-        # Architecture & Design
-        "ddd": ["ddd", "domain-driven", "domain driven", "aggregate", "entity", "value object", "bounded context", "ubiquitous language"],
-        "ddd_lite": ["ddd lite", "lightweight ddd", "simplified domain", "domain model"],
-        "design_patterns": ["pattern", "singleton", "factory", "observer", "strategy", "decorator", "adapter", "facade"],
-        "solid": ["solid", "single responsibility", "open closed", "liskov", "interface segregation", "dependency inversion"],
+        # Architecture & Design - stricter matching
+        "ddd": ["domain-driven", "ddd", "aggregate", "bounded context", "ubiquitous language"],
+        "design_patterns": ["design pattern", "singleton pattern", "factory pattern", "observer pattern"],
 
-        # AI & SDK
-        "anthropic_quick_start": ["anthropic", "claude api", "anthropic api", "claude sdk"],
-        "openai_quick_start": ["openai", "gpt", "openai api", "chatgpt"],
-        "claude_code_cli_reference": ["claude code", "cli", "command line", "claude cli"],
-        "claude_code_sdk": ["claude code sdk", "sdk", "agent sdk"],
-        "claude-code-hooks": ["hooks", "claude hooks", "pre-commit", "post-commit", "hook script"],
-        "mcp-python-sdk": ["mcp", "model context protocol", "mcp sdk", "mcp server"],
-
-        # Tools & Utilities
-        "uv-scripts": ["uv", "uv run", "uv script", "python script", "dependencies"],
-        "e2b": ["e2b", "sandbox", "code execution", "environment"],
-        "fractal_docs": ["fractal", "fractal documentation", "recursive docs", "documentation structure"],
+        # AI & SDK - specific terms only
+        "anthropic_quick_start": ["anthropic api", "claude api", "anthropic sdk"],
+        "claude_code_cli_reference": ["claude code cli", "claude-code", "claude code reference"],
     }
 
-    # Check each topic's keywords against the issue text
+    # Check strict keywords - only add if multiple keywords match or title match
     for doc_topic, keywords in doc_keywords.items():
-        if any(keyword in text for keyword in keywords):
-            topics.append(doc_topic)
+        title_matches = sum(1 for kw in keywords if kw in title)
+        body_matches = sum(1 for kw in keywords if kw in body)
 
-    # DYNAMIC DETECTION: Scan all .md files in ai_docs/ directory
-    # This allows detection of custom documentation not in the hardcoded mapping
+        if title_matches > 0:
+            topic_scores[doc_topic] = 10 + title_matches  # Title match = high priority
+        elif body_matches >= 2:  # Require at least 2 keyword matches in body
+            topic_scores[doc_topic] = body_matches
+
+    # DYNAMIC DETECTION: Only for exact filename matches (fast)
+    # Prioritizes TAC docs, PLAN docs, and exact name matches
     try:
-        # Find ai_docs directory (should be at project root)
-        # Assuming this file is in adws/adw_modules/, go up to project root
         current_file = os.path.abspath(__file__)
         project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
         ai_docs_dir = os.path.join(project_root, "ai_docs")
 
         if os.path.exists(ai_docs_dir):
-            # Scan for all .md files recursively
+            # Only scan for exact matches - much faster than checking variants
             for root, dirs, files in os.walk(ai_docs_dir):
                 for file in files:
-                    if file.endswith(".md"):
-                        # Get topic name from filename (without .md extension)
-                        topic_name = file[:-3]
+                    if not file.endswith(".md"):
+                        continue
 
-                        # Skip if already detected via keyword mapping
-                        if topic_name in topics:
-                            continue
+                    topic_name = file[:-3]
+                    topic_lower = topic_name.lower()
 
-                        # Check if filename (converted to lowercase with spaces/underscores)
-                        # appears in the issue text
-                        # Convert: "plan_tasks_Tac_12" -> "plan tasks tac 12"
-                        searchable_name = topic_name.lower().replace("_", " ").replace("-", " ")
+                    # Skip if already detected
+                    if topic_name in topic_scores:
+                        continue
 
-                        # Also check without common prefixes
-                        name_variants = [
-                            searchable_name,
-                            topic_name.lower(),
-                            # Remove common prefixes for matching
-                            searchable_name.replace("plan ", "").replace("tac ", ""),
-                        ]
+                    # HIGH PRIORITY: Exact TAC number match (e.g., "tac-13" matches "Tac-13_1")
+                    if "tac-" in title or "tac " in title:
+                        # Extract TAC number from title
+                        import re
+                        tac_match = re.search(r'tac[-\s]?(\d+)', title)
+                        if tac_match:
+                            tac_num = tac_match.group(1)
+                            # Check if this file is for that TAC
+                            if f"tac-{tac_num}" in topic_lower or f"tac_{tac_num}" in topic_lower or f"tac{tac_num}" in topic_lower:
+                                topic_scores[topic_name] = 20  # Highest priority
+                                continue
 
-                        if any(variant in text for variant in name_variants if variant):
-                            topics.append(topic_name)
+                    # MEDIUM PRIORITY: PLAN documents
+                    if "plan" in title and "plan" in topic_lower:
+                        topic_scores[topic_name] = 15
+                        continue
 
-    except Exception as e:
-        # If dynamic scanning fails, just use static keywords
-        # Don't fail the whole detection
+                    # LOW PRIORITY: Exact filename in title (case-insensitive)
+                    if topic_lower in title:
+                        topic_scores[topic_name] = 5
+
+    except Exception:
+        # If scanning fails, continue with keyword-based topics
         pass
 
-    # Remove duplicates and sort for consistency
-    return sorted(list(set(topics)))
+    # Sort by score and take top N topics
+    sorted_topics = sorted(topic_scores.items(), key=lambda x: x[1], reverse=True)
+    top_topics = [topic for topic, score in sorted_topics[:MAX_TOPICS]]
+
+    return sorted(top_topics)  # Return sorted for consistency
 
 
 def scout_codebase(
