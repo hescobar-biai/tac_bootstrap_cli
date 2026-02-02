@@ -1957,3 +1957,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When implementing context-aware CLI status display
     - When working with timeout-bounded subprocess execution
     - When understanding TAC Bootstrap Wave 5, Task 34 implementation
+
+- app_docs/feature-chore_Tac_12_task_44-cli-agents-documentation.md
+  - Conditions:
+    - When updating or maintaining CLI agents documentation
+    - When understanding available agents in TAC Bootstrap
+    - When delegating tasks to specialized agents
+    - When working with build-agent for parallel file implementation
+    - When working with playwright-validator for E2E testing
+    - When working with scout-report-suggest for codebase analysis
+    - When learning about agent documentation patterns and conventions

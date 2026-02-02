@@ -278,6 +278,278 @@ Handles system notifications.
 - External service integration
 - Alert routing
 
+## Additional TAC-12 Hooks
+
+### Send Event Hook
+
+Core event dispatch mechanism for observability infrastructure.
+
+**Location:** `.claude/hooks/send_event.py`
+
+**Trigger:** Called explicitly from other hooks to send events to remote observability servers
+
+**Features:**
+- Event serialization and transmission to remote servers
+- Local event logging for debugging
+- Support for event enrichment (chat data, summaries)
+- Bearer token authentication for secure endpoints
+- Graceful handling of network failures
+
+**Configuration Example:**
+```json
+{
+  "send_event": {
+    "source_app": "tac_bootstrap",
+    "event_type": "hook_execution",
+    "server_url": "https://observability.example.com/events",
+    "add_chat": false,
+    "summarize": false
+  }
+}
+```
+
+**Environment Variables:**
+- `OBSERVABILITY_URL` - Remote server endpoint
+- `OBSERVABILITY_TOKEN` - Bearer token for authentication (optional)
+
+**Output Locations:**
+- Local logs: `.claude/logs/{session_id}/send_event.json`
+- Remote: POST to `OBSERVABILITY_URL` with enriched payload
+
+### Session Start Hook
+
+Captures and persists session initialization context.
+
+**Location:** `.claude/hooks/session_start.py`
+
+**Trigger:** When Claude Code session begins (SessionStart event)
+
+**Features:**
+- Captures git branch information
+- Records Claude model being used
+- Extracts project name from config.yml
+- Timestamps session start in ISO format
+- Captures working directory context
+
+**Configuration Example:**
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/session_start.py || true"
+      }]
+    }]
+  }
+}
+```
+
+**Output Location:** `.claude/session_context.json`
+
+**Output Format:**
+```json
+{
+  "git_branch": "main",
+  "model": "claude-opus-4-5-20251101",
+  "project_name": "tac_bootstrap",
+  "timestamp": "2026-02-02T10:30:45.123456+00:00",
+  "cwd": "/home/user/projects/tac_bootstrap"
+}
+```
+
+### Pre-Compact Hook
+
+Preserves important context before compaction occurs.
+
+**Location:** `.claude/hooks/pre_compact.py`
+
+**Trigger:** Before Claude Code compacts conversation context (PreCompact event)
+
+**Features:**
+- Saves session state snapshots before context compaction
+- JSON-based storage for easy reconstruction
+- Session-aware logging with directory isolation
+- Non-blocking (always exits successfully)
+
+**Configuration Example:**
+```json
+{
+  "hooks": {
+    "PreCompact": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/pre_compact.py || true"
+      }]
+    }]
+  }
+}
+```
+
+**Output Location:** `.claude/logs/{session_id}/pre_compact.json`
+
+### Subagent Stop Hook
+
+Aggregates and processes subagent completion results.
+
+**Location:** `.claude/hooks/subagent_stop.py`
+
+**Trigger:** When a spawned subagent completes (SubagentStop event)
+
+**Features:**
+- Collects subagent execution results
+- Optional transcript capture to chat.json
+- Structured JSON logging per session
+- Support for result aggregation across multiple subagents
+
+**Configuration Example:**
+```json
+{
+  "hooks": {
+    "SubagentStop": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/subagent_stop.py --chat || true"
+      }]
+    }]
+  }
+}
+```
+
+**Options:**
+- `--chat` - Copy subagent transcript to `{session_id}/chat.json`
+
+**Output Locations:**
+- Structured results: `.claude/logs/{session_id}/subagent_stop.json`
+- Transcript (optional): `.claude/logs/{session_id}/chat.json`
+
+### User Prompt Submit Hook
+
+Handles and validates user prompt submissions.
+
+**Location:** `.claude/hooks/user_prompt_submit.py`
+
+**Trigger:** When user submits a prompt (UserPromptSubmit event)
+
+**Features:**
+- Logs all user prompts for audit trails
+- Optional prompt validation with blocking
+- Policy enforcement (block dangerous patterns)
+- Session-aware storage
+- Graceful error handling (non-blocking)
+
+**Configuration Example:**
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/user_prompt_submit.py --log-only || true"
+      }]
+    }]
+  }
+}
+```
+
+**Options:**
+- `--validate` - Enable prompt validation (check against policies)
+- `--log-only` - Log prompts without validation or blocking
+
+**Output Location:** `.claude/logs/{session_id}/user_prompt_submit.json`
+
+## Status Line Integration
+
+The status line feature in Claude Code displays real-time session context in the editor status bar. TAC Bootstrap includes infrastructure for hooks to contribute to and read from the status line.
+
+### Overview
+
+Status lines provide a single-line display showing:
+- Current agent name
+- Active Claude model
+- Current git branch
+- Custom metrics or context
+
+This enables developers to maintain visibility into session state without leaving the editor.
+
+### Status Line Generation
+
+**Location:** `.claude/status_lines/status_line_main.py`
+
+The main status line script provides a standard status format:
+
+```
+Agent: <agent_name> | Model: <model> | Branch: <branch>
+```
+
+**Configuration in settings.json:**
+```json
+{
+  "status_lines": [{
+    "command": "uv run $CLAUDE_PROJECT_DIR/.claude/status_lines/status_line_main.py"
+  }]
+}
+```
+
+### Environment Variables
+
+The status line reads context from environment variables set by Claude Code:
+
+| Variable | Source | Example |
+|----------|--------|---------|
+| `CLAUDE_AGENT_NAME` | Claude Code | `"researcher"` |
+| `CLAUDE_MODEL` | Claude Code | `"claude-opus-4-5-20251101"` |
+
+Git branch is queried automatically via `git rev-parse --abbrev-ref HEAD`.
+
+### Usage Examples
+
+**Display active workflow:**
+```json
+{
+  "status_lines": [{
+    "command": "python3 .claude/status_lines/status_line_main.py"
+  }]
+}
+```
+
+**Custom status line with metrics:**
+```bash
+# In your custom script
+echo "Agent: phi | Model: local | Branch: feature/async | Tests: ✓ | Lint: ✓"
+```
+
+### Integration with Hooks
+
+Hooks can contribute to status line context by:
+1. Setting environment variables for subsequent hooks
+2. Writing status updates to session files
+3. Querying `.claude/session_context.json` (written by session_start hook)
+
+**Example: Reading session context in a hook:**
+```python
+import json
+from pathlib import Path
+
+# Read session context written by session_start hook
+context_path = Path('.claude/session_context.json')
+if context_path.exists():
+    with open(context_path, 'r') as f:
+        context = json.load(f)
+        branch = context['git_branch']
+        model = context['model']
+```
+
+### See Also
+
+- [Observability Utilities](utilities.md#observability-utilities) - For building custom metrics
+- [Session Start Hook](#session-start-hook) - Provides initial context
+- [Agents Documentation](agents.md) - For agentic workflow context
+
 ## Hook Configuration
 
 Hooks are configured in `.claude/settings.json`:

@@ -121,32 +121,98 @@ project/
 |---------|-------------|
 | `/prime` | Load project context |
 | `/feature <desc>` | Plan new feature |
-| `/implement <plan>` | Execute implementation |
 | `/test` | Run tests |
 | `/commit` | Create git commit |
 | `/quick-plan` | Rapid planning |
 | `/scout <task> [scale]` | Parallel codebase exploration |
 | `/question <query>` | Read-only Q&A about project |
 | `/background <task>` | Background agent delegation |
-| `/parallel_subagents` | Multi-agent parallel execution |
+
+**TAC-12 Orchestration Commands:**
+See [TAC-12 Multi-Agent Orchestration](#tac-12-multi-agent-orchestration) section for `/parallel_subagents`, `/scout_plan_build`, and `/implement` with TAC-12 enhancements.
 
 See [Commands Documentation](docs/commands.md) for the complete reference.
 
 ## Hooks
 
-Automated actions during Claude Code sessions:
+Automated actions during Claude Code sessions with event-driven architecture:
+
+### Core Hooks
+
+| Hook | Trigger | Purpose |
+|------|---------|---------|
+| `PreToolUse` | Before tool execution | Validation, security checks |
+| `PostToolUse` | After tool execution | Logging, context tracking |
+| `Stop` | Session ends | Cleanup, final reporting |
+| `Notification` | System notifications | External integrations |
+
+### Security Hooks
 
 | Hook | Purpose |
 |------|---------|
-| `PreToolUse` | Validate before tool execution |
-| `PostToolUse` | Log and track operations |
-| `UserPromptSubmit` | Capture user prompts |
-| `Stop` | Session cleanup |
-| `universal_hook_logger` | Comprehensive event logging |
-| `context_bundle_builder` | Context preservation |
-| `dangerous_command_blocker` | Block dangerous shell commands |
+| `dangerous_command_blocker` | Block destructive bash commands (rm -rf, dd, mkfs, etc.) |
+| `pre_tool_use` | Custom validation and security rules |
 
-See [Hooks Documentation](docs/hooks.md) for details.
+### TAC-12 Additional Hooks
+
+| Hook | Trigger | Purpose |
+|------|---------|---------|
+| `send_event` | Explicit call | Event transmission to remote observability servers |
+| `session_start` | Session begins | Capture git branch, model, project context |
+| `pre_compact` | Before context compaction | Save session snapshots |
+| `subagent_stop` | Subagent completes | Aggregate and process subagent results |
+| `user_prompt_submit` | User submits prompt | Audit logging and validation |
+
+### Observability Integration
+
+- **Hook Logs**: Comprehensive event logging to `agents/hook_logs/`
+- **Context Bundles**: Session state preservation in `agents/context_bundles/`
+- **Security Audit Trail**: Blocked operations logged to `agents/security_logs/`
+- **Status Line Integration**: Real-time session context in editor status bar
+
+See [Hooks Documentation](docs/hooks.md) for configuration and [Utilities Documentation](docs/utilities.md) for observability tools.
+
+## Observability
+
+TAC-12 provides comprehensive observability infrastructure for monitoring sessions, tracking operations, and integrating with external systems.
+
+### Hooks System
+
+The hook system provides event-driven observability:
+- **9 Hook Types**: Core, Security, and TAC-12 Additional hooks
+- **Event Triggers**: PreToolUse, PostToolUse, UserPromptSubmit, SessionStart, SessionEnd, SubagentStop, PreCompact
+- **Categorized Hooks**: Core operational hooks, security validation hooks, and TAC-12 specific hooks for advanced observability
+
+### Status Line Integration
+
+Display real-time session context in the Claude Code editor status bar:
+- **Location**: `.claude/status_lines/status_line_main.py`
+- **Displays**: Agent name, Claude model, git branch, custom metrics
+- **Updated**: Via environment variables and hook contributions
+
+### Logging Infrastructure
+
+Structured logging and context preservation:
+
+| Directory | Purpose |
+|-----------|---------|
+| `agents/hook_logs/` | Comprehensive event logs from universal_hook_logger |
+| `agents/context_bundles/` | Session state bundles for recovery via `/load_bundle` |
+| `agents/security_logs/` | Security audit trail of blocked commands |
+| `.claude/logs/` | Session-specific logs (pre_compact, subagent_stop, user_prompt_submit) |
+
+### Observability Utilities
+
+Located in `.claude/hooks/utils/`:
+
+| Utility | Purpose |
+|---------|---------|
+| `constants.py` | Session directory management and configuration |
+| `summarizer.py` | AI-powered event summarization using Claude Haiku |
+| `llm/` | LLM providers (Anthropic, OpenAI, Ollama) |
+| `tts/` | Text-to-speech integrations (ElevenLabs, OpenAI, pyttsx3) |
+
+See [Utilities Documentation](docs/utilities.md) for detailed usage and configuration examples.
 
 ## Agents
 
@@ -176,87 +242,49 @@ uv run adws/adw_plan_build_iso.py --issue 123
 uv run adws/adw_patch_iso.py --issue 456
 ```
 
-### Workflow Phases
+## TAC-12 Multi-Agent Orchestration
 
-| Workflow | Phases |
-|----------|--------|
-| `adw_sdlc_iso.py` | Plan → Build → Test → Review → Document |
-| `adw_sdlc_zte_iso.py` | Full SDLC + Ship (Zero Touch) |
-| `adw_plan_build_iso.py` | Plan → Build |
-| `adw_patch_iso.py` | Quick implementation |
+TAC-12 enhances orchestration capabilities for complex, multi-phase workflows with improved parallel execution and observability.
 
-### Triggers
+### TAC-12 Specific Commands
 
-| Trigger | Description |
+| Command | Description |
 |---------|-------------|
-| `trigger_webhook.py` | GitHub webhook events |
-| `trigger_cron.py` | Scheduled polling |
-| `trigger_issue_chain.py` | Sequential issue processing |
-| `trigger_issue_parallel.py` | Parallel issue processing |
+| `/parallel_subagents <task> [count]` | Launch multiple specialized agents in parallel |
+| `/scout_plan_build <task> [scale] [thoroughness]` | End-to-end orchestration: discovery → planning → implementation |
+| `/implement <plan>` | Execute implementation plan (TAC-12: Enhanced with parallel file delegation) |
 
-#### Parallel Trigger
+### Parallel Subagents
 
-Process multiple issues simultaneously with configurable concurrency:
-
-```bash
-# Process issues 123, 456, 789 in parallel
-uv run adws/adw_triggers/trigger_issue_parallel.py 123 456 789
-
-# Limit to 3 concurrent workflows
-uv run adws/adw_triggers/trigger_issue_parallel.py --issues 123,456,789 --max-concurrent 3
-
-# Single execution (for testing)
-uv run adws/adw_triggers/trigger_issue_parallel.py --issues 123,456,789 --once
-```
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--max-concurrent` | 5 | Maximum parallel workflows |
-| `--interval` | 20 | Polling interval (seconds) |
-| `--once` | false | Run single cycle and exit |
-
-#### Plan Parallel Trigger
-
-Execute tasks from a plan markdown file in parallel. Parses plan files with `#### Task N` format and runs them using Claude Code or ADW workflows:
+Execute complex tasks by launching multiple specialized agents simultaneously:
 
 ```bash
-# Execute all tasks from a plan file
-uv run adws/adw_triggers/trigger_plan_parallel.py plan_tasks.md
-
-# Execute only tasks from a specific group (P1, P2, etc.)
-uv run adws/adw_triggers/trigger_plan_parallel.py plan_tasks.md --group P1
-
-# Execute specific tasks by number
-uv run adws/adw_triggers/trigger_plan_parallel.py plan_tasks.md --tasks 1,2,3,5
-
-# Dry run to preview tasks without executing
-uv run adws/adw_triggers/trigger_plan_parallel.py plan_tasks.md --dry-run
-
-# Use ADW workflow instead of Claude Code
-uv run adws/adw_triggers/trigger_plan_parallel.py plan_tasks.md --workflow adw_sdlc_zte_iso
+/parallel_subagents "Analyze codebase security posture" 3
+/parallel_subagents "Research best practices for distributed caching"
 ```
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--group` | None | Filter tasks by group (P1, P2, etc.) |
-| `--tasks` | None | Comma-separated task numbers to execute |
-| `--max-concurrent` | 5 | Maximum parallel executions |
-| `--workflow` | claude | Execution mode: `claude` or ADW workflow name |
-| `--dry-run` | false | Preview tasks without executing |
-| `--verbose` | false | Show detailed execution logs |
+**Features:**
+- Specialized prompts tailored to each agent's expertise
+- Automatic result aggregation and summarization
+- Progress tracking across parallel executions
 
-**Plan File Format:**
-```markdown
-## Wave 1 - Group P1
-#### Task 1
-**[FEATURE] Implement user authentication**
-Description of the task...
-File: `src/auth/login.py`
+### Scout-Plan-Build Orchestration
 
-#### Task 2
-**[CHORE] Update configuration**
-...
+Complete end-to-end workflow with three sequential phases:
+
+```bash
+/scout_plan_build "Add authentication to API endpoints" 4
+/scout_plan_build "Implement real-time notifications" 6 thorough
 ```
+
+**Phases:**
+1. **Scout**: Parallel exploration to identify relevant files (configurable strategies)
+2. **Plan**: Create implementation plan informed by scout findings
+3. **Build**: Execute plan with progress tracking and validation
+
+**Parameters:**
+- `[scale]` (2-10): Number of parallel exploration strategies
+- `[thoroughness]` (quick|medium|thorough): Plan depth
 
 ## Configuration
 

@@ -1,12 +1,13 @@
-# LLM & TTS Utilities
+# LLM, TTS & Observability Utilities
 
-TAC Bootstrap includes utility wrappers for LLM and TTS providers, enabling hooks and scripts to leverage AI capabilities.
+TAC Bootstrap includes utility wrappers for LLM, TTS, and observability, enabling hooks and scripts to leverage AI capabilities and monitoring infrastructure.
 
 ## Overview
 
 Utilities provide a unified interface for:
 - **LLM**: Generate text, completions, and agent names
 - **TTS**: Convert text to speech for notifications
+- **Observability**: Event summarization, model tracking, and configuration management
 
 Located in `.claude/hooks/utils/`
 
@@ -232,6 +233,173 @@ speak("No internet required")
 - Rate: Adjustable speech rate
 - Voice: System default or specified
 
+## Observability Utilities
+
+Observability utilities enable hooks to track events, summarize context, and integrate with monitoring infrastructure.
+
+### Location
+
+```
+.claude/hooks/utils/
+├── constants.py       # Configuration constants and session utilities
+├── summarizer.py      # AI-powered event summarization
+└── model_extractor.py # LLM model detection and utilities (planned)
+```
+
+### Configuration Constants (`constants.py`)
+
+Provides shared configuration and session management utilities for hooks.
+
+**Location:** `.claude/hooks/utils/constants.py`
+
+**Key Functions:**
+
+```python
+def get_session_log_dir(session_id: str) -> Path:
+    """Get the log directory for a specific session."""
+
+def ensure_session_log_dir(session_id: str) -> Path:
+    """Ensure the log directory for a session exists."""
+```
+
+**Usage Example:**
+
+```python
+from utils.constants import ensure_session_log_dir
+
+# In a hook that needs to log session data
+session_id = input_data.get('session_id', 'unknown')
+log_dir = ensure_session_log_dir(session_id)
+log_file = log_dir / 'my_hook.json'
+
+with open(log_file, 'w') as f:
+    json.dump(hook_data, f)
+```
+
+**Configuration:**
+
+The base log directory can be customized via environment variable:
+
+```bash
+export CLAUDE_HOOKS_LOG_DIR="/path/to/custom/logs"
+```
+
+Default: `logs/` in the current working directory
+
+**Output Structure:**
+
+All session logs are organized by session ID:
+
+```
+logs/
+├── session-abc-123/
+│   ├── hook_logs.json
+│   ├── pre_compact.json
+│   ├── subagent_stop.json
+│   └── chat.json
+├── session-def-456/
+│   ├── hook_logs.json
+│   └── user_prompt_submit.json
+```
+
+### Event Summarization (`summarizer.py`)
+
+Provides AI-powered summarization of events using Claude Haiku for generating concise, one-sentence summaries.
+
+**Location:** `.claude/hooks/utils/summarizer.py`
+
+**Functions:**
+
+```python
+def generate_event_summary(event_text: str) -> Optional[str]:
+    """
+    Generate a concise one-sentence summary of an event.
+
+    Args:
+        event_text: The event text to summarize
+
+    Returns:
+        A one-sentence summary (max 150 characters), or None on error
+    """
+```
+
+**Setup:**
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+**Usage Example:**
+
+```python
+from utils.summarizer import generate_event_summary
+
+# Summarize a lengthy event
+event_description = """
+User executed multiple file operations: created config.json,
+updated main.py with new error handling, ran tests which passed 97/100.
+Session focused on error handling improvements.
+"""
+
+summary = generate_event_summary(event_description)
+# → "Session improved error handling with 97% test pass rate."
+```
+
+**Configuration:**
+
+- Model: `claude-haiku-4-5-20251001`
+- Max tokens: 50
+- Temperature: 0.3 (for consistency)
+- Max length: 150 characters (auto-truncated if exceeded)
+
+**Return Value:**
+
+- On success: Summary string (≤150 characters)
+- On error: `None` (graceful failure when API key missing or unavailable)
+
+**Integration with Hooks:**
+
+Example: Use summarizer in a custom hook to create concise audit logs
+
+```python
+import json
+import sys
+from utils.summarizer import generate_event_summary
+from utils.constants import ensure_session_log_dir
+
+def main():
+    input_data = json.load(sys.stdin)
+    session_id = input_data.get('session_id')
+
+    # Summarize the event
+    event_text = input_data.get('details', '')
+    summary = generate_event_summary(event_text)
+
+    # Log with summary
+    log_dir = ensure_session_log_dir(session_id)
+    log_file = log_dir / 'summarized_events.json'
+
+    entry = {
+        'timestamp': datetime.now().isoformat(),
+        'original': event_text[:200] + '...' if len(event_text) > 200 else event_text,
+        'summary': summary
+    }
+
+    # Write to log...
+```
+
+### Cross-Reference with Hooks
+
+These observability utilities are used by the TAC-12 hooks to provide comprehensive monitoring:
+
+- **send_event.py**: Uses constants for session directory management
+- **session_start.py**: Captures initial context (git, model, project)
+- **pre_compact.py**: Uses constants for session-aware logging
+- **subagent_stop.py**: Logs subagent completion with session isolation
+- **user_prompt_submit.py**: Uses constants for audit trail storage
+
+See [Additional TAC-12 Hooks](hooks.md#additional-tac-12-hooks) for detailed integration patterns.
+
 ## Use Cases
 
 ### Hook Notifications
@@ -274,6 +442,47 @@ from .utils.llm.anth import generate_agent_name
 
 name = generate_agent_name()
 # → "Phoenix", "Quantum", "Nexus"
+```
+
+### Session Context Tracking
+
+```python
+# Use constants to organize session logs
+from utils.constants import ensure_session_log_dir
+import json
+
+session_id = "session-abc-123"
+log_dir = ensure_session_log_dir(session_id)
+
+# All logs for this session are automatically organized
+config_log = log_dir / "config.json"
+metrics_log = log_dir / "metrics.json"
+```
+
+### Event Summarization in Hooks
+
+```python
+# Use summarizer to create concise audit logs
+from utils.summarizer import generate_event_summary
+from utils.constants import ensure_session_log_dir
+import json
+from datetime import datetime
+
+session_id = input_data.get('session_id')
+log_dir = ensure_session_log_dir(session_id)
+
+# Summarize lengthy operation
+event_summary = generate_event_summary(long_event_description)
+
+# Log the summary
+audit_entry = {
+    'timestamp': datetime.now().isoformat(),
+    'summary': event_summary,
+    'full_details': long_event_description
+}
+
+with open(log_dir / 'audit.json', 'w') as f:
+    json.dump([audit_entry], f)
 ```
 
 ## Environment Variables
