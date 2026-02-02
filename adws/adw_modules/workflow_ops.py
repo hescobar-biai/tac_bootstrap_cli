@@ -299,8 +299,17 @@ def resolve_clarifications(
     adw_id: str,
     logger: logging.Logger,
     working_dir: Optional[str] = None,
+    ai_docs_context: Optional[str] = None,
 ) -> Tuple[Optional[str], Optional[str]]:
-    """Auto-resolve clarification questions using AI.
+    """Auto-resolve clarification questions using AI with optional ai_docs context.
+
+    Args:
+        issue: GitHub issue object
+        clarification: ClarificationResponse with questions
+        adw_id: ADW identifier
+        logger: Logger instance
+        working_dir: Working directory path
+        ai_docs_context: Optional AI documentation context to help with decisions
 
     Returns (resolved_text, error_message) tuple.
     """
@@ -312,12 +321,24 @@ def resolve_clarifications(
     ])
     assumptions_text = "\n".join([f"- {a}" for a in clarification.assumptions])
 
+    # Build context section if ai_docs are available
+    context_section = ""
+    if ai_docs_context:
+        context_section = f"""
+## Available Documentation Context
+The following documentation has been loaded and should inform your decisions:
+
+{ai_docs_context}
+
+Use this documentation to make informed decisions aligned with project standards and best practices.
+"""
+
     prompt = f"""You are a senior software architect making implementation decisions.
 
 ## Issue
 Title: {issue.title}
 Body: {issue.body}
-
+{context_section}
 ## Questions to Resolve
 {questions_text}
 
@@ -325,7 +346,7 @@ Body: {issue.body}
 {assumptions_text}
 
 For EACH question: make a clear decision with brief rationale.
-Choose the simplest reasonable approach.
+Choose the simplest reasonable approach that aligns with the documentation (if provided).
 
 Return JSON:
 {{

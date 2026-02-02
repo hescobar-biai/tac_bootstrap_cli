@@ -143,6 +143,7 @@ def main():
     )
 
     # Load AI documentation if requested (TAC-9)
+    ai_docs_context = None
     if load_docs_topic:
         logger.info(f"Loading AI documentation for: {load_docs_topic}")
         make_issue_comment(
@@ -154,11 +155,12 @@ def main():
 
         if docs_response.success:
             logger.info("AI documentation loaded successfully")
+            ai_docs_context = docs_response.output  # Store for use in clarifications
             make_issue_comment(
                 issue_number,
                 format_issue_message(adw_id, "ops", f"✅ AI documentation loaded for: {load_docs_topic}"),
             )
-            state.update(loaded_docs_topic=load_docs_topic)
+            state.update(loaded_docs_topic=load_docs_topic, ai_docs_context=ai_docs_context)
             state.save("adw_plan_iso")
         else:
             logger.warning(f"Failed to load AI docs (continuing anyway): {docs_response.output}")
@@ -258,8 +260,10 @@ def main():
             # Auto-resolve clarifications instead of pausing
             from adw_modules.workflow_ops import resolve_clarifications
 
+            # Pass ai_docs context if available to help with decision-making
             resolved_text, resolve_error = resolve_clarifications(
-                issue, clarification_response, adw_id, logger, working_dir=None
+                issue, clarification_response, adw_id, logger, working_dir=None,
+                ai_docs_context=ai_docs_context
             )
 
             if resolve_error:
