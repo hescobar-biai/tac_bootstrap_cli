@@ -22,11 +22,11 @@ def test_upgrade_command_already_up_to_date(tmp_path: Path) -> None:
     """Test upgrade command when project is already up to date."""
     # Create a config.yml
     config_file = tmp_path / "config.yml"
-    config_file.write_text("version: 0.6.0\nproject:\n  name: test\n")
+    config_file.write_text("version: 0.7.0\nproject:\n  name: test\n")
 
     with patch("tac_bootstrap.interfaces.cli.UpgradeService") as mock_service:
         mock_instance = MagicMock()
-        mock_instance.needs_upgrade.return_value = (False, "0.6.0", "0.6.0")
+        mock_instance.needs_upgrade.return_value = (False, "0.7.0", "0.7.0")
         mock_service.return_value = mock_instance
 
         result = runner.invoke(app, ["upgrade", str(tmp_path)])
@@ -43,7 +43,7 @@ def test_upgrade_command_dry_run(tmp_path: Path) -> None:
 
     with patch("tac_bootstrap.interfaces.cli.UpgradeService") as mock_service:
         mock_instance = MagicMock()
-        mock_instance.needs_upgrade.return_value = (True, "0.1.0", "0.6.0")
+        mock_instance.needs_upgrade.return_value = (True, "0.1.0", "0.7.0")
         mock_instance.get_changes_preview.return_value = [
             "Update adws/ directory",
             "Update .claude/ directory",
@@ -67,7 +67,7 @@ def test_upgrade_command_user_cancels(tmp_path: Path) -> None:
 
     with patch("tac_bootstrap.interfaces.cli.UpgradeService") as mock_service:
         mock_instance = MagicMock()
-        mock_instance.needs_upgrade.return_value = (True, "0.1.0", "0.6.0")
+        mock_instance.needs_upgrade.return_value = (True, "0.1.0", "0.7.0")
         mock_instance.get_changes_preview.return_value = ["Update adws/ directory"]
         mock_service.return_value = mock_instance
 
@@ -87,16 +87,16 @@ def test_upgrade_command_success(tmp_path: Path) -> None:
 
     with patch("tac_bootstrap.interfaces.cli.UpgradeService") as mock_service:
         mock_instance = MagicMock()
-        mock_instance.needs_upgrade.return_value = (True, "0.1.0", "0.6.0")
+        mock_instance.needs_upgrade.return_value = (True, "0.1.0", "0.7.0")
         mock_instance.get_changes_preview.return_value = ["Update adws/ directory"]
-        mock_instance.perform_upgrade.return_value = (True, "Successfully upgraded to v0.6.0")
+        mock_instance.perform_upgrade.return_value = (True, "Successfully upgraded to v0.7.0")
         mock_service.return_value = mock_instance
 
         # Simulate user pressing 'y' for yes
         result = runner.invoke(app, ["upgrade", str(tmp_path)], input="y\n")
 
         assert result.exit_code == 0
-        assert "Successfully upgraded to v0.6.0" in result.stdout
+        assert "Successfully upgraded to v0.7.0" in result.stdout
         assert "Backup preserved" in result.stdout
         mock_instance.perform_upgrade.assert_called_once_with(backup=True)
 
@@ -109,16 +109,16 @@ def test_upgrade_command_no_backup(tmp_path: Path) -> None:
 
     with patch("tac_bootstrap.interfaces.cli.UpgradeService") as mock_service:
         mock_instance = MagicMock()
-        mock_instance.needs_upgrade.return_value = (True, "0.1.0", "0.6.0")
+        mock_instance.needs_upgrade.return_value = (True, "0.1.0", "0.7.0")
         mock_instance.get_changes_preview.return_value = ["Update adws/ directory"]
-        mock_instance.perform_upgrade.return_value = (True, "Successfully upgraded to v0.6.0")
+        mock_instance.perform_upgrade.return_value = (True, "Successfully upgraded to v0.7.0")
         mock_service.return_value = mock_instance
 
         # Simulate user pressing 'y' for yes
         result = runner.invoke(app, ["upgrade", str(tmp_path), "--no-backup"], input="y\n")
 
         assert result.exit_code == 0
-        assert "Successfully upgraded to v0.6.0" in result.stdout
+        assert "Successfully upgraded to v0.7.0" in result.stdout
         assert "Backup preserved" not in result.stdout
         mock_instance.perform_upgrade.assert_called_once_with(backup=False)
 
@@ -127,20 +127,20 @@ def test_upgrade_command_force(tmp_path: Path) -> None:
     """Test upgrade with --force flag when versions match."""
     # Create a config.yml
     config_file = tmp_path / "config.yml"
-    config_file.write_text("version: 0.6.0\nproject:\n  name: test\n")
+    config_file.write_text("version: 0.7.0\nproject:\n  name: test\n")
 
     with patch("tac_bootstrap.interfaces.cli.UpgradeService") as mock_service:
         mock_instance = MagicMock()
-        mock_instance.needs_upgrade.return_value = (False, "0.6.0", "0.6.0")
+        mock_instance.needs_upgrade.return_value = (False, "0.7.0", "0.7.0")
         mock_instance.get_changes_preview.return_value = ["Update adws/ directory"]
-        mock_instance.perform_upgrade.return_value = (True, "Successfully upgraded to v0.6.0")
+        mock_instance.perform_upgrade.return_value = (True, "Successfully upgraded to v0.7.0")
         mock_service.return_value = mock_instance
 
         # Simulate user pressing 'y' for yes
         result = runner.invoke(app, ["upgrade", str(tmp_path), "--force"], input="y\n")
 
         assert result.exit_code == 0
-        assert "Successfully upgraded to v0.6.0" in result.stdout
+        assert "Successfully upgraded to v0.7.0" in result.stdout
         mock_instance.perform_upgrade.assert_called_once()
 
 
@@ -152,7 +152,7 @@ def test_upgrade_command_failure(tmp_path: Path) -> None:
 
     with patch("tac_bootstrap.interfaces.cli.UpgradeService") as mock_service:
         mock_instance = MagicMock()
-        mock_instance.needs_upgrade.return_value = (True, "0.1.0", "0.6.0")
+        mock_instance.needs_upgrade.return_value = (True, "0.1.0", "0.7.0")
         mock_instance.get_changes_preview.return_value = ["Update adws/ directory"]
         mock_instance.perform_upgrade.return_value = (False, "Upgrade failed: some error")
         mock_service.return_value = mock_instance
@@ -172,8 +172,8 @@ def test_upgrade_newer_project_version(tmp_path: Path) -> None:
 
     with patch("tac_bootstrap.interfaces.cli.UpgradeService") as mock_service:
         mock_instance = MagicMock()
-        # Simulate project version (0.9.0) > CLI version (0.6.0)
-        mock_instance.needs_upgrade.return_value = (False, "0.9.0", "0.6.0")
+        # Simulate project version (0.9.0) > CLI version (0.7.0)
+        mock_instance.needs_upgrade.return_value = (False, "0.9.0", "0.7.0")
         mock_service.return_value = mock_instance
 
         result = runner.invoke(app, ["upgrade", str(tmp_path)])

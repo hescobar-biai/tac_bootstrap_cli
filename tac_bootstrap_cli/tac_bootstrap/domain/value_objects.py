@@ -196,7 +196,7 @@ class SemanticVersion(str):
 
     Comparison follows semantic versioning rules:
     - 1.0.0 > 0.9.9
-    - 0.6.0 > 0.2.0
+    - 0.7.0 > 0.2.0
     - 1.2.3 == 1.2.3
 
     Use cases:
