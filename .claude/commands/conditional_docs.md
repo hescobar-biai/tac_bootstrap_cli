@@ -1974,3 +1974,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When working with playwright-validator for E2E testing
     - When working with scout-report-suggest for codebase analysis
     - When learning about agent documentation patterns and conventions
+
+- app_docs/feature-e4dc9574-tac12-helper-functions.md
+  - Conditions:
+    - When working with TAC-12 helper functions in workflow_ops.py
+    - When implementing ADW workflows that use /scout, /plan_w_scouters, /build_in_parallel, or /find_and_summarize
+    - When creating new ADW modules or extending workflow capabilities
+    - When working with AgentTemplateRequest and execute_template patterns
+    - When needing to understand parallel exploration and build orchestration
+    - When documenting or maintaining ADW module helper functions
+    - When integrating TAC-12 commands into workflow orchestration
+    - When reviewing scout_codebase(), plan_with_scouts(), build_in_parallel(), find_and_summarize() implementations
