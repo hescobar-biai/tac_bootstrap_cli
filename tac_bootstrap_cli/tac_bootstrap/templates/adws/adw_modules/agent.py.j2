@@ -590,6 +590,8 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
         "branch_name_generator",
         "issue_classifier",
         "adw_classifier",
+        "docs_loader",  # TAC-9: AI docs loader (read-only)
+        "codebase_scout",  # TAC-12: Codebase scout (read-only)
     }
 
     if effective_cwd:
