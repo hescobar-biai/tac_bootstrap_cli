@@ -159,12 +159,19 @@ def main():
     plan_file = state.get("plan_file")
     logger.info(f"Using plan file: {plan_file}")
 
+    # Get AI docs context from state if available (TAC-9)
+    ai_docs_context = state.get("ai_docs_context")
+    if ai_docs_context:
+        logger.info("Using AI documentation context from planning phase")
+    else:
+        logger.debug("No AI documentation context available")
+
     make_issue_comment(
         issue_number,
         format_issue_message(adw_id, "ops", f"✅ Starting isolated implementation phase\n"
                            f"🏠 Worktree: {worktree_path}")
     )
-    
+
     # Implement the plan (executing in worktree) with optional parallel build (TAC-12) or report (TAC-10)
     logger.info("Implementing solution in worktree")
 
@@ -174,20 +181,20 @@ def main():
             issue_number,
             format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementing solution with parallel build agents (TAC-12)")
         )
-        implement_response = build_in_parallel(plan_file, adw_id, logger, working_dir=worktree_path)
+        implement_response = build_in_parallel(plan_file, adw_id, logger, working_dir=worktree_path, ai_docs_context=ai_docs_context)
     elif with_report:
         logger.info("Using /build_w_report for structured change tracking (TAC-10)")
         make_issue_comment(
             issue_number,
             format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementing solution with YAML report tracking (TAC-10)")
         )
-        implement_response = implement_plan_with_report(plan_file, adw_id, logger, working_dir=worktree_path)
+        implement_response = implement_plan_with_report(plan_file, adw_id, logger, working_dir=worktree_path, ai_docs_context=ai_docs_context)
     else:
         make_issue_comment(
             issue_number,
             format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementing solution in isolated environment")
         )
-        implement_response = implement_plan(plan_file, adw_id, logger, working_dir=worktree_path)
+        implement_response = implement_plan(plan_file, adw_id, logger, working_dir=worktree_path, ai_docs_context=ai_docs_context)
 
     # Track token usage from implementation
     state.accumulate_tokens(AGENT_IMPLEMENTOR, implement_response.token_usage)

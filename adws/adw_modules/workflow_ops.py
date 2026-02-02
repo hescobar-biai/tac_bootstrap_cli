@@ -408,6 +408,7 @@ def build_plan(
     logger: logging.Logger,
     working_dir: Optional[str] = None,
     clarifications: Optional[str] = None,
+    ai_docs_context: Optional[str] = None,  # TAC-9: Documentation context
 ) -> AgentPromptResponse:
     """Build implementation plan for the issue using the specified command."""
     # Use minimal payload like classify_issue does
@@ -424,6 +425,7 @@ def build_plan(
         args=args,
         adw_id=adw_id,
         working_dir=working_dir,
+        ai_docs_context=ai_docs_context,  # TAC-9: Pass docs to planning
     )
 
     logger.debug(
@@ -445,6 +447,7 @@ def implement_plan(
     logger: logging.Logger,
     agent_name: Optional[str] = None,
     working_dir: Optional[str] = None,
+    ai_docs_context: Optional[str] = None,  # TAC-9: Documentation context
 ) -> AgentPromptResponse:
     """Implement the plan using the /implement command."""
     # Use provided agent_name or default to AGENT_IMPLEMENTOR
@@ -456,6 +459,7 @@ def implement_plan(
         args=[plan_file],
         adw_id=adw_id,
         working_dir=working_dir,
+        ai_docs_context=ai_docs_context,  # TAC-9: Pass docs to implementation
     )
 
     logger.debug(
@@ -477,6 +481,7 @@ def implement_plan_with_report(
     logger: logging.Logger,
     agent_name: Optional[str] = None,
     working_dir: Optional[str] = None,
+    ai_docs_context: Optional[str] = None,  # TAC-9: Documentation context
 ) -> AgentPromptResponse:
     """Implement the plan using /build_w_report command (TAC-10).
 
@@ -494,6 +499,7 @@ def implement_plan_with_report(
         args=[plan_file],
         adw_id=adw_id,
         working_dir=working_dir,
+        ai_docs_context=ai_docs_context,  # TAC-9: Pass docs to implementation
     )
 
     logger.debug(
@@ -589,6 +595,7 @@ def plan_with_scouts(
     adw_id: str,
     logger: logging.Logger,
     working_dir: Optional[str] = None,
+    ai_docs_context: Optional[str] = None,  # TAC-9: Documentation context
 ) -> AgentPromptResponse:
     """Create enhanced plan with parallel codebase exploration using /plan_w_scouters (TAC-12).
 
@@ -600,6 +607,7 @@ def plan_with_scouts(
         adw_id: ADW session ID
         logger: Logger instance
         working_dir: Optional working directory
+        ai_docs_context: Optional AI documentation context (TAC-9)
 
     Returns:
         AgentPromptResponse with enhanced plan
@@ -610,6 +618,7 @@ def plan_with_scouts(
         args=[description],
         adw_id=adw_id,
         working_dir=working_dir,
+        ai_docs_context=ai_docs_context,  # TAC-9: Pass docs to scout planning
     )
 
     logger.debug(f"Planning with scouts for: {description}")
@@ -626,6 +635,7 @@ def build_in_parallel(
     adw_id: str,
     logger: logging.Logger,
     working_dir: Optional[str] = None,
+    ai_docs_context: Optional[str] = None,  # TAC-9: Documentation context
 ) -> AgentPromptResponse:
     """Build implementation in parallel using /build_in_parallel (TAC-12).
 
@@ -636,6 +646,7 @@ def build_in_parallel(
         adw_id: ADW session ID
         logger: Logger instance
         working_dir: Optional working directory
+        ai_docs_context: Optional AI documentation context (TAC-9)
 
     Returns:
         AgentPromptResponse with build results
@@ -646,6 +657,7 @@ def build_in_parallel(
         args=[plan_file],
         adw_id=adw_id,
         working_dir=working_dir,
+        ai_docs_context=ai_docs_context,  # TAC-9: Pass docs to parallel builders
     )
 
     logger.debug(f"Building in parallel from plan: {plan_file}")

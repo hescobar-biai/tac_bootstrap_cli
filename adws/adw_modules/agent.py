@@ -870,6 +870,21 @@ def execute_template(request: AgentTemplateRequest) -> AgentPromptResponse:
     # Construct prompt from slash command and args
     prompt = f"{request.slash_command} {' '.join(request.args)}"
 
+    # Inject AI docs context if available (TAC-9)
+    if request.ai_docs_context:
+        docs_prefix = f"""# Available Project Documentation
+
+The following documentation has been loaded to inform your decisions:
+
+{request.ai_docs_context}
+
+Use this documentation to align your work with project standards, patterns, and best practices.
+
+---
+
+"""
+        prompt = docs_prefix + prompt
+
     # Create output directory with adw_id at project root
     # __file__ is in adws/adw_modules/, so we need to go up 3 levels to get to project root
     project_root = os.path.dirname(

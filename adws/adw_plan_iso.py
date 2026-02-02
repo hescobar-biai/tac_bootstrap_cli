@@ -411,9 +411,9 @@ def main():
         plan_description = f"{issue.title}\n\n{issue.body}"
         if clarification_text:
             plan_description += f"\n\n{clarification_text}"
-        plan_response = plan_with_scouts(plan_description, adw_id, logger, working_dir=worktree_path)
+        plan_response = plan_with_scouts(plan_description, adw_id, logger, working_dir=worktree_path, ai_docs_context=ai_docs_context)
     else:
-        plan_response = build_plan(issue, issue_command, adw_id, logger, working_dir=worktree_path, clarifications=clarification_text)
+        plan_response = build_plan(issue, issue_command, adw_id, logger, working_dir=worktree_path, clarifications=clarification_text, ai_docs_context=ai_docs_context)
 
     # Track token usage from planning
     state.accumulate_tokens(AGENT_PLANNER, plan_response.token_usage)

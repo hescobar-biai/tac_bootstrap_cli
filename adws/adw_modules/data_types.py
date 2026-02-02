@@ -224,6 +224,7 @@ class AgentTemplateRequest(BaseModel):
     adw_id: str
     model: Literal["sonnet", "opus", "haiku"] = "sonnet"
     working_dir: Optional[str] = None
+    ai_docs_context: Optional[str] = None  # TAC-9: Optional documentation context
 
 
 class ClaudeCodeResultMessage(BaseModel):
