@@ -7,24 +7,27 @@
 ADW Plan Iso - AI Developer Workflow for agentic planning in isolated worktrees
 
 Usage:
-  uv run adw_plan_iso.py <issue-number> [adw-id] [--load-docs TOPIC]
+  uv run adw_plan_iso.py <issue-number> [adw-id] [--load-docs TOPIC] [--skip-clarify]
 
 Options:
-  --load-docs TOPIC    Load AI documentation for TOPIC before planning (TAC-9)
+  --load-docs TOPIC   Load AI documentation for topic before planning (TAC-9)
+  --skip-clarify      Skip clarification phase
 
 Workflow:
 1. Fetch GitHub issue details
-2. Check/create worktree for isolated execution
-3. Classify issue type (/chore, /bug, /feature)
-4. Create feature branch in worktree
-5. Generate implementation plan in worktree
-6. Commit plan in worktree
-7. Push and create/update PR
+2. (Optional) Load AI documentation for relevant topics
+3. Check/create worktree for isolated execution
+4. Classify issue type (/chore, /bug, /feature)
+5. Create feature branch in worktree
+6. Generate implementation plan in worktree
+7. Commit plan in worktree
+8. Push and create/update PR
 
 This workflow creates an isolated git worktree under trees/<adw_id>/ for
 parallel execution without interference.
 """
 
+import subprocess
 import sys
 import os
 import logging
@@ -49,11 +52,12 @@ from adw_modules.workflow_ops import (
     format_issue_message,
     ensure_adw_id,
     load_ai_docs,
+    scout_codebase,
+    plan_with_scouts,
     AGENT_PLANNER,
 )
 from adw_modules.utils import setup_logger, check_env_vars
-from adw_modules.data_types import GitHubIssue, IssueClassSlashCommand, AgentTemplateRequest
-from adw_modules.agent import execute_template
+from adw_modules.data_types import GitHubIssue, IssueClassSlashCommand
 from adw_modules.worktree_ops import (
     create_worktree,
     validate_worktree,
@@ -73,19 +77,22 @@ def main():
     parser.add_argument("issue_number", help="GitHub issue number")
     parser.add_argument("adw_id", nargs="?", default=None, help="ADW ID (optional, will be generated if not provided)")
     parser.add_argument("--skip-clarify", action="store_true", help="Skip clarification phase")
-    parser.add_argument(
-        "--load-docs",
-        dest="load_docs_topic",
-        default=None,
-        help="Load AI documentation for TOPIC before planning (TAC-9)"
-    )
+    parser.add_argument("--load-docs", type=str, default=None,
+                       help="Load AI documentation for topic before planning (TAC-9)")
+    parser.add_argument("--scout", action="store_true",
+                       help="Scout codebase before planning for better context (TAC-12)")
+    parser.add_argument("--scout-scale", type=str, default="medium",
+                       choices=["quick", "medium", "very_thorough"],
+                       help="Scale of codebase exploration: quick, medium, or very_thorough (TAC-12)")
 
     args = parser.parse_args()
 
     issue_number = args.issue_number
     adw_id = args.adw_id
     skip_clarify = args.skip_clarify
-    load_docs_topic = args.load_docs_topic
+    load_docs_topic = args.load_docs
+    use_scout = args.scout
+    scout_scale = args.scout_scale
 
     # Ensure ADW ID exists with initialized state
     temp_logger = setup_logger(adw_id, "adw_plan_iso") if adw_id else None
@@ -134,6 +141,57 @@ def main():
         issue_number,
         f"{adw_id}_ops: 🔍 Using state\n```json\n{json.dumps(state.data, indent=2)}\n```",
     )
+
+    # Load AI documentation if requested (TAC-9)
+    if load_docs_topic:
+        logger.info(f"Loading AI documentation for: {load_docs_topic}")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", f"📚 Loading AI documentation: {load_docs_topic} (TAC-9)"),
+        )
+
+        docs_response = load_ai_docs(load_docs_topic, adw_id, logger)
+
+        if docs_response.success:
+            logger.info("AI documentation loaded successfully")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"✅ AI documentation loaded for: {load_docs_topic}"),
+            )
+            state.update(loaded_docs_topic=load_docs_topic)
+            state.save("adw_plan_iso")
+        else:
+            logger.warning(f"Failed to load AI docs (continuing anyway): {docs_response.output}")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"⚠️ AI docs loading failed (continuing): {docs_response.output[:200]}"),
+            )
+
+    # Scout codebase if requested (TAC-12)
+    if use_scout:
+        logger.info(f"Scouting codebase with scale: {scout_scale}")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", f"🔍 Scouting codebase for context (scale: {scout_scale}) (TAC-12)"),
+        )
+
+        scout_response = scout_codebase(issue.body, adw_id, logger, scale=scout_scale)
+
+        if scout_response.success:
+            logger.info("Codebase scouting completed successfully")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", "✅ Codebase scouting completed (TAC-12)"),
+            )
+            state.update(scouting_results=scout_response.output, scout_scale=scout_scale)
+            state.accumulate_tokens("scout", scout_response.token_usage)
+            state.save("adw_plan_iso")
+        else:
+            logger.warning(f"Scouting failed (continuing anyway): {scout_response.output}")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"⚠️ Scouting failed (continuing): {scout_response.output[:200]}"),
+            )
 
     # Clarification phase (optional) - skip if already cached in state
     clarification_text = None
@@ -303,54 +361,33 @@ def main():
         state.save("adw_plan_iso")
         logger.info(f"Created worktree at {worktree_path}")
 
-        # Run install_worktree command to set up the isolated environment
-        logger.info("Setting up isolated environment")
-        install_request = AgentTemplateRequest(
-            agent_name="ops",
-            slash_command="/install_worktree",
-            args=[worktree_path],
-            adw_id=adw_id,
-            working_dir=worktree_path,  # Execute in worktree
+        # Run setup_worktree.sh directly (no API call needed - avoids rate limiting/hanging)
+        logger.info("Setting up isolated environment via bash script")
+        script_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "scripts", "setup_worktree.sh"
         )
-
-        install_response = execute_template(install_request)
-        if not install_response.success:
-            logger.error(f"Error setting up worktree: {install_response.output}")
+        result = subprocess.run(
+            ["bash", script_path, worktree_path],
+            capture_output=True,
+            text=True,
+            timeout=120,  # 2 min max for file ops + dependency install
+        )
+        if result.returncode != 0:
+            error_msg = result.stderr.strip() or result.stdout.strip() or "Unknown error"
+            logger.error(f"Error setting up worktree: {error_msg}")
             make_issue_comment(
                 issue_number,
-                format_issue_message(adw_id, "ops", f"❌ Error setting up worktree: {install_response.output}"),
+                format_issue_message(adw_id, "ops", f"❌ Error setting up worktree: {error_msg}"),
             )
             sys.exit(1)
 
-        logger.info("Worktree environment setup complete")
+        logger.info(f"Worktree environment setup complete: {result.stdout.strip()}")
 
     make_issue_comment(
         issue_number,
         format_issue_message(adw_id, "ops", f"✅ Working in isolated worktree: {worktree_path}"),
     )
-
-    # Load AI documentation if requested (TAC-9)
-    if load_docs_topic:
-        logger.info(f"Loading AI documentation for: {load_docs_topic}")
-        make_issue_comment(
-            issue_number,
-            format_issue_message(adw_id, "ops", f"📚 Loading AI documentation for: {load_docs_topic}"),
-        )
-
-        docs_response = load_ai_docs(load_docs_topic, adw_id, logger, working_dir=worktree_path)
-
-        if not docs_response.success:
-            logger.warning(f"Failed to load AI docs (continuing anyway): {docs_response.output}")
-            make_issue_comment(
-                issue_number,
-                format_issue_message(adw_id, "ops", f"⚠️ Failed to load AI docs (continuing): {docs_response.output}"),
-            )
-        else:
-            logger.info(f"AI documentation loaded successfully")
-            make_issue_comment(
-                issue_number,
-                format_issue_message(adw_id, "ops", f"✅ AI documentation loaded for: {load_docs_topic}"),
-            )
 
     # Build the implementation plan (now executing in worktree)
     logger.info("Building implementation plan in worktree")
@@ -359,7 +396,24 @@ def main():
         format_issue_message(adw_id, AGENT_PLANNER, "✅ Building implementation plan in isolated environment"),
     )
 
-    plan_response = build_plan(issue, issue_command, adw_id, logger, working_dir=worktree_path, clarifications=clarification_text)
+    # Use scout-enhanced planning if scouting was done (TAC-12)
+    if state.get("scouting_results"):
+        logger.info("Using scout-enhanced planning with /plan_w_scouters (TAC-12)")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, AGENT_PLANNER, "🔍 Using scout-enhanced planning (TAC-12)"),
+        )
+        # plan_with_scouts takes just the description, not the full issue object
+        plan_description = f"{issue.title}\n\n{issue.body}"
+        if clarification_text:
+            plan_description += f"\n\n{clarification_text}"
+        plan_response = plan_with_scouts(plan_description, adw_id, logger, working_dir=worktree_path)
+    else:
+        plan_response = build_plan(issue, issue_command, adw_id, logger, working_dir=worktree_path, clarifications=clarification_text)
+
+    # Track token usage from planning
+    state.accumulate_tokens(AGENT_PLANNER, plan_response.token_usage)
+    state.save("adw_plan_iso")
 
     if not plan_response.success:
         logger.error(f"Error building plan: {plan_response.output}")
@@ -455,11 +509,12 @@ def main():
 
     # Save final state
     state.save("adw_plan_iso")
-    
-    # Post final state summary to issue
+
+    # Post final state summary with token usage to issue
+    token_summary = state.get_token_summary()
     make_issue_comment(
         issue_number,
-        f"{adw_id}_ops: 📋 Final planning state:\n```json\n{json.dumps(state.data, indent=2)}\n```"
+        f"{adw_id}_ops: 📋 Planning phase completed\n\n{token_summary}"
     )
 
 
