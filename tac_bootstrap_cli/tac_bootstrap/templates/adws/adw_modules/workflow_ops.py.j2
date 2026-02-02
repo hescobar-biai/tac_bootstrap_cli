@@ -525,6 +525,153 @@ def load_ai_docs(
     return response
 
 
+def scout_codebase(
+    query: str,
+    adw_id: str,
+    logger: logging.Logger,
+    scale: str = "medium",
+    working_dir: Optional[str] = None,
+) -> AgentPromptResponse:
+    """Scout codebase using /scout command (TAC-12).
+
+    Executes parallel scouting to explore codebases and find relevant files.
+
+    Args:
+        query: Search query describing what to find in the codebase
+        adw_id: ADW session ID
+        logger: Logger instance
+        scale: Scale of exploration ("quick", "medium", "very thorough") - default "medium"
+        working_dir: Optional working directory
+
+    Returns:
+        AgentPromptResponse with exploration results
+    """
+    request = AgentTemplateRequest(
+        agent_name="codebase_scout",
+        slash_command="/scout",
+        args=[query, scale],
+        adw_id=adw_id,
+        working_dir=working_dir,
+    )
+
+    logger.debug(f"Scouting codebase with query: {query}, scale: {scale}")
+
+    response = execute_template(request)
+
+    logger.debug(f"scout_codebase response: {response.output[:200] if response.output else 'empty'}")
+
+    return response
+
+
+def plan_with_scouts(
+    description: str,
+    adw_id: str,
+    logger: logging.Logger,
+    working_dir: Optional[str] = None,
+) -> AgentPromptResponse:
+    """Create enhanced plan with parallel codebase exploration using /plan_w_scouters (TAC-12).
+
+    This command performs parallel scouting before planning, providing comprehensive codebase
+    context for better implementation plans.
+
+    Args:
+        description: Feature or task description for planning
+        adw_id: ADW session ID
+        logger: Logger instance
+        working_dir: Optional working directory
+
+    Returns:
+        AgentPromptResponse with enhanced plan
+    """
+    request = AgentTemplateRequest(
+        agent_name="scout_planner",
+        slash_command="/plan_w_scouters",
+        args=[description],
+        adw_id=adw_id,
+        working_dir=working_dir,
+    )
+
+    logger.debug(f"Planning with scouts for: {description}")
+
+    response = execute_template(request)
+
+    logger.debug(f"plan_with_scouts response: {response.output[:200] if response.output else 'empty'}")
+
+    return response
+
+
+def build_in_parallel(
+    plan_file: str,
+    adw_id: str,
+    logger: logging.Logger,
+    working_dir: Optional[str] = None,
+) -> AgentPromptResponse:
+    """Build implementation in parallel using /build_in_parallel (TAC-12).
+
+    This command delegates file creation to parallel build-agents for faster implementation.
+
+    Args:
+        plan_file: Path to the plan file to implement
+        adw_id: ADW session ID
+        logger: Logger instance
+        working_dir: Optional working directory
+
+    Returns:
+        AgentPromptResponse with build results
+    """
+    request = AgentTemplateRequest(
+        agent_name="parallel_builder",
+        slash_command="/build_in_parallel",
+        args=[plan_file],
+        adw_id=adw_id,
+        working_dir=working_dir,
+    )
+
+    logger.debug(f"Building in parallel from plan: {plan_file}")
+
+    response = execute_template(request)
+
+    logger.debug(f"build_in_parallel response: {response.output[:200] if response.output else 'empty'}")
+
+    return response
+
+
+def find_and_summarize(
+    search_term: str,
+    adw_id: str,
+    logger: logging.Logger,
+    working_dir: Optional[str] = None,
+) -> AgentPromptResponse:
+    """Find and summarize code using /find_and_summarize (TAC-12).
+
+    This command searches for code matching a term and provides a summary of findings.
+
+    Args:
+        search_term: Term or pattern to search for in codebase
+        adw_id: ADW session ID
+        logger: Logger instance
+        working_dir: Optional working directory
+
+    Returns:
+        AgentPromptResponse with search and summary results
+    """
+    request = AgentTemplateRequest(
+        agent_name="code_finder",
+        slash_command="/find_and_summarize",
+        args=[search_term],
+        adw_id=adw_id,
+        working_dir=working_dir,
+    )
+
+    logger.debug(f"Finding and summarizing code for: {search_term}")
+
+    response = execute_template(request)
+
+    logger.debug(f"find_and_summarize response: {response.output[:200] if response.output else 'empty'}")
+
+    return response
+
+
 def clean_model_output(output: str) -> str:
     """Clean model output by removing markdown code blocks and extra whitespace.
 
