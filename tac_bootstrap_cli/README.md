@@ -247,41 +247,145 @@ uv run adws/adw_patch_iso.py --issue 456
 
 ### Intelligent Documentation Loading (TAC-9)
 
-ADW workflows automatically detect and load relevant project documentation based on issue content. This provides context-aware guidance throughout all workflow phases.
+ADW workflows automatically detect and load relevant project documentation based on issue content. This provides context-aware guidance throughout all workflow phases (clarify, plan, build, test, review, ship).
+
+**Hybrid Detection System:**
+
+1. **Static Keywords (28 predefined topics)**: Fast, precise matching for common topics
+2. **Dynamic File Scanning**: Automatically discovers ALL .md files in `ai_docs/` recursively
+3. **Smart Loading**: Only loads relevant documentation to optimize token usage
+4. **Manual Override**: Specify exact topics when needed
 
 **How It Works:**
 
-1. **Auto-Detection**: Analyzes issue title and body for keywords
-2. **Smart Loading**: Loads only relevant documentation topics
-3. **Full Context**: Documentation available in all phases (clarify, plan, build, test, review)
+```
+Issue Analysis
+    ↓
+┌───────────────────────────────────┐
+│ 1. Check Static Keywords          │ ← 28 predefined topics
+│    "jwt" → authentication          │
+│    "ddd" → ddd                     │
+└───────────────────────────────────┘
+    ↓
+┌───────────────────────────────────┐
+│ 2. Scan ai_docs/**/*.md Files     │ ← ANY custom .md file
+│    "tac 12" → plan_tasks_Tac_12   │
+│    "opencode" → plan_tasks_opencode│
+└───────────────────────────────────┘
+    ↓
+Load All Detected Topics → Pass to All Workflow Phases
+```
 
-**Example - Automatic:**
+**Example 1 - Automatic Detection:**
 ```bash
 # Issue: "Add JWT authentication to API endpoints"
 uv run adws/adw_sdlc_zte_iso.py 486 adw-id
 
-# Auto-detects: authentication, api
-# Loads: ai_docs/authentication.md, ai_docs/api.md
+# Auto-detects:
+# - authentication (static keyword: "jwt")
+# - api (static keyword: "api", "endpoints")
+#
+# Loads:
+# - ai_docs/authentication.md
+# - ai_docs/api.md
 ```
 
-**Example - Manual Override:**
+**Example 2 - Plan References (Dynamic Scan):**
 ```bash
-# Specify exact documentation topics
+# Issue: "Implement TAC-12 parallel build feature"
+uv run adws/adw_sdlc_zte_iso.py 501 adw-id
+
+# Auto-detects:
+# - plan_tasks_Tac_12_v3_FINAL (dynamic scan: "tac 12")
+#
+# Loads:
+# - ai_docs/doc/plan_tasks_Tac_12_v3_FINAL.md
+```
+
+**Example 3 - Architecture + Plans:**
+```bash
+# Issue: "Refactor using DDD patterns per TAC-10 guidelines"
+uv run adws/adw_sdlc_iso.py 789 adw-id
+
+# Auto-detects:
+# - ddd (static keyword: "ddd")
+# - design_patterns (static keyword: "patterns")
+# - plan_tasks_Tac_10 (dynamic scan: "tac 10")
+#
+# Loads all 3 documentation files automatically
+```
+
+**Example 4 - Manual Override:**
+```bash
+# Specify exact documentation topics (comma-separated)
 uv run adws/adw_sdlc_zte_iso.py 486 adw-id --load-docs ddd,solid,design_patterns
+
+# Ignores auto-detection, loads only specified topics
 ```
 
 **Supported Documentation Topics:**
 
-| Category | Topics | Keywords |
-|----------|--------|----------|
-| **Architecture** | `ddd`, `ddd_lite`, `design_patterns`, `solid` | domain-driven, aggregate, patterns, SOLID principles |
-| **AI/SDK** | `anthropic_quick_start`, `openai_quick_start`, `claude_code_cli_reference`, `claude_code_sdk`, `claude-code-hooks`, `mcp-python-sdk` | anthropic, claude api, openai, mcp, hooks |
-| **Tools** | `uv-scripts`, `e2b`, `fractal_docs` | uv run, sandbox, fractal documentation |
-| **Technical** | `authentication`, `api`, `database`, `testing`, `deployment` | jwt, oauth, endpoint, sql, pytest, docker |
-| **Development** | `frontend`, `backend`, `security`, `performance`, `monitoring` | react, microservice, xss, optimize, observability |
+| Category | Predefined Topics | Dynamic Scan |
+|----------|------------------|--------------|
+| **Architecture** | `ddd`, `ddd_lite`, `design_patterns`, `solid` | ✅ + ALL .md files |
+| **AI/SDK** | `anthropic_quick_start`, `openai_quick_start`, `claude_code_cli_reference`, `claude_code_sdk`, `claude-code-hooks`, `mcp-python-sdk` | ✅ + ALL .md files |
+| **Tools** | `uv-scripts`, `e2b`, `fractal_docs` | ✅ + ALL .md files |
+| **Technical** | `authentication`, `api`, `database`, `testing`, `deployment`, `frontend`, `backend`, `security`, `performance`, `monitoring` | ✅ + ALL .md files |
+| **Custom** | None (add yours!) | ✅ **ANY .md in ai_docs/** |
 
 **Add Your Own Documentation:**
-Place markdown files in `ai_docs/` directory with relevant content. The auto-detection system will identify and load them based on keyword matching.
+
+Simply place markdown files anywhere in the `ai_docs/` directory:
+
+```bash
+# Your custom documentation
+ai_docs/
+├── company_standards.md          # Auto-detected if issue mentions "company standards"
+├── internal_api_guidelines.md    # Auto-detected if issue mentions "internal api"
+├── custom/
+│   └── deployment_checklist.md   # Auto-detected if issue mentions "deployment checklist"
+└── doc/
+    └── architecture_decisions.md # Auto-detected if issue mentions "architecture decisions"
+```
+
+**The system will automatically:**
+- Scan all subdirectories recursively
+- Match filename (with/without underscores) against issue text
+- Load relevant files without any code changes
+
+**Multi-Topic Loading:**
+
+When multiple topics are detected, they are all loaded and concatenated:
+
+```bash
+# Issue mentions multiple concepts
+# Auto-detects: ["ddd", "api", "testing", "plan_tasks_Tac_12"]
+
+# Workflow receives:
+"""
+# Documentation: ddd
+[DDD content...]
+
+---
+
+# Documentation: api
+[API content...]
+
+---
+
+# Documentation: testing
+[Testing content...]
+
+---
+
+# Documentation: plan_tasks_Tac_12
+[TAC-12 plan content...]
+"""
+```
+
+**Available in Both Workflows:**
+- ✅ `adw_sdlc_iso.py` - Full SDLC without auto-merge
+- ✅ `adw_sdlc_zte_iso.py` - Zero Touch Execution with auto-merge
 
 ## TAC-12 Multi-Agent Orchestration
 
