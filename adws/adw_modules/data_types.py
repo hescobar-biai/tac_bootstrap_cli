@@ -72,6 +72,31 @@ SlashCommand = Literal[
     "/generate_fractal_docs",
     # Installation/setup commands
     "/install_worktree",
+    # TAC-9: Context and documentation loading
+    "/load_ai_docs",
+    "/load_bundle",
+    "/prime_cc",
+    # TAC-10: Agent delegation and meta-prompting
+    "/background",
+    "/parallel_subagents",
+    "/t_metaprompt_workflow",
+    "/build_w_report",
+    "/quick-plan",
+    "/in_loop_review",
+    "/health_check",
+    # TAC-11: Exploration and clarification
+    "/scout",
+    "/question",
+    # TAC-12: Planning and orchestration
+    "/all_tools",
+    "/build",
+    "/build_in_parallel",
+    "/find_and_summarize",
+    "/plan",
+    "/plan_w_docs",
+    "/plan_w_scouters",
+    "/prime_3",
+    "/scout_plan_build",
 ]
 
 

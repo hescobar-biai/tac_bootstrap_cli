@@ -70,6 +70,20 @@ SLASH_COMMAND_MODEL_MAP: Final[Dict[SlashCommand, Dict[ModelSet, str]]] = {
     # TAC-11: Exploration and clarification (lightweight)
     "/scout": {"base": "sonnet", "heavy": "sonnet"},  # TAC-11: Scout command for exploration
     "/question": {"base": "sonnet", "heavy": "sonnet"},  # TAC-11: Question command for clarification
+    # TAC-12: Planning and orchestration
+    "/all_tools": {"base": "haiku", "heavy": "haiku"},
+    "/build": {"base": "sonnet", "heavy": "sonnet"},
+    "/build_in_parallel": {"base": "sonnet", "heavy": "opus"},
+    "/find_and_summarize": {"base": "sonnet", "heavy": "sonnet"},
+    "/load_ai_docs": {"base": "sonnet", "heavy": "sonnet"},
+    "/load_bundle": {"base": "haiku", "heavy": "sonnet"},
+    "/parallel_subagents": {"base": "sonnet", "heavy": "opus"},
+    "/plan": {"base": "opus", "heavy": "opus"},
+    "/plan_w_docs": {"base": "sonnet", "heavy": "opus"},
+    "/plan_w_scouters": {"base": "sonnet", "heavy": "opus"},
+    "/prime_3": {"base": "sonnet", "heavy": "sonnet"},
+    "/prime_cc": {"base": "sonnet", "heavy": "sonnet"},
+    "/scout_plan_build": {"base": "sonnet", "heavy": "opus"},
 }
 
 
