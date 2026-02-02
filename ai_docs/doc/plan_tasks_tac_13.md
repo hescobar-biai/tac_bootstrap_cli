@@ -742,22 +742,68 @@ grep -Pzo '```yaml\n(.*?\n)*?```' /Users/hernandoescobar/Documents/Celes/tac_boo
 ```
 
 **Description:**
-Create base directory structure for storing agent expert definitions in the repository.
+Create directory structure for agent expert templates in CLI and example files in repo root.
 
 **Technical Steps:**
-1. Create directory: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/`
-2. Create subdirectories for initial experts:
-   - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/`
-   - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/adw/`
-   - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/commands/`
-3. Create `.gitkeep` files in each subdirectory to preserve structure
+
+#### A) Create Template Directory Structure in CLI
+
+1. **Create template directories**:
+   ```bash
+   # CLI templates for generated projects
+   mkdir -p /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli
+   mkdir -p /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/adw
+   mkdir -p /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/commands
+   ```
+
+2. **Create .gitkeep files**:
+   ```bash
+   touch /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/.gitkeep
+   touch /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/adw/.gitkeep
+   touch /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/commands/.gitkeep
+   ```
+
+#### B) Create Repo Root Directory Structure (for local use)
+
+1. **Create local expert directories**:
+   ```bash
+   # Repository root for local testing
+   mkdir -p /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli
+   mkdir -p /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/adw
+   mkdir -p /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/commands
+   ```
+
+2. **Create .gitkeep files**:
+   ```bash
+   touch /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/.gitkeep
+   touch /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/adw/.gitkeep
+   touch /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/commands/.gitkeep
+   ```
 
 **Acceptance Criteria:**
-- Directory structure exists and is committed
-- Structure matches TAC-13 patterns
-- Ready for expert implementation files
+- ✅ CLI template directories exist under `templates/claude/commands/experts/`
+- ✅ Repo root directories exist under `.claude/commands/experts/`
+- ✅ All directories have .gitkeep files
+- ✅ Structure matches TAC-13 patterns
+- ✅ Ready for template and implementation files
+
+**Validation Commands:**
+```bash
+# Verify CLI template structure
+test -d /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli && echo "✓ CLI templates dir exists"
+
+# Verify repo root structure
+test -d /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli && echo "✓ Repo root dir exists"
+
+# List all created directories
+find /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts -type d
+find /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts -type d
+```
 
 **Impacted Paths:**
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/.gitkeep`
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/adw/.gitkeep`
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/commands/.gitkeep`
 - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/.gitkeep`
 - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/adw/.gitkeep`
 - `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/commands/.gitkeep`
@@ -774,11 +820,69 @@ Create base directory structure for storing agent expert definitions in the repo
 ```
 
 **Description:**
-Create question prompt for CLI expert that reads expertise and answers questions about tac-bootstrap CLI.
+Create question prompt for CLI expert as both Jinja2 template (for CLI generation) and implementation file (for repo root use).
 
 **Technical Steps:**
 
-1. **Create prompt file with complete implementation**:
+#### A) Create Jinja2 Template in CLI
+
+1. **Create template file**:
+
+   **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/question.md.j2`
+
+   **Template Content** (with Jinja2 variables):
+   ```markdown
+   ---
+   allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+   description: Answer questions about {{ config.project.name }} CLI without coding
+   argument-hint: [question]
+   model: sonnet
+   ---
+
+   # CLI Expert: Question Mode
+
+   ## Purpose
+
+   Answer questions about the {{ config.project.name }} CLI by leveraging the CLI expert's mental model (expertise file) and validating assumptions against the actual codebase.
+
+   This is a **read-only** command - no code modifications allowed.
+
+   ## Variables
+
+   - **USER_QUESTION**: `$1` (required) - The question to answer
+   - **EXPERTISE_PATH**: `.claude/commands/experts/cli/expertise.yaml` (static)
+   - **CLI_ROOT**: `{{ config.project.name }}/` (static)
+
+   ## Instructions
+
+   You are the CLI Expert for {{ config.project.name }}. You have a deep mental model of the CLI stored in your expertise file.
+
+   [... rest of the prompt content from previous version ...]
+   ```
+
+   **Key Jinja2 Variables**:
+   - `{{ config.project.name }}`: Project name
+   - `{{ config.project.language }}`: Language (if needed)
+   - Keep rest of content static
+
+2. **Register template in scaffold_service.py**:
+
+   **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py`
+
+   **Add to `_add_claude_code_commands()` method**:
+   ```python
+   # TAC-13: Agent Expert - CLI Question Prompt
+   plan.add_file(
+       action="create",
+       template="claude/commands/experts/cli/question.md.j2",
+       path=".claude/commands/experts/cli/question.md",
+       reason="CLI expert question prompt for read-only queries"
+   )
+   ```
+
+#### B) Create Implementation File in Repo Root
+
+1. **Create actual prompt file for local use**:
 
    **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/question.md`
 
@@ -1015,38 +1119,55 @@ Create question prompt for CLI expert that reads expertise and answers questions
    - Bash only for validation commands (grep, cat, wc)
 
 **Acceptance Criteria:**
-- ✅ Prompt file is 150-200 lines of markdown
-- ✅ YAML frontmatter includes exactly: allowed-tools, description, argument-hint, model
+- ✅ **Template (.j2)** created in CLI templates directory
+- ✅ **Template registered** in scaffold_service.py with correct action/path
+- ✅ **Implementation file** created in repo root for local use
+- ✅ Jinja2 template uses {{ config.project.name }} variables correctly
+- ✅ Prompt is 150-200 lines of markdown
+- ✅ YAML frontmatter includes: allowed-tools, description, argument-hint, model
 - ✅ Workflow has 3 phases with numbered steps
 - ✅ Report format is clearly defined with example
-- ✅ File references format is specified: `path:line_start-line_end`
-- ✅ Read-only behavior is enforced (no Edit/Write tools)
+- ✅ File references format: `path:line_start-line_end`
+- ✅ Read-only behavior enforced (no Edit/Write tools)
 - ✅ Example execution shows complete workflow
 
 **Validation Commands:**
 ```bash
-# Verify file exists
-test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/question.md && echo "✓ File exists"
+# Verify template exists in CLI
+test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/question.md.j2 && echo "✓ Template exists"
 
-# Check frontmatter is valid YAML
+# Verify template registration in scaffold_service.py
+grep -A 3 "experts/cli/question.md.j2" /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ Template registered"
+
+# Verify repo root file exists
+test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/question.md && echo "✓ Repo file exists"
+
+# Check frontmatter is valid YAML (repo root file)
 head -10 /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/question.md | python3 -c "import yaml, sys; yaml.safe_load(sys.stdin)"
 
-# Verify only read-only tools are allowed
+# Verify only read-only tools
 grep "allowed-tools:" /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/question.md | grep -v "Edit\|Write" && echo "✓ Read-only"
 
-# Check line count (should be 150-200)
+# Check line count
 wc -l /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/question.md
 ```
 
-**Test Command:**
+**Test Commands:**
 ```bash
-# Test the command after creation
+# Test local command (repo root)
 cd /Users/hernandoescobar/Documents/Celes/tac_bootstrap
 /experts:cli:question "How does template registration work?"
+
+# Test template generation (simulate tac-bootstrap add-agentic)
+cd /tmp/test-project
+tac-bootstrap add-agentic
+test -f .claude/commands/experts/cli/question.md && echo "✓ Template generated correctly"
 ```
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/question.md`
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/question.md.j2` (template)
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py` (registration)
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/question.md` (repo root implementation)
 
 ---
 
