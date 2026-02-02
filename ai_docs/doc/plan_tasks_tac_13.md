@@ -2648,38 +2648,81 @@ test -f .claude/commands/meta-prompt.md && echo "✓ Template works"
 ```
 
 **Description:**
-Create meta-agent command that generates new agent definitions from user descriptions.
+Create meta-agent generator as template and implementation - agents that create agents.
 
 **Technical Steps:**
-1. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/meta-agent.md`
-2. Define YAML frontmatter:
-   ```yaml
-   allowed-tools: Write, Edit, Read, Glob
-   description: Generate a new agent definition from user description
-   argument-hint: [agent_description]
-   model: opus
+
+#### A) Create Jinja2 Template in CLI
+
+1. **Create template file**:
+   **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/meta-agent.md.j2`
+
+2. **Register in scaffold_service.py**:
+   ```python
+   # TAC-13: Meta-Agent Generator
+   plan.add_file(
+       action="create",
+       template="claude/commands/meta-agent.md.j2",
+       path=".claude/commands/meta-agent.md",
+       reason="Meta-agent generator - agents that create agents"
+   )
    ```
-3. Implement workflow:
+
+#### B) Create Implementation File in Repo Root
+
+1. **Create meta-agent generator**:
+   **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/meta-agent.md`
+
+   **Content includes**:
    - Phase 1: Analyze user's agent description
    - Phase 2: Determine tools, model, personality
    - Phase 3: Generate agent following standard template
    - Phase 4: Write to `.claude/agents/<name>.md`
-4. Enforce exact format:
+
+   **Enforces format**:
    - YAML frontmatter (name, description, tools, model, color)
-   - Purpose section
-   - Instructions section
-   - Workflow section
-   - Report section
-5. Variables: `AGENT_DESCRIPTION: $ARGUMENTS`, `AGENT_OUTPUT_PATH: .claude/agents/<name>.md`
+   - Purpose, Instructions, Workflow, Report sections
+
+   **Variables**: `AGENT_DESCRIPTION: $ARGUMENTS`, `AGENT_OUTPUT_PATH: .claude/agents/<name>.md`
 
 **Acceptance Criteria:**
-- Generates valid agent files
-- Output is immediately usable
-- Includes personality and behavior patterns
-- Follows agent definition schema
+- ✅ **Template (.j2)** created in CLI templates
+- ✅ **Template registered** in scaffold_service.py
+- ✅ **Implementation file** in repo root
+- ✅ Generates valid agent files
+- ✅ Output immediately usable
+- ✅ Includes personality and behavior patterns
+- ✅ Follows agent definition schema
+
+**Validation Commands:**
+```bash
+# Verify template
+test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/meta-agent.md.j2 && echo "✓ Template"
+
+# Verify registration
+grep -A 3 "meta-agent.md.j2" /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ Registered"
+
+# Verify repo file
+test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/meta-agent.md && echo "✓ Repo file"
+```
+
+**Test Commands:**
+```bash
+# Test local command
+cd /Users/hernandoescobar/Documents/Celes/tac_bootstrap
+/meta-agent "Create a code review agent that focuses on security"
+test -f .claude/agents/code-review.md && echo "✓ Agent generated"
+
+# Test template generation
+cd /tmp/test-project
+tac-bootstrap add-agentic
+test -f .claude/commands/meta-agent.md && echo "✓ Template works"
+```
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/meta-agent.md`
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/meta-agent.md.j2` (template)
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py` (registration)
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/meta-agent.md` (repo root)
 
 ---
 
@@ -2732,32 +2775,57 @@ Document meta-skill pattern and progressive disclosure approach for skills.
 ```
 
 **Description:**
-Create command that orchestrates agent experts in plan → build → improve workflow.
+Create expert orchestrator as template and implementation - plan → build → improve workflow.
 
 **Technical Steps:**
-1. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/expert-orchestrate.md`
-2. Define YAML frontmatter:
-   ```yaml
-   allowed-tools: Task, Read, Write
-   description: Orchestrate agent expert through plan-build-improve workflow
-   argument-hint: [expert_domain] [task_description]
-   model: opus
+
+#### A) Create Jinja2 Template in CLI
+
+1. **Create template file**:
+   **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-orchestrate.md.j2`
+
+2. **Register in scaffold_service.py**:
+   ```python
+   # TAC-13: Expert Orchestrator
+   plan.add_file(
+       action="create",
+       template="claude/commands/expert-orchestrate.md.j2",
+       path=".claude/commands/expert-orchestrate.md",
+       reason="Expert orchestrator - plan→build→improve workflow"
+   )
    ```
-3. Implement 3-step orchestration:
-   - Step 1: Create Plan (spawn subagent with `/experts:[domain]:plan [task]`)
-   - Step 2: Build (spawn subagent with `/build [path_to_plan]`)
-   - Step 3: Self-Improve (spawn subagent with `/experts:[domain]:self-improve true`)
-4. Compile report from all 3 steps
-5. Variables: `EXPERT_DOMAIN: $1`, `TASK_DESCRIPTION: $2`
+
+#### B) Create Implementation File in Repo Root
+
+**File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/expert-orchestrate.md`
+
+**3-step orchestration**:
+- Step 1: Create Plan (spawn `/experts:[domain]:plan [task]`)
+- Step 2: Build (spawn `/build [path_to_plan]`)
+- Step 3: Self-Improve (spawn `/experts:[domain]:self-improve true`)
+
+**Variables**: `EXPERT_DOMAIN: $1`, `TASK_DESCRIPTION: $2`
 
 **Acceptance Criteria:**
-- Spawns 3 subagents in sequence
-- Each step gets complete instructions
-- Final report synthesizes all outputs
-- Follows TAC-13 plan-build-improve pattern
+- ✅ **Template (.j2)** created in CLI templates
+- ✅ **Template registered** in scaffold_service.py
+- ✅ **Implementation file** in repo root
+- ✅ Spawns 3 subagents in sequence
+- ✅ Each step gets complete instructions
+- ✅ Final report synthesizes all outputs
+- ✅ Follows TAC-13 plan-build-improve pattern
+
+**Validation Commands:**
+```bash
+test -f tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-orchestrate.md.j2 && echo "✓ Template"
+grep "expert-orchestrate.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ Registered"
+test -f .claude/commands/expert-orchestrate.md && echo "✓ Repo file"
+```
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/expert-orchestrate.md`
+- `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-orchestrate.md.j2` (template)
+- `tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py` (registration)
+- `.claude/commands/expert-orchestrate.md` (repo root)
 
 ---
 
@@ -2771,36 +2839,62 @@ Create command that orchestrates agent experts in plan → build → improve wor
 ```
 
 **Description:**
-Create command that scales agent experts in parallel (3, 5, 10+ instances).
+Create parallel expert scaler as template and implementation - 3-10 agents for consensus.
 
 **Technical Steps:**
-1. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/expert-parallel.md`
-2. Define YAML frontmatter:
-   ```yaml
-   allowed-tools: Task, Read, Write
-   description: Scale agent experts in parallel for high-confidence results
-   argument-hint: [expert_domain] [task] [num_agents]
-   model: opus
+
+#### A) Create Jinja2 Template in CLI
+
+1. **Create template file**:
+   **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-parallel.md.j2`
+
+2. **Register in scaffold_service.py**:
+   ```python
+   # TAC-13: Parallel Expert Scaling
+   plan.add_file(
+       action="create",
+       template="claude/commands/expert-parallel.md.j2",
+       path=".claude/commands/expert-parallel.md",
+       reason="Parallel expert scaling - 3-10 agents for consensus"
+   )
    ```
-3. Implement workflow:
-   - Phase 1: Validate num_agents (3-10 range)
-   - Phase 2: Spawn N parallel agents with same task
-   - Phase 3: Monitor execution
-   - Phase 4: Synthesize results (aggregate common themes, identify conflicts, prioritize consensus)
-4. Variables: `EXPERT_DOMAIN: $1`, `TASK: $2`, `NUM_AGENTS: $3 default to 3`
+
+#### B) Create Implementation File in Repo Root
+
+**File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/expert-parallel.md`
+
+**4-phase workflow**:
+- Phase 1: Validate num_agents (3-10 range)
+- Phase 2: Spawn N parallel agents with same task
+- Phase 3: Monitor execution
+- Phase 4: Synthesize (aggregate themes, identify conflicts, consensus)
+
+**Variables**: `EXPERT_DOMAIN: $1`, `TASK: $2`, `NUM_AGENTS: $3 (default: 3)`
 
 **Acceptance Criteria:**
-- Spawns 3-10 agents in parallel
-- All agents execute simultaneously (non-blocking)
-- Synthesis identifies common themes and conflicts
-- Reports consensus recommendations
+- ✅ **Template (.j2)** created in CLI templates
+- ✅ **Template registered** in scaffold_service.py
+- ✅ **Implementation file** in repo root
+- ✅ Spawns 3-10 agents in parallel
+- ✅ All agents execute simultaneously (non-blocking)
+- ✅ Synthesis identifies themes and conflicts
+- ✅ Reports consensus recommendations
+
+**Validation Commands:**
+```bash
+test -f tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-parallel.md.j2 && echo "✓ Template"
+grep "expert-parallel.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ Registered"
+test -f .claude/commands/expert-parallel.md && echo "✓ Repo file"
+```
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/expert-parallel.md`
+- `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-parallel.md.j2` (template)
+- `tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py` (registration)
+- `.claude/commands/expert-parallel.md` (repo root)
 
 ---
 
-### [CHORE] Task 18: Create agent expert template (CLI) for tac-bootstrap generator
+### [CHORE] Task 18: ~~Create agent expert template (CLI)~~ → COMPLETED BY TASKS 4-6
 
 **Workflow Metadata:**
 ```
@@ -2810,31 +2904,46 @@ Create command that scales agent experts in parallel (3, 5, 10+ instances).
 ```
 
 **Description:**
-Create Jinja2 template for CLI expert that gets generated when users run `tac-bootstrap add-agentic`.
+**✅ ALREADY COMPLETED**: CLI expert templates were created in Tasks 4-6 with dual strategy.
+
+This task was originally designed to create templates, but the dual strategy approach applied to Tasks 4-6 already created:
+- ✅ `question.md.j2` (Task 4)
+- ✅ `self-improve.md.j2` (Task 5)
+- ✅ `expertise.yaml.j2` (Task 6)
+- ✅ All registered in `scaffold_service.py`
 
 **Technical Steps:**
-1. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/.gitkeep`
-2. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/question.md.j2`
-   - Template variables: `{{ config.project.name }}`, `{{ config.project.language }}`
-   - Generalized version of CLI expert question prompt
-3. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/self-improve.md.j2`
-   - Generalized version of CLI expert self-improve prompt
-4. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/expertise.yaml.j2`
-   - Seed template with project-specific placeholders
+
+**Verification only** - confirm templates exist:
+
+```bash
+# Verify CLI expert templates exist
+test -f tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/question.md.j2 && echo "✓ question"
+test -f tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/self-improve.md.j2 && echo "✓ self-improve"
+test -f tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/expertise.yaml.j2 && echo "✓ expertise"
+
+# Verify registrations
+grep "experts/cli/question.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ question registered"
+grep "experts/cli/self-improve.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ self-improve registered"
+grep "experts/cli/expertise.yaml.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ expertise registered"
+```
 
 **Acceptance Criteria:**
-- Templates use Jinja2 variables correctly
-- Generated files are valid and immediately usable
-- Templates adapt to project configuration
+- ✅ Templates created by Tasks 4-6
+- ✅ Templates use Jinja2 variables correctly
+- ✅ All registered in scaffold_service.py
+- ✅ Generated files are valid and immediately usable
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/question.md.j2`
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/self-improve.md.j2`
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/expertise.yaml.j2`
+- ✅ Created by Task 4: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/question.md.j2`
+- ✅ Created by Task 5: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/self-improve.md.j2`
+- ✅ Created by Task 6: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/expertise.yaml.j2`
+
+**Action**: Mark as completed or convert to verification-only task
 
 ---
 
-### [CHORE] Task 19: Create meta-prompt template for tac-bootstrap generator
+### [CHORE] Task 19: ~~Create meta-prompt template~~ → COMPLETED BY TASK 13
 
 **Workflow Metadata:**
 ```
@@ -2844,11 +2953,25 @@ Create Jinja2 template for CLI expert that gets generated when users run `tac-bo
 ```
 
 **Description:**
-Create Jinja2 template for meta-prompt command.
+**✅ ALREADY COMPLETED**: Meta-prompt template was created in Task 13 with dual strategy.
 
 **Technical Steps:**
-1. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/meta-prompt.md.j2`
-2. Copy content from base repository's meta-prompt.md
+
+**Verification only**:
+```bash
+# Verify template exists
+test -f tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/meta-prompt.md.j2 && echo "✓ Template exists"
+
+# Verify registration
+grep "meta-prompt.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ Registered"
+```
+
+**Acceptance Criteria:**
+- ✅ Created by Task 13
+- ✅ Template registered in scaffold_service.py
+
+**Impacted Paths:**
+- ✅ Created by Task 13: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/meta-prompt.md.j2`
 3. Add minimal Jinja2 variables if needed (project name, etc.)
 4. Ensure template is project-agnostic (works for any language/framework)
 
@@ -2862,7 +2985,7 @@ Create Jinja2 template for meta-prompt command.
 
 ---
 
-### [CHORE] Task 20: Create meta-agent template for tac-bootstrap generator
+### [CHORE] Task 20: ~~Create meta-agent template~~ → COMPLETED BY TASK 14
 
 **Workflow Metadata:**
 ```
@@ -2872,25 +2995,26 @@ Create Jinja2 template for meta-prompt command.
 ```
 
 **Description:**
-Create Jinja2 template for meta-agent command.
+**✅ ALREADY COMPLETED**: Meta-agent template was created in Task 14 with dual strategy.
 
 **Technical Steps:**
-1. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/meta-agent.md.j2`
-2. Copy content from base repository's meta-agent.md
-3. Ensure project-agnostic
-4. Validate output format matches agent schema
+
+**Verification only**:
+```bash
+test -f tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/meta-agent.md.j2 && echo "✓ Template"
+grep "meta-agent.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ Registered"
+```
 
 **Acceptance Criteria:**
-- Template generates valid meta-agent command
-- Output creates properly formatted agent definitions
-- Works for all project configurations
+- ✅ Created by Task 14
+- ✅ Template registered
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/meta-agent.md.j2`
+- ✅ Created by Task 14: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/meta-agent.md.j2`
 
 ---
 
-### [CHORE] Task 21: Create expert-orchestrate template for tac-bootstrap generator
+### [CHORE] Task 21: ~~Create expert-orchestrate template~~ → COMPLETED BY TASK 16
 
 **Workflow Metadata:**
 ```
@@ -2900,25 +3024,26 @@ Create Jinja2 template for meta-agent command.
 ```
 
 **Description:**
-Create Jinja2 template for expert orchestrator command.
+**✅ ALREADY COMPLETED**: Expert-orchestrate template was created in Task 16 with dual strategy.
 
 **Technical Steps:**
-1. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-orchestrate.md.j2`
-2. Copy content from base repository's expert-orchestrate.md
-3. Ensure template works with any expert domain
-4. Validate subagent spawning syntax
+
+**Verification only**:
+```bash
+test -f tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-orchestrate.md.j2 && echo "✓ Template"
+grep "expert-orchestrate.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ Registered"
+```
 
 **Acceptance Criteria:**
-- Template generates valid orchestrator command
-- Works with multiple expert domains
-- Proper Task tool usage for subagents
+- ✅ Created by Task 16
+- ✅ Template registered
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-orchestrate.md.j2`
+- ✅ Created by Task 16: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-orchestrate.md.j2`
 
 ---
 
-### [CHORE] Task 22: Create expert-parallel template for tac-bootstrap generator
+### [CHORE] Task 22: ~~Create expert-parallel template~~ → COMPLETED BY TASK 17
 
 **Workflow Metadata:**
 ```
@@ -2928,25 +3053,26 @@ Create Jinja2 template for expert orchestrator command.
 ```
 
 **Description:**
-Create Jinja2 template for parallel expert scaling command.
+**✅ ALREADY COMPLETED**: Expert-parallel template was created in Task 17 with dual strategy.
 
 **Technical Steps:**
-1. Create `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-parallel.md.j2`
-2. Copy content from base repository's expert-parallel.md
-3. Ensure synthesis logic is clear and actionable
-4. Validate parallel Task tool invocation pattern
+
+**Verification only**:
+```bash
+test -f tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-parallel.md.j2 && echo "✓ Template"
+grep "expert-parallel.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ Registered"
+```
 
 **Acceptance Criteria:**
-- Template generates valid parallel command
-- Spawns multiple agents correctly
-- Synthesis step aggregates results properly
+- ✅ Created by Task 17
+- ✅ Template registered
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-parallel.md.j2`
+- ✅ Created by Task 17: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/expert-parallel.md.j2`
 
 ---
 
-### [CHORE] Task 23: Register agent expert templates in scaffold_service.py
+### [CHORE] Task 23: Verify all agent expert template registrations in scaffold_service.py
 
 **Workflow Metadata:**
 ```
@@ -2956,31 +3082,149 @@ Create Jinja2 template for parallel expert scaling command.
 ```
 
 **Description:**
-Register all new agent expert templates in the scaffold service so they are generated when users run `tac-bootstrap add-agentic`.
+**UPDATED SCOPE**: Verify that all agent expert templates (created in Tasks 4-17) are properly registered in scaffold_service.py.
+
+Templates should have been registered by their respective tasks. This task ensures completeness and adds comprehensive code block documentation.
 
 **Technical Steps:**
-1. Open `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py`
-2. In the `_add_claude_code_commands()` method, add template registration for:
-   - `.claude/commands/experts/cli/question.md` (template: `claude/commands/experts/cli/question.md.j2`)
-   - `.claude/commands/experts/cli/self-improve.md` (template: `claude/commands/experts/cli/self-improve.md.j2`)
-   - `.claude/commands/experts/cli/expertise.yaml` (template: `claude/commands/experts/cli/expertise.yaml.j2`)
-   - `.claude/commands/meta-prompt.md` (template: `claude/commands/meta-prompt.md.j2`)
-   - `.claude/commands/meta-agent.md` (template: `claude/commands/meta-agent.md.j2`)
-   - `.claude/commands/expert-orchestrate.md` (template: `claude/commands/expert-orchestrate.md.j2`)
-   - `.claude/commands/expert-parallel.md` (template: `claude/commands/expert-parallel.md.j2`)
-3. Each registration should use `plan.add_file()` with:
-   - `action="create"` (or `action="skip_if_exists"` for expertise.yaml seed)
-   - `template="<path to .j2>"`
-   - `reason="<short description>"`
+
+1. **Verify all registrations exist** in `scaffold_service.py`:
+
+   **Expected registrations** (created by Tasks 4-17):
+   ```python
+   def _add_claude_code_commands(self, plan: ScaffoldPlan) -> None:
+       # ... existing registrations ...
+
+       # TAC-13: Agent Experts - CLI (Tasks 4-6)
+       plan.add_file(
+           action="create",
+           template="claude/commands/experts/cli/question.md.j2",
+           path=".claude/commands/experts/cli/question.md",
+           reason="CLI expert question prompt"
+       )
+       plan.add_file(
+           action="create",
+           template="claude/commands/experts/cli/self-improve.md.j2",
+           path=".claude/commands/experts/cli/self-improve.md",
+           reason="CLI expert self-improve workflow"
+       )
+       plan.add_file(
+           action="skip_if_exists",
+           template="claude/commands/experts/cli/expertise.yaml.j2",
+           path=".claude/commands/experts/cli/expertise.yaml",
+           reason="CLI expert expertise seed"
+       )
+
+       # TAC-13: Agent Experts - ADW (Tasks 7-9)
+       plan.add_file(
+           action="create",
+           template="claude/commands/experts/adw/question.md.j2",
+           path=".claude/commands/experts/adw/question.md",
+           reason="ADW expert question prompt"
+       )
+       plan.add_file(
+           action="create",
+           template="claude/commands/experts/adw/self-improve.md.j2",
+           path=".claude/commands/experts/adw/self-improve.md",
+           reason="ADW expert self-improve workflow"
+       )
+       plan.add_file(
+           action="skip_if_exists",
+           template="claude/commands/experts/adw/expertise.yaml.j2",
+           path=".claude/commands/experts/adw/expertise.yaml",
+           reason="ADW expert expertise seed"
+       )
+
+       # TAC-13: Agent Experts - Commands (Tasks 10-12)
+       plan.add_file(
+           action="create",
+           template="claude/commands/experts/commands/question.md.j2",
+           path=".claude/commands/experts/commands/question.md",
+           reason="Commands expert question prompt"
+       )
+       plan.add_file(
+           action="create",
+           template="claude/commands/experts/commands/self-improve.md.j2",
+           path=".claude/commands/experts/commands/self-improve.md",
+           reason="Commands expert self-improve workflow"
+       )
+       plan.add_file(
+           action="skip_if_exists",
+           template="claude/commands/experts/commands/expertise.yaml.j2",
+           path=".claude/commands/experts/commands/expertise.yaml",
+           reason="Commands expert expertise seed"
+       )
+
+       # TAC-13: Meta-Agentics (Tasks 13-14)
+       plan.add_file(
+           action="create",
+           template="claude/commands/meta-prompt.md.j2",
+           path=".claude/commands/meta-prompt.md",
+           reason="Meta-prompt generator"
+       )
+       plan.add_file(
+           action="create",
+           template="claude/commands/meta-agent.md.j2",
+           path=".claude/commands/meta-agent.md",
+           reason="Meta-agent generator"
+       )
+
+       # TAC-13: Orchestration (Tasks 16-17)
+       plan.add_file(
+           action="create",
+           template="claude/commands/expert-orchestrate.md.j2",
+           path=".claude/commands/expert-orchestrate.md",
+           reason="Expert orchestrator workflow"
+       )
+       plan.add_file(
+           action="create",
+           template="claude/commands/expert-parallel.md.j2",
+           path=".claude/commands/expert-parallel.md",
+           reason="Parallel expert scaling"
+       )
+   ```
+
+2. **Verification script**:
+   ```bash
+   # Verify all 13 registrations exist
+   cd /Users/hernandoescobar/Documents/Celes/tac_bootstrap
+
+   # CLI Expert (3)
+   grep -c "experts/cli/question.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+   grep -c "experts/cli/self-improve.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+   grep -c "experts/cli/expertise.yaml.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+
+   # ADW Expert (3)
+   grep -c "experts/adw/question.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+   grep -c "experts/adw/self-improve.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+   grep -c "experts/adw/expertise.yaml.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+
+   # Commands Expert (3)
+   grep -c "experts/commands/question.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+   grep -c "experts/commands/self-improve.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+   grep -c "experts/commands/expertise.yaml.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+
+   # Meta-Agentics (2)
+   grep -c "meta-prompt.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+   grep -c "meta-agent.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+
+   # Orchestration (2)
+   grep -c "expert-orchestrate.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+   grep -c "expert-parallel.md.j2" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+
+   # Should output: 13 lines with "1" each
+   ```
 
 **Acceptance Criteria:**
-- All 7 new templates are registered
-- Templates are rendered when `add-agentic` is executed
-- Output files are placed in correct directories
-- No duplicate registrations
+- ✅ All 13 template registrations exist in scaffold_service.py
+- ✅ Each registration has: action, template, path, reason
+- ✅ Expertise files use `action="skip_if_exists"`
+- ✅ All other files use `action="create"`
+- ✅ No duplicate registrations
+- ✅ Code block added as reference/documentation
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py`
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py` (verification + optional code block comment)
 
 ---
 
