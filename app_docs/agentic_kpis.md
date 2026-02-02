@@ -8,13 +8,13 @@ Summary metrics across all ADW runs.
 
 | Metric            | Value          | Last Updated                 |
 | ----------------- | -------------- | ---------------------------- |
-| Current Streak    | 234            | 2026-02-02 11:32:15          |
-| Longest Streak    | 234            | 2026-02-02 11:32:15          |
-| Total Plan Size   | 38413 lines    | 2026-02-02 11:32:15          |
-| Largest Plan Size | 702 lines      | 2026-02-02 11:32:15          |
-| Total Diff Size   | 172876 lines   | 2026-02-02 11:32:15          |
-| Largest Diff Size | 6832 lines     | 2026-02-02 11:32:15          |
-| Average Presence  | 1.0            | 2026-02-02 11:32:15          |
+| Current Streak    | 235            | 2026-02-02 12:04:01          |
+| Longest Streak    | 235            | 2026-02-02 12:04:01          |
+| Total Plan Size   | 28968 lines    | 2026-02-02 12:04:01          |
+| Largest Plan Size | 421 lines      | 2026-02-02 12:04:01          |
+| Total Diff Size   | 171698 lines   | 2026-02-02 12:04:01          |
+| Largest Diff Size | 6832 lines     | 2026-02-02 12:04:01          |
+| Average Presence  | 1.00           | 2026-02-02 12:04:01          |
 
 ## ADW KPIs
 
@@ -232,3 +232,4 @@ Detailed metrics for individual ADW workflow runs.
 | Sun Feb 02 2026  | chore_Tac_12_task_44       | 496   | /chore      | 1        | 136               | 526/8/6                         | 2026-02-02 10:16:04  | -       |
 | Sun Feb 02 2026  | chore_Tac_12_task_45       | 497   | /chore      | 1        | 166               | 466/2/5                         | 2026-02-02 11:03:04  | -       |
 | Sun Feb 02 2026  | chore_Tac_12_task_46       | 498   | /chore      | 1        | 91                | 309/2/6                         | 2026-02-02 11:32:15  | -       |
+| Sun Feb 02 2026  | chore_Tac_12_task_47       | 499   | /chore      | 1        | 153               | 228/2/4                         | 2026-02-02 12:04:01  | -       |
