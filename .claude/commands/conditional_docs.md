@@ -81,6 +81,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - Cuando trabajes con templates de prompts
     - Cuando modifiques formatos de plan, feature, bug, o review
 
+- app_docs/feature-chore_Tac_12_task_46-update-cli-readme.md
+  - Conditions:
+    - When updating TAC Bootstrap CLI README.md
+    - When documenting TAC-12 multi-agent orchestration features
+    - When working on observability section for hooks and logging
+    - When expanding command reference tables
+
 ## Fractal Documentation
 
 - When working with documentation or understanding code structure:
