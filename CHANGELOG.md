@@ -5,6 +5,108 @@ All notable changes to TAC Bootstrap will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-02-02
+
+### Added
+
+#### New Commands (TAC-12 Wave 1)
+- `/all_tools` - List all available built-in tools for the current session
+- `/build` - Sequential plan implementation with step-by-step file writing
+- `/build_in_parallel` - Parallel plan implementation delegating file creation to build-agents for cost optimization
+- `/find_and_summarize` - Advanced codebase search with AI-powered summarization of results
+- `/load_ai_docs` - Load and process AI documentation with specialized sub-agents
+- `/load_bundle` - Recover previous agent context from saved context bundles
+- `/parallel_subagents` - TAC-10 Level 4 delegation pattern for launching parallel specialized agents
+- `/plan` - Create implementation plans with simple file exploration workflow
+- `/plan_w_docs` - Enhanced planning with documentation exploration using scout agents
+- `/plan_w_scouters` - Enhanced planning with parallel scout-based codebase exploration (3 base + 5 fast agents)
+- `/prime_3` - Deep context loading with comprehensive codebase understanding
+- `/prime_cc` - Claude Code-specific context priming with perplexity optimization
+- `/scout_plan_build` - End-to-end workflow orchestrating scout, plan, and build phases
+
+#### New Agents (TAC-12 Wave 2)
+- `build-agent` - Specialist for implementing one specific file based on detailed instructions and context
+- `playwright-validator` - E2E validation and browser automation specialist for Playwright tests
+- `scout-report-suggest` - Read-only analysis and reporting for codebase issues with resolution suggestions
+- `scout-report-suggest-fast` - Fast variant of scout-report-suggest optimized for speed using haiku model
+- `docs-scraper` - Documentation fetching and processing for AI knowledge integration
+- `meta-agent` - Generates new agent definition files (.md) and Jinja2 templates from specifications
+
+#### New Hooks (TAC-12 Wave 3)
+- `send_event` - Emit structured events for observability and analytics (usage, errors, performance)
+- `session_start` - Execute at session initialization with environment and context setup
+- `pre_tool_use` - Pre-execution validation and monitoring for any tool invocation
+- `post_tool_use` - Post-execution analysis and result processing for tools
+- `notification` - Send alerts and notifications based on events and conditions
+- `stop` - Graceful shutdown and cleanup handler
+- `subagent_stop` - Handle subagent termination and result collection
+- `pre_compact` - Pre-compaction logging for context analysis and optimization
+- `user_prompt_submit` - Handle user input submissions and prompt processing
+
+#### Hook Utilities (TAC-12 Wave 4)
+- `summarizer.py` - Text summarization utility for reducing token usage
+- `model_extractor.py` - LLM model information extraction and validation
+- `constants.py` - Shared constants and configuration values
+- `llm/` subdirectory - LLM provider utilities (Anthropic, OpenAI, Ollama)
+- `tts/` subdirectory - Text-to-speech provider utilities (ElevenLabs, OpenAI, pyttsx3)
+
+#### Observability Infrastructure
+- Event emission system via `send_event` hook for tracking usage patterns, errors, and performance metrics
+- Pre/post tool use hooks for detailed operation monitoring and result analysis
+- Session lifecycle management with `session_start`, `stop`, and `subagent_stop` hooks
+- Pre-compaction logging via `pre_compact` hook for context analysis and optimization
+- Structured event logging for analytics and system health monitoring
+
+#### Status Line Feature
+- Dynamic status line configuration via `status_line_main.py` in `.claude/status_lines/`
+- Real-time status display during agent execution
+- Customizable status line templates for different contexts
+
+### Changed
+
+#### background.md Improvements
+- Enhanced with TAC-12 model selection via `$MODEL` variable
+- Structured reporting format with automatic progress tracking
+- Auto-rename on completion/failure (`.complete.md` / `.failed.md` suffixes)
+- Uses claude CLI directly with `--dangerously-skip-permissions` for streamlined execution
+- Support for background task queuing and status monitoring
+
+#### quick-plan.md Improvements
+- Integrated 8 parallel scout subagents (3 base + 5 fast variants) for comprehensive exploration
+- Task type classification support (chore|feature|refactor|fix|enhancement)
+- Complexity level detection (simple|medium|complex)
+- Conditional plan formats based on task characteristics
+- Automatic plan format selection for different task types
+
+### Technical Details
+
+#### Multi-Agent Orchestration Patterns
+- **Parallel Scout Exploration (Level 4 Delegation)**: Launch 2-10 parallel Explore agents with different search strategies (file patterns, content search, architecture analysis, dependency mapping, tests, configs, types, docs) to identify relevant files. Results aggregated with frequency scoring and saved to `agents/scout_files/` directory.
+- **Build Agent Delegation**: Delegate file creation tasks to specialized build-agents for reduced context usage and cost optimization
+- **Haiku-based Cost Optimization**: Use Haiku model agents for parallel subagent work to reduce token costs while maintaining quality
+- **Conditional Agent Selection**: Route tasks to specialized agents based on task type and complexity
+
+#### Hook-Based Observability Architecture
+- **Event Emission**: `send_event` hook emits structured events (usage, errors, performance) to observability systems
+- **Tool Lifecycle Tracking**: `pre_tool_use` and `post_tool_use` hooks provide comprehensive tool execution monitoring
+- **Session Management**: `session_start`, `stop`, and `subagent_stop` hooks handle session lifecycle and agent termination
+- **Pre-Compaction Analysis**: `pre_compact` hook logs context state before compaction for optimization analysis
+- **User Input Processing**: `user_prompt_submit` hook processes and enriches user submissions before agent execution
+
+#### Jinja2 Template Integration
+- All new features include Jinja2 templates for seamless integration in generated projects
+- Templates support dynamic configuration via `config` variable
+- Agent definitions are template files (.md) for easy customization
+
+#### TAC-10 Level Patterns
+- Level 1: Single agent execution
+- Level 2: Sequential delegation
+- Level 3: Error handling and retry
+- Level 4: Parallel delegation with aggregation (scout exploration)
+- Level 5: Conditional routing
+- Level 6: Metaprompt generation
+- Level 7: Self-improvement loops
+
 ## [0.6.1] - 2026-01-27
 
 ### Added
