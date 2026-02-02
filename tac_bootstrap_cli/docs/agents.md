@@ -16,7 +16,7 @@ Agents are specialized AI assistants that can be delegated specific tasks. They 
 
 Fetches and integrates external documentation into project context.
 
-**Location:** `.claude/agents/docs-scraper.md`
+**Location:** `.claude/agents/docs-scraper.md` (model: sonnet)
 
 **Capabilities:**
 - Fetch documentation from URLs
@@ -40,11 +40,136 @@ ai_docs/
 └── internal/      # Internal documentation
 ```
 
+### build-agent
+
+Implements single files within parallel build workflows with comprehensive context gathering and specification compliance.
+
+**Location:** `.claude/agents/build-agent.md` (model: sonnet)
+
+**Capabilities:**
+- Implement single files based on detailed specifications
+- Gather and analyze codebase context and patterns
+- Follow existing code conventions and style
+- Execute verification and quality checks
+- Provide detailed implementation reports
+
+**Use cases:**
+```
+Delegate writing a new service module while other agents implement controllers
+Implement a complex resolver as part of a parallel build
+Write a utility class based on detailed architectural specifications
+Create a single integration component with comprehensive context
+```
+
+**Output structure:**
+```
+- Implementation Summary with file paths and details
+- Specification Compliance checklist
+- Quality Checks results
+- Issues & Concerns with recommendations
+```
+
+**Best For:** Parallel builds where a single specialized engineer focuses on one file with full context awareness.
+
+### playwright-validator
+
+Executes E2E validation and browser automation tests with comprehensive failure analysis and evidence capture.
+
+**Location:** `.claude/agents/playwright-validator.md` (model: sonnet)
+
+**Capabilities:**
+- Execute Playwright E2E test suites
+- Run tests across multiple browsers (chromium, firefox, webkit)
+- Handle test failures with evidence capture
+- Analyze test results and identify failure patterns
+- Generate structured test reports with screenshots/videos
+
+**Use cases:**
+```
+Run full E2E test suite before production deployment
+Validate UI functionality after major feature changes
+Debug browser-specific test failures with evidence
+Generate test reports with screenshots for failed tests
+```
+
+**Output structure:**
+```
+- Test Execution Summary (passed/failed/skipped counts)
+- Failed Tests with error messages and evidence paths
+- Analysis of failure patterns and root causes
+- Recommendations for fixes and test improvements
+```
+
+**Best For:** Comprehensive E2E validation with detailed failure analysis and evidence collection.
+
+### scout-report-suggest
+
+Analyzes codebases to identify issues, pinpoint root causes, and suggest detailed resolutions through read-only investigation.
+
+**Location:** `.claude/agents/scout-report-suggest.md` (model: sonnet)
+
+**Capabilities:**
+- Scout codebase for specific issues or patterns
+- Identify exact file locations and line numbers of problems
+- Analyze root causes and underlying issues
+- Suggest detailed resolution strategies
+- Provide comprehensive reports without making changes
+
+**Use cases:**
+```
+Investigate performance bottlenecks in the codebase
+Scout for security vulnerabilities and suggest fixes
+Analyze code quality issues and architectural problems
+Find and explain the root cause of a specific bug
+```
+
+**Output structure:**
+```
+- SCOUT REPORT with problem statement
+- FINDINGS with affected files and line numbers
+- DETAILED ANALYSIS with code snippets and root causes
+- SUGGESTED RESOLUTION with step-by-step approach
+- ADDITIONAL CONTEXT with related patterns and best practices
+```
+
+**Best For:** Comprehensive analysis when you need deep investigation, detailed reasoning, and thorough root cause analysis.
+
+### scout-report-suggest-fast
+
+Fast variant of scout-report-suggest optimized for speed using haiku model while maintaining analysis quality.
+
+**Location:** `.claude/agents/scout-report-suggest-fast.md` (model: haiku)
+
+**Capabilities:**
+- Quick codebase analysis and issue identification
+- Identify problem locations and root causes efficiently
+- Suggest resolutions with minimal latency
+- Provide structured reports in read-only mode
+- Optimized for speed without sacrificing quality
+
+**Use cases:**
+```
+Quick analysis during time-sensitive debugging
+Scout for issues when latency is a priority
+Identify problem locations in large codebases quickly
+Get fast recommendations for common code issues
+```
+
+**Output structure:**
+```
+- SCOUT REPORT with concise problem analysis
+- FINDINGS with affected files
+- Root cause analysis and suggested resolution
+- Recommendations for immediate fixes
+```
+
+**Best For:** Quick analysis when speed is prioritized over depth; same capabilities as scout-report-suggest but faster execution.
+
 ### meta-agent
 
 Generates new sub-agent configuration files from descriptions.
 
-**Location:** `.claude/agents/meta-agent.md`
+**Location:** `.claude/agents/meta-agent.md` (model: sonnet)
 
 **Capabilities:**
 - Analyze agent requirements
@@ -52,14 +177,14 @@ Generates new sub-agent configuration files from descriptions.
 - Generate complete agent files
 - Select appropriate tools and model
 
-**Usage:**
+**Use cases:**
 ```
 Create an agent for code review
 Create an agent that monitors test coverage
 Design an agent for database migration management
 ```
 
-**Generated structure:**
+**Output structure:**
 ```markdown
 ---
 name: agent-name
@@ -83,7 +208,7 @@ Output format.
 
 Discovers and evaluates documentation sources.
 
-**Location:** `.claude/agents/research-docs-fetcher.md`
+**Location:** `.claude/agents/research-docs-fetcher.md` (model: sonnet)
 
 **Capabilities:**
 - Search for official documentation
@@ -106,6 +231,8 @@ Discovers and evaluates documentation sources.
 - Up-to-date version
 - Code examples included
 - Well-structured navigation
+
+**Best For:** Finding and evaluating quality documentation sources across multiple ecosystems and package registries.
 
 ## Expert Pattern
 
@@ -272,9 +399,13 @@ Place agent files in `.claude/agents/`:
 ```
 .claude/
 └── agents/
+    ├── build-agent.md
     ├── docs-scraper.md
     ├── meta-agent.md
+    ├── playwright-validator.md
     ├── research-docs-fetcher.md
+    ├── scout-report-suggest.md
+    ├── scout-report-suggest-fast.md
     └── custom-agent.md
 ```
 
@@ -351,9 +482,13 @@ Task(
 project/
 ├── .claude/
 │   ├── agents/
+│   │   ├── build-agent.md
 │   │   ├── docs-scraper.md
 │   │   ├── meta-agent.md
-│   │   └── research-docs-fetcher.md
+│   │   ├── playwright-validator.md
+│   │   ├── research-docs-fetcher.md
+│   │   ├── scout-report-suggest.md
+│   │   └── scout-report-suggest-fast.md
 │   └── commands/
 │       └── experts/
 │           └── cc_hook_expert/
