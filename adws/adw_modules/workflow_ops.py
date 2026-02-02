@@ -552,6 +552,54 @@ def load_ai_docs(
     return response
 
 
+def detect_relevant_docs(issue: GitHubIssue) -> list[str]:
+    """Detect which documentation topics are relevant to a GitHub issue (TAC-9).
+
+    Analyzes the issue title and body to identify relevant documentation topics
+    based on keyword matching. This enables automatic context loading for workflows.
+
+    Args:
+        issue: GitHub issue to analyze
+
+    Returns:
+        List of detected documentation topic names (e.g., ["authentication", "testing"])
+
+    Example:
+        >>> issue = GitHubIssue(title="Add JWT authentication", body="...")
+        >>> detect_relevant_docs(issue)
+        ["authentication", "api"]
+    """
+    text = f"{issue.title} {issue.body}".lower()
+    topics = []
+
+    # Keyword mapping: doc_topic -> list of keywords that indicate relevance
+    doc_keywords = {
+        "authentication": ["auth", "login", "jwt", "oauth", "session", "credential", "password", "token"],
+        "testing": ["test", "pytest", "e2e", "unit test", "integration test", "coverage", "mock"],
+        "deployment": ["deploy", "ci/cd", "docker", "kubernetes", "k8s", "container", "helm"],
+        "database": ["db", "sql", "postgres", "mysql", "migration", "schema", "query", "orm"],
+        "api": ["api", "endpoint", "rest", "graphql", "request", "response", "route"],
+        "frontend": ["ui", "component", "react", "vue", "frontend", "css", "html", "tailwind"],
+        "backend": ["backend", "server", "microservice", "service", "handler"],
+        "security": ["security", "xss", "csrf", "sanitize", "vulnerability", "cve"],
+        "performance": ["performance", "optimize", "cache", "latency", "throughput", "bottleneck"],
+        "monitoring": ["monitor", "observability", "logging", "metrics", "tracing", "alert"],
+        "documentation": ["docs", "documentation", "readme", "guide", "tutorial"],
+        "configuration": ["config", "environment", "settings", "variables", ".env"],
+        "error_handling": ["error", "exception", "handling", "validation", "retry"],
+        "workflows": ["workflow", "pipeline", "automation", "ci", "github action"],
+        "data_processing": ["etl", "pipeline", "stream", "batch", "processing", "transform"],
+    }
+
+    # Check each topic's keywords against the issue text
+    for doc_topic, keywords in doc_keywords.items():
+        if any(keyword in text for keyword in keywords):
+            topics.append(doc_topic)
+
+    # Remove duplicates and sort for consistency
+    return sorted(list(set(topics)))
+
+
 def scout_codebase(
     query: str,
     adw_id: str,

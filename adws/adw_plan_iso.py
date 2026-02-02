@@ -145,25 +145,52 @@ def main():
     # Load AI documentation if requested (TAC-9)
     ai_docs_context = None
     if load_docs_topic:
-        logger.info(f"Loading AI documentation for: {load_docs_topic}")
+        # Support multiple topics separated by comma (TAC-9 hybrid)
+        topics = [t.strip() for t in load_docs_topic.split(",")]
+        logger.info(f"Loading AI documentation for {len(topics)} topic(s): {', '.join(topics)}")
         make_issue_comment(
             issue_number,
-            format_issue_message(adw_id, "ops", f"📚 Loading AI documentation: {load_docs_topic} (TAC-9)"),
+            format_issue_message(adw_id, "ops", f"📚 Loading AI documentation: {', '.join(topics)} (TAC-9)"),
         )
 
-        docs_response = load_ai_docs(load_docs_topic, adw_id, logger)
+        # Load each topic and concatenate results
+        all_docs = []
+        loaded_topics = []
+        failed_topics = []
 
-        if docs_response.success:
-            logger.info("AI documentation loaded successfully")
-            ai_docs_context = docs_response.output  # Store for use in clarifications
+        for topic in topics:
+            logger.info(f"Loading documentation topic: {topic}")
+            docs_response = load_ai_docs(topic, adw_id, logger)
+
+            if docs_response.success:
+                all_docs.append(f"# Documentation: {topic}\n\n{docs_response.output}")
+                loaded_topics.append(topic)
+                logger.info(f"Successfully loaded: {topic}")
+            else:
+                failed_topics.append(topic)
+                logger.warning(f"Failed to load topic '{topic}': {docs_response.output}")
+
+        # Combine all loaded documentation
+        if all_docs:
+            ai_docs_context = "\n\n---\n\n".join(all_docs)
+            logger.info(f"Successfully loaded {len(loaded_topics)} of {len(topics)} topics")
+
+            status_msg = f"✅ AI documentation loaded ({len(loaded_topics)}/{len(topics)} topics)"
+            if failed_topics:
+                status_msg += f"\n⚠️  Failed to load: {', '.join(failed_topics)}"
+
             make_issue_comment(
                 issue_number,
-                format_issue_message(adw_id, "ops", f"✅ AI documentation loaded for: {load_docs_topic}"),
+                format_issue_message(adw_id, "ops", status_msg),
             )
             state.update(loaded_docs_topic=load_docs_topic, ai_docs_context=ai_docs_context)
             state.save("adw_plan_iso")
         else:
-            logger.warning(f"Failed to load AI docs (continuing anyway): {docs_response.output}")
+            logger.warning(f"Failed to load any AI docs (continuing anyway)")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"⚠️  Failed to load documentation topics: {', '.join(failed_topics)}"),
+            )
             make_issue_comment(
                 issue_number,
                 format_issue_message(adw_id, "ops", f"⚠️ AI docs loading failed (continuing): {docs_response.output[:200]}"),

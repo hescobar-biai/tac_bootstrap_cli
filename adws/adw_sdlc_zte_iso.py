@@ -6,7 +6,13 @@
 """
 ADW SDLC ZTE Iso - Zero Touch Execution: Complete SDLC with automatic shipping
 
-Usage: uv run adw_sdlc_zte_iso.py <issue-number> [adw-id] [--skip-e2e] [--skip-resolution]
+Usage: uv run adw_sdlc_zte_iso.py <issue-number> [adw-id] [--load-docs TOPICS] [--skip-e2e] [--skip-resolution]
+
+Options:
+  --load-docs TOPICS    Manual override for documentation topics (comma-separated)
+                        If not specified, topics are auto-detected from issue (TAC-9)
+  --skip-e2e           Skip E2E test execution
+  --skip-resolution    Skip test failure resolution
 
 This script runs the complete ADW SDLC pipeline with automatic shipping:
 1. adw_plan_iso.py - Planning phase (isolated)
@@ -29,9 +35,9 @@ import os
 
 # Add the parent directory to Python path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from adw_modules.workflow_ops import ensure_adw_id
-from adw_modules.github import make_issue_comment
-from adw_modules.utils import get_target_branch
+from adw_modules.workflow_ops import ensure_adw_id, detect_relevant_docs
+from adw_modules.github import make_issue_comment, fetch_issue, get_repo_url, extract_repo_path
+from adw_modules.utils import get_target_branch, setup_logger
 from adw_modules.state import ADWState
 
 
@@ -40,6 +46,15 @@ def main():
     # Check for flags
     skip_e2e = "--skip-e2e" in sys.argv
     skip_resolution = "--skip-resolution" in sys.argv
+
+    # Check for manual docs override (TAC-9 hybrid approach)
+    manual_docs = None
+    if "--load-docs" in sys.argv:
+        idx = sys.argv.index("--load-docs")
+        if idx + 1 < len(sys.argv):
+            manual_docs = sys.argv[idx + 1]
+            sys.argv.pop(idx)  # Remove --load-docs
+            sys.argv.pop(idx)  # Remove the topic value
 
     # Remove flags from argv
     if skip_e2e:
@@ -50,7 +65,7 @@ def main():
     if len(sys.argv) < 2:
         target_branch = get_target_branch()
         print(
-            "Usage: uv run adw_sdlc_zte_iso.py <issue-number> [adw-id] [--skip-e2e] [--skip-resolution]"
+            "Usage: uv run adw_sdlc_zte_iso.py <issue-number> [adw-id] [--load-docs TOPICS] [--skip-e2e] [--skip-resolution]"
         )
         print("\n🚀 Zero Touch Execution: Complete SDLC with automatic shipping")
         print("\nThis runs the complete isolated Software Development Life Cycle:")
@@ -60,6 +75,11 @@ def main():
         print("  4. Review (isolated)")
         print("  5. Document (isolated)")
         print("  6. Ship (approve & merge PR) 🚢")
+        print("\nOptions:")
+        print("  --load-docs TOPICS    Manual override for documentation topics (comma-separated)")
+        print("                        If not specified, topics are auto-detected from issue (TAC-9)")
+        print("  --skip-e2e           Skip E2E test execution")
+        print("  --skip-resolution    Skip test failure resolution")
         print(f"\n⚠️  WARNING: This will automatically merge to {target_branch} if all phases pass!")
         sys.exit(1)
 
@@ -69,6 +89,35 @@ def main():
     # Ensure ADW ID exists with initialized state
     adw_id = ensure_adw_id(issue_number, adw_id)
     print(f"Using ADW ID: {adw_id}")
+
+    # Set up logger for detection phase
+    logger = setup_logger(adw_id, "adw_sdlc_zte_iso")
+
+    # Detect or use manual docs (TAC-9 hybrid approach)
+    docs_to_load = None
+    if manual_docs:
+        # User specified manual override
+        docs_to_load = manual_docs
+        logger.info(f"Using manual documentation override: {docs_to_load}")
+        print(f"📚 Loading documentation (manual): {docs_to_load}")
+    else:
+        # Automatic detection
+        try:
+            github_repo_url = get_repo_url()
+            repo_path = extract_repo_path(github_repo_url)
+            issue = fetch_issue(issue_number, repo_path)
+
+            detected_topics = detect_relevant_docs(issue)
+            if detected_topics:
+                docs_to_load = ",".join(detected_topics)
+                logger.info(f"Auto-detected relevant documentation topics: {detected_topics}")
+                print(f"📚 Auto-detected documentation topics: {', '.join(detected_topics)}")
+            else:
+                logger.info("No relevant documentation topics detected")
+                print("📚 No relevant documentation topics detected")
+        except Exception as e:
+            logger.warning(f"Failed to detect documentation topics: {e}")
+            print(f"⚠️  Warning: Could not auto-detect documentation topics: {e}")
 
     # Post initial ZTE message
     try:
@@ -98,6 +147,12 @@ def main():
         issue_number,
         adw_id,
     ]
+
+    # Add documentation loading if detected or manually specified (TAC-9)
+    if docs_to_load:
+        plan_cmd.extend(["--load-docs", docs_to_load])
+        logger.info(f"Passing documentation to planning phase: {docs_to_load}")
+
     print(f"\n=== ISOLATED PLAN PHASE ===")
     print(f"Running: {' '.join(plan_cmd)}")
     plan = subprocess.run(plan_cmd)
