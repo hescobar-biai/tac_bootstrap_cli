@@ -52,6 +52,8 @@ from adw_modules.workflow_ops import (
     format_issue_message,
     ensure_adw_id,
     load_ai_docs,
+    scout_codebase,
+    plan_with_scouts,
     AGENT_PLANNER,
 )
 from adw_modules.utils import setup_logger, check_env_vars
@@ -77,6 +79,11 @@ def main():
     parser.add_argument("--skip-clarify", action="store_true", help="Skip clarification phase")
     parser.add_argument("--load-docs", type=str, default=None,
                        help="Load AI documentation for topic before planning (TAC-9)")
+    parser.add_argument("--scout", action="store_true",
+                       help="Scout codebase before planning for better context (TAC-12)")
+    parser.add_argument("--scout-scale", type=str, default="medium",
+                       choices=["quick", "medium", "very_thorough"],
+                       help="Scale of codebase exploration: quick, medium, or very_thorough (TAC-12)")
 
     args = parser.parse_args()
 
@@ -84,6 +91,8 @@ def main():
     adw_id = args.adw_id
     skip_clarify = args.skip_clarify
     load_docs_topic = args.load_docs
+    use_scout = args.scout
+    scout_scale = args.scout_scale
 
     # Ensure ADW ID exists with initialized state
     temp_logger = setup_logger(adw_id, "adw_plan_iso") if adw_id else None
@@ -156,6 +165,32 @@ def main():
             make_issue_comment(
                 issue_number,
                 format_issue_message(adw_id, "ops", f"⚠️ AI docs loading failed (continuing): {docs_response.output[:200]}"),
+            )
+
+    # Scout codebase if requested (TAC-12)
+    if use_scout:
+        logger.info(f"Scouting codebase with scale: {scout_scale}")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", f"🔍 Scouting codebase for context (scale: {scout_scale}) (TAC-12)"),
+        )
+
+        scout_response = scout_codebase(issue.body, adw_id, logger, scale=scout_scale)
+
+        if scout_response.success:
+            logger.info("Codebase scouting completed successfully")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", "✅ Codebase scouting completed (TAC-12)"),
+            )
+            state.update(scouting_results=scout_response.output, scout_scale=scout_scale)
+            state.accumulate_tokens("scout", scout_response.token_usage)
+            state.save("adw_plan_iso")
+        else:
+            logger.warning(f"Scouting failed (continuing anyway): {scout_response.output}")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"⚠️ Scouting failed (continuing): {scout_response.output[:200]}"),
             )
 
     # Clarification phase (optional) - skip if already cached in state
@@ -361,7 +396,20 @@ def main():
         format_issue_message(adw_id, AGENT_PLANNER, "✅ Building implementation plan in isolated environment"),
     )
 
-    plan_response = build_plan(issue, issue_command, adw_id, logger, working_dir=worktree_path, clarifications=clarification_text)
+    # Use scout-enhanced planning if scouting was done (TAC-12)
+    if state.get("scouting_results"):
+        logger.info("Using scout-enhanced planning with /plan_w_scouters (TAC-12)")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, AGENT_PLANNER, "🔍 Using scout-enhanced planning (TAC-12)"),
+        )
+        # plan_with_scouts takes just the description, not the full issue object
+        plan_description = f"{issue.title}\n\n{issue.body}"
+        if clarification_text:
+            plan_description += f"\n\n{clarification_text}"
+        plan_response = plan_with_scouts(plan_description, adw_id, logger, working_dir=worktree_path)
+    else:
+        plan_response = build_plan(issue, issue_command, adw_id, logger, working_dir=worktree_path, clarifications=clarification_text)
 
     # Track token usage from planning
     state.accumulate_tokens(AGENT_PLANNER, plan_response.token_usage)

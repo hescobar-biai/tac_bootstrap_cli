@@ -37,6 +37,7 @@ from adw_modules.github import fetch_issue, make_issue_comment, get_repo_url, ex
 from adw_modules.workflow_ops import (
     implement_plan,
     implement_plan_with_report,
+    build_in_parallel,
     create_commit,
     format_issue_message,
     AGENT_IMPLEMENTOR,
@@ -60,12 +61,15 @@ def main():
     parser.add_argument("adw_id", help="ADW ID (required to locate worktree)")
     parser.add_argument("--with-report", action="store_true",
                        help="Use /build_w_report for structured YAML change tracking (TAC-10)")
+    parser.add_argument("--parallel", action="store_true",
+                       help="Use parallel build agents for faster implementation (TAC-12)")
 
     args = parser.parse_args()
 
     issue_number = args.issue_number
     adw_id = args.adw_id
     with_report = args.with_report
+    use_parallel = args.parallel
 
     # Try to load existing state
     temp_logger = setup_logger(adw_id, "adw_build_iso")
@@ -161,10 +165,17 @@ def main():
                            f"🏠 Worktree: {worktree_path}")
     )
     
-    # Implement the plan (executing in worktree)
+    # Implement the plan (executing in worktree) with optional parallel build (TAC-12) or report (TAC-10)
     logger.info("Implementing solution in worktree")
 
-    if with_report:
+    if use_parallel:
+        logger.info("Using /build_in_parallel for faster implementation (TAC-12)")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementing solution with parallel build agents (TAC-12)")
+        )
+        implement_response = build_in_parallel(plan_file, adw_id, logger, working_dir=worktree_path)
+    elif with_report:
         logger.info("Using /build_w_report for structured change tracking (TAC-10)")
         make_issue_comment(
             issue_number,
