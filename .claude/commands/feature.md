@@ -120,27 +120,42 @@ Extraer detalles de la feature de la variable `issue_json` (parsear JSON y usar 
 
 ## Report
 
-CRITICAL OUTPUT FORMAT - You MUST follow this exactly:
+🚨 **CRITICAL OUTPUT FORMAT** 🚨
 
-1. First, check if a plan file already exists in `specs/` matching pattern: `issue-{issue_number}-adw-{adw_id}-*.md`
-2. If plan file EXISTS: Return ONLY the relative path, nothing else
-3. If plan file does NOT exist: Create it using RELATIVE PATH (e.g., `specs/filename.md`), then return ONLY the path
+YOU ARE BEING CALLED FROM AN AUTOMATED WORKFLOW. YOUR OUTPUT IS MACHINE-PARSED.
 
-CRITICAL FILE CREATION RULES:
-- When using the Write tool, use RELATIVE paths only: `specs/filename.md`
-- NEVER use absolute paths like `/Users/.../specs/filename.md`
-- The file will be created in the current working directory
+**STEP 1: Check for existing plan**
+- Look in `specs/` for files matching: `issue-{issue_number}-adw-{adw_id}-*.md`
+- If found: Output ONLY the path and STOP. Do not create new files.
 
-YOUR FINAL OUTPUT MUST BE EXACTLY ONE LINE containing only the RELATIVE path like:
+**STEP 2: Create plan file (if not exists)**
+- Use Write tool with RELATIVE path: `specs/issue-{issue_number}-adw-{adw_id}-sdlc_planner-{name}.md`
+- NEVER use absolute paths starting with `/Users/` or `/home/`
+- The file WILL be created in the CURRENT WORKING DIRECTORY
+- DO NOT try to create files in other directories like `ai_docs/`, `adws/`, etc.
+
+**STEP 3: Output ONLY the path**
+
+YOUR FINAL OUTPUT **MUST** BE:
+- Exactly ONE line
+- ONLY the relative path
+- NO markdown formatting
+- NO explanations or commentary
+- NO phrases like "Perfect!", "Done!", "Here is..."
+
+✅ CORRECT OUTPUT:
 ```
-specs/issue-37-adw-e4dc9574-sdlc_planner-feature-name.md
+specs/issue-564-adw-feature-Tac-13-Task-2-sdlc_planner-expertise-docs.md
 ```
 
-DO NOT include:
-- Any explanation or commentary
-- Phrases like "Perfect!", "I can see that...", "The plan file is at..."
-- Markdown formatting around the path
-- Multiple lines
-- Absolute paths (starting with /)
+❌ WRONG OUTPUT (will cause workflow failure):
+```
+Perfect! I created the plan at specs/issue-564...
+```
 
-ONLY output the bare RELATIVE path. This is machine-parsed.
+❌ WRONG OUTPUT (will cause workflow failure):
+```
+The plan file can be found at: specs/issue-564...
+```
+
+**THIS IS MACHINE-PARSED. ANY TEXT OTHER THAN THE PATH WILL BREAK THE WORKFLOW.**
