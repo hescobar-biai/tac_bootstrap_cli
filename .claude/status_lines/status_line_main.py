@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""
+Status Line Main Script - Dynamic Agent/Model/Branch Display
+
+Generates a single-line status display for Claude Code status bar configuration.
+Displays agent name, model, and current git branch for agentic workflow context.
+
+This script:
+- Reads CLAUDE_AGENT_NAME from environment (fallback: 'unknown')
+- Reads CLAUDE_MODEL from environment (fallback: 'unknown')
+- Queries current git branch via subprocess (fallback: 'unknown')
+- Outputs formatted status: Agent: <name> | Model: <model> | Branch: <branch>
+- Exits with code 0 always (non-blocking)
+- Handles all exceptions gracefully
+
+Environment Variables:
+- CLAUDE_AGENT_NAME: Name of the agent (set by Claude Code at runtime)
+- CLAUDE_MODEL: Model identifier (set by Claude Code at runtime)
+
+Exit Code:
+- Always 0 (status line is informational, never fails execution)
+"""
+
+import os
+import subprocess
+import sys
+
+
+def get_agent_name() -> str:
+    """
+    Get agent name from environment variable.
+
+    Returns:
+        Agent name or 'unknown' if not set/empty
+    """
+    agent_name = os.environ.get("CLAUDE_AGENT_NAME", "").strip()
+    return agent_name if agent_name else "unknown"
+
+
+def get_model_name() -> str:
+    """
+    Get model from environment variable.
+
+    Returns:
+        Model name or 'unknown' if not set/empty
+    """
+    model_name = os.environ.get("CLAUDE_MODEL", "").strip()
+    return model_name if model_name else "unknown"
+
+
+def get_git_branch() -> str:
+    """
+    Get current git branch name.
+
+    Handles various git states:
+    - Normal branch: returns branch name
+    - Detached HEAD: returns the ref
+    - No git repo: returns 'unknown'
+    - Git not installed: returns 'unknown'
+
+    Returns:
+        Branch name or 'unknown' if git operation fails
+    """
+    try:
+        branch = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=True,
+        )
+        branch_name = branch.stdout.strip()
+        return branch_name if branch_name else "unknown"
+    except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired, Exception):
+        # FileNotFoundError: git not installed
+        # CalledProcessError: git command failed (e.g., not a git repo)
+        # TimeoutExpired: git command took too long
+        # Exception: any other unexpected error
+        return "unknown"
+
+
+def main() -> None:
+    """Generate and print status line."""
+    try:
+        agent_name = get_agent_name()
+        model_name = get_model_name()
+        branch_name = get_git_branch()
+
+        # Format: Agent: <name> | Model: <model> | Branch: <branch>
+        status_line = f"Agent: {agent_name} | Model: {model_name} | Branch: {branch_name}"
+        print(status_line)
+
+        # Always exit successfully (non-blocking)
+        sys.exit(0)
+
+    except Exception:
+        # Catch any unexpected errors and exit gracefully
+        # Status line is informational - never fail execution
+        print("Agent: unknown | Model: unknown | Branch: unknown")
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
