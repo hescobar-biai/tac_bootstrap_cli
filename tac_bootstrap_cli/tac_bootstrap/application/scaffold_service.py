@@ -465,6 +465,15 @@ class ScaffoldService:
                 reason=reason,
             )
 
+        # Status line
+        plan.add_file(
+            ".claude/status_lines/status_line_main.py",
+            action=action,
+            template="claude/status_lines/status_line_main.py.j2",
+            reason="Status line script for agent/model/branch display",
+            executable=True,
+        )
+
         # Expert commands
         expert_commands = [
             ("experts/cc_hook_expert/cc_hook_expert_plan.md", "Hook expert planning command"),
