@@ -1181,11 +1181,32 @@ test -f .claude/commands/experts/cli/question.md && echo "✓ Template generated
 ```
 
 **Description:**
-Create self-improve prompt for CLI expert that validates and updates expertise file using the 7-phase TAC-13 pattern.
+Create self-improve prompt for CLI expert as both Jinja2 template (for CLI generation) and implementation file (for repo root use).
 
 **Technical Steps:**
 
-1. **Create self-improve prompt with complete 7-phase implementation**:
+#### A) Create Jinja2 Template in CLI
+
+1. **Create template file**:
+
+   **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/self-improve.md.j2`
+
+   Content uses `{{ config.project.name }}` variables where appropriate.
+
+2. **Register template in scaffold_service.py**:
+   ```python
+   # TAC-13: CLI Expert Self-Improve
+   plan.add_file(
+       action="create",
+       template="claude/commands/experts/cli/self-improve.md.j2",
+       path=".claude/commands/experts/cli/self-improve.md",
+       reason="CLI expert 7-phase self-improve workflow"
+   )
+   ```
+
+#### B) Create Implementation File in Repo Root
+
+1. **Create complete 7-phase prompt**:
 
    **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/self-improve.md`
 
@@ -1648,42 +1669,53 @@ Create self-improve prompt for CLI expert that validates and updates expertise f
    - Line count checks in Phase 6
 
 **Acceptance Criteria:**
-- ✅ Prompt file is 300-400 lines of markdown
-- ✅ All 7 phases are detailed with numbered steps
+- ✅ **Template (.j2)** created in CLI templates directory
+- ✅ **Template registered** in scaffold_service.py
+- ✅ **Implementation file** created in repo root
+- ✅ Jinja2 template uses {{ config.project.name }} variables
+- ✅ Prompt is 300-400 lines of markdown
+- ✅ All 7 phases detailed with numbered steps
 - ✅ Each phase includes bash command examples
-- ✅ Compression strategies documented with 4+ techniques
-- ✅ YAML validation command is explicit
+- ✅ Compression strategies documented (4+ techniques)
+- ✅ YAML validation command explicit
 - ✅ Report format includes all 7 phase summaries
-- ✅ Variables use defaults correctly (CHECK_GIT_DIFF defaults to false)
+- ✅ Variables use defaults (CHECK_GIT_DIFF defaults to false)
 
 **Validation Commands:**
 ```bash
-# Verify file exists
-test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/self-improve.md && echo "✓ File exists"
+# Verify template exists
+test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/self-improve.md.j2 && echo "✓ Template exists"
 
-# Check frontmatter
-head -10 /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/self-improve.md | python3 -c "import yaml, sys; yaml.safe_load(sys.stdin)"
+# Verify registration
+grep -A 3 "experts/cli/self-improve.md.j2" /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py && echo "✓ Registered"
 
-# Verify all 7 phases are present
+# Verify repo root file
+test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/self-improve.md && echo "✓ Repo file exists"
+
+# Check 7 phases present
 grep -c "### Phase [1-7]:" /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/self-improve.md
 # Should output: 7
 
-# Check Edit and Write tools are allowed
-grep "allowed-tools:" /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/self-improve.md | grep -E "Edit.*Write" && echo "✓ Can modify files"
-
-# Check line count
-wc -l /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/self-improve.md
+# Verify Edit/Write tools allowed
+grep "allowed-tools:" /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/self-improve.md | grep -E "Edit.*Write" && echo "✓ Can modify"
 ```
 
-**Test Command:**
+**Test Commands:**
 ```bash
-# Test self-improve after creation
+# Test local command
 cd /Users/hernandoescobar/Documents/Celes/tac_bootstrap
 /experts:cli:self-improve false "scaffold_service"
+
+# Test template generation
+cd /tmp/test-project
+tac-bootstrap add-agentic
+test -f .claude/commands/experts/cli/self-improve.md && echo "✓ Generated"
 ```
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/self-improve.md`
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/self-improve.md.j2` (template)
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py` (registration)
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/self-improve.md` (repo root)
 
 ---
 
@@ -1697,30 +1729,100 @@ cd /Users/hernandoescobar/Documents/Celes/tac_bootstrap
 ```
 
 **Description:**
-Create initial expertise.yaml file for CLI expert by running self-improve from blank state.
+Create initial expertise.yaml seed template and populate for repo root by running self-improve.
 
 **Technical Steps:**
-1. Create empty `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/expertise.yaml`
-2. Execute self-improve prompt to populate expertise
-3. Expert should document:
+
+#### A) Create Seed Template in CLI
+
+1. **Create empty seed template**:
+
+   **File**: `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/expertise.yaml.j2`
+
+   **Seed Content**:
+   ```yaml
+   overview:
+     description: "{{ config.project.name }} CLI and code generation system"
+     key_files: []
+     total_files: 0
+     last_updated: "{{ '{{' }} now().strftime('%Y-%m-%d') {{ '}}' }}"
+
+   core_implementation:
+     # To be populated by self-improve
+
+   key_operations:
+     # To be populated by self-improve
+
+   best_practices:
+     # To be populated by self-improve
+   ```
+
+2. **Register template in scaffold_service.py**:
+   ```python
+   # TAC-13: CLI Expert Expertise Seed
+   plan.add_file(
+       action="skip_if_exists",  # Don't overwrite if exists
+       template="claude/commands/experts/cli/expertise.yaml.j2",
+       path=".claude/commands/experts/cli/expertise.yaml",
+       reason="CLI expert expertise seed file"
+   )
+   ```
+
+#### B) Populate Expertise in Repo Root
+
+1. **Create empty file**:
+   ```bash
+   touch /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/expertise.yaml
+   ```
+
+2. **Execute self-improve to populate**:
+   ```bash
+   cd /Users/hernandoescobar/Documents/Celes/tac_bootstrap
+   /experts:cli:self-improve false
+   ```
+
+3. **Expert should document**:
    - CLI structure: `tac_bootstrap_cli/tac_bootstrap/`
    - Domain models: `domain/` (Config, Project, CommandConfig)
    - Application services: `application/scaffold_service.py`
    - Infrastructure: `infrastructure/` (template rendering, filesystem)
    - Interfaces: `interfaces/cli.py` (Typer commands)
    - Templates: `templates/` organization
-4. Include key operations with file paths and line numbers
-5. Document template registration pattern in scaffold_service.py
+   - Key operations with file paths and line numbers
+   - Template registration pattern in scaffold_service.py
 
 **Acceptance Criteria:**
-- Expertise file is valid YAML
-- Under 1000 lines
-- Documents CLI architecture accurately
-- References correct file paths and line numbers
-- Follows expertise-file-structure.md schema
+- ✅ **Seed template (.j2)** created in CLI templates
+- ✅ **Template registered** with `action="skip_if_exists"`
+- ✅ **Populated expertise** created in repo root
+- ✅ Expertise is valid YAML
+- ✅ Under 1000 lines
+- ✅ Documents CLI architecture accurately
+- ✅ References correct file paths and line numbers
+- ✅ Follows expertise-file-structure.md schema
+
+**Validation Commands:**
+```bash
+# Verify template exists
+test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/expertise.yaml.j2 && echo "✓ Seed template"
+
+# Verify registration with skip_if_exists
+grep -A 3 "experts/cli/expertise.yaml.j2" /Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py | grep "skip_if_exists" && echo "✓ Registered correctly"
+
+# Verify repo root expertise
+test -f /Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/expertise.yaml && echo "✓ Expertise exists"
+
+# Validate YAML
+python3 -c "import yaml; yaml.safe_load(open('.claude/commands/experts/cli/expertise.yaml'))" && echo "✓ Valid YAML"
+
+# Check line count
+wc -l .claude/commands/experts/cli/expertise.yaml
+```
 
 **Impacted Paths:**
-- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/expertise.yaml`
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/expertise.yaml.j2` (seed template)
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py` (registration)
+- `/Users/hernandoescobar/Documents/Celes/tac_bootstrap/.claude/commands/experts/cli/expertise.yaml` (populated repo root)
 
 ---
 
