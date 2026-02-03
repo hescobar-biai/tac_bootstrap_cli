@@ -521,6 +521,14 @@ class ScaffoldService:
             ("experts/adw/question.md", "ADW expert question prompt for workflow queries")
         )
 
+        # TAC-13 Task 10: Commands Expert - Question Prompt
+        expert_commands.append(
+            (
+                "experts/commands/question.md",
+                "Commands expert question prompt for command structure queries",
+            )
+        )
+
         # E2E test command examples
         e2e_commands = [
             ("e2e/README.md", "E2E test examples documentation"),

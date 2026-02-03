@@ -1,0 +1,294 @@
+---
+allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+description: Answer questions about command structure and workflows without coding
+argument-hint: [question]
+model: sonnet
+---
+
+# Commands Expert: Question Mode
+
+## Purpose
+
+Answer questions about `.claude/commands/*` structure and patterns by leveraging the Commands expert's mental model (expertise file) and validating assumptions against the actual command files.
+
+This is a **read-only** command - no code modifications allowed.
+
+## Variables
+
+- **USER_QUESTION**: `$1` (required) - The question to answer
+- **EXPERTISE_PATH**: `.claude/expertise/commands.yaml` (static)
+- **COMMANDS_ROOT**: `.claude/commands/` (static)
+
+## Instructions
+
+You are the Commands Expert for {{ config.project.name }}. You have a deep mental model of command structure and patterns stored in your expertise file.
+
+**Key Principles:**
+1. Start with expertise (mental model)
+2. Validate against actual code (source of truth)
+3. Report with evidence (file references + line numbers)
+4. Never guess - if unsure, read the code
+
+## Workflow
+
+### Phase 1: Read Expertise File
+
+1. Read the expertise file to understand your mental model:
+   ```bash
+   # Read Commands expert's mental model
+   cat .claude/expertise/commands.yaml
+   ```
+
+2. Parse the expertise for relevant information:
+   - Review `overview` section for high-level command ecosystem context
+   - Check `frontmatter_patterns` for YAML structure and allowed-tools
+   - Examine `variable_patterns` for `$1`, `$2` usage conventions
+   - Review `workflow_patterns` for phase-based execution patterns
+   - Study `tool_restrictions` for permission scoping across commands
+   - Review `integration_patterns` for command chaining and expert architecture
+   - Note any `known_issues` or `best_practices`
+
+3. Identify which sections of expertise are relevant to USER_QUESTION
+
+### Phase 2: Validate Expertise Against Codebase
+
+**CRITICAL**: The expertise file is a mental model, NOT source of truth. Always validate assumptions against actual code.
+
+1. Based on USER_QUESTION and expertise, identify relevant command files to read:
+   ```bash
+   # Example: If question is about expert commands
+   cat .claude/commands/experts/adw/question.md
+
+   # Example: If question is about feature planning
+   cat .claude/commands/feature.md
+
+   # Example: If question is about build commands
+   cat .claude/commands/build.md
+   ```
+
+2. Use Glob to find relevant patterns:
+   ```bash
+   # Find all expert commands
+   ls .claude/commands/experts/*/*.md
+
+   # Find all top-level workflow commands
+   ls .claude/commands/*.md
+
+   # Find all E2E test commands
+   ls .claude/commands/e2e/*.md
+   ```
+
+3. Cross-reference expertise claims with actual code:
+   - Verify frontmatter YAML structure (`allowed-tools`, `description`, `argument-hint`, `model`)
+   - Confirm variable patterns (`$1`, `$2`, shell expansion)
+   - Check phase-based workflow patterns (Phase 1, Phase 2, Phase 3)
+   - Validate tool restriction scoping (different tools per command)
+   - Confirm integration patterns (command chaining, expert workflows)
+
+4. Use Grep for pattern searches:
+   ```bash
+   # Example: Find all commands with specific tool permissions
+   grep -n "allowed-tools:" .claude/commands/**/*.md
+
+   # Example: Find all variable usage patterns
+   grep -n '\$1\|\$2\|\$3' .claude/commands/**/*.md
+
+   # Example: Find all phase-based workflows
+   grep -n "Phase 1:\|Phase 2:\|Phase 3:" .claude/commands/**/*.md
+   ```
+
+5. Note any discrepancies:
+   - Expertise outdated? Document for self-improve
+   - Missing information? Note gaps
+   - Contradictions? Trust code over expertise
+
+### Phase 3: Report Findings
+
+Provide a comprehensive answer structured as follows:
+
+#### 1. Direct Answer
+- Answer USER_QUESTION clearly and concisely
+- Lead with the most important information
+- Use Commands-specific terminology (frontmatter, variables, phases, tool restrictions, etc.)
+
+#### 2. Evidence from Code
+- Provide file paths and line numbers
+- Include relevant code snippets
+- Format: `file_path:line_start-line_end`
+
+Example:
+```
+Variable pattern implementation in feature.md:
+- Location: .claude/commands/feature.md:15-20
+- Pattern: Uses $1 for feature description via shell variable expansion
+- Frontmatter: allowed-tools restricts available operations
+```
+
+#### 3. Context and Relationships
+- Explain how this fits into the command ecosystem
+- Mention related commands, experts, or workflows
+- Reference expertise sections if helpful
+- Describe integration patterns if applicable
+
+#### 4. Examples (if applicable)
+- Provide concrete usage examples
+- Show command invocations with arguments
+- Include workflow chaining patterns
+- Demonstrate variable expansion
+
+#### 5. Commands-Specific Patterns
+- **Frontmatter Structure**: How YAML frontmatter defines command behavior
+- **Variable Patterns**: How `$1`, `$2` are used for shell expansion
+- **Phase-Based Workflows**: How multi-phase execution structures tasks
+- **Tool Restrictions**: How `allowed-tools` scopes permissions per command
+- **Integration Patterns**: How commands chain together or invoke experts
+- **Expert Architecture**: How expert commands (question, plan, build, improve) work
+
+#### 6. Additional Notes
+- Mention any caveats or edge cases
+- Reference best practices from expertise
+- Note any known issues
+- Highlight tool restriction implications
+
+#### 7. Discrepancies (if any)
+- Report any differences between expertise and actual code
+- Format: "Expertise says X, but code shows Y"
+- Recommend running self-improve if significant gaps exist
+
+## Report Format
+
+```
+## Answer: [USER_QUESTION]
+
+### Direct Answer
+[Clear, concise answer using Commands terminology]
+
+### Evidence
+- **File**: [path:line_start-line_end]
+  ```[language]
+  [relevant code snippet]
+  ```
+- **File**: [path:line_start-line_end]
+  [description]
+
+### Context
+[How this fits into the command ecosystem]
+
+### Examples
+```bash
+[example command invocation with arguments]
+```
+
+### Commands Patterns
+- **Frontmatter**: [YAML structure and configuration]
+- **Variables**: [shell expansion patterns]
+- **Phases**: [workflow execution structure]
+- **Tool Restrictions**: [permission scoping]
+- **Integration**: [command chaining or expert workflows]
+
+### Additional Notes
+- [Note 1]
+- [Note 2]
+
+### Expertise Status
+✅ Expertise is accurate
+OR
+⚠️ Expertise needs update: [describe discrepancy]
+```
+
+## Example Execution
+
+**Question**: "How do command variables like $1 and $2 work?"
+
+**Expected Report**:
+```
+## Answer: How do command variables like $1 and $2 work?
+
+### Direct Answer
+Command variables use shell positional parameter expansion. When you invoke a command like `/feature "Add login"`, the argument "Add login" becomes `$1` within the command file. Commands define these variables in their frontmatter and use them throughout the workflow phases.
+
+### Evidence
+- **File**: .claude/commands/feature.md:1-6
+  ```yaml
+  ---
+  allowed-tools: Bash, Read, Grep, Glob, TodoWrite, EnterPlanMode
+  description: Create a feature implementation plan
+  argument-hint: [feature description]
+  model: sonnet
+  ---
+  ```
+
+- **File**: .claude/commands/feature.md:12-15
+  ```markdown
+  ## Variables
+  - **FEATURE_DESCRIPTION**: `$1` (required) - The feature to plan
+  ```
+
+- **File**: .claude/commands/experts/adw/question.md:18
+  ```markdown
+  - **USER_QUESTION**: `$1` (required) - The question to answer
+  ```
+
+### Context
+Variable expansion is fundamental to command reusability. Commands are markdown templates with embedded shell variables that get expanded at runtime when Claude Code executes the command. This allows the same command structure to handle different inputs without modification.
+
+The variable definition pattern appears in two places:
+1. **Frontmatter**: `argument-hint: [description]` documents expected arguments
+2. **Variables Section**: Explicitly maps `$1`, `$2` to semantic names
+
+### Examples
+```bash
+# Single argument command
+/feature "Add user authentication"
+# Inside command: $1 = "Add user authentication"
+
+# Multi-argument command (if supported)
+/commit "Fix login bug" "Resolves issue with session timeout"
+# Inside command: $1 = "Fix login bug", $2 = "Resolves issue with session timeout"
+
+# Expert command with question
+/experts/adw/question "How does SDLC orchestration work?"
+# Inside command: $1 = "How does SDLC orchestration work?"
+```
+
+### Commands Patterns
+- **Frontmatter**: `argument-hint` documents expected arguments for user guidance
+- **Variables**: `$1`, `$2`, etc. follow standard shell positional parameter conventions
+- **Phases**: Variables are used throughout workflow phases for consistency
+- **Tool Restrictions**: Variable content doesn't affect tool permissions (set in frontmatter)
+- **Integration**: Variables enable dynamic command chaining (pass outputs as inputs)
+
+### Additional Notes
+- Shell expansion happens before Claude sees the command content
+- Use double quotes for arguments with spaces: `/feature "Multi word description"`
+- Variables are required unless command explicitly handles missing arguments
+- Expert commands typically use `$1` for domain-specific input (question, plan, code)
+- Not all commands require arguments (e.g., `/test`, `/build` may use defaults)
+
+### Expertise Status
+✅ Expertise is accurate (validated against multiple command files)
+```
+
+## Edge Cases
+
+1. **Missing Commands Directory**: If `.claude/commands/` doesn't exist, inform user that commands are not initialized
+2. **Empty expertise file**: Handle gracefully, rely purely on code validation
+3. **Malformed YAML**: Report parsing errors and fall back to code-only analysis
+4. **Non-existent commands**: Guide user to available commands via directory listing
+5. **General vs specific queries**: Support both pattern questions and specific command questions
+6. **Nested command structure**: Handle subdirectories like `experts/*/`, `e2e/*`
+
+## Key Commands Concepts to Reference
+
+- **Frontmatter Structure**: YAML header with `allowed-tools`, `description`, `argument-hint`, `model`
+- **Variable Patterns**: `$1`, `$2` for shell positional parameters, semantic names in Variables section
+- **Phase-Based Workflows**: Multi-step execution patterns (Phase 1, Phase 2, Phase 3)
+- **Tool Restrictions**: `allowed-tools` limits what operations commands can perform
+- **Integration Patterns**: Commands call other commands, trigger workflows, or invoke experts
+- **Expert Architecture**: Specialized commands under `experts/*/` with domain expertise
+  - `question.md`: Read-only Q&A using expertise file
+  - `plan.md`: Planning mode for implementations
+  - `build.md`: Code generation following plans
+  - `improve.md`: Self-improvement by validating expertise against code
+- **Argument Hints**: User-facing documentation for expected command arguments
+- **Model Selection**: Commands can specify `sonnet`, `opus`, or `haiku` for execution
