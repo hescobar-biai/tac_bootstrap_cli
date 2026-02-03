@@ -537,6 +537,14 @@ class ScaffoldService:
             )
         )
 
+        # TAC-13 Task 12: Commands Expert Expertise Seed
+        plan.add_file(
+            ".claude/commands/experts/commands/expertise.yaml",
+            action=FileAction.CREATE,  # Don't overwrite if exists
+            template="claude/commands/experts/commands/expertise.yaml.j2",
+            reason="Commands expert expertise seed file",
+        )
+
         # E2E test command examples
         e2e_commands = [
             ("e2e/README.md", "E2E test examples documentation"),
