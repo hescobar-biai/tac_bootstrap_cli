@@ -506,6 +506,11 @@ class ScaffoldService:
             reason="CLI expert expertise seed file",
         )
 
+        # TAC-13 Task 7: ADW Expert - Question Prompt
+        expert_commands.append(
+            ("experts/adw/question.md", "ADW expert question prompt for workflow queries")
+        )
+
         # E2E test command examples
         e2e_commands = [
             ("e2e/README.md", "E2E test examples documentation"),
