@@ -1,0 +1,300 @@
+---
+allowed-tools:
+  - Task
+  - Read
+  - AskUserQuestion
+  - TodoWrite
+description: "Expert orchestrator - plan→build→improve workflow"
+argument-hint: "[domain] [task_description]"
+model: sonnet
+---
+
+# Expert Orchestrator - Plan → Build → Improve Workflow
+
+Automates the complete expert workflow cycle: planning, building, and self-improvement for domain experts.
+
+## Variables
+
+- **EXPERT_DOMAIN**: `$1` (required) - Domain expert to orchestrate (adw, cli, commands, cc_hook_expert)
+- **TASK_DESCRIPTION**: `$2` (required) - Description of the task to execute
+
+## Purpose
+
+This meta-command orchestrates a complete expert workflow by sequentially executing:
+1. **Plan Step**: Expert creates implementation plan
+2. **Build Step**: Implementation of the plan
+3. **Improve Step**: Expert validates and improves based on implementation
+
+This ensures all three phases execute correctly with proper error handling and progress tracking.
+
+## Instructions
+
+### Step 1: Input Validation
+
+**Validate EXPERT_DOMAIN:**
+- Check that `$1` is provided
+- Validate against known domains: `adw`, `cli`, `commands`, `cc_hook_expert`
+- If invalid or missing, display error:
+  ```
+  ❌ Invalid or missing domain.
+
+  Usage: /expert-orchestrate [domain] [task_description]
+
+  Valid domains:
+  - adw: ADW workflow expert
+  - cli: CLI generator expert
+  - commands: Command template expert
+  - cc_hook_expert: Claude Code hooks expert
+
+  Example: /expert-orchestrate cli "add help text to wizard command"
+  ```
+- Stop execution if validation fails
+
+**Validate TASK_DESCRIPTION:**
+- Check that `$2` is provided and non-empty
+- If missing, display error:
+  ```
+  ❌ Task description is required.
+
+  Usage: /expert-orchestrate [domain] [task_description]
+
+  Example: /expert-orchestrate adw "create feature planning workflow"
+  ```
+- Stop execution if validation fails
+
+**If both validations pass, continue to Step 2**
+
+### Step 2: Initialize Todo List
+
+Create todo list to track the 3-step workflow:
+
+```
+Use TodoWrite tool to create:
+- 🔍 Planning: Create implementation plan with expert
+- 🔨 Building: Implement the plan
+- ✨ Improving: Validate and improve with expert
+```
+
+Set first todo (Planning) to `in_progress`.
+
+### Step 3: Execute Planning Phase
+
+**Display progress marker:**
+```
+🔍 Step 1/3: Planning with {{ config.project.name }} {EXPERT_DOMAIN} expert...
+```
+
+**Spawn planning subagent using Task tool:**
+```
+Task:
+  subagent_type: "general-purpose"
+  description: "Plan {TASK_DESCRIPTION}"
+  prompt: "/experts:{EXPERT_DOMAIN}:plan {TASK_DESCRIPTION}"
+```
+
+**Wait for planning agent to complete**
+
+**Extract plan file path from output:**
+- Search for markdown file path pattern in agent output
+- Use regex pattern: `([a-zA-Z0-9_/\-\.]+\.md)` to extract path
+- Common patterns to look for:
+  - `specs/issue-*.md`
+  - `specs/plan-*.md`
+  - `specs/hook-*-plan.md`
+- Store extracted path in variable `PLAN_FILE_PATH`
+
+**Error handling:**
+- If planning agent fails: Display error, mark todo as failed, ABORT workflow
+- If cannot extract plan path: Display error below, ABORT workflow
+  ```
+  ❌ Could not extract plan file path from planning step.
+
+  The planning phase must output a valid .md plan file path.
+  Common patterns: specs/issue-*.md or specs/plan-*.md
+
+  Please check the planning agent output and try again.
+  ```
+
+**Mark planning todo as completed, set building todo to in_progress**
+
+### Step 4: Execute Build Phase
+
+**Display progress marker:**
+```
+🔨 Step 2/3: Building implementation from plan...
+```
+
+**Verify plan file exists:**
+```
+Use Read tool to verify {PLAN_FILE_PATH} exists
+If file doesn't exist, display error and ABORT:
+  ❌ Plan file not found: {PLAN_FILE_PATH}
+```
+
+**Spawn build subagent using Task tool:**
+```
+Task:
+  subagent_type: "general-purpose"
+  description: "Build {TASK_DESCRIPTION}"
+  prompt: "/build {PLAN_FILE_PATH}"
+```
+
+**Wait for build agent to complete**
+
+**Error handling:**
+- If build agent fails: Display error, mark todo as failed, ABORT workflow
+- Extract error details from build agent output
+- Display helpful error message with context
+
+**Mark building todo as completed, set improving todo to in_progress**
+
+### Step 5: Execute Self-Improve Phase
+
+**Display progress marker:**
+```
+✨ Step 3/3: Validating and improving with expert...
+```
+
+**Spawn self-improve subagent using Task tool:**
+```
+Task:
+  subagent_type: "general-purpose"
+  description: "Validate {TASK_DESCRIPTION}"
+  prompt: "/experts:{EXPERT_DOMAIN}:self-improve true"
+```
+
+**Wait for self-improve agent to complete**
+
+**Error handling:**
+- If self-improve agent fails: Display warning (not fatal), continue to report
+- Self-improve failures are non-blocking - implementation is already done
+
+**Mark improving todo as completed**
+
+### Step 6: Generate Synthesis Report
+
+**Create markdown report with all three phases:**
+
+```markdown
+# Expert Orchestration Report
+
+**Domain**: {EXPERT_DOMAIN}
+**Task**: {TASK_DESCRIPTION}
+**Date**: {current_date}
+
+---
+
+## 🔍 Phase 1: Planning
+
+**Status**: ✅ Completed
+**Plan File**: {PLAN_FILE_PATH}
+
+**Plan Summary**:
+{Extract key points from planning agent output - 3-5 bullet points}
+
+---
+
+## 🔨 Phase 2: Building
+
+**Status**: ✅ Completed
+
+**Build Results**:
+{Extract key points from build agent output - implementation summary}
+
+**Files Changed**:
+{If available from build output, list files modified/created}
+
+---
+
+## ✨ Phase 3: Self-Improvement
+
+**Status**: {✅ Completed / ⚠️ Warning}
+
+**Improvements Made**:
+{Extract key points from self-improve agent output - validation results}
+
+**Expert Knowledge Updated**: {Yes/No based on self-improve output}
+
+---
+
+## Next Steps
+
+- Review implementation in {PLAN_FILE_PATH}
+- Run `/test` to validate with automated tests
+- Run `/review` for code quality check
+- Consider running `/commit` to create git commit
+
+---
+
+**Orchestration completed successfully** 🎉
+```
+
+**Display report to stdout**
+
+**Optionally save report to file:**
+- File path: `.claude/reports/orchestrate-{EXPERT_DOMAIN}-{timestamp}.md`
+- Only create file if `.claude/reports/` directory exists
+- If directory doesn't exist, skip file save (stdout display is sufficient)
+
+### Step 7: Final Status
+
+**Display completion message:**
+```
+✅ Expert orchestration completed successfully!
+
+Workflow: Plan → Build → Improve
+Duration: 3 phases
+Status: All phases completed
+
+Report displayed above. Review implementation and run validation commands.
+```
+
+## Error Handling Strategy
+
+**Abort-on-failure for sequential dependencies:**
+- Planning fails → ABORT (cannot build without plan)
+- Build fails → ABORT (cannot validate without implementation)
+- Self-improve fails → WARN (implementation exists, validation failed)
+
+**Clear error messages:**
+- Display which step failed (Step X/3)
+- Show what was completed successfully before failure
+- Provide actionable suggestions for resolution
+- Reference plan file if it was created
+
+**Recovery guidance:**
+- If planning fails: Check expert domain spelling and task description clarity
+- If build fails: Review plan file, check for missing dependencies
+- If self-improve fails: Implementation is complete, expert update may be manual
+
+## Success Criteria
+
+Orchestration is successful if:
+1. ✅ Domain and task description validated
+2. ✅ Planning phase completes and produces plan file
+3. ✅ Plan file path extracted successfully
+4. ✅ Build phase completes implementation
+5. ✅ Self-improve phase completes (or warns gracefully)
+6. ✅ Synthesis report generated with all three phases
+7. ✅ Clear progress markers shown throughout
+8. ✅ Proper error handling with abort-on-failure
+
+## Notes
+
+**Known Domains:**
+- `adw`: ADW workflow expert (`.claude/commands/experts/adw/`)
+- `cli`: CLI generator expert (`.claude/commands/experts/cli/`)
+- `commands`: Command template expert (`.claude/commands/experts/commands/`)
+- `cc_hook_expert`: Claude Code hooks expert (`.claude/commands/experts/cc_hook_expert/`)
+
+**Expert Command Patterns:**
+- Planning: `/experts:{domain}:plan [task]` → outputs plan file path
+- Self-improve: `/experts:{domain}:self-improve [check_git_diff]` → validates expertise
+
+**Build Command:**
+- `/build [plan_path]` → implements plan from file path
+
+**Plan File Path Patterns:**
+- Issue-based: `specs/issue-{number}-{description}.md`
+- Generic: `specs/plan.md`
+- Hook-specific: `specs/hook-{name}-plan.md`
