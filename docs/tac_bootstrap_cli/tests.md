@@ -1,8 +1,8 @@
 ---
 doc_type: folder
-domain: tac-bootstrap_cli/tests/repo
+domain: tac-bootstrap/cli/tests
 owner: UNKNOWN
-level: L3
+level: L4
 tags:
   - expert:frontend
   - level:L3
