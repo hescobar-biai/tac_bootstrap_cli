@@ -1,0 +1,698 @@
+---
+allowed-tools: Read, Grep, Glob, Bash, Edit, Write, TodoWrite
+description: Self-improve Commands expertise by validating against codebase
+argument-hint: [check_git_diff] [focus_area]
+model: sonnet
+---
+
+# Commands Expert: Self-Improve Mode
+
+## Purpose
+
+Maintain and update the Commands expert's mental model (expertise.yaml) by validating it against the actual codebase and incorporating new knowledge.
+
+This is the **Learn** step in the Act → Learn → Reuse loop.
+
+## Variables
+
+- **CHECK_GIT_DIFF**: `$1` (default: `false`) - If `true`, focus on recently changed files
+- **FOCUS_AREA**: `$2` (default: empty) - Optional area to focus on (e.g., "frontmatter", "variables", "phases", "experts", "template_registration")
+- **EXPERTISE_FILE**: `.claude/commands/experts/commands/expertise.yaml` (static)
+- **COMMANDS_ROOT**: `.claude/commands/` (static)
+- **TEMPLATES_ROOT**: `{{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands/` (static)
+- **MAX_LINES**: `1000` (static)
+
+## Instructions
+
+You are the Commands Expert updating your mental model. Follow the 7-phase workflow strictly:
+
+1. **Check git diff** (if requested)
+2. **Read current expertise**
+3. **Validate against codebase**
+4. **Identify discrepancies**
+5. **Update expertise**
+6. **Enforce line limit**
+7. **Validate YAML syntax**
+
+**Key Principles:**
+- Expertise is a mental model, NOT source of truth
+- Focus on patterns and high-value knowledge
+- Keep under 1000 lines (compress if needed)
+- Always validate YAML syntax before finishing
+
+## Workflow
+
+### Phase 1: Check Git Diff (Conditional)
+
+**Execute only if CHECK_GIT_DIFF is `true`**
+
+1. Run git diff to see recent changes:
+   ```bash
+   # Check unstaged changes
+   git diff HEAD -- .claude/commands/
+
+   # Check staged changes
+   git diff --cached -- .claude/commands/
+
+   # Check last commit
+   git log -1 --stat --oneline -- .claude/commands/
+   ```
+
+2. Identify changed files in Commands domain:
+   ```bash
+   # List changed command files
+   git diff --name-only HEAD -- .claude/commands/
+
+   # List changed template files
+   git diff --name-only HEAD -- {{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands/
+   ```
+
+3. Note focus areas based on changes:
+   - If command `.md` files changed → focus on frontmatter, variables, phases
+   - If template `.j2` files changed → focus on Jinja2 patterns, config variables
+   - If `scaffold_service.py` changed → focus on template registration
+   - If `experts/` commands changed → focus on expert architecture
+   - If `e2e/` commands changed → focus on test patterns
+
+4. Update FOCUS_AREA internally based on findings
+
+**If CHECK_GIT_DIFF is `false`**: Skip to Phase 2
+
+### Phase 2: Read Current Expertise
+
+1. Read the existing expertise file:
+   ```bash
+   cat .claude/commands/experts/commands/expertise.yaml
+   ```
+
+2. Parse the structure:
+   - Note `last_updated` date
+   - Review `frontmatter_patterns` section
+   - Check `variable_patterns` section
+   - Review `workflow_patterns` (phase-based execution)
+   - Examine `tool_restrictions` section
+   - Review `integration_patterns` section
+   - Check `template_registration` section
+   - Review `dual_strategy` (template + implementation sync)
+   - Review `recent_changes` entries
+
+3. Identify sections to validate:
+   - If FOCUS_AREA is set: prioritize that section
+   - Otherwise: validate all sections systematically
+
+4. Track current line count:
+   ```bash
+   wc -l .claude/commands/experts/commands/expertise.yaml
+   ```
+
+### Phase 3: Validate Expertise Against Codebase
+
+**Systematic validation of expertise claims**
+
+1. **Validate Overview Section**:
+   ```bash
+   # Check if key command files exist and are current
+   for file in $(grep -A 10 "key_files:" .claude/commands/experts/commands/expertise.yaml | grep "- " | sed 's/.*- "\(.*\)"/\1/'); do
+       test -f "$file" && echo "✓ $file" || echo "✗ MISSING: $file"
+   done
+   ```
+
+2. **Validate Frontmatter Patterns**:
+   ```bash
+   # Verify frontmatter structure across commands
+   # Example: Check allowed-tools patterns
+
+   # Sample multiple commands to verify pattern
+   head -6 .claude/commands/feature.md
+   head -6 .claude/commands/build.md
+   head -6 .claude/commands/experts/cli/question.md
+
+   # Find all allowed-tools patterns
+   grep -h "allowed-tools:" .claude/commands/**/*.md | sort | uniq
+
+   # Check for description patterns
+   grep -h "description:" .claude/commands/**/*.md | head -10
+
+   # Verify argument-hint usage
+   grep -h "argument-hint:" .claude/commands/**/*.md | head -10
+
+   # Check model specifications
+   grep -h "model:" .claude/commands/**/*.md | sort | uniq
+   ```
+
+3. **Validate Variable Patterns**:
+   ```bash
+   # Check how commands use $1, $2 variables
+   # Example: Feature command
+
+   # Read feature command
+   cat .claude/commands/feature.md
+
+   # Find variable definitions
+   grep -A 5 "## Variables" .claude/commands/feature.md
+
+   # Find variable usage patterns
+   grep '\$1\|\$2\|\$3' .claude/commands/**/*.md
+
+   # Check semantic naming conventions
+   grep -E "FEATURE_|PLAN_|ISSUE_|QUESTION_" .claude/commands/**/*.md
+   ```
+
+4. **Validate Phase-Based Workflows**:
+   ```bash
+   # Verify phase structure patterns
+   # Example: Check multi-phase commands
+
+   # Find commands with phase patterns
+   grep -l "Phase 1:\|Phase 2:\|Phase 3:" .claude/commands/**/*.md
+
+   # Examine phase structure in detail
+   grep -A 10 "Phase 1:" .claude/commands/experts/cli/self-improve.md
+
+   # Count phases per command
+   for cmd in .claude/commands/**/*.md; do
+       phase_count=$(grep -c "Phase [0-9]:" "$cmd" || echo 0)
+       if [ "$phase_count" -gt 0 ]; then
+           echo "$cmd: $phase_count phases"
+       fi
+   done
+   ```
+
+5. **Validate Tool Restrictions**:
+   ```bash
+   # Analyze allowed-tools patterns across commands
+   # Example: Compare tool sets
+
+   # Expert commands (read-only)
+   grep "allowed-tools:" .claude/commands/experts/*/question.md
+
+   # Self-improve commands (read-write)
+   grep "allowed-tools:" .claude/commands/experts/*/self-improve.md
+
+   # Workflow commands (varied permissions)
+   grep "allowed-tools:" .claude/commands/feature.md
+   grep "allowed-tools:" .claude/commands/build.md
+   grep "allowed-tools:" .claude/commands/test.md
+   ```
+
+6. **Validate Integration Patterns**:
+   ```bash
+   # Check command chaining patterns
+   # Example: Expert architecture
+
+   # List all expert domains
+   ls -d .claude/commands/experts/*/
+
+   # Verify expert command structure (question, plan, build, improve)
+   for domain in cli adw commands; do
+       echo "=== Expert: $domain ==="
+       ls .claude/commands/experts/$domain/*.md
+   done
+
+   # Find commands that invoke other commands
+   grep -r "Skill\|/feature\|/plan\|/build" .claude/commands/**/*.md
+   ```
+
+7. **Validate Template Registration**:
+   ```bash
+   # Check template registration in scaffold_service.py
+   # Read registration section
+   cat {{ config.cli.name }}/{{ config.cli.package_name }}/application/scaffold_service.py
+
+   # Find command template registration patterns
+   grep -n "plan.add_file" {{ config.cli.name }}/{{ config.cli.package_name }}/application/scaffold_service.py | grep "commands/"
+
+   # Verify expert command registration
+   grep -A 2 "experts/cli/question.md\|experts/adw/question.md\|experts/commands/question.md" {{ config.cli.name }}/{{ config.cli.package_name }}/application/scaffold_service.py
+
+   # Count registered command templates
+   grep -c '"commands/' {{ config.cli.name }}/{{ config.cli.package_name }}/application/scaffold_service.py
+   ```
+
+8. **Validate Dual Strategy Compliance**:
+   ```bash
+   # Verify templates and implementations are synchronized
+   # Example: Check if .j2 templates match .md implementations
+
+   # List template files
+   find {{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands -name "*.j2"
+
+   # List implementation files
+   find .claude/commands -name "*.md"
+
+   # Compare specific pairs
+   # Template: experts/cli/question.md.j2
+   # Implementation: .claude/commands/experts/cli/question.md
+   test -f {{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands/experts/cli/question.md.j2 && echo "✓ Template exists"
+   test -f .claude/commands/experts/cli/question.md && echo "✓ Implementation exists"
+
+   # Check for Jinja2 variables in templates
+   grep -h "{{.*config" {{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands/**/*.j2 | head -10
+   ```
+
+9. **Discover New Information**:
+   ```bash
+   # Find commands not yet documented
+   find .claude/commands -name "*.md" | grep -v __pycache__
+
+   # Find new templates added
+   find {{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands -name "*.j2" | grep -v __pycache__
+
+   # Check for new patterns in recent commands
+   ls -lt .claude/commands/**/*.md | head -10
+   ```
+
+10. **Check for Architectural Changes**:
+   - New command categories or subdirectories?
+   - New expert domains?
+   - Changed frontmatter structure?
+   - New variable patterns or conventions?
+   - Modified phase-based workflow patterns?
+   - New tool restriction patterns?
+   - Updated template registration patterns?
+
+### Phase 4: Identify Discrepancies
+
+**Document ALL differences between expertise and reality**
+
+Create a discrepancies report:
+
+```markdown
+## Discrepancies Found
+
+### Outdated Information
+- [ ] Expertise says: "Command X uses frontmatter pattern Y"
+      Reality: Pattern updated to Z in recent refactor
+
+- [ ] Expertise documents: allowed-tools: A, B, C
+      Reality: Command now uses allowed-tools: A, B, D (C replaced with D)
+
+### Missing Information
+- [ ] New command added: `.claude/commands/new-command.md`
+      Not documented in expertise
+
+- [ ] New expert domain: `experts/new-domain/`
+      Should be documented in integration_patterns
+
+- [ ] New template variable: `{{ config.new_field }}`
+      Should be documented in dual_strategy section
+
+### Incorrect Information
+- [ ] Expertise: "Variable pattern uses $1 for X"
+      Reality: Pattern changed to use semantic name FEATURE_X
+
+- [ ] Expertise: "Phase 3 validates YAML"
+      Reality: Validation moved to Phase 7 in recent update
+
+### Gaps in Coverage
+- [ ] No documentation for: E2E test command patterns
+- [ ] Missing workflow: "How command chaining works"
+- [ ] Missing pattern: "Jinja2 config variable usage in templates"
+```
+
+### Phase 5: Update Expertise File
+
+**Apply updates based on discrepancies**
+
+1. **Update Overview** (if needed):
+   ```yaml
+   overview:
+     description: "Updated description if command ecosystem changed"
+     key_files:
+       - "add new important command files"
+       - "remove obsolete command files"
+     last_updated: "2026-02-03"  # Always update date
+   ```
+
+2. **Update Frontmatter Patterns**:
+   ```yaml
+   frontmatter_patterns:
+     yaml_structure:
+       required_fields:
+         - allowed-tools
+         - description
+         - model
+       optional_fields:
+         - argument-hint
+     allowed_tools_patterns:
+       read_only: ["Bash", "Read", "Grep", "Glob", "TodoWrite"]  # question commands
+       read_write: ["Read", "Grep", "Glob", "Bash", "Edit", "Write", "TodoWrite"]  # self-improve
+       workflow: ["Bash", "Read", "Grep", "Glob", "TodoWrite", "EnterPlanMode"]  # feature/build
+     description_conventions:
+       pattern: "Verb-based description of command purpose"
+       examples:
+         - "Answer questions about CLI structure without coding"
+         - "Self-improve CLI expertise by validating against codebase"
+     model_options: ["sonnet", "opus", "haiku"]
+   ```
+
+3. **Update Variable Patterns**:
+   ```yaml
+   variable_patterns:
+     shell_expansion:
+       positional_parameters: ["$1", "$2", "$3"]
+       usage: "Shell expands variables before Claude sees content"
+     semantic_naming:
+       convention: "Map $1 to semantic name in Variables section"
+       examples:
+         - "$1 → FEATURE_DESCRIPTION"
+         - "$1 → USER_QUESTION"
+         - "$1 → PLAN_FILE"
+     argument_hints:
+       frontmatter_field: "argument-hint: [description]"
+       purpose: "User-facing documentation for expected arguments"
+       examples:
+         - "argument-hint: [feature description]"
+         - "argument-hint: [question]"
+         - "argument-hint: [check_git_diff] [focus_area]"
+   ```
+
+4. **Update Workflow Patterns**:
+   ```yaml
+   workflow_patterns:
+     phase_based_execution:
+       pattern: "Multi-step workflows divided into numbered phases"
+       phase_structure:
+         heading: "### Phase N: [Phase Name]"
+         description: "Purpose and steps for this phase"
+         examples: "Bash commands or tool usage examples"
+       common_phase_counts:
+         simple_commands: 1-3
+         expert_self_improve: 7
+         sdlc_workflows: 5-8
+     conditional_execution:
+       pattern: "Phases may execute conditionally based on variables"
+       example: "Phase 1 only runs if CHECK_GIT_DIFF is true"
+   ```
+
+5. **Update Tool Restrictions**:
+   ```yaml
+   tool_restrictions:
+     permission_scoping:
+       principle: "allowed-tools limits operations per command"
+       read_only_pattern:
+         tools: ["Bash", "Read", "Grep", "Glob", "TodoWrite"]
+         use_cases: ["question commands", "exploration", "validation"]
+       read_write_pattern:
+         tools: ["Read", "Grep", "Glob", "Bash", "Edit", "Write", "TodoWrite"]
+         use_cases: ["self-improve", "code updates", "expertise maintenance"]
+       workflow_pattern:
+         tools: ["Bash", "Read", "Grep", "Glob", "TodoWrite", "EnterPlanMode"]
+         use_cases: ["feature planning", "build orchestration"]
+   ```
+
+6. **Update Integration Patterns**:
+   ```yaml
+   integration_patterns:
+     expert_architecture:
+       structure: "experts/{domain}/{command}.md"
+       domains: ["cli", "adw", "commands"]
+       command_types:
+         - "question.md: Read-only Q&A using expertise"
+         - "plan.md: Planning mode for implementations"
+         - "build.md: Code generation following plans"
+         - "self-improve.md: Update expertise by validating against code"
+     command_chaining:
+       pattern: "Commands invoke other commands via Skill tool"
+       examples:
+         - "Feature command → EnterPlanMode → Plan mode"
+         - "Build command → Expert build command"
+   ```
+
+7. **Update Template Registration**:
+   ```yaml
+   template_registration:
+     location: "{{ config.cli.name }}/{{ config.cli.package_name }}/application/scaffold_service.py"
+     pattern: |
+       plan.add_file(
+           action="create",
+           template="claude/commands/path/to/command.md.j2",
+           path=".claude/commands/path/to/command.md",
+           reason="Brief description of command purpose"
+       )
+     sections:
+       - name: "_add_claude_code_commands"
+         purpose: "Register base workflow commands"
+         line_range: "150-300"
+       - name: "expert_commands"
+         purpose: "Register expert domain commands"
+         line_range: "484-540"
+   ```
+
+8. **Update Dual Strategy**:
+   ```yaml
+   dual_strategy:
+     compliance:
+       principle: "Templates (.j2) and implementations (.md) must stay synchronized"
+       template_location: "{{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands/"
+       implementation_location: ".claude/commands/"
+     jinja2_variables:
+       config_object: "{{ config.* }}"
+       common_variables:
+         - "{{ config.project.name }}"
+         - "{{ config.cli.name }}"
+         - "{{ config.cli.package_name }}"
+         - "{{ config.commands.* }}"
+     validation:
+       check: "Ensure .j2 templates exist for all registered commands"
+       check: "Verify implementations match rendered templates"
+   ```
+
+9. **Add Recent Changes**:
+   ```yaml
+   recent_changes:
+     - date: "2026-02-03"
+       description: "Added Commands expert self-improve workflow"
+       files: ["experts/commands/self-improve.md", "templates/.../self-improve.md.j2"]
+     - date: "2026-02-01"
+       description: "Updated expert architecture with question prompts"
+       files: ["experts/*/question.md"]
+     # Keep only 5 most recent entries
+   ```
+
+10. **Use Edit tool for updates**:
+   ```bash
+   # Update specific sections using Edit tool
+   # Example: Update frontmatter patterns
+   ```
+
+11. **Or use Write tool for major changes**:
+   ```bash
+   # If expertise needs significant restructuring, rewrite entire file
+   ```
+
+### Phase 6: Enforce Line Limit
+
+**Ensure expertise stays under 1000 lines**
+
+1. Check current line count:
+   ```bash
+   wc -l .claude/commands/experts/commands/expertise.yaml
+   ```
+
+2. **If under 1000 lines**: Proceed to Phase 7
+
+3. **If over 1000 lines**: Compress using these strategies:
+
+   **Strategy 1: Remove Old Recent Changes**
+   ```yaml
+   recent_changes:
+     # Keep only 3-5 most recent, remove older ones
+     - date: "2026-02-03"
+       description: "Latest change"
+   ```
+
+   **Strategy 2: Consolidate Similar Patterns**
+   ```yaml
+   # Before (verbose):
+   frontmatter_patterns:
+     command_a:
+       allowed_tools: ["Read", "Grep"]
+     command_b:
+       allowed_tools: ["Read", "Grep"]
+
+   # After (consolidated):
+   frontmatter_patterns:
+     read_only_pattern:
+       allowed_tools: ["Read", "Grep"]
+       commands: ["command_a", "command_b"]
+   ```
+
+   **Strategy 3: Use Line Ranges Instead of Details**
+   ```yaml
+   # Before:
+   template_registration:
+     - command: "feature.md"
+       line: 150
+     - command: "build.md"
+       line: 155
+
+   # After:
+   template_registration:
+     line_range: "150-200"
+     count: 15
+     purpose: "Base workflow commands"
+   ```
+
+   **Strategy 4: Remove Obvious Information**
+   ```yaml
+   # Remove patterns that are self-evident from code
+   # Keep only non-obvious knowledge and relationships
+   # Focus on: frontmatter conventions, variable patterns, integration architecture
+   ```
+
+4. After compression, verify:
+   ```bash
+   wc -l .claude/commands/experts/commands/expertise.yaml
+   # Must be <= 1000
+   ```
+
+### Phase 7: Validate YAML Syntax
+
+**Final validation before finishing**
+
+1. Validate YAML syntax:
+   ```bash
+   python3 -c "import yaml; yaml.safe_load(open('.claude/commands/experts/commands/expertise.yaml'))"
+   ```
+
+2. **If validation passes**:
+   ```
+   ✓ YAML syntax is valid
+   ```
+
+3. **If validation fails**:
+   - Read error message
+   - Fix syntax errors (indentation, quotes, colons)
+   - Re-run validation
+   - Repeat until valid
+
+4. Verify structure:
+   ```bash
+   # Check required top-level keys exist
+   grep -E "^(overview|frontmatter_patterns|variable_patterns|workflow_patterns):" .claude/commands/experts/commands/expertise.yaml
+   ```
+
+5. Final checks:
+   ```bash
+   # Line count
+   lines=$(wc -l < .claude/commands/experts/commands/expertise.yaml)
+   echo "✓ Line count: $lines / 1000"
+
+   # YAML valid
+   python3 -c "import yaml; yaml.safe_load(open('.claude/commands/experts/commands/expertise.yaml'))" && echo "✓ Valid YAML"
+
+   # Required keys present
+   grep -q "^overview:" .claude/commands/experts/commands/expertise.yaml && echo "✓ Has overview"
+   grep -q "^frontmatter_patterns:" .claude/commands/experts/commands/expertise.yaml && echo "✓ Has frontmatter_patterns"
+   grep -q "^variable_patterns:" .claude/commands/experts/commands/expertise.yaml && echo "✓ Has variable_patterns"
+   ```
+
+## Report Format
+
+Provide a detailed report of the self-improve run:
+
+```markdown
+# Commands Expert Self-Improve Report
+
+## Execution Summary
+- **Date**: 2026-02-03
+- **Check Git Diff**: [true/false]
+- **Focus Area**: [area or "full validation"]
+- **Duration**: [X] phases completed
+
+## Phase 1: Git Diff Analysis
+[If CHECK_GIT_DIFF was true]
+- Changed files: [list]
+- Focus areas identified: [areas]
+
+## Phase 2: Current Expertise Review
+- Last updated: [date from expertise]
+- Line count: [X] / 1000
+- Sections reviewed: [list]
+
+## Phase 3: Validation Results
+- Commands validated: [count]
+- Templates verified: [count]
+- Patterns checked: [count]
+
+## Phase 4: Discrepancies Found
+### Outdated Information
+- [Item 1]
+- [Item 2]
+
+### Missing Information
+- [Item 1]
+- [Item 2]
+
+### Incorrect Information
+- [Item 1]
+
+## Phase 5: Updates Applied
+- Overview: [updated/unchanged]
+- Frontmatter Patterns: [X updates]
+- Variable Patterns: [X updates]
+- Workflow Patterns: [X updates]
+- Tool Restrictions: [X updates]
+- Integration Patterns: [X updates]
+- Template Registration: [X updates]
+- Dual Strategy: [X updates]
+- Recent Changes: [added entry]
+
+Specific updates:
+1. [Update description]
+2. [Update description]
+
+## Phase 6: Line Limit Enforcement
+- Before: [X] lines
+- After: [Y] lines
+- Status: ✅ Under 1000 / ⚠️ Compressed to fit
+
+Compression applied:
+- [Strategy used if compressed]
+
+## Phase 7: Validation
+- YAML syntax: ✅ Valid
+- Required keys: ✅ Present
+- Line count: ✅ [Y] / 1000
+
+## Commands-Specific Findings
+### Frontmatter Structure
+- [Findings about YAML patterns, allowed-tools, descriptions]
+
+### Variable Patterns
+- [Findings about $1/$2 usage, semantic naming, argument hints]
+
+### Phase-Based Workflows
+- [Findings about multi-phase execution patterns]
+
+### Tool Restrictions
+- [Findings about permission scoping across commands]
+
+### Integration Patterns
+- [Findings about command chaining, expert architecture]
+
+### Template Registration
+- [Findings about scaffold_service.py patterns]
+
+### Dual Strategy Compliance
+- [Findings about template + implementation synchronization]
+
+## Recommendations
+- [Any recommendations for manual review]
+- [Suggestions for next self-improve run]
+
+## Next Steps
+- Run `/experts:commands:question` to verify updated expertise
+- Consider self-improve again after next major command changes
+```
+
+## Success Criteria
+
+Self-improve is successful if:
+1. ✅ All 7 phases completed
+2. ✅ Expertise is valid YAML
+3. ✅ Line count ≤ 1000
+4. ✅ All discrepancies documented and addressed
+5. ✅ `last_updated` field updated to current date
+6. ✅ Report is comprehensive and actionable

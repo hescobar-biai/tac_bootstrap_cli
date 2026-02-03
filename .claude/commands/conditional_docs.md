@@ -231,6 +231,19 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When understanding output truncation strategies for log management
     - When aligning base implementations with Jinja2 templates for hooks
 
+- app_docs/feature-issue-573-commands-expert-self-improve.md
+  - Conditions:
+    - When working with Commands expert self-improve workflow
+    - When implementing the Learn step of Act → Learn → Reuse loop for expert systems
+    - When creating 7-phase self-improvement workflows for command expertise
+    - When validating command frontmatter, variables, phases, tool restrictions
+    - When working with expertise.yaml mental models and YAML validation
+    - When implementing template registration in scaffold_service.py
+    - When understanding dual strategy compliance (template .j2 + implementation .md)
+    - When implementing compression strategies for expertise files (1000-line limit)
+    - When working with Commands domain focus areas: command syntax, variable patterns, workflow patterns, integration patterns
+    - When creating expert self-improve prompts for TAC-13 Agent Experts initiative
+
 - app_docs/feature-479-pre-compact-hook-template.md
   - Conditions:
     - When working with pre_compact.py hook or context compaction observability
