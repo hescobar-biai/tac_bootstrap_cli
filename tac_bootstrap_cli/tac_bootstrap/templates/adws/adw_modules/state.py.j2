@@ -39,7 +39,9 @@ class ADWState:
             "adw_id", "issue_number", "branch_name", "plan_file", "issue_class",
             "worktree_path", "model_set", "all_adws",
             # Token tracking fields
-            "total_input_tokens", "total_output_tokens", "total_cost_usd", "agent_token_records"
+            "total_input_tokens", "total_output_tokens", "total_cost_usd", "agent_token_records",
+            # TAC-9: AI documentation context (for reuse across phases)
+            "ai_docs_context", "loaded_docs_topic"
         }
         for key, value in kwargs.items():
             if key in core_fields:
@@ -165,6 +167,9 @@ class ADWState:
             total_output_tokens=self.data.get("total_output_tokens", 0),
             total_cost_usd=self.data.get("total_cost_usd", 0.0),
             agent_token_records=token_records,
+            # TAC-9: AI documentation context
+            ai_docs_context=self.data.get("ai_docs_context"),
+            loaded_docs_topic=self.data.get("loaded_docs_topic"),
         )
 
         # Save as JSON
@@ -247,5 +252,8 @@ class ADWState:
             "total_output_tokens": self.data.get("total_output_tokens", 0),
             "total_cost_usd": self.data.get("total_cost_usd", 0.0),
             "agent_token_records": self.data.get("agent_token_records", []),
+            # TAC-9: AI documentation context
+            "ai_docs_context": self.data.get("ai_docs_context"),
+            "loaded_docs_topic": self.data.get("loaded_docs_topic"),
         }
         print(json.dumps(output_data, indent=2))

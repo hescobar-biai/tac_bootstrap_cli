@@ -296,6 +296,9 @@ class ADWStateData(BaseModel):
     total_output_tokens: int = 0
     total_cost_usd: float = 0.0
     agent_token_records: List[AgentTokenRecord] = Field(default_factory=list)
+    # TAC-9: AI documentation context (for reuse across phases)
+    ai_docs_context: Optional[str] = None
+    loaded_docs_topic: Optional[str] = None
 
 
 class ReviewIssue(BaseModel):

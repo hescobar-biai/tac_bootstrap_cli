@@ -591,6 +591,7 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
         "issue_classifier",
         "adw_classifier",
         "docs_loader",  # TAC-9: AI docs loader (read-only)
+        "doc_summarizer",  # TAC-9: Documentation summarizer (read-only)
         "codebase_scout",  # TAC-12: Codebase scout (read-only)
     }
 
