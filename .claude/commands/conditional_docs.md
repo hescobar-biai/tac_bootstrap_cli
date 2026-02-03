@@ -108,6 +108,17 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
 
 ## Feature Documentation
 
+- app_docs/feature-578-expert-orchestrator.md
+  - Conditions:
+    - When working with expert orchestrator workflow automation
+    - When implementing plan → build → improve workflow cycles
+    - When spawning sequential subagents with Task tool
+    - When understanding meta-command patterns and orchestration
+    - When working with domain experts (adw, cli, commands, cc_hook_expert)
+    - When implementing workflow synthesis reports
+    - When understanding TAC-13 dual strategy pattern (template + implementation)
+    - When configuring expert-orchestrate command in generated projects
+
 - app_docs/feature-ac5b5582-python-package-structure.md
   - Conditions:
     - When working with Python package structure and DDD architecture
