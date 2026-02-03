@@ -1,8 +1,8 @@
 ---
 doc_type: folder
-domain: tac-bootstrap_cli/docs/tac_bootstrap_cli/docs
+domain: tac_bootstrap_cli/docs
 owner: UNKNOWN
-level: L4
+level: L3
 tags:
   - expert:frontend
   - level:L3
