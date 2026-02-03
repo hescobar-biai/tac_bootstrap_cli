@@ -27,10 +27,10 @@ children:
   - docs/tac_bootstrap_cli/tac_bootstrap.md
   - docs/tac_bootstrap_cli/tests.md
 source_readmes:
-  - tac_bootstrap_cli/readme.md
+  - tac_bootstrap_cli/README.MD
   - tac_bootstrap_cli/README.md
   - tac_bootstrap_cli/Readme.md
-  - tac_bootstrap_cli/README.MD
+  - tac_bootstrap_cli/readme.md
 last_reviewed: UNKNOWN
 ---
 
