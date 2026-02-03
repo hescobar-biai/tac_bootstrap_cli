@@ -489,6 +489,8 @@ class ScaffoldService:
             ("experts/cli/question.md", "CLI expert question prompt for read-only queries"),
             # TAC-13: CLI Expert Self-Improve
             ("experts/cli/self-improve.md", "CLI expert 7-phase self-improve workflow"),
+            # TAC-13 Task 8: ADW Expert Self-Improve
+            ("experts/adw/self-improve.md", "ADW expert 7-phase self-improve workflow"),
         ]
         for cmd, reason in expert_commands:
             plan.add_file(
