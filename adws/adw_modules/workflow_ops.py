@@ -669,8 +669,13 @@ def detect_relevant_docs(issue: GitHubIssue) -> list[str]:
         "api": ["api endpoint", "rest api", "graphql", "api design"],
 
         # Architecture & Design - stricter matching
+        "ddd_lite": ["domain-driven design", "ddd lite", "lightweight ddd", "tactical ddd"],
         "ddd": ["domain-driven", "ddd", "aggregate", "bounded context", "ubiquitous language"],
+        "solid": ["solid principles", "single responsibility", "open-closed", "liskov substitution"],
         "design_patterns": ["design pattern", "singleton pattern", "factory pattern", "observer pattern"],
+
+        # Documentation - project-specific
+        "fractal_docs": ["fractal documentation", "fractal docs", "documentation structure"],
 
         # AI & SDK - specific terms only
         "anthropic_quick_start": ["anthropic api", "claude api", "anthropic sdk"],
