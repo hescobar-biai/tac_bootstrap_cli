@@ -487,6 +487,8 @@ class ScaffoldService:
             ("experts/cc_hook_expert/cc_hook_expert_improve.md", "Hook expert improvement command"),
             # TAC-13 Task 4: CLI Expert - Question Prompt
             ("experts/cli/question.md", "CLI expert question prompt for read-only queries"),
+            # TAC-13: CLI Expert Self-Improve
+            ("experts/cli/self-improve.md", "CLI expert 7-phase self-improve workflow"),
         ]
         for cmd, reason in expert_commands:
             plan.add_file(
