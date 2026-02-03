@@ -508,6 +508,14 @@ class ScaffoldService:
             reason="CLI expert expertise seed file",
         )
 
+        # TAC-13 Task 9: ADW Expert Expertise Seed
+        plan.add_file(
+            ".claude/commands/experts/adw/expertise.yaml",
+            action=FileAction.CREATE,  # Don't overwrite if exists
+            template="claude/commands/experts/adw/expertise.yaml.j2",
+            reason="ADW expert expertise seed file",
+        )
+
         # TAC-13 Task 7: ADW Expert - Question Prompt
         expert_commands.append(
             ("experts/adw/question.md", "ADW expert question prompt for workflow queries")
