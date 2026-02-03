@@ -580,6 +580,10 @@ def summarize_doc_content(
 
     logger.debug(f"Summarizing documentation for topic: {topic}")
 
+    # Import here to avoid circular dependencies
+    from adw_modules.data_types import AgentPromptRequest
+    from adw_modules.agent import execute_prompt
+
     # Create summarization request using haiku model for speed and cost efficiency
     summarization_prompt = f"""Summarize this documentation concisely for an AI agent working on a task.
 
@@ -598,14 +602,19 @@ def summarize_doc_content(
 
 **Concise Summary:**"""
 
-    request = AgentTemplateRequest(
-        agent_name="doc_summarizer",
+    # Create output file for the summarization
+    output_file = f"/tmp/adw_doc_summary_{adw_id}_{topic.replace('/', '_')}.txt"
+
+    request = AgentPromptRequest(
         prompt=summarization_prompt,
+        agent_name="doc_summarizer",
         adw_id=adw_id,
         model="haiku",  # Use haiku for fast, cost-effective summarization
+        output_file=output_file,
+        dangerously_skip_permissions=True,  # Safe for read-only summarization
     )
 
-    response = execute_template(request)
+    response = execute_prompt(request, logger=logger)
 
     if response.success and response.output:
         summary = response.output.strip()
