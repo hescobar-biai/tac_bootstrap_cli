@@ -9,11 +9,21 @@ issue_json: $3
 
 ## Instructions
 
+🚨 **YOU ARE IN THE PLANNING PHASE** 🚨
+
+**CRITICAL - READ THIS FIRST:**
+- You are creating a PLAN, NOT implementing the chore
+- DO NOT create any final files (code, docs, configs, etc.)
+- ONLY create ONE file: the plan in `specs/` directory
+- The plan will be executed later by another agent
+
+**Planning Instructions:**
 - IMPORTANTE: Estás escribiendo un plan para resolver una chore del TAC Bootstrap CLI.
 - El plan debe ser simple pero preciso para no desperdiciar tiempo.
 - CRITICAL: Crear el plan usando ruta RELATIVA `specs/issue-{issue_number}-adw-{adw_id}-sdlc_planner-{descriptive-name}.md`
 - CRITICAL: NUNCA uses rutas absolutas (que empiezan con /). SIEMPRE usa rutas relativas al directorio actual.
 - CRITICAL: Al usar la herramienta Write, usa SOLO `specs/filename.md`, NO `/Users/.../specs/filename.md`
+- CRITICAL: DO NOT use Write tool for any other files besides the plan in specs/
 - Investigar el codebase y crear un plan para completar la chore.
 - IMPORTANTE: Reemplazar cada <placeholder> en el formato con valores reales.
 - Usar el reasoning model: pensar cuidadosamente sobre los pasos.

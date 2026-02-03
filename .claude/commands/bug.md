@@ -9,11 +9,21 @@ issue_json: $3
 
 ## Instructions
 
+🚨 **YOU ARE IN THE PLANNING PHASE** 🚨
+
+**CRITICAL - READ THIS FIRST:**
+- You are creating a PLAN, NOT fixing the bug
+- DO NOT create any final files (code, docs, configs, etc.)
+- ONLY create ONE file: the plan in `specs/` directory
+- The plan will be executed later by another agent
+
+**Planning Instructions:**
 - IMPORTANTE: Estás escribiendo un plan para resolver un bug del TAC Bootstrap CLI.
 - El plan debe ser preciso para arreglar la causa raíz y prevenir regresiones.
 - CRITICAL: Crear el plan usando ruta RELATIVA `specs/issue-{issue_number}-adw-{adw_id}-sdlc_planner-{descriptive-name}.md`
 - CRITICAL: NUNCA uses rutas absolutas (que empiezan con /). SIEMPRE usa rutas relativas al directorio actual.
 - CRITICAL: Al usar la herramienta Write, usa SOLO `specs/filename.md`, NO `/Users/.../specs/filename.md`
+- CRITICAL: DO NOT use Write tool for any other files besides the plan in specs/
 - Investigar el codebase para entender el bug, reproducirlo y crear un plan de fix.
 - IMPORTANTE: Reemplazar cada <placeholder> en el formato con valores reales.
 - Usar el reasoning model: pensar cuidadosamente sobre la causa raíz.
