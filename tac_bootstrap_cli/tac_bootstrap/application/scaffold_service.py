@@ -529,6 +529,14 @@ class ScaffoldService:
             )
         )
 
+        # TAC-13 Task 11: Commands Expert - Self-Improve Prompt
+        expert_commands.append(
+            (
+                "experts/commands/self-improve.md",
+                "Commands expert 7-phase self-improve workflow",
+            )
+        )
+
         # E2E test command examples
         e2e_commands = [
             ("e2e/README.md", "E2E test examples documentation"),
