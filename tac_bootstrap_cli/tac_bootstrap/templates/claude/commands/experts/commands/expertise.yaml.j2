@@ -1,0 +1,408 @@
+overview:
+  description: ".claude/commands/ system - Slash commands for agent workflows"
+  purpose: "Composable command system with YAML frontmatter + Markdown workflow pattern"
+  last_updated: "2026-02-03"
+  total_files: 49
+  key_files:
+    - ".claude/commands/feature.md"
+    - ".claude/commands/implement.md"
+    - ".claude/commands/build.md"
+    - ".claude/commands/commit.md"
+    - ".claude/commands/experts/commands/question.md"
+
+architecture:
+  pattern: "YAML Frontmatter + Markdown Workflow"
+  layers:
+    frontmatter:
+      purpose: "Configuration and metadata at file top"
+      components:
+        - allowed_tools: "Comma-separated list of permitted tools"
+        - description: "Single-line command purpose"
+        - argument_hint: "User-facing argument syntax guide"
+        - model: "Preferred model (sonnet/opus/haiku)"
+      location: "Lines 1-10 typically in command files"
+
+    workflow:
+      purpose: "Numbered execution phases with instructions"
+      components:
+        - Instructions: "Phase-specific guidance for agent"
+        - Variables: "Command arguments and predefined paths"
+        - Report: "Output format requirements"
+      location: "Main markdown body after frontmatter"
+
+command_structure:
+
+  frontmatter_patterns:
+    allowed_tools:
+      purpose: "Restrict agent tool access for safety and focus"
+      format: "Comma-separated list without spaces"
+      examples:
+        - "Read,Write,Edit,Bash,Glob,Grep"
+        - "Read,Bash,Glob,Grep,Task"
+        - "Read,Edit,Bash,TodoWrite"
+      usage: "Prevents unintended operations (e.g., git commits in read-only commands)"
+
+    description:
+      purpose: "Human-readable command purpose"
+      format: "Single sentence without period"
+      examples:
+        - "Feature Planning"
+        - "Implement the following plan"
+        - "Generate Git Commit"
+      location: "Line 3 in frontmatter block"
+
+    argument_hint:
+      purpose: "User-facing help for command arguments"
+      format: "Positional argument labels or descriptive text"
+      examples:
+        - "<plan_file_path>"
+        - "<task> [thoroughness: quick|medium|very thorough]"
+        - "no arguments"
+      optional: true
+
+    model:
+      purpose: "Recommend model tier for command execution"
+      values:
+        - sonnet: "Default balanced model"
+        - opus: "Heavy reasoning tasks (planning, architecture)"
+        - haiku: "Fast simple tasks (formatting, simple edits)"
+      optional: true
+      default: "sonnet"
+
+  variable_patterns:
+
+    dynamic_variables:
+      purpose: "User-provided arguments injected at runtime"
+      format: "$1, $2, $3, etc. or $ARGUMENTS for all"
+      declaration: "## Variables section in markdown body"
+      injection: "Replaced with actual values during command execution"
+      examples:
+        feature_command:
+          variables:
+            - issue_number: "$1"
+            - adw_id: "$2"
+            - issue_json: "$3"
+          usage: "Extraer detalles de la variable `issue_json`"
+
+        implement_command:
+          variables:
+            - plan_file: "$ARGUMENTS"
+          usage: "Read the plan, think hard about the plan and implement the plan."
+
+        scout_command:
+          variables:
+            - task: "$1"
+            - thoroughness: "$2 (default: medium)"
+          usage: "Explore codebase for $task with $thoroughness level"
+
+    static_variables:
+      purpose: "Predefined paths and constants"
+      format: "Hardcoded strings in command body"
+      examples:
+        - "PLAN_TAC_BOOTSTRAP.md"
+        - "tac_bootstrap_cli/tac_bootstrap/domain/"
+        - "specs/issue-{issue_number}-adw-{adw_id}-*.md"
+      usage: "Reference known file locations without user input"
+
+workflow_patterns:
+
+  phase_based_execution:
+    pattern: "## Phase N: <Name> sections for sequential steps"
+    examples:
+      feature_command:
+        phases:
+          - "Planning Phase"
+          - "Investigation Phase"
+          - "Plan Writing Phase"
+          - "Report Phase"
+
+      build_command:
+        phases:
+          - "Phase 1: Foundation"
+          - "Phase 2: Core Implementation"
+          - "Phase 3: Integration"
+
+    structure: |
+      Each phase contains:
+      - Clear objective statement
+      - Step-by-step instructions
+      - Tool usage guidance
+      - Validation checkpoints
+
+  numbered_tasks:
+    pattern: "### Task N: <Name> for granular steps"
+    purpose: "Break complex commands into manageable units"
+    examples:
+      - "Task 1: Analyze Existing Expertise Schema"
+      - "Task 2: Create Expertise Seed Template"
+      - "Task 3: Register Template in Scaffold Service"
+
+    structure: |
+      Each task includes:
+      - Descriptive title
+      - Implementation details
+      - Code examples where relevant
+      - Commands to execute
+
+report_sections:
+
+  purpose: "Standardize command output for machine parsing or user clarity"
+
+  machine_parsable:
+    commands: ["feature", "plan", "classify_issue"]
+    requirements:
+      - "Exactly ONE line output"
+      - "ONLY the requested data (e.g., file path, classification)"
+      - "NO markdown formatting"
+      - "NO explanations or commentary"
+
+    example_feature_command: |
+      ## Report
+      🚨 **CRITICAL OUTPUT FORMAT** 🚨
+
+      YOU ARE BEING CALLED FROM AN AUTOMATED WORKFLOW. YOUR OUTPUT IS MACHINE-PARSED.
+
+      YOUR FINAL OUTPUT **MUST** BE:
+      - Exactly ONE line
+      - ONLY the relative path
+      - NO markdown formatting
+
+      ✅ CORRECT OUTPUT:
+      specs/issue-564-adw-feature-Tac-13-Task-2-sdlc_planner-expertise-docs.md
+
+  human_readable:
+    commands: ["implement", "build", "review", "commit"]
+    requirements:
+      - "Concise bullet point summary"
+      - "Files changed with git diff --stat"
+      - "Clear completion status"
+
+    example_implement_command: |
+      ## Report
+      - Summarize the work you've just done in a concise bullet point list.
+      - Report the files and total lines changed with `git diff --stat`
+
+integration_patterns:
+
+  expert_system:
+    location: ".claude/commands/experts/"
+    purpose: "TAC-13 agent expert system for domain-specific knowledge"
+    structure:
+      - question.md: "Answer questions using expertise file"
+      - self-improve.md: "Validate and update expertise file"
+      - expertise.yaml: "Persistent mental model"
+
+    experts:
+      - name: "commands"
+        focus: "Command structure and patterns"
+      - name: "cli"
+        focus: "TAC Bootstrap CLI internals"
+      - name: "adw"
+        focus: "AI Developer Workflows"
+
+  command_chaining:
+    purpose: "Commands invoke other commands for workflow composition"
+    examples:
+      - feature_invokes: ["conditional_docs for doc detection"]
+      - build_invokes: ["implement for each task"]
+      - commit_invokes: ["github_check for PR validation"]
+
+    pattern: "Reference command files by path: `.claude/commands/<name>.md`"
+
+common_sections:
+
+  instructions:
+    purpose: "Primary directive for agent execution"
+    location: "## Instructions section"
+    content: "Detailed step-by-step guidance with critical warnings"
+
+  variables:
+    purpose: "Define command arguments and static paths"
+    location: "## Variables section"
+    content: "Key-value pairs for argument binding"
+
+  relevant_files:
+    purpose: "Guide agent to codebase locations"
+    location: "## Relevant Files section"
+    content: "File paths with descriptions of relevance"
+
+  plan_format:
+    purpose: "Define expected output structure (planning commands)"
+    location: "## Plan Format section"
+    content: "Markdown template with placeholders"
+
+  report:
+    purpose: "Specify output format requirements"
+    location: "## Report section"
+    content: "Machine-parsable or human-readable format"
+
+validation_patterns:
+
+  validation_commands:
+    purpose: "Ensure zero regressions after command execution"
+    standard_suite:
+      - "cd tac_bootstrap_cli && uv run pytest tests/ -v --tb=short"
+      - "cd tac_bootstrap_cli && uv run ruff check ."
+      - "cd tac_bootstrap_cli && uv run mypy tac_bootstrap/"
+      - "cd tac_bootstrap_cli && uv run tac-bootstrap --help"
+
+    location: "## Validation Commands section in plan files"
+    timing: "Executed as final task before completion"
+
+  acceptance_criteria:
+    purpose: "Define measurable completion conditions"
+    format: "Checklist with ✅ markers"
+    location: "## Acceptance Criteria section in plan files"
+    examples:
+      - "✅ Template file exists: path/to/file"
+      - "✅ Valid YAML syntax (parseable)"
+      - "✅ All validation commands pass"
+
+file_action_patterns:
+
+  create_vs_skip:
+    FileAction_CREATE:
+      usage: "Standard files that can be safely regenerated"
+      examples:
+        - ".claude/commands/feature.md"
+        - ".claude/commands/implement.md"
+
+    FileAction_SKIP_IF_EXISTS:
+      usage: "Files that evolve with learning (preserve local changes)"
+      examples:
+        - ".claude/commands/experts/commands/expertise.yaml"
+        - ".claude/commands/experts/cli/expertise.yaml"
+        - ".claude/commands/experts/adw/expertise.yaml"
+      reason: "Expertise files updated by self-improve workflows"
+
+command_categories:
+
+  planning:
+    commands: ["feature", "bug", "chore", "patch", "plan"]
+    pattern: "Create spec files in specs/ directory"
+    output: "Machine-parsable file path"
+
+  execution:
+    commands: ["implement", "build", "build_in_parallel"]
+    pattern: "Execute plan files from specs/"
+    output: "Human-readable summary with git diff"
+
+  workflows:
+    commands: ["scout", "test", "review", "commit", "pull_request"]
+    pattern: "Specialized workflow steps"
+    output: "Context-specific results"
+
+  utility:
+    commands: ["all_tools", "conditional_docs", "find_and_summarize"]
+    pattern: "Helper commands for information retrieval"
+    output: "Informational output"
+
+  expert:
+    commands: ["experts/commands/question.md", "experts/cli/question.md", "experts/adw/question.md"]
+    pattern: "Domain-specific question answering"
+    output: "Expertise-driven answers"
+
+best_practices:
+
+  path_handling:
+    rule: "ALWAYS use relative paths, NEVER absolute paths"
+    reason: "Commands execute in various working directories"
+    examples:
+      correct: "specs/issue-574-*.md"
+      incorrect: "/Users/name/project/specs/issue-574-*.md"
+
+  file_creation:
+    rule: "Use Write tool ONLY for files explicitly required by command"
+    reason: "Prevent unintended filesystem pollution"
+    example: "feature.md creates ONLY specs/ plan file, nothing else"
+
+  output_formatting:
+    rule: "Follow Report section format exactly (machine vs human)"
+    reason: "ADW workflows parse command output automatically"
+    critical: "Machine-parsable commands break workflows if format violated"
+
+  tool_restrictions:
+    rule: "Respect allowed_tools frontmatter"
+    reason: "Enforces command scope and prevents unsafe operations"
+    example: "Question commands use Read-only tools, no Write/Edit"
+
+examples:
+
+  feature_command:
+    file: ".claude/commands/feature.md"
+    purpose: "Create implementation plan from GitHub issue"
+    frontmatter:
+      allowed_tools: "Read,Write,Bash,Glob,Grep,WebFetch,Task,TodoWrite,AskUserQuestion,Skill"
+      description: "Feature Planning"
+      argument_hint: "<issue_number> <adw_id> <issue_json>"
+
+    variables:
+      - issue_number: "$1"
+      - adw_id: "$2"
+      - issue_json: "$3"
+
+    workflow:
+      - "Parse issue_json to extract title and body"
+      - "Investigate codebase for relevant patterns"
+      - "Create plan file in specs/ with relative path"
+      - "Output ONLY the plan file path (machine-parsable)"
+
+    report_format: "Single line with relative path only"
+
+  implement_command:
+    file: ".claude/commands/implement.md"
+    purpose: "Execute implementation plan from specs/ file"
+    frontmatter:
+      allowed_tools: "Read,Write,Edit,Bash,Glob,Grep,Task,TodoWrite,AskUserQuestion"
+      description: "Implement the following plan"
+      argument_hint: "<plan_file_path>"
+
+    variables:
+      - plan_file: "$ARGUMENTS"
+
+    workflow:
+      - "Read plan file from specs/"
+      - "Execute tasks in order"
+      - "Run validation commands"
+      - "Report summary with git diff --stat"
+
+    report_format: "Bullet points + git diff stats"
+
+  experts_question_command:
+    file: ".claude/commands/experts/commands/question.md"
+    purpose: "Answer questions about command structure using expertise"
+    frontmatter:
+      allowed_tools: "Read,Glob,Grep"
+      description: "Answer questions about command structure and workflows without coding"
+
+    variables:
+      - user_question: "$ARGUMENTS"
+
+    workflow:
+      - "Load expertise.yaml mental model"
+      - "Answer question using documented patterns"
+      - "Reference specific files with line numbers if needed"
+
+    report_format: "Detailed answer with file references"
+
+maintenance:
+
+  self_improvement:
+    trigger: "Run /experts:commands:self-improve periodically or after command changes"
+    process:
+      - "Analyze current expertise.yaml"
+      - "Read all .claude/commands/*.md files"
+      - "Extract new patterns not yet documented"
+      - "Validate patterns against reality"
+      - "Update expertise.yaml with findings"
+    frequency: "After adding new commands or major pattern changes"
+
+  version_tracking:
+    field: "last_updated in overview section"
+    format: "YYYY-MM-DD"
+    update_trigger: "Any expertise file modification"
+
+  line_count_guideline:
+    soft_limit: 1000
+    reason: "Keep expertise focused and context-efficient"
+    enforcement: "Document but don't block if exceeded"
