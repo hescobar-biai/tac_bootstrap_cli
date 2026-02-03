@@ -1998,3 +1998,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When documenting or maintaining ADW module helper functions
     - When integrating TAC-12 commands into workflow orchestration
     - When reviewing scout_codebase(), plan_with_scouts(), build_in_parallel(), find_and_summarize() implementations
+
+- app_docs/feature-576-meta-agent-generator.md
+  - Conditions:
+    - When implementing or understanding the /meta-agent command
+    - When working with agent generation or meta-agentic features (TAC-13)
+    - When creating new agent definition files
+    - When understanding agent schema structure (YAML frontmatter, Purpose, Workflow, Report sections)
+    - When working with tool inference and agent configuration
+    - When debugging or extending the meta-agent generator
+    - When implementing similar meta-command patterns (agents that generate other artifacts)
+    - When documenting agent creation workflows
