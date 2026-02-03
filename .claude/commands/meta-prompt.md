@@ -1,0 +1,138 @@
+---
+allowed-tools:
+  - Write
+  - Read
+  - Glob
+  - Grep
+  - TodoWrite
+description: "Generate a new slash command from user description"
+argument-hint: "[command_description]"
+model: opus
+---
+
+# Meta-Prompt Generator
+
+Generate a complete, production-ready slash command following TAC standards from a natural language description.
+
+## Variables
+
+USER_PROMPT_REQUEST: $ARGUMENTS (description of the command you want to generate)
+
+## Instructions
+
+This meta-prompt takes a natural language description and generates a complete slash command file following TAC Bootstrap standards.
+
+**What is a meta-prompt?**
+A meta-prompt is a prompt whose output is another prompt. It codifies best practices and standards into a reusable template generator, enabling "prompts that create prompts."
+
+**How to use:**
+1. Invoke with $ARGUMENTS describing the desired command
+2. The agent analyzes your requirements and existing patterns
+3. The agent generates a complete command following TAC standards
+4. The output is production-ready with proper structure
+
+**Interpretation guidelines:**
+- Parse USER_PROMPT_REQUEST to understand: purpose, target users, inputs, outputs, workflow
+- Identify variables the generated command needs to accept
+- Determine appropriate tools the command should allow
+- Design a clear workflow with numbered steps
+- Define the report/output format
+
+## Documentation
+
+Reference these command files for examples and patterns:
+
+- `.claude/commands/feature.md` - Feature planning with metadata and structured format
+- `.claude/commands/implement.md` - Implementation workflow with clear instructions
+- `.claude/commands/test.md` - Testing workflow with validation steps
+- `.claude/commands/review.md` - Review workflow with quality checks
+- `.claude/commands/commit.md` - Git commit workflow with conventions
+
+These demonstrate TAC's standard structure: frontmatter, variables, instructions, workflow, and report sections.
+
+## Workflow
+
+### Step 1: Study Existing Commands
+
+- Use Glob to find all command files in `.claude/commands/`
+- Read 3-5 representative commands to understand patterns
+- Identify common structures: frontmatter, variables, instructions, workflow, report
+- Note tool permissions, variable syntax, and formatting conventions
+
+### Step 2: Analyze User Request
+
+- Parse USER_PROMPT_REQUEST to extract:
+  - Command purpose and target audience
+  - Required inputs (variables)
+  - Expected outputs (report format)
+  - Workflow steps needed
+- Determine if command needs special tools or permissions
+- Identify if command should use specific model (opus, sonnet, haiku)
+
+### Step 3: Design Command Structure
+
+- Decide frontmatter requirements:
+  - `allowed-tools` - which tools the command needs
+  - `description` - brief 1-2 sentence description
+  - `argument-hint` - how to pass arguments
+  - `model` - optional model override if needed
+- Design variables using proper syntax:
+  - Use `$1`, `$2`, `$3` for positional arguments
+  - Use `$ARGUMENTS` to capture all arguments as one value
+  - Include descriptions and optional default values
+- Sketch 3-7 workflow steps that accomplish the goal
+- Design report format based on expected outputs
+
+### Step 4: Generate Complete Command
+
+- Use Write tool to create the new command file in `.claude/commands/`
+- Follow this 4-section structure:
+  1. **Metadata** (YAML frontmatter with allowed-tools, description, etc.)
+  2. **Variables** (SCREAMING_SNAKE_CASE with $1, $2, or $ARGUMENTS)
+  3. **Instructions & Workflow** (numbered steps with clear actions)
+  4. **Report** (output format specification)
+- Ensure command follows TAC Bootstrap conventions
+- Use clear, actionable language throughout
+
+### Step 5: Validate Generated Command
+
+- Review that command follows TAC standards:
+  - YAML frontmatter is valid (if included)
+  - Variable syntax is correct ($1, $2, $ARGUMENTS)
+  - Workflow steps are clear and actionable (3-7 steps)
+  - Report format is well-specified
+- Verify command is self-contained and immediately usable
+- Check that tool permissions match workflow requirements
+
+## Report
+
+After generating the command, provide:
+
+### Generated Command Summary
+
+- **File created**: [path to new command file]
+- **Purpose**: [1-sentence description]
+- **Variables**: [list of input variables]
+- **Allowed tools**: [list of tools the command can use]
+- **Workflow steps**: [count and brief description]
+- **Report format**: [description of output structure]
+
+### Key Features
+
+- [Notable feature 1 of the generated command]
+- [Notable feature 2 of the generated command]
+- [Notable feature 3 of the generated command]
+
+### Usage Example
+
+Show how to invoke the generated command:
+
+```bash
+/command_name <arg1> <arg2>
+```
+
+### Next Steps
+
+- Test the generated command with sample inputs
+- Integrate into your workflow
+- Consider creating a template version if reusable for other projects
