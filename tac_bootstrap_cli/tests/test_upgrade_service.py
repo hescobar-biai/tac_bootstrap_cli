@@ -96,9 +96,9 @@ class TestUpgradeService:
         assert version is None
 
     def test_get_current_version_no_version_field(self, tmp_path: Path) -> None:
-        """get_current_version should return '0.1.0' for pre-0.7.0 projects without version field.
+        """get_current_version should return '0.1.0' for pre-0.7.1 projects without version field.
         """
-        # Create config without version field (pre-0.7.0 projects)
+        # Create config without version field (pre-0.7.1 projects)
         config_file = tmp_path / "config.yml"
         config_data = {
             "project": {"name": "old-project"},
@@ -124,12 +124,12 @@ class TestUpgradeService:
         service = UpgradeService(mock_project)
 
         # Patch __version__ to simulate newer version
-        with patch("tac_bootstrap.application.upgrade_service.__version__", "0.7.0"):
+        with patch("tac_bootstrap.application.upgrade_service.__version__", "0.7.1"):
             needs, current, target = service.needs_upgrade()
 
             assert needs is True
             assert current == "0.1.0"
-            assert target == "0.7.0"
+            assert target == "0.7.1"
 
     def test_needs_upgrade_false_same_version(self, tmp_path: Path) -> None:
         """needs_upgrade should return False when current == target."""
@@ -204,14 +204,14 @@ class TestUpgradeService:
         """load_existing_config should parse config.yml and update version."""
         service = UpgradeService(mock_project)
 
-        with patch("tac_bootstrap.application.upgrade_service.__version__", "0.7.0"):
+        with patch("tac_bootstrap.application.upgrade_service.__version__", "0.7.1"):
             config = service.load_existing_config()
 
             assert config is not None
             assert isinstance(config, TACConfig)
             assert config.project.name == "test-project"
             # Version should be updated to target
-            assert config.version == "0.7.0"
+            assert config.version == "0.7.1"
 
     def test_load_existing_config_normalizes_legacy_tac_version(self, tmp_path: Path) -> None:
         """load_existing_config should normalize legacy 'tac_version' to 'version'."""

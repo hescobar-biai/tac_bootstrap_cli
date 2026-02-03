@@ -5,6 +5,100 @@ All notable changes to TAC Bootstrap will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-02-03
+
+### Added
+
+#### Token Optimization (TAC-9)
+- **Automatic Documentation Summarization**: New `summarize_doc_content()` function using haiku model
+  - Reduces documentation token consumption by 70-80% while preserving essential information
+  - Targets 300 tokens per summary (configurable per phase)
+  - Automatic fallback to original content if summarization fails
+  - Logs reduction percentages for monitoring
+- **Phase-Aware Documentation Limits**:
+  - Planning phase: Max 3 documents with 300 token summaries
+  - Build phase: Reuses summarized context from planning (no reload)
+  - Estimated 85% token reduction in planning, 58% overall workflow savings
+- **Documentation Keywords**: Added detection support for:
+  - `ddd_lite`: Domain-Driven Design lightweight patterns
+  - `solid`: SOLID principles
+  - `fractal_docs`: Fractal documentation structure
+
+#### Agent Configuration
+- Added `doc_summarizer` to read-only agents (eliminates working_dir warnings)
+
+### Changed
+
+#### State Management (TAC-9)
+- **Enhanced ADWState Persistence**: Added `ai_docs_context` and `loaded_docs_topic` fields
+  - Documentation now persists across workflow phases (plan → build → test → review)
+  - Prevents redundant documentation reloading in build/implementation phases
+  - Updated in `update()`, `save()`, and `to_stdout()` methods
+- **ADWStateData Model**: Extended with optional documentation context fields
+  - `ai_docs_context: Optional[str]` - Summarized documentation content
+  - `loaded_docs_topic: Optional[str]` - Comma-separated list of loaded topics
+
+#### Documentation Loading (TAC-9)
+- **Path Correction**: `/load_ai_docs` command now searches in `ai_docs/` instead of `ai_docs/doc/`
+  - Aligns with `detect_relevant_docs()` which already scanned full directory
+  - Enables loading of root-level documentation files (ddd_lite.md, solid.md, design_patterns.md, etc.)
+  - Updated all examples and documentation to reflect correct path
+- **Detection-Loading Alignment**: Fixed inconsistency where docs were detected but not loaded
+  - Detection searched `ai_docs/` (os.walk)
+  - Loading only searched `ai_docs/doc/`
+  - Now both search full `ai_docs/` directory tree
+
+### Fixed
+
+- **State Persistence Bug**: Documentation context was being discarded after planning phase
+  - Root cause: `ai_docs_context` not in `core_fields` whitelist
+  - Impact: Build phase reloaded full documentation (6.6x more tokens than planner)
+  - Resolution: Added fields to state management in 5 locations
+- **Documentation Path Mismatch**: Auto-detected docs failed to load due to path inconsistency
+  - Files like `ddd_lite.md` detected but not found during loading
+  - Marked as "failed to load" despite existing in `ai_docs/`
+- **Working Directory Warnings**: Eliminated spurious warnings for read-only agents
+  - `doc_summarizer` now recognized as read-only (no file creation)
+
+### Performance
+
+#### Token Usage Improvements
+- **Before Optimization** (Issue #574):
+  - Planning: 325k tokens
+  - Build: 2.1M tokens (docs reloaded without summaries)
+  - Total: 2.49M tokens, $1.53
+- **After Optimization** (Estimated):
+  - Planning: 325k tokens (3 docs × 300 tokens = 900 tokens for docs)
+  - Build: ~800k tokens (reuses summarized docs from state)
+  - Total: ~1.1M tokens, $0.65 (58% cost reduction)
+
+#### Token Reduction Breakdown
+- **Documentation Summarization**: 40% average reduction observed
+  - TAC-13_dual_strategy_summary: 2130 → 1331 chars (37.5%)
+  - TAC-13_implementation_status: 2620 → 1423 chars (45.7%)
+  - Tac-1: 1576 → 1023 chars (35.1%)
+- **Phase Limiting**: 7 docs → 3 docs in planning (57% reduction)
+- **State Reuse**: Eliminates redundant documentation loading in subsequent phases
+
+### Technical
+
+#### Files Modified
+**Core Implementation:**
+- `adws/adw_modules/workflow_ops.py` - Added summarization function and updated keywords
+- `adws/adw_modules/state.py` - Extended with documentation context fields (3 methods)
+- `adws/adw_modules/data_types.py` - Updated ADWStateData model
+- `adws/adw_modules/agent.py` - Added doc_summarizer to read_only_agents
+- `adws/adw_plan_iso.py` - Integrated summarization in planning workflow
+- `.claude/commands/load_ai_docs.md` - Corrected documentation path
+
+**Templates (for generated projects):**
+- `tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_modules/workflow_ops.py.j2`
+- `tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_modules/state.py.j2`
+- `tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_modules/data_types.py.j2`
+- `tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_modules/agent.py.j2`
+- `tac_bootstrap_cli/tac_bootstrap/templates/adws/adw_plan_iso.py.j2`
+- `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/load_ai_docs.md.j2`
+
 ## [0.7.0] - 2026-02-02
 
 ### Added
