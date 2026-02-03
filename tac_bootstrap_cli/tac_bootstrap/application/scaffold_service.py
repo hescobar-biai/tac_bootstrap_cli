@@ -341,6 +341,7 @@ class ScaffoldService:
             "parallel_subagents",
             "t_metaprompt_workflow",
             "meta-prompt",
+            "meta-agent",
             "build_w_report",
             # TAC-12: Enhanced planning commands
             "plan_w_docs",
