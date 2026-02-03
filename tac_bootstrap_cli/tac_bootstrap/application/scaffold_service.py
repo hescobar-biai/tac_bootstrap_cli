@@ -343,6 +343,7 @@ class ScaffoldService:
             "meta-prompt",
             "meta-agent",
             "expert-orchestrate",
+            "expert-parallel",
             "build_w_report",
             # TAC-12: Enhanced planning commands
             "plan_w_docs",
