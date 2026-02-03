@@ -552,6 +552,73 @@ def load_ai_docs(
     return response
 
 
+def summarize_doc_content(
+    content: str,
+    topic: str,
+    adw_id: str,
+    logger: logging.Logger,
+    max_summary_tokens: int = 300,
+) -> str:
+    """Summarize documentation content using haiku model for token optimization (TAC-9).
+
+    Creates concise summaries of documentation to reduce token consumption
+    by 70-80% while preserving essential information for agents.
+
+    Args:
+        content: Full documentation content to summarize
+        topic: Documentation topic name
+        adw_id: ADW session ID
+        logger: Logger instance
+        max_summary_tokens: Target max tokens for summary (default 300)
+
+    Returns:
+        Summarized documentation content
+    """
+    if not content or len(content.strip()) < 200:
+        # Content too short to summarize, return as-is
+        return content
+
+    logger.debug(f"Summarizing documentation for topic: {topic}")
+
+    # Create summarization request using haiku model for speed and cost efficiency
+    summarization_prompt = f"""Summarize this documentation concisely for an AI agent working on a task.
+
+**Documentation Topic:** {topic}
+
+**Instructions:**
+- Extract ONLY the most critical information an agent needs
+- Focus on: key concepts, workflow steps, constraints, gotchas
+- Use bullet points for clarity
+- Target {max_summary_tokens} tokens max
+- Preserve code examples if they're essential
+- Remove verbose explanations and redundant content
+
+**Original Documentation:**
+{content}
+
+**Concise Summary:**"""
+
+    request = AgentTemplateRequest(
+        agent_name="doc_summarizer",
+        prompt=summarization_prompt,
+        adw_id=adw_id,
+        model="haiku",  # Use haiku for fast, cost-effective summarization
+    )
+
+    response = execute_template(request)
+
+    if response.success and response.output:
+        summary = response.output.strip()
+        original_len = len(content)
+        summary_len = len(summary)
+        reduction_pct = ((original_len - summary_len) / original_len * 100) if original_len > 0 else 0
+        logger.info(f"Summarized '{topic}': {original_len} → {summary_len} chars ({reduction_pct:.1f}% reduction)")
+        return summary
+    else:
+        logger.warning(f"Failed to summarize '{topic}', using original content")
+        return content
+
+
 def detect_relevant_docs(issue: GitHubIssue) -> list[str]:
     """Detect which documentation topics are relevant to a GitHub issue (TAC-9).
 

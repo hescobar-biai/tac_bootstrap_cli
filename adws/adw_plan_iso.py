@@ -52,6 +52,7 @@ from adw_modules.workflow_ops import (
     format_issue_message,
     ensure_adw_id,
     load_ai_docs,
+    summarize_doc_content,
     scout_codebase,
     plan_with_scouts,
     AGENT_PLANNER,
@@ -143,14 +144,24 @@ def main():
     )
 
     # Load AI documentation if requested (TAC-9)
+    # Token optimization: Planning phase uses max 3 docs with 300 token summaries
+    MAX_DOCS_PLANNING = 3
+    MAX_SUMMARY_TOKENS_PLANNING = 300
+
     ai_docs_context = None
     if load_docs_topic:
         # Support multiple topics separated by comma (TAC-9 hybrid)
         topics = [t.strip() for t in load_docs_topic.split(",")]
+
+        # Phase-aware doc limit (TAC-9 optimization)
+        if len(topics) > MAX_DOCS_PLANNING:
+            logger.info(f"Limiting docs for planning phase: {len(topics)} → {MAX_DOCS_PLANNING}")
+            topics = topics[:MAX_DOCS_PLANNING]
+
         logger.info(f"Loading AI documentation for {len(topics)} topic(s): {', '.join(topics)}")
         make_issue_comment(
             issue_number,
-            format_issue_message(adw_id, "ops", f"📚 Loading AI documentation: {', '.join(topics)} (TAC-9)"),
+            format_issue_message(adw_id, "ops", f"📚 Loading AI documentation: {', '.join(topics)} (TAC-9 optimized)"),
         )
 
         # Load each topic and concatenate results
@@ -163,7 +174,17 @@ def main():
             docs_response = load_ai_docs(topic, adw_id, logger)
 
             if docs_response.success:
-                all_docs.append(f"# Documentation: {topic}\n\n{docs_response.output}")
+                # Summarize documentation content for token optimization (TAC-9)
+                doc_content = docs_response.output
+                summarized_content = summarize_doc_content(
+                    doc_content,
+                    topic,
+                    adw_id,
+                    logger,
+                    max_summary_tokens=MAX_SUMMARY_TOKENS_PLANNING
+                )
+
+                all_docs.append(f"# Documentation: {topic}\n\n{summarized_content}")
                 loaded_topics.append(topic)
                 logger.info(f"Successfully loaded: {topic}")
             else:
