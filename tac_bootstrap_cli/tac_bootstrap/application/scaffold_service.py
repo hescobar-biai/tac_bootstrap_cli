@@ -498,6 +498,14 @@ class ScaffoldService:
                 reason=reason,
             )
 
+        # TAC-13 Task 6: CLI Expert Expertise Seed
+        plan.add_file(
+            ".claude/commands/experts/cli/expertise.yaml",
+            action=FileAction.CREATE,  # Don't overwrite if exists
+            template="claude/commands/experts/cli/expertise.yaml.j2",
+            reason="CLI expert expertise seed file",
+        )
+
         # E2E test command examples
         e2e_commands = [
             ("e2e/README.md", "E2E test examples documentation"),

@@ -1,0 +1,791 @@
+overview:
+  description: "TAC Bootstrap CLI - Python-based code generator for AI-native development environments"
+  purpose: "Generates complete Agentic Layer with slash commands, ADW workflows, hooks, and templates"
+  last_updated: "2026-02-03"
+  total_files: 24
+  key_files:
+    - "tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py"
+    - "tac_bootstrap_cli/tac_bootstrap/domain/models.py"
+    - "tac_bootstrap_cli/tac_bootstrap/infrastructure/template_repo.py"
+    - "tac_bootstrap_cli/tac_bootstrap/interfaces/cli.py"
+    - "tac_bootstrap_cli/tac_bootstrap/templates/"
+
+architecture:
+  pattern: "Domain-Driven Design (DDD)"
+  layers:
+    domain:
+      path: "tac_bootstrap_cli/tac_bootstrap/domain/"
+      purpose: "Pure business logic - models, validators, value objects"
+      key_files:
+        - models.py: "913 lines - Complete TACConfig schema with Pydantic"
+        - value_objects.py: "358 lines - Type-safe ProjectName, TemplatePath, SemanticVersion"
+        - entity_config.py: "409 lines - EntitySpec and FieldSpec for code generation"
+        - validators.py: "318 lines - Compatibility matrices and validation logic"
+        - plan.py: "144 lines - ScaffoldPlan and FileOperation models"
+
+    application:
+      path: "tac_bootstrap_cli/tac_bootstrap/application/"
+      purpose: "Business logic orchestration - services coordinate domain + infrastructure"
+      key_files:
+        - scaffold_service.py: "987 lines - Builds and applies scaffold plans"
+        - validation_service.py: "499 lines - Multi-layer validation (domain→template→fs→git)"
+        - generate_service.py: "387 lines - CRUD entity generation orchestration"
+        - entity_generator_service.py: "150+ lines - DDD vertical slice generation"
+        - detect_service.py: "100+ lines - Auto-detects tech stack from project files"
+        - exceptions.py: "73 lines - Application error hierarchy"
+
+    infrastructure:
+      path: "tac_bootstrap_cli/tac_bootstrap/infrastructure/"
+      purpose: "Technical implementations - templates, filesystem, git"
+      key_files:
+        - template_repo.py: "200+ lines - Jinja2 rendering with case conversion filters"
+        - fs.py: "200+ lines - Safe, idempotent, cross-platform filesystem ops"
+        - git_adapter.py: "150+ lines - Clean Git operations interface"
+
+    interfaces:
+      path: "tac_bootstrap_cli/tac_bootstrap/interfaces/"
+      purpose: "User interaction - CLI commands and wizards"
+      key_files:
+        - cli.py: "250+ lines - Typer CLI with main commands (init, generate, doctor, etc.)"
+        - wizard.py: "200+ lines - Interactive terminal UI for configuration"
+        - entity_wizard.py: "164 lines - Interactive entity specification"
+
+core_implementation:
+
+  scaffold_service:
+    location: "tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py"
+    purpose: "Orchestrates scaffold plan building and execution"
+    line_count: 987
+
+    key_classes:
+      ApplyResult:
+        lines: "21-35"
+        purpose: "Result model tracking scaffold execution metrics"
+        fields:
+          - directories_created: int
+          - files_created: int
+          - files_skipped: int
+          - files_overwritten: int
+          - errors: "list[str]"
+
+      ScaffoldService:
+        lines: "38-987"
+        purpose: "Main service for scaffolding projects"
+        dependencies:
+          - TemplateRepository: "Renders Jinja2 templates"
+          - ValidationService: "Pre-scaffold validation"
+          - FileSystem: "File operations (injected via apply_plan)"
+
+        public_methods:
+          build_plan:
+            signature: "def build_plan(self, config: TACConfig, existing_repo: bool = False) -> ScaffoldPlan"
+            lines: "59-102"
+            logic: |
+              1. Creates empty ScaffoldPlan
+              2. Calls private _add_* methods to populate plan
+              3. Each _add_* method adds directories and file operations
+              4. Returns complete plan (does NOT execute)
+            integration: "Called by CLI after wizard, before apply_plan"
+
+          apply_plan:
+            signature: "def apply_plan(self, plan: ScaffoldPlan, output_dir: Path, config: TACConfig, force: bool = False) -> ApplyResult"
+            lines: "861-987"
+            logic: |
+              1. Pre-validation with ValidationService
+              2. Creates output directory if needed
+              3. Registers BootstrapMetadata for audit trail
+              4. Executes each operation in plan
+              5. Renders templates via TemplateRepository
+              6. Writes files via FileSystem
+              7. Makes scripts executable
+              8. Returns ApplyResult with counts
+            integration: "Called by CLI after build_plan, writes to filesystem"
+
+        private_methods:
+          _add_directories:
+            lines: "104-148"
+            purpose: "Adds 30+ directory operations (.claude/, adws/, scripts/, etc.)"
+
+          _add_shared_infrastructure:
+            lines: "150-200"
+            purpose: "Adds DDD base classes (base_entity, base_repository, base_service, database)"
+            condition: "Only for DDD/Clean/Hexagonal architectures + FastAPI framework"
+
+          _add_claude_files:
+            lines: "202-525"
+            purpose: "Registers all .claude/ templates"
+            sections:
+              - settings.json: "Main configuration"
+              - hooks: "Pre/post execution, security, logging"
+              - commands: "25+ slash commands"
+              - expert_commands: "Hook expert + CLI expert (TAC-13)"
+              - e2e_commands: "E2E test examples"
+              - settings.local.json: "Output style overrides"
+            patterns:
+              - action=FileAction.CREATE: "Creates if doesn't exist"
+              - action=FileAction.SKIP_IF_EXISTS: "Preserves learning (expertise files)"
+              - executable=True: "Makes hooks executable"
+
+          _add_adw_files:
+            lines: "527-800"
+            purpose: "Registers ADW workflows and modules"
+            structure:
+              - adw_modules: "Infrastructure (agent, state, git_ops, kpi, etc.)"
+              - adw_*_iso.py: "Isolated workflows (sdlc, patch, plan, build, review, etc.)"
+              - adw_triggers: "Event triggers (cron, webhook, issue, parallel)"
+
+          _add_script_files:
+            lines: "802-859"
+            purpose: "Utility scripts (install.sh, setup.sh, doctor.sh, etc.)"
+            pattern: "All scripts marked executable=True"
+
+    template_registration_pattern:
+      location: "Lines 493-506 (expert commands)"
+      example: |
+        # Loop through command list
+        expert_commands = [
+            ("experts/cli/question.md", "CLI expert question prompt"),
+            ("experts/cli/self-improve.md", "CLI expert self-improve workflow"),
+        ]
+        for cmd, reason in expert_commands:
+            plan.add_file(
+                f".claude/commands/{cmd}",
+                action=action,  # Usually FileAction.CREATE
+                template=f"claude/commands/{cmd}.j2",
+                reason=reason,
+            )
+
+        # TAC-13 Task 6: CLI Expert Expertise Seed
+        plan.add_file(
+            ".claude/commands/experts/cli/expertise.yaml",
+            action=FileAction.SKIP_IF_EXISTS,  # Preserve learning
+            template="claude/commands/experts/cli/expertise.yaml.j2",
+            reason="CLI expert expertise seed file",
+        )
+
+      key_concepts:
+        - "Template path relative to templates/ directory"
+        - "Output path relative to project root"
+        - "FileAction.SKIP_IF_EXISTS preserves expertise across regenerations"
+        - "Reason string for audit trail and user feedback"
+
+  domain_models:
+    location: "tac_bootstrap_cli/tac_bootstrap/domain/models.py"
+    line_count: 913
+    purpose: "Complete configuration schema using Pydantic v2"
+
+    key_enums:
+      Language:
+        values: ["Python", "TypeScript", "JavaScript", "Go", "Rust", "Java"]
+      Framework:
+        values: ["FastAPI", "Django", "Express", "NextJS", "Gin", "Actix", "Spring"]
+      Architecture:
+        values: ["Simple", "Layered", "DDD", "Clean", "Hexagonal"]
+      PackageManager:
+        values: ["UV", "Poetry", "NPM", "PNPM", "Yarn", "Cargo", "Maven", "Gradle"]
+      FieldType:
+        values: ["str", "int", "float", "bool", "datetime", "uuid", "text", "decimal", "json"]
+
+    key_models:
+      TACConfig:
+        lines: "486-546"
+        purpose: "Root configuration model - entry point for entire system"
+        fields:
+          - project: ProjectSpec
+          - paths: PathsSpec
+          - commands: CommandsSpec
+          - agentic: AgenticSpec
+          - claude: ClaudeConfig
+          - metadata: BootstrapMetadata
+        methods:
+          - to_yaml(): "Serializes to YAML string"
+          - from_yaml(yaml_str): "Deserializes from YAML"
+          - from_file(path): "Loads from config.yml"
+          - save_to_file(path): "Writes to config.yml"
+
+      ProjectSpec:
+        lines: "154-196"
+        purpose: "Project metadata with name sanitization"
+        fields:
+          - name: ProjectName (value object)
+          - description: str
+          - version: SemanticVersion
+          - author: str
+          - license: str
+          - language: Language
+          - framework: Framework
+          - package_manager: PackageManager
+          - architecture: Architecture
+        validators:
+          - sanitize_project_name: "Converts to lowercase-hyphen format"
+
+      AgenticSpec:
+        lines: "309-337"
+        purpose: "Complete agentic layer configuration"
+        nested_models:
+          - WorktreeConfig: "Git worktree settings for parallel workflows"
+          - LoggingConfig: "Agent execution logging"
+          - SafetyConfig: "Safety constraints and guardrails"
+          - WorkflowsConfig: "ADW workflow configuration"
+        fields:
+          - enabled: bool
+          - worktree: WorktreeConfig
+          - logging: LoggingConfig
+          - safety: SafetyConfig
+          - workflows: WorkflowsConfig
+
+      BootstrapMetadata:
+        lines: "413-478"
+        purpose: "Audit trail for generated projects"
+        fields:
+          - created_at: datetime
+          - updated_at: datetime
+          - cli_version: SemanticVersion
+          - config_version: str
+          - template_checksums: "dict[str, str]"
+        pattern: "Automatically populated during scaffold apply"
+
+  validation_service:
+    location: "tac_bootstrap_cli/tac_bootstrap/application/validation_service.py"
+    line_count: 499
+    purpose: "Multi-layer pre-scaffold validation - never raises exceptions, accumulates issues"
+
+    validation_layers:
+      SCHEMA:
+        purpose: "Pydantic validation - type checking, field validation"
+        example: "ProjectName must be 1-64 chars, alphanumeric + hyphen"
+
+      DOMAIN:
+        purpose: "Business rule validation - compatibility matrices"
+        validators:
+          - validate_framework_language: "Framework compatible with language?"
+          - validate_package_manager_language: "PM compatible with language?"
+          - validate_architecture_framework: "DDD/Clean require frameworks"
+        example: "Can't use FastAPI with TypeScript"
+
+      TEMPLATE:
+        purpose: "Template existence validation"
+        logic: "Check TemplateRepository for required templates"
+        example: "Verify entity CRUD templates exist for selected architecture"
+
+      FILESYSTEM:
+        purpose: "Pre-write filesystem checks"
+        checks:
+          - "Output directory writable?"
+          - "Existing files conflict?"
+          - "Sufficient disk space?"
+
+      GIT:
+        purpose: "Git availability and status"
+        checks:
+          - "Git installed and in PATH?"
+          - "If existing repo: uncommitted changes?"
+
+    key_methods:
+      validate_config:
+        signature: "def validate_config(self, config: TACConfig, check_templates: bool = True) -> ValidationResult"
+        lines: "161-266"
+        logic: |
+          1. Domain validation (compatibility matrices)
+          2. Template validation (if check_templates=True)
+          3. Returns ValidationResult with accumulated issues
+        integration: "Called by ScaffoldService.apply_plan before execution"
+
+      validate_pre_scaffold:
+        signature: "def validate_pre_scaffold(self, config: TACConfig, output_dir: Path, force: bool = False) -> ValidationResult"
+        lines: "351-385"
+        logic: |
+          1. Validate config (domain + templates)
+          2. Validate filesystem (writability, conflicts)
+          3. Validate git (availability, status)
+          4. Return comprehensive ValidationResult
+        integration: "Gate before scaffold execution - CLI shows errors and stops"
+
+    patterns:
+      never_raises: "Accumulates all issues, returns ValidationResult"
+      actionable_suggestions: "Each ValidationIssue includes recovery steps"
+      severity_levels: "error (blocks execution) vs warning (informational)"
+
+  template_repository:
+    location: "tac_bootstrap_cli/tac_bootstrap/infrastructure/template_repo.py"
+    line_count: "200+"
+    purpose: "Jinja2 template rendering with custom filters"
+
+    case_conversion_filters:
+      to_snake_case:
+        lines: "49-78"
+        example: "MyProject → my_project"
+        usage: "{{ entity.name|to_snake_case }}"
+
+      to_kebab_case:
+        lines: "81-99"
+        example: "MyProject → my-project"
+        usage: "{{ config.project.name|to_kebab_case }}"
+
+      to_pascal_case:
+        lines: "102-127"
+        example: "my_project → MyProject"
+        usage: "{{ entity.name|to_pascal_case }}"
+
+    TemplateRepository_class:
+      lines: "135+"
+      initialization:
+        logic: |
+          1. Sets up Jinja2 environment from templates_dir
+          2. Enables autoescape for HTML/XML only
+          3. Enables trim_blocks and lstrip_blocks
+          4. Keeps trailing newlines
+          5. Registers custom case conversion filters
+
+      key_methods:
+        render:
+          signature: "def render(self, template_name: str, context: dict) -> str"
+          logic: |
+            1. Loads template by name (relative to templates/)
+            2. Renders with provided context
+            3. Returns rendered string
+            4. Raises TemplateNotFound if missing
+          integration: "Called by ScaffoldService.apply_plan for each FileOperation"
+
+        template_exists:
+          signature: "def template_exists(self, template_name: str) -> bool"
+          logic: "Checks if template file exists in environment"
+          integration: "Used by ValidationService template layer"
+
+    template_context:
+      always_available:
+        - "config: TACConfig - Full configuration object"
+        - "entity: EntitySpec - For entity generation templates"
+
+      common_patterns:
+        - "{{ config.project.name }} - Project name"
+        - "{{ config.commands.start }} - Start command"
+        - "{{ config.agentic.workflows.default }} - Default workflow"
+        - "{% if config.project.architecture == Architecture.DDD %} - Conditionals"
+        - "{% for field in entity.fields %} - Loops"
+
+  cli_interface:
+    location: "tac_bootstrap_cli/tac_bootstrap/interfaces/cli.py"
+    line_count: "250+"
+    purpose: "Typer CLI with main commands"
+    framework: "Typer (Click-based)"
+
+    main_commands:
+      init:
+        signature: "def init(name: str, output_dir: Path, language: Language, ...)"
+        lines: "100-250+"
+        purpose: "Create new project with Agentic Layer"
+        workflow: |
+          1. Interactive wizard OR non-interactive with options
+          2. Build TACConfig from wizard/options
+          3. ScaffoldService.build_plan(config)
+          4. If dry_run: show preview and exit
+          5. Else: ScaffoldService.apply_plan(plan, output_dir)
+          6. Display success panel with file counts
+        options:
+          - --language: "Python/TypeScript/JavaScript/Go/Rust/Java"
+          - --framework: "FastAPI/Django/Express/NextJS/etc."
+          - --package-manager: "UV/Poetry/NPM/PNPM/etc."
+          - --architecture: "Simple/Layered/DDD/Clean/Hexagonal"
+          - --interactive: "Run wizard (default: true)"
+          - --dry-run: "Show preview without writing"
+
+      version:
+        lines: "88-97"
+        purpose: "Show CLI version"
+
+      generate:
+        purpose: "Generate CRUD entity (DDD projects)"
+        integration: "Calls GenerateService or EntityGeneratorService"
+
+      doctor:
+        purpose: "Validate project health"
+        integration: "Calls DoctorService"
+
+      render:
+        purpose: "Regenerate from config.yml"
+        integration: "Loads TACConfig.from_file(), rebuilds scaffold"
+
+    wizard_integration:
+      location: "tac_bootstrap_cli/tac_bootstrap/interfaces/wizard.py"
+      key_function: "run_init_wizard()"
+      steps:
+        1: "Language selection (defaults: Python)"
+        2: "Framework (filtered by language)"
+        3: "Package manager (filtered by language)"
+        4: "Architecture pattern"
+        5: "Commands configuration with smart defaults"
+        6: "Worktree and agentic settings"
+
+      patterns:
+        - "Rich table format with numbered options"
+        - "Green marker for default values"
+        - "Validates input before proceeding"
+        - "Returns complete TACConfig"
+
+key_operations:
+
+  scaffold_workflow:
+    command: "tac-bootstrap init my-app"
+    data_flow: |
+      1. CLI.init() parses arguments
+      2. If --interactive: run_init_wizard() collects config
+      3. Build TACConfig from wizard/options
+      4. ScaffoldService.build_plan(config) creates ScaffoldPlan
+      5. If --dry-run: display plan summary and exit
+      6. Else: ScaffoldService.apply_plan(plan, output_dir):
+         a. ValidationService.validate_pre_scaffold() (gate)
+         b. FileSystem.ensure_directory(output_dir)
+         c. Register BootstrapMetadata
+         d. For each DirectoryOperation: FileSystem.ensure_directory()
+         e. For each FileOperation:
+            - TemplateRepository.render(template, context)
+            - FileSystem.write_file(path, rendered_content)
+            - If executable: FileSystem.make_executable(path)
+         f. Return ApplyResult
+      7. Display success panel with counts
+
+    files_created: "100+ files across .claude/, adws/, scripts/, config/"
+
+  template_rendering:
+    workflow: |
+      1. ScaffoldPlan contains FileOperation(path, action, template, reason)
+      2. ScaffoldService.apply_plan() iterates operations
+      3. For each operation with template:
+         a. Build context dict with config and entity (if applicable)
+         b. TemplateRepository.render(template_name, context)
+         c. Jinja2 processes template with filters
+         d. Return rendered string
+      4. Write rendered content to filesystem
+
+    example:
+      template_path: "claude/commands/experts/cli/expertise.yaml.j2"
+      output_path: ".claude/commands/experts/cli/expertise.yaml"
+      context:
+        config: "TACConfig instance"
+      rendered_content: |
+        overview:
+          description: "my-app CLI and code generation system"
+          last_updated: "{{ now().strftime('%Y-%m-%d') }}"
+
+  entity_generation:
+    command: "tac-bootstrap generate User --fields name:str email:str --authorized"
+    workflow: |
+      1. CLI.generate() or entity_wizard() collects EntitySpec
+      2. GenerateService.generate_entity(entity_spec, config):
+         a. Validate entity_spec format
+         b. Check base classes exist (shared/)
+         c. Check existing files (all-or-nothing)
+         d. Create directory structure
+         e. Render 6 entity templates:
+            - domain/entities/{entity_snake}.py
+            - domain/repositories/{entity_snake}_repository.py
+            - domain/schemas/{entity_snake}_schemas.py
+            - application/services/{entity_snake}_service.py
+            - infrastructure/persistence/{entity_snake}_db_repository.py
+            - interfaces/api/v1/endpoints/{entity_snake}.py
+         f. Write files
+         g. Return GenerateResult
+      3. Display success message
+
+    templates_used:
+      - "entity/domain_entity.py.j2"
+      - "entity/repository_interface.py.j2"
+      - "entity/schemas.py.j2"
+      - "entity/service.py.j2"
+      - "entity/db_repository.py.j2"
+      - "entity/api_endpoint.py.j2"
+
+    context_variables:
+      - entity.name: "User"
+      - entity.snake_name: "user"
+      - entity.plural_name: "users"
+      - entity.fields: "[FieldSpec(name='name', type='str', ...), ...]"
+      - entity.authorized: bool
+
+  validation_gate:
+    trigger: "Before scaffold apply or entity generation"
+    workflow: |
+      1. ValidationService.validate_pre_scaffold(config, output_dir):
+         a. DOMAIN layer: Check compatibility matrices
+         b. TEMPLATE layer: Verify templates exist
+         c. FILESYSTEM layer: Check writability, conflicts
+         d. GIT layer: Check git availability, repo status
+      2. If ValidationResult.valid == False:
+         a. Format error messages with suggestions
+         b. Display to user
+         c. Exit with error code
+      3. Else: Proceed with scaffold/generation
+
+    error_handling: "Never raises exceptions - accumulates issues, user-friendly output"
+
+  template_registration:
+    location: "scaffold_service.py:_add_claude_files()"
+    pattern: |
+      # Define list of templates
+      expert_commands = [
+          ("experts/cli/question.md", "CLI expert question prompt"),
+          ("experts/cli/self-improve.md", "CLI expert self-improve workflow"),
+      ]
+
+      # Loop and register
+      for cmd, reason in expert_commands:
+          plan.add_file(
+              f".claude/commands/{cmd}",
+              action=FileAction.CREATE,
+              template=f"claude/commands/{cmd}.j2",
+              reason=reason,
+          )
+
+      # Special case: expertise file with SKIP_IF_EXISTS
+      plan.add_file(
+          ".claude/commands/experts/cli/expertise.yaml",
+          action=FileAction.SKIP_IF_EXISTS,
+          template="claude/commands/experts/cli/expertise.yaml.j2",
+          reason="CLI expert expertise seed file",
+      )
+
+    file_actions:
+      CREATE: "Creates if doesn't exist (default)"
+      OVERWRITE: "Always overwrites"
+      PATCH: "Appends content"
+      SKIP_IF_EXISTS: "Preserves existing (for learned files)"
+
+best_practices:
+
+  ddd_architecture:
+    principle: "Strict separation of concerns across 4 layers"
+    rules:
+      - "Domain: Pure business logic, no I/O, no framework dependencies"
+      - "Application: Orchestration only, delegates to domain + infrastructure"
+      - "Infrastructure: Technical details (templates, filesystem, git)"
+      - "Interfaces: User interaction (CLI, wizards)"
+
+    dependency_direction: "Interfaces → Application → Domain ← Infrastructure"
+    example: "CLI depends on ScaffoldService, ScaffoldService depends on TACConfig"
+
+  validation_strategy:
+    principle: "Fail fast with comprehensive feedback"
+    patterns:
+      multi_layer: "Validate at SCHEMA → DOMAIN → TEMPLATE → FILESYSTEM → GIT"
+      non_failing: "Accumulate all issues, don't raise mid-validation"
+      actionable: "Each issue includes suggestion for recovery"
+      severity: "error (blocks) vs warning (informational)"
+
+    example: |
+      result = validation_service.validate_pre_scaffold(config, output_dir)
+      if not result.valid:
+          for error in result.errors():
+              console.print(f"❌ {error.message}")
+              console.print(f"💡 {error.suggestion}")
+          sys.exit(1)
+
+  idempotent_operations:
+    principle: "All filesystem operations are safe to repeat"
+    patterns:
+      - "ensure_directory() creates only if missing"
+      - "write_file() creates parents automatically"
+      - "append_file() checks for existing content before adding"
+      - "ScaffoldPlan can be applied multiple times"
+
+    benefit: "Safe regeneration, no corrupted state"
+
+  all_or_nothing_semantics:
+    principle: "Entity generation either creates ALL files or fails"
+    implementation: "GenerateService.check_existing_files() before any writes"
+    pattern: |
+      if any conflicts detected:
+          raise error with list of conflicts
+          suggest: use --force to overwrite
+      else:
+          proceed with all file writes
+
+    benefit: "No partial/corrupted entities"
+
+  template_conventions:
+    case_conversion: "Always use filters for consistency"
+    examples:
+      - "{{ entity.name|to_snake_case }} for filenames"
+      - "{{ entity.name|to_pascal_case }} for class names"
+      - "{{ config.project.name|to_kebab_case }} for directories"
+
+    context_access: "config object always available"
+    conditionals: "{% if config.project.architecture == Architecture.DDD %}"
+    loops: "{% for field in entity.fields %}"
+
+  file_action_usage:
+    CREATE: "Default - creates only if missing"
+    SKIP_IF_EXISTS: "For learned files (expertise.yaml) - preserves across regen"
+    OVERWRITE: "For deterministic files (config.yml) - always fresh"
+    PATCH: "For append operations (rare)"
+
+    expertise_pattern: |
+      # Expertise files use SKIP_IF_EXISTS to preserve learning
+      plan.add_file(
+          ".claude/commands/experts/cli/expertise.yaml",
+          action=FileAction.SKIP_IF_EXISTS,
+          template="claude/commands/experts/cli/expertise.yaml.j2",
+          reason="CLI expert expertise seed file",
+      )
+
+  idk_comments:
+    pattern: "IDK: intent, dependency, knowledge"
+    purpose: "Documents class responsibility, dependencies, invariants"
+    example: |
+      """
+      IDK: plan-execution, template-application, validation-gate
+      Responsibility: Builds and applies scaffold plans to create project structure
+      Invariants: Plans are immutable after build, validation runs before apply
+      """
+
+    location: "Every service and repository class"
+
+template_organization:
+  root: "tac_bootstrap_cli/tac_bootstrap/templates/"
+
+  structure:
+    claude:
+      path: "claude/"
+      purpose: "Claude Code integration files"
+      subdirs:
+        - "commands/: 25+ slash commands"
+        - "hooks/: Pre/post execution, security, logging"
+        - "agents/: Agent definitions"
+        - "output-styles/: Output format presets"
+        - "status_lines/: Status display scripts"
+        - "commands/experts/: Expert command prompts"
+        - "commands/experts/cli/: CLI expert (question, self-improve, expertise.yaml)"
+
+    adws:
+      path: "adws/"
+      purpose: "AI Developer Workflows"
+      subdirs:
+        - "adw_modules/: Infrastructure (agent, state, git_ops, etc.)"
+        - "adw_*_iso.py.j2: Isolated workflows (sdlc, patch, plan, build, etc.)"
+        - "adw_triggers/: Event triggers (cron, webhook, issue, parallel)"
+
+    capabilities:
+      path: "capabilities/"
+      purpose: "CRUD entity templates"
+      subdirs:
+        - "crud_basic/: Basic CRUD (6 files)"
+        - "crud_authorized/: Auth-protected CRUD"
+
+    entity:
+      path: "entity/"
+      purpose: "DDD vertical slice generation"
+      files:
+        - "domain_entity.py.j2"
+        - "repository_interface.py.j2"
+        - "schemas.py.j2"
+        - "service.py.j2"
+        - "db_repository.py.j2"
+        - "api_endpoint.py.j2"
+
+    shared:
+      path: "shared/"
+      purpose: "DDD base classes"
+      condition: "Only for DDD/Clean/Hexagonal + FastAPI"
+      files:
+        - "base_entity.py.j2"
+        - "base_repository.py.j2"
+        - "base_service.py.j2"
+        - "database.py.j2"
+
+    config:
+      path: "config/"
+      purpose: "Project configuration files"
+      files:
+        - "config.yml.j2: TACConfig serialization"
+        - ".mcp.json.j2: Model Context Protocol config"
+        - ".gitignore.j2: Git ignore patterns"
+
+    structure:
+      path: "structure/"
+      purpose: "Documentation and README files"
+      subdirs:
+        - "app_docs/: Application documentation"
+        - "ai_docs/: API references, design patterns"
+        - "specs/: Specification templates"
+
+  naming_convention:
+    pattern: "All templates end with .j2 extension"
+    path_mapping: "templates/claude/commands/foo.md.j2 → .claude/commands/foo.md"
+
+integration_points:
+
+  cli_to_scaffold:
+    trigger: "tac-bootstrap init my-app"
+    flow: |
+      CLI.init()
+        ↓
+      run_init_wizard() → TACConfig
+        ↓
+      ScaffoldService.build_plan(config) → ScaffoldPlan
+        ↓
+      ScaffoldService.apply_plan(plan, output_dir) → ApplyResult
+        ↓
+      Display success message
+
+  scaffold_to_template:
+    trigger: "apply_plan() executes FileOperation"
+    flow: |
+      FileOperation(template="claude/settings.json.j2")
+        ↓
+      TemplateRepository.render(template, context={'config': config})
+        ↓
+      Jinja2 processes template
+        ↓
+      Returns rendered string
+        ↓
+      FileSystem.write_file(path, content)
+
+  scaffold_to_validation:
+    trigger: "Before apply_plan() execution"
+    flow: |
+      ScaffoldService.apply_plan(plan, output_dir)
+        ↓
+      ValidationService.validate_pre_scaffold(config, output_dir)
+        ↓
+      if not result.valid:
+          format errors and exit
+      else:
+          proceed with scaffold
+
+  cli_to_generate:
+    trigger: "tac-bootstrap generate User --fields name:str"
+    flow: |
+      CLI.generate()
+        ↓
+      EntitySpec created from args
+        ↓
+      GenerateService.generate_entity(entity_spec, config)
+        ↓
+      Validate → Check conflicts → Render templates → Write files
+        ↓
+      GenerateResult
+
+recent_changes:
+  - date: "2026-02-03"
+    description: "TAC-13 Task 6: Added CLI expert expertise seed template"
+    files:
+      - "templates/claude/commands/experts/cli/expertise.yaml.j2"
+      - "application/scaffold_service.py (lines 500-506)"
+    impact: "CLI expert can now maintain mental model across sessions"
+
+expert_system_integration:
+  cli_expert:
+    expertise_file: ".claude/commands/experts/cli/expertise.yaml"
+    question_prompt: ".claude/commands/experts/cli/question.md"
+    self_improve_prompt: ".claude/commands/experts/cli/self-improve.md"
+
+    act_learn_reuse_loop:
+      act: "CLI expert answers questions using expertise file"
+      learn: "Self-improve validates expertise against codebase, updates file"
+      reuse: "Updated expertise used for future questions"
+
+    expertise_maintenance:
+      max_lines: 1000
+      update_trigger: "Manual (/experts:cli:self-improve) or git hook"
+      validation: "7-phase workflow ensures accuracy"
+      preservation: "FileAction.SKIP_IF_EXISTS prevents overwrite"
