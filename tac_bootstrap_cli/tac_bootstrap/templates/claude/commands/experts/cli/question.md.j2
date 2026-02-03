@@ -1,0 +1,209 @@
+---
+allowed-tools: Bash, Read, Grep, Glob, TodoWrite
+description: Answer questions about {{ config.project.name }} CLI without coding
+argument-hint: [question]
+model: sonnet
+---
+
+# CLI Expert: Question Mode
+
+## Purpose
+
+Answer questions about the {{ config.project.name }} CLI by leveraging the CLI expert's mental model (expertise file) and validating assumptions against the actual codebase.
+
+This is a **read-only** command - no code modifications allowed.
+
+## Variables
+
+- **USER_QUESTION**: `$1` (required) - The question to answer
+- **EXPERTISE_PATH**: `.claude/commands/experts/cli/expertise.yaml` (static)
+- **CLI_ROOT**: `{{ config.project.name }}/` (static)
+
+## Instructions
+
+You are the CLI Expert for {{ config.project.name }}. You have a deep mental model of the CLI stored in your expertise file.
+
+**Key Principles:**
+1. Start with expertise (mental model)
+2. Validate against actual code (source of truth)
+3. Report with evidence (file references + line numbers)
+4. Never guess - if unsure, read the code
+
+## Workflow
+
+### Phase 1: Read Expertise File
+
+1. Read the expertise file to understand your mental model:
+   ```bash
+   # Read CLI expert's mental model
+   cat .claude/commands/experts/cli/expertise.yaml
+   ```
+
+2. Parse the expertise for relevant information:
+   - Review `overview` section for high-level context
+   - Check `core_implementation` for component details
+   - Examine `key_operations` for workflow patterns
+   - Note any `known_issues` or `best_practices`
+
+3. Identify which sections of expertise are relevant to USER_QUESTION
+
+### Phase 2: Validate Expertise Against Codebase
+
+**CRITICAL**: The expertise file is a mental model, NOT source of truth. Always validate assumptions against actual code.
+
+1. Based on USER_QUESTION and expertise, identify files to read:
+   ```bash
+   # Example: If question is about template registration
+   cat {{ config.project.name }}/application/scaffold_service.py
+   ```
+
+2. Cross-reference expertise claims with actual code:
+   - Verify function signatures match
+   - Confirm line numbers are accurate
+   - Check for recent changes not yet in expertise
+
+3. Use Grep/Glob if searching is needed:
+   ```bash
+   # Example: Find all template registrations
+   grep -n "plan.add_file" {{ config.project.name }}/application/scaffold_service.py
+   ```
+
+4. Note any discrepancies:
+   - Expertise outdated? Document for self-improve
+   - Missing information? Note gaps
+   - Contradictions? Trust code over expertise
+
+### Phase 3: Report Findings
+
+Provide a comprehensive answer structured as follows:
+
+#### 1. Direct Answer
+- Answer USER_QUESTION clearly and concisely
+- Lead with the most important information
+
+#### 2. Evidence from Code
+- Provide file paths and line numbers
+- Include relevant code snippets
+- Format: `file_path:line_start-line_end`
+
+Example:
+```
+Template registration happens in ScaffoldService._add_claude_code_commands():
+- Location: scaffold_service.py:150-200
+- Pattern: plan.add_file(action="create", template="path.j2", reason="...")
+```
+
+#### 3. Context and Relationships
+- Explain how this fits into the larger system
+- Mention related components or patterns
+- Reference expertise sections if helpful
+
+#### 4. Examples (if applicable)
+- Provide concrete usage examples
+- Show command-line invocations
+- Include expected outputs
+
+#### 5. Additional Notes
+- Mention any caveats or edge cases
+- Reference best practices from expertise
+- Note any known issues
+
+#### 6. Discrepancies (if any)
+- Report any differences between expertise and actual code
+- Format: "Expertise says X, but code shows Y"
+- Recommend running self-improve if significant gaps exist
+
+## Report Format
+
+```
+## Answer: [USER_QUESTION]
+
+### Direct Answer
+[Clear, concise answer]
+
+### Evidence
+- **File**: [path:line_start-line_end]
+  ```[language]
+  [relevant code snippet]
+  ```
+- **File**: [path:line_start-line_end]
+  [description]
+
+### Context
+[How this fits into the system]
+
+### Examples
+```bash
+[example command or usage]
+```
+
+### Additional Notes
+- [Note 1]
+- [Note 2]
+
+### Expertise Status
+✅ Expertise is accurate
+OR
+⚠️ Expertise needs update: [describe discrepancy]
+```
+
+## Example Execution
+
+**Question**: "How does template registration work in scaffold_service?"
+
+**Expected Report**:
+```
+## Answer: How does template registration work in scaffold_service?
+
+### Direct Answer
+Template registration in ScaffoldService uses a centralized `plan.add_file()` pattern. All command templates are registered in the `_add_claude_code_commands()` method, which is called during scaffold initialization.
+
+### Evidence
+- **File**: scaffold_service.py:150-200
+  ```python
+  def _add_claude_code_commands(self, plan: ScaffoldPlan) -> None:
+      """Register all command templates."""
+      plan.add_file(
+          action="create",
+          template="claude/commands/prime.md.j2",
+          path=".claude/commands/prime.md",
+          reason="Prime command for context loading"
+      )
+      # ... more registrations
+  ```
+
+- **File**: scaffold_service.py:220-250
+  ```python
+  def render_template(self, template_path: str, context: dict) -> str:
+      """Render Jinja2 template with config variables."""
+      env = Environment(loader=FileSystemLoader(self.templates_dir))
+      template = env.get_template(template_path)
+      return template.render(**context)
+  ```
+
+### Context
+The registration pattern follows a two-step process:
+1. **Registration Phase**: `_add_claude_code_commands()` builds a plan of files to create
+2. **Rendering Phase**: `render_template()` processes each .j2 file with config variables
+
+This separation allows for dry-run mode and better error handling.
+
+### Examples
+```python
+# Register a new template
+plan.add_file(
+    action="create",  # or "skip_if_exists" for seed files
+    template="claude/commands/my-command.md.j2",
+    path=".claude/commands/my-command.md",
+    reason="My custom command"
+)
+```
+
+### Additional Notes
+- Use `action="skip_if_exists"` for seed files like expertise.yaml
+- Template variables: `{{ config.project.name }}`, `{{ config.commands.test }}`
+- All templates must be in `{{ config.project.name }}/templates/`
+
+### Expertise Status
+✅ Expertise is accurate (validated against scaffold_service.py)
+```
