@@ -97,6 +97,16 @@ SlashCommand = Literal[
     "/plan_w_scouters",
     "/prime_3",
     "/scout_plan_build",
+    # TAC-13: Expert system commands
+    "/experts:adw:question",
+    "/experts:adw:self-improve",
+    "/experts:cli:question",
+    "/experts:cli:self-improve",
+    "/experts:commands:question",
+    "/experts:commands:self-improve",
+    "/experts:cc_hook_expert:cc_hook_expert_build",
+    "/experts:cc_hook_expert:cc_hook_expert_improve",
+    "/experts:cc_hook_expert:cc_hook_expert_plan",
 ]
 
 

@@ -5,6 +5,11 @@ All notable changes to TAC Bootstrap will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **TAC-13 Validation Error**: Added missing expert system slash commands to `SlashCommand` Literal type in `data_types.py`. This fixes `AgentTemplateRequest` validation errors when using `--use-experts` flag with TAC-13 expert consultation. Expert commands now properly recognized: `/experts:adw:question`, `/experts:adw:self-improve`, `/experts:cli:question`, `/experts:cli:self-improve`, `/experts:commands:question`, `/experts:commands:self-improve`, and hook expert commands.
+
 ## [0.8.0] - 2026-02-03
 
 ### Added - TAC-13: Agent Experts
