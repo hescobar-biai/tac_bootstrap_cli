@@ -128,6 +128,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When implementing template directory structure
     - When understanding the foundation of TAC Bootstrap CLI package
 
+- app_docs/feature-chore_Tac_13_Task_20-verify-meta-agent-template.md
+  - Conditions:
+    - When verifying meta-agent template implementation
+    - When working with dual strategy pattern (template + implementation)
+    - When understanding agent generation capabilities
+    - When verifying template registration in scaffold_service.py
+    - When working with meta-agent or agent generation features
+    - When validating TAC-13 Task 14/20 implementation
+
 - app_docs/feature-a5839b7d-python-package-structure.md
   - Conditions:
     - When planning or reviewing Python package structure features
