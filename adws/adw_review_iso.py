@@ -535,20 +535,8 @@ Focus on: code quality, state management, GitHub integration, common pitfalls.""
         issue_number, format_issue_message(adw_id, AGENT_REVIEWER, "✅ Review committed")
     )
 
-    # TAC-13 LEARN: Capturar patrones de review
-    if expert_learn:
-        improve_response = improve_expert_knowledge(
-            domain="adw",
-            check_git_diff=True,
-            focus_area="review_phase",
-            adw_id=adw_id,
-            logger=logger,
-            working_dir=worktree_path
-        )
-
-        if improve_response.success:
-            state.accumulate_tokens("adw_expert_improver", improve_response.token_usage)
-            state.save("adw_review_iso")
+    # TAC-13 Optimization: Learning phase moved to document phase (final validation)
+    # Individual phases only consult experts, learning happens once at the end
 
     # Finalize git operations (push and PR)
     # Note: This will work from the worktree context

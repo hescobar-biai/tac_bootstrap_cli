@@ -164,13 +164,10 @@ def main():
         plan_cmd.extend(["--load-docs", docs_to_load])
         logger.info(f"Passing documentation to planning phase: {docs_to_load}")
 
-    # Add TAC-13 expert flags if enabled
+    # TAC-13 Optimization: Only consult experts in Plan phase (guidance needed)
     if use_experts:
         plan_cmd.append("--use-experts")
         logger.info("TAC-13: Expert consultation enabled for plan phase")
-    if expert_learn:
-        plan_cmd.append("--expert-learn")
-        logger.info("TAC-13: Expert learning enabled for plan phase")
 
     print(f"\n=== ISOLATED PLAN PHASE ===")
     print(f"Running: {' '.join(plan_cmd)}")
@@ -203,11 +200,7 @@ def main():
         adw_id,
     ]
 
-    # Add TAC-13 expert flags if enabled
-    if use_experts:
-        build_cmd.append("--use-experts")
-    if expert_learn:
-        build_cmd.append("--expert-learn")
+    # TAC-13 Optimization: Build phase doesn't need expert consultation (direct implementation)
 
     print(f"\n=== ISOLATED BUILD PHASE ===")
     print(f"Running: {' '.join(build_cmd)}")
@@ -254,11 +247,9 @@ def main():
     if skip_resolution:
         review_cmd.append("--skip-resolution")
 
-    # Add TAC-13 expert flags if enabled
+    # TAC-13 Optimization: Only consult experts in Review phase (validation critical)
     if use_experts:
         review_cmd.append("--use-experts")
-    if expert_learn:
-        review_cmd.append("--expert-learn")
 
     print(f"\n=== ISOLATED REVIEW PHASE ===")
     print(f"Running: {' '.join(review_cmd)}")
@@ -285,9 +276,7 @@ def main():
         adw_id,
     ]
 
-    # Add TAC-13 expert flags if enabled
-    if use_experts:
-        document_cmd.append("--use-experts")
+    # TAC-13 Optimization: Document phase only does final learning (full validation)
     if expert_learn:
         document_cmd.append("--expert-learn")
 

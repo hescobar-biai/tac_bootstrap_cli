@@ -296,22 +296,8 @@ Focus on: module composition, git operations, error recovery."""
         issue_number, format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementation committed")
     )
 
-    # TAC-13 LEARN: Actualizar expertise con patrones de build
-    if expert_learn:
-        logger.info("TAC-13: Learning from build execution")
-
-        improve_response = improve_expert_knowledge(
-            domain="adw",
-            check_git_diff=True,
-            focus_area="implementation_phase",
-            adw_id=adw_id,
-            logger=logger,
-            working_dir=worktree_path
-        )
-
-        if improve_response.success:
-            state.accumulate_tokens("adw_expert_improver", improve_response.token_usage)
-            state.save("adw_build_iso")
+    # TAC-13 Optimization: Learning phase moved to document phase (final validation)
+    # Individual phases only consult experts, learning happens once at the end
 
     # Finalize git operations (push and PR)
     # Note: This will work from the worktree context

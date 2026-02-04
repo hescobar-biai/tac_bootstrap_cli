@@ -1475,6 +1475,7 @@ def consult_expert(
         slash_command=f"/experts:{domain}:question",
         args=[question],
         adw_id=adw_id,
+        model="haiku",  # TAC-13 Optimization: Use Haiku for Q&A (10x cheaper, sufficient for guidance)
         working_dir=working_dir,
     )
 

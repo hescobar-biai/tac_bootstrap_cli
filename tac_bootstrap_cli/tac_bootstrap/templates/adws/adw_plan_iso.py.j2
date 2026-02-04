@@ -588,27 +588,8 @@ Focus on: state management, worktree isolation, GitHub integration patterns."""
         issue_number, format_issue_message(adw_id, AGENT_PLANNER, "✅ Plan committed")
     )
 
-    # TAC-13 LEARN: Actualizar expertise después de planificación
-    if expert_learn:
-        logger.info("TAC-13: Running self-improve to capture planning patterns")
-        make_issue_comment(
-            issue_number,
-            format_issue_message(adw_id, "ops", "🔄 Updating ADW expertise (TAC-13)"),
-        )
-
-        improve_response = improve_expert_knowledge(
-            domain="adw",
-            check_git_diff=True,
-            focus_area="planning_phase",
-            adw_id=adw_id,
-            logger=logger,
-            working_dir=worktree_path
-        )
-
-        if improve_response.success:
-            state.accumulate_tokens("adw_expert_improver", improve_response.token_usage)
-            state.save("adw_plan_iso")
-            logger.info("Expert knowledge updated")
+    # TAC-13 Optimization: Learning phase moved to document phase (final validation)
+    # Individual phases only consult experts, learning happens once at the end
 
     # Finalize git operations (push and PR)
     # Note: This will work from the worktree context
