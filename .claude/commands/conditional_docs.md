@@ -2051,3 +2051,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When implementing template registration in scaffold_service.py
     - When creating verification documentation for meta-agentic features
     - When working with multi-agent parallel execution patterns (3-10 agents)
+- app_docs/feature-chore_Tac_13_Task_25-readme-tac13-documentation.md
+  - Conditions:
+    - When updating main README.md with TAC-13 Agent Experts information
+    - When documenting TAC-13 features in the repository README
+    - When understanding the ACT → LEARN → REUSE loop pattern
+    - When working with Agent Experts framework documentation
+    - When adding TAC course references to the course table
+    - When updating TAC-12 Integration section with new capabilities
+    - When documenting expertise files and self-improving agents
+    - When ensuring TAC-13 is discoverable from repository entry points
