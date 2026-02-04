@@ -2040,3 +2040,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When implementing template registration in scaffold_service.py
     - When creating verification documentation or checklists
     - When working with Jinja2 templates using {{ config }} variables
+
+- app_docs/feature-chore_Tac_13_Task_22-expert-parallel-verification.md
+  - Conditions:
+    - When verifying template implementation for parallel expert consensus commands
+    - When understanding the dual strategy pattern for TAC-13 templates
+    - When working with expert-parallel template or similar parallel scaling workflows
+    - When validating TAC-13 task implementations (verification tasks)
+    - When understanding the 4-phase parallel workflow (Validate → Spawn → Monitor → Synthesize)
+    - When implementing template registration in scaffold_service.py
+    - When creating verification documentation for meta-agentic features
+    - When working with multi-agent parallel execution patterns (3-10 agents)
