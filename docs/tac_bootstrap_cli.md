@@ -28,9 +28,9 @@ children:
   - docs/tac_bootstrap_cli/tests.md
 source_readmes:
   - tac_bootstrap_cli/README.md
-  - tac_bootstrap_cli/Readme.md
   - tac_bootstrap_cli/readme.md
   - tac_bootstrap_cli/README.MD
+  - tac_bootstrap_cli/Readme.md
 last_reviewed: 2026-02-03
 ---
 

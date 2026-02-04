@@ -5,6 +5,48 @@ All notable changes to TAC Bootstrap will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-02-03
+
+### Added - TAC-13: Agent Experts
+
+**Core Capabilities:**
+- Agent experts with self-improving expertise files (Act → Learn → Reuse loop)
+- Self-improving template metaprompts for domain specialization
+- Mental model pattern: expertise.yaml files that validate against codebase
+- Question prompts: Answer domain questions by reading expertise + validating against code
+- Self-improve prompts: 7-phase workflow (check diff → validate → update → enforce limits)
+
+**Agent Experts Included:**
+- CLI Expert: tac-bootstrap CLI, templates, scaffold service
+- ADW Expert: AI Developer Workflows, state management, GitHub integration
+- Commands Expert: Slash command structure, variables, workflows
+
+**Meta-Agentics:**
+- `/meta-prompt`: Generate new slash commands from descriptions
+- `/meta-agent`: Generate new agent definitions from descriptions
+- Meta-skill pattern documentation (progressive disclosure)
+
+**Orchestration:**
+- `/expert-orchestrate`: Plan → Build → Improve workflow for agent experts
+- `/expert-parallel`: Scale experts in parallel (3-10 instances) for high-confidence results
+
+**Documentation:**
+- Comprehensive TAC-13 guide in ai_docs/doc/
+- Expertise file structure documentation
+- Meta-skill pattern guide
+- Auto-detection keywords for TAC-13 docs
+
+**Templates:**
+- CLI expert templates (question, self-improve, expertise seed)
+- Meta-prompt template
+- Meta-agent template
+- Expert orchestration templates
+
+### Changed
+- Updated README with Agent Experts section and usage examples
+- Enhanced AI docs auto-detection with TAC-13 keywords
+- Extended scaffold service to include expert templates and expertise files
+
 ## [0.7.1] - 2026-02-03
 
 ### Added
