@@ -162,9 +162,44 @@ Implement OAuth authentication...
 ## Workflows Soportados
 
 ✅ **adw_plan_iso.py** - Planning phase (implementado)
+✅ **adw_sdlc_zte_iso.py** - Zero Touch Execution con detección híbrida (implementado)
 🚧 **adw_build_iso.py** - Build phase (próximamente)
 🚧 **adw_review_iso.py** - Review phase (próximamente)
 🚧 **adw_document_iso.py** - Documentation phase (próximamente)
+
+## Detección Híbrida (adw_sdlc_zte_iso.py)
+
+El workflow ZTE usa un enfoque **híbrido** que combina dos sistemas con prioridades:
+
+### PRIORIDAD 1: Referencias Explícitas
+- Usa `extract_file_references_from_issue()` para detectar archivos mencionados en body/comments
+- Cualquier archivo .md mencionado explícitamente se carga primero
+- Ejemplo: "file: plan_tasks_Tac_14.md" o simplemente "plan_tasks_Tac_14.md"
+
+### PRIORIDAD 2: Detección Automática (Fallback)
+- Usa `detect_relevant_docs()` para keywords automáticos
+- Solo agrega archivos que NO fueron detectados explícitamente
+- Evita duplicados comparando nombres base
+
+### Ejemplo de Flujo Híbrido
+
+**Issue Body:**
+```markdown
+Implementar feature según plan_tasks_Tac_14.md
+```
+
+**Resultado:**
+```
+📎 Found 1 explicit file reference(s): plan_tasks_Tac_14.md
+📚 Auto-detected 8 documentation topic(s): PLAN_TAC_BOOTSTRAP, Tac-13, ...
+📚 Total documentation to load: 9 topic(s)
+```
+
+**Orden de carga:**
+1. `plan_tasks_Tac_14.md` (explícito, alta prioridad)
+2. `PLAN_TAC_BOOTSTRAP` (automático, no duplicado)
+3. `Tac-13` (automático, no duplicado)
+4. ... otros topics automáticos sin duplicar
 
 ## Beneficios
 

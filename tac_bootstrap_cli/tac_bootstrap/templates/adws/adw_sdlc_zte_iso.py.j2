@@ -35,7 +35,12 @@ import os
 
 # Add the parent directory to Python path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from adw_modules.workflow_ops import ensure_adw_id, detect_relevant_docs
+from adw_modules.workflow_ops import (
+    ensure_adw_id,
+    detect_relevant_docs,
+    extract_file_references_from_issue,
+    format_file_references_for_context,
+)
 from adw_modules.github import make_issue_comment, fetch_issue, get_repo_url, extract_repo_path
 from adw_modules.utils import get_target_branch, setup_logger
 from adw_modules.state import ADWState
@@ -112,23 +117,47 @@ def main():
         logger.info(f"Using manual documentation override: {docs_to_load}")
         print(f"📚 Loading documentation (manual): {docs_to_load}")
     else:
-        # Automatic detection
+        # Hybrid detection: Explicit references (priority) + Automatic detection (fallback)
         try:
             github_repo_url = get_repo_url()
             repo_path = extract_repo_path(github_repo_url)
             issue = fetch_issue(issue_number, repo_path)
 
+            # PRIORITY 1: Explicit file references from issue body/comments
+            logger.info("Checking for explicit file references in issue body + comments...")
+            file_references = extract_file_references_from_issue(issue, logger, working_dir=None)
+
+            explicit_topics = []
+            if file_references:
+                explicit_topics = list(file_references.keys())
+                logger.info(f"Found {len(explicit_topics)} explicit file reference(s): {explicit_topics}")
+                print(f"📎 Found {len(explicit_topics)} explicit file reference(s): {', '.join(explicit_topics)}")
+
+            # PRIORITY 2: Automatic keyword-based detection (fallback)
             detected_topics = detect_relevant_docs(issue)
             if detected_topics:
-                docs_to_load = ",".join(detected_topics)
-                logger.info(f"Auto-detected relevant documentation topics: {detected_topics}")
-                print(f"📚 Auto-detected documentation topics: {', '.join(detected_topics)}")
+                logger.info(f"Auto-detected {len(detected_topics)} documentation topic(s): {detected_topics}")
+                print(f"📚 Auto-detected {len(detected_topics)} documentation topic(s): {', '.join(detected_topics)}")
+
+            # Combine both with priority to explicit references (avoid duplicates)
+            all_topics = explicit_topics.copy()
+            for topic in detected_topics:
+                # Remove .md extension from detected topics for comparison
+                topic_base = topic[:-3] if topic.endswith('.md') else topic
+                # Check if not already in explicit references
+                if not any(topic_base in ref or ref in topic_base for ref in explicit_topics):
+                    all_topics.append(topic)
+
+            if all_topics:
+                docs_to_load = ",".join(all_topics)
+                logger.info(f"Total documentation to load: {len(all_topics)} topic(s)")
+                print(f"📚 Total documentation to load: {len(all_topics)} topic(s)")
             else:
-                logger.info("No relevant documentation topics detected")
-                print("📚 No relevant documentation topics detected")
+                logger.info("No documentation topics found (explicit or automatic)")
+                print("📚 No documentation topics found")
         except Exception as e:
             logger.warning(f"Failed to detect documentation topics: {e}")
-            print(f"⚠️  Warning: Could not auto-detect documentation topics: {e}")
+            print(f"⚠️  Warning: Could not detect documentation topics: {e}")
 
     # Post initial ZTE message
     try:
