@@ -1558,6 +1558,125 @@ def improve_expert_knowledge(
     return response
 
 
+def extract_file_references_from_issue(
+    issue: GitHubIssue,
+    logger: logging.Logger,
+    working_dir: Optional[str] = None
+) -> dict[str, str]:
+    """Extract and load files referenced in issue body AND comments (hybrid approach).
+
+    Detects references like:
+    - plan_tasks_Tac_14.md
+    - specs/feature-auth.md
+    - ai_docs/architecture.md
+    - Any .md file path
+
+    Searches in:
+    1. Issue body
+    2. All issue comments (newest to oldest)
+
+    Args:
+        issue: GitHub issue object with body and comments
+        logger: Logger instance
+        working_dir: Working directory to search for files (default: current dir)
+
+    Returns:
+        Dictionary mapping file paths to their content
+        Example: {"plan_tasks_Tac_14.md": "# Plan...", "specs/auth.md": "# Spec..."}
+    """
+    search_dir = working_dir or os.getcwd()
+    loaded_files = {}
+
+    # Patterns to detect file references
+    # Matches: plan_tasks_*.md, specs/*.md, ai_docs/*.md, any/path.md
+    patterns = [
+        r'plan_tasks_[A-Za-z0-9_-]+\.md',  # plan_tasks_Tac_14.md
+        r'specs/[A-Za-z0-9_/-]+\.md',       # specs/feature-auth.md
+        r'ai_docs/[A-Za-z0-9_/-]+\.md',     # ai_docs/architecture.md
+        r'app_docs/[A-Za-z0-9_/-]+\.md',    # app_docs/setup.md
+        r'[A-Za-z0-9_/-]+\.md',             # any-file.md or path/to/file.md
+    ]
+
+    # Collect all text to search: body + comments
+    texts_to_search = []
+
+    # 1. Issue body
+    if issue.body:
+        texts_to_search.append(("body", issue.body))
+
+    # 2. Issue comments (newest first, skip ADW bot comments)
+    from adw_modules.github import ADW_BOT_IDENTIFIER
+    if hasattr(issue, 'comments') and issue.comments:
+        sorted_comments = sorted(issue.comments, key=lambda c: c.created_at, reverse=True)
+        for i, comment in enumerate(sorted_comments):
+            # Skip ADW bot comments to prevent loops
+            if ADW_BOT_IDENTIFIER not in comment.body:
+                texts_to_search.append((f"comment #{i+1}", comment.body))
+
+    # Extract all potential file references from all sources
+    file_references = set()
+    for source, text in texts_to_search:
+        for pattern in patterns:
+            matches = re.findall(pattern, text)
+            if matches:
+                logger.info(f"Found {len(matches)} file reference(s) in {source}")
+                file_references.update(matches)
+
+    logger.info(f"Total: {len(file_references)} unique file reference(s) from issue body + comments")
+
+    # Try to load each file
+    for file_ref in file_references:
+        # Try multiple locations
+        possible_paths = [
+            os.path.join(search_dir, file_ref),           # Direct path
+            os.path.join(search_dir, "specs", file_ref),  # In specs/
+            os.path.join(search_dir, "ai_docs", file_ref),# In ai_docs/
+            os.path.join(search_dir, "app_docs", file_ref),# In app_docs/
+        ]
+
+        for file_path in possible_paths:
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        loaded_files[file_ref] = content
+                        logger.info(f"✓ Loaded referenced file: {file_ref} ({len(content)} chars)")
+                        break  # Found and loaded, skip other paths
+                except Exception as e:
+                    logger.warning(f"Failed to read {file_path}: {e}")
+        else:
+            # File not found in any location
+            logger.warning(f"✗ Referenced file not found: {file_ref}")
+
+    if loaded_files:
+        logger.info(f"Successfully loaded {len(loaded_files)} files from issue references")
+    else:
+        logger.info("No files loaded from issue references")
+
+    return loaded_files
+
+
+def format_file_references_for_context(file_references: dict[str, str]) -> str:
+    """Format loaded file references as context for agent prompts.
+
+    Args:
+        file_references: Dict mapping file paths to content
+
+    Returns:
+        Formatted string to append to agent context
+    """
+    if not file_references:
+        return ""
+
+    context_parts = ["\n\n## Referenced Files from Issue\n"]
+
+    for file_path, content in file_references.items():
+        context_parts.append(f"\n### {file_path}\n")
+        context_parts.append(f"```markdown\n{content}\n```\n")
+
+    return "".join(context_parts)
+
+
 # Agent name constants for TAC
 AGENT_EXPERT_ADW = "adw_expert"
 AGENT_EXPERT_CLI = "cli_expert"

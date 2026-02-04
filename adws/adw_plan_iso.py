@@ -57,6 +57,8 @@ from adw_modules.workflow_ops import (
     plan_with_scouts,
     consult_expert,
     improve_expert_knowledge,
+    extract_file_references_from_issue,
+    format_file_references_for_context,
     AGENT_PLANNER,
 )
 from adw_modules.utils import setup_logger, check_env_vars
@@ -495,12 +497,50 @@ Focus on: state management, worktree isolation, GitHub integration patterns."""
             issue_number,
             format_issue_message(adw_id, AGENT_PLANNER, "🔍 Using scout-enhanced planning (TAC)"),
         )
+
+        # Extract and load files referenced in issue body (e.g., plan_tasks_Tac_14.md)
+        logger.info("Checking for file references in issue body...")
+        file_references = extract_file_references_from_issue(issue, logger, working_dir=worktree_path)
+        file_context = format_file_references_for_context(file_references)
+
+        if file_references:
+            make_issue_comment(
+                issue_number,
+                format_issue_message(
+                    adw_id,
+                    AGENT_PLANNER,
+                    f"📎 Loaded {len(file_references)} referenced file(s): {', '.join(file_references.keys())}"
+                ),
+            )
+
         # plan_with_scouts takes just the description, not the full issue object
         plan_description = f"{issue.title}\n\n{issue.body}"
         if clarification_text:
             plan_description += f"\n\n{clarification_text}"
+        if file_context:
+            plan_description += file_context
+
         plan_response = plan_with_scouts(plan_description, adw_id, logger, working_dir=worktree_path, ai_docs_context=ai_docs_context)
     else:
+        # Extract and load files referenced in issue body (e.g., plan_tasks_Tac_14.md)
+        logger.info("Checking for file references in issue body...")
+        file_references = extract_file_references_from_issue(issue, logger, working_dir=worktree_path)
+        file_context = format_file_references_for_context(file_references)
+
+        if file_references:
+            make_issue_comment(
+                issue_number,
+                format_issue_message(
+                    adw_id,
+                    AGENT_PLANNER,
+                    f"📎 Loaded {len(file_references)} referenced file(s): {', '.join(file_references.keys())}"
+                ),
+            )
+
+        # Add file references to ai_docs_context
+        if file_context:
+            ai_docs_context = (ai_docs_context or "") + file_context
+
         plan_response = build_plan(issue, issue_command, adw_id, logger, working_dir=worktree_path, clarifications=clarification_text, ai_docs_context=ai_docs_context)
 
     # Track token usage from planning
