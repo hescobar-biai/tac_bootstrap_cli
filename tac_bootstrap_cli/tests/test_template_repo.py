@@ -766,11 +766,11 @@ class TestAgentTemplates:
         # Should render without errors
         assert content
         # Should be markdown format
-        assert "# docs-scraper" in content
+        assert "# Purpose" in content
         # Should have main sections
-        assert "## Description" in content
-        assert "## Purpose" in content
-        # Should have WebFetch as primary tool
+        assert "## Workflow" in content
+        assert "## Report / Response" in content
+        # Should have WebFetch as fallback tool
         assert "WebFetch" in content
 
     def test_meta_agent_template_renders(self):
