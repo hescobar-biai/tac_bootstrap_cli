@@ -118,6 +118,9 @@ class ScaffoldService:
             (".claude/agents", "Agent definitions"),
             (".claude/output-styles", "Output style presets"),
             (".claude/status_lines", "Claude Code status line definitions"),
+            (".claude/skills", "Agent skills directory"),
+            (".claude/skills/meta-skill", "Meta-skill for creating new skills"),
+            (".claude/skills/meta-skill/docs", "Meta-skill documentation resources"),
             (".claude/hooks", "Execution hooks"),
             (".claude/hooks/utils", "Hook utilities"),
             (".claude/hooks/utils/llm", "LLM provider utilities"),
@@ -495,6 +498,36 @@ class ScaffoldService:
             reason="Status line script for agent/model/branch display",
             executable=True,
         )
+
+        # ============================================================================
+        # TAC-14: SKILLS SYSTEM
+        # ============================================================================
+        # Skills are self-contained, discoverable automation units with progressive
+        # disclosure (metadata → instructions → resources). The meta-skill enables
+        # agents to create new skills following best practices.
+        # ============================================================================
+
+        # Skills - Meta-skill for creating new skills
+        plan.add_file(
+            ".claude/skills/meta-skill/SKILL.md",
+            action=action,
+            template=".claude/skills/meta-skill/SKILL.md.j2",
+            reason="Meta-skill for creating agent skills",
+        )
+
+        # Skills documentation (static resources)
+        skills_docs = [
+            ("claude_code_agent_skills.md", "Complete skills guide"),
+            ("claude_code_agent_skills_overview.md", "Skills architecture"),
+            ("blog_equipping_agents_with_skills.md", "Skills design principles"),
+        ]
+        for doc, reason in skills_docs:
+            plan.add_file(
+                f".claude/skills/meta-skill/docs/{doc}",
+                action=action,
+                template=f".claude/skills/meta-skill/docs/{doc}",
+                reason=reason,
+            )
 
         # ============================================================================
         # TAC-13: AGENT EXPERT COMMANDS

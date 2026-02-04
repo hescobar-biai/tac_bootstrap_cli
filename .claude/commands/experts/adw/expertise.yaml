@@ -1,7 +1,7 @@
 overview:
   description: "AI Developer Workflows - Automated SDLC orchestration with isolated worktrees and GitHub integration"
   purpose: "Execute complete software development lifecycle through composable workflow scripts"
-  last_updated: "2026-02-03"
+  last_updated: "2026-02-04"
   total_files: 25
   key_files:
     - "adws/adw_sdlc_iso.py"
@@ -30,6 +30,11 @@ architecture:
         - adw_document_iso.py: "Documentation generation phase"
         - adw_patch_iso.py: "Quick patch workflow for simple fixes"
         - adw_ship_iso.py: "PR creation and merging workflow"
+        - adw_plan_build_iso.py: "Composite: plan + build only"
+        - adw_plan_build_test_iso.py: "Composite: plan + build + test"
+        - adw_plan_build_test_review_iso.py: "Composite: plan + build + test + review"
+        - adw_plan_build_review_iso.py: "Composite: plan + build + review (skip test)"
+        - adw_plan_build_document_iso.py: "Composite: plan + build + document"
 
     modules:
       path: "adws/adw_modules/"
@@ -42,7 +47,7 @@ architecture:
         - github.py: "GitHub API operations (issues, comments, PRs)"
         - git_ops.py: "Git operations (branching, merging, status)"
         - worktree_ops.py: "Git worktree management for isolation"
-        - data_types.py: "Pydantic models for type safety"
+        - data_types.py: "Pydantic models and SlashCommand type definitions (includes TAC-13 expert commands)"
         - tool_sequencer.py: "Tool call sequencing for multi-step operations"
         - utils.py: "Logging, parsing, and utility functions"
         - r2_uploader.py: "Cloudflare R2 uploader for context bundles"
@@ -168,7 +173,7 @@ core_implementation:
   agent_execution:
     location: "adws/adw_modules/agent.py"
     purpose: "Claude Code agent orchestration with model selection"
-    line_count: "~600 lines"
+    line_count: "~920 lines"
 
     key_functions:
       execute_prompt:
@@ -194,9 +199,9 @@ core_implementation:
           6. Return structured response
         integration: "Primary method for workflow script execution"
 
-      get_model_for_command:
-        signature: "def get_model_for_command(slash_command: str, model_set: str) -> str"
-        purpose: "Model selection based on command complexity and model_set"
+      get_model_for_slash_command:
+        signature: "def get_model_for_slash_command(request: AgentTemplateRequest, default: str = 'sonnet') -> str"
+        purpose: "Model selection based on command complexity and model_set from ADW state"
         mapping:
           base_models:
             lightweight: "sonnet (classify, commit, test)"
@@ -808,6 +813,13 @@ integrations:
       - "Accumulated domain knowledge"
 
 recent_changes:
+  - date: "2026-02-04"
+    description: "Self-improve run: Updated expertise with expert system command types and composite workflows"
+    files:
+      - "adws/adw_modules/data_types.py"
+      - ".claude/commands/experts/adw/expertise.yaml"
+    impact: "Expertise now includes TAC-13 expert commands in SlashCommand type and documents composite workflow patterns"
+
   - date: "2026-02-03"
     description: "TAC-13 Task 9: Created ADW expert expertise file"
     files:
@@ -821,12 +833,6 @@ recent_changes:
     files:
       - ".claude/commands/experts/adw/self-improve.md"
     impact: "ADW expertise file can be validated and updated automatically"
-
-  - date: "2026-02-01"
-    description: "TAC-13 Task 7: Added ADW expert question prompt"
-    files:
-      - ".claude/commands/experts/adw/question.md"
-    impact: "Users can query ADW workflows and patterns via expert agent"
 
 expert_system_integration:
   adw_expert:
