@@ -1,8 +1,8 @@
 overview:
   description: "AI Developer Workflows - Automated SDLC orchestration with isolated worktrees and GitHub integration"
   purpose: "Execute complete software development lifecycle through composable workflow scripts"
-  last_updated: "2026-02-04T17:00:00"
-  total_files: 25
+  last_updated: "2026-02-04T19:00:00"
+  total_files: 26
   key_files:
     - "adws/adw_sdlc_iso.py"
     - "adws/adw_sdlc_zte_iso.py"
@@ -39,7 +39,7 @@ architecture:
     modules:
       path: "adws/adw_modules/"
       purpose: "Reusable infrastructure and utilities"
-      count: 11
+      count: 12
       key_modules:
         - state.py: "Persistent state management via ADWState class"
         - workflow_ops.py: "Shared operations (ADW ID management, doc detection)"
@@ -51,11 +51,12 @@ architecture:
         - tool_sequencer.py: "Tool call sequencing for multi-step operations"
         - utils.py: "Logging, parsing, and utility functions"
         - r2_uploader.py: "Cloudflare R2 uploader for context bundles"
+        - adw_agent_sdk.py: "Abstract typed layer for Claude Agent SDK with Pydantic models (hooks, messages, sessions)"
 
     triggers:
       path: "adws/adw_triggers/"
       purpose: "Event-driven workflow triggers"
-      count: 5
+      count: 6
       types:
         - trigger_cron.py: "Time-based workflow execution (scheduled tasks)"
         - trigger_webhook.py: "GitHub webhook handlers (issue events, PR events)"
@@ -921,6 +922,21 @@ integrations:
 
 recent_changes:
   - date: "2026-02-04"
+    description: "Added Agent SDK module with Pydantic models for Claude Agent SDK control"
+    files:
+      - "adws/adw_modules/adw_agent_sdk.py"
+    impact: |
+      Agent SDK module (commit 0b22471):
+      - Added adw_agent_sdk.py with 1655 lines, 45 classes/functions
+      - Provides typed Pydantic models for Agent SDK configuration
+      - Includes: ModelName, HookEventName, PermissionDecision, MessageType enums
+      - Includes: ToolPermissions, TokenUsage, HookContext, HookResponse models
+      - Includes: PreToolUseInput/Output, PostToolUseOutput, UserPromptSubmitInput/Output
+      - Includes: SystemInitMessage, ResultMessage, ErrorMessage models
+      - Abstract layer - not yet integrated with ADW workflows
+      - Future use: Control Agent SDK hooks, sessions, and permissions from ADW
+
+  - date: "2026-02-04"
     description: "Self-improve run: Added file reference auto-loading and enhanced GitHub retry logic"
     files:
       - "adws/adw_modules/workflow_ops.py"
@@ -964,15 +980,6 @@ recent_changes:
       - Updated all phase workflow actions to include expert consultation steps
       - Added detailed Act→Learn→Reuse implementation patterns with examples
       - Documented focus areas for self-improve: planning_phase, review_phase, build_phase, document_phase
-
-  - date: "2026-02-04"
-    description: "Earlier self-improve runs: Line count corrections, GitHub module updates, expert system integration"
-    impact: |
-      - Fixed workflow_ops.py line count: 400 → 1547
-      - Corrected worktree function signatures (adw_id-based)
-      - Added GitHub functions: assign_issue_to_me, mark_issue_in_progress, get_current_gh_user
-      - Clarified PR creation via /pull_request slash command
-      - Added TAC-13 expert commands to SlashCommand type
 
 expert_system_integration:
   adw_expert:
