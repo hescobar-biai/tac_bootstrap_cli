@@ -19,7 +19,7 @@ This is the **Learn** step in the Act → Learn → Reuse loop.
 - **FOCUS_AREA**: `$2` (default: empty) - Optional area to focus on (e.g., "frontmatter", "variables", "phases", "experts", "template_registration")
 - **EXPERTISE_FILE**: `.claude/commands/experts/commands/expertise.yaml` (static)
 - **COMMANDS_ROOT**: `.claude/commands/` (static)
-- **TEMPLATES_ROOT**: `{{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands/` (static)
+- **TEMPLATES_ROOT**: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/` (static)
 - **MAX_LINES**: `1000` (static)
 
 ## Instructions
@@ -64,7 +64,7 @@ You are the Commands Expert updating your mental model. Follow the 7-phase workf
    git diff --name-only HEAD -- .claude/commands/
 
    # List changed template files
-   git diff --name-only HEAD -- {{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands/
+   git diff --name-only HEAD -- tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/
    ```
 
 3. Note focus areas based on changes:
@@ -217,16 +217,16 @@ You are the Commands Expert updating your mental model. Follow the 7-phase workf
    ```bash
    # Check template registration in scaffold_service.py
    # Read registration section
-   cat {{ config.cli.name }}/{{ config.cli.package_name }}/application/scaffold_service.py
+   cat tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
 
    # Find command template registration patterns
-   grep -n "plan.add_file" {{ config.cli.name }}/{{ config.cli.package_name }}/application/scaffold_service.py | grep "commands/"
+   grep -n "plan.add_file" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py | grep "commands/"
 
    # Verify expert command registration
-   grep -A 2 "experts/cli/question.md\|experts/adw/question.md\|experts/commands/question.md" {{ config.cli.name }}/{{ config.cli.package_name }}/application/scaffold_service.py
+   grep -A 2 "experts/cli/question.md\|experts/adw/question.md\|experts/commands/question.md" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
 
    # Count registered command templates
-   grep -c '"commands/' {{ config.cli.name }}/{{ config.cli.package_name }}/application/scaffold_service.py
+   grep -c '"commands/' tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
    ```
 
 8. **Validate Dual Strategy Compliance**:
@@ -235,7 +235,7 @@ You are the Commands Expert updating your mental model. Follow the 7-phase workf
    # Example: Check if .j2 templates match .md implementations
 
    # List template files
-   find {{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands -name "*.j2"
+   find tac_bootstrap_cli/tac_bootstrap/templates/claude/commands -name "*.j2"
 
    # List implementation files
    find .claude/commands -name "*.md"
@@ -243,11 +243,11 @@ You are the Commands Expert updating your mental model. Follow the 7-phase workf
    # Compare specific pairs
    # Template: experts/cli/question.md.j2
    # Implementation: .claude/commands/experts/cli/question.md
-   test -f {{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands/experts/cli/question.md.j2 && echo "✓ Template exists"
+   test -f tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/cli/question.md.j2 && echo "✓ Template exists"
    test -f .claude/commands/experts/cli/question.md && echo "✓ Implementation exists"
 
    # Check for Jinja2 variables in templates
-   grep -h "{{.*config" {{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands/**/*.j2 | head -10
+   grep -h "{{ '{{' }}.*config" tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/**/*.j2 | head -10
    ```
 
 9. **Discover New Information**:
@@ -256,7 +256,7 @@ You are the Commands Expert updating your mental model. Follow the 7-phase workf
    find .claude/commands -name "*.md" | grep -v __pycache__
 
    # Find new templates added
-   find {{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands -name "*.j2" | grep -v __pycache__
+   find tac_bootstrap_cli/tac_bootstrap/templates/claude/commands -name "*.j2" | grep -v __pycache__
 
    # Check for new patterns in recent commands
    ls -lt .claude/commands/**/*.md | head -10
@@ -294,7 +294,7 @@ Create a discrepancies report:
 - [ ] New expert domain: `experts/new-domain/`
       Should be documented in integration_patterns
 
-- [ ] New template variable: `{{ config.new_field }}`
+- [ ] New template variable: `{{ '{{' }} config.new_field {{ '}}' }}`
       Should be documented in dual_strategy section
 
 ### Incorrect Information
@@ -422,7 +422,7 @@ Create a discrepancies report:
 7. **Update Template Registration**:
    ```yaml
    template_registration:
-     location: "{{ config.cli.name }}/{{ config.cli.package_name }}/application/scaffold_service.py"
+     location: "tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py"
      pattern: |
        plan.add_file(
            action="create",
@@ -444,15 +444,15 @@ Create a discrepancies report:
    dual_strategy:
      compliance:
        principle: "Templates (.j2) and implementations (.md) must stay synchronized"
-       template_location: "{{ config.cli.name }}/{{ config.cli.package_name }}/templates/claude/commands/"
+       template_location: "tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/"
        implementation_location: ".claude/commands/"
      jinja2_variables:
-       config_object: "{{ config.* }}"
+       config_object: "{{ '{{' }} config.* {{ '}}' }}"
        common_variables:
-         - "{{ config.project.name }}"
-         - "{{ config.cli.name }}"
-         - "{{ config.cli.package_name }}"
-         - "{{ config.commands.* }}"
+         - "{{ '{{' }} config.project.name {{ '}}' }}"
+         - "{{ '{{' }} config.cli.name {{ '}}' }}"
+         - "{{ '{{' }} config.cli.package_name {{ '}}' }}"
+         - "{{ '{{' }} config.commands.* {{ '}}' }}"
      validation:
        check: "Ensure .j2 templates exist for all registered commands"
        check: "Verify implementations match rendered templates"
