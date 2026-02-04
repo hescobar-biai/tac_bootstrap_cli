@@ -680,6 +680,11 @@ def detect_relevant_docs(issue: GitHubIssue) -> list[str]:
         # AI & SDK - specific terms only
         "anthropic_quick_start": ["anthropic api", "claude api", "anthropic sdk"],
         "claude_code_cli_reference": ["claude code cli", "claude-code", "claude code reference"],
+
+        # TAC-13 - Agent Experts
+        "Tac-13-agent-experts": ["agent expert", "expertise file", "self-improving", "mental model", "act learn reuse"],
+        "expertise-file-structure": ["expertise yaml", "expertise structure", "expertise schema"],
+        "meta-skill-pattern": ["meta-skill", "progressive disclosure", "skill levels"],
     }
 
     # Check strict keywords - only add if multiple keywords match or title match
