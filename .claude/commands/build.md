@@ -79,3 +79,12 @@ git diff --stat output here
 If successful, consider running:
 - `/test` - Validate implementation with tests
 - `/review` - Review code quality and patterns
+
+## Orchestration Patterns
+
+Para construir múltiples archivos en paralelo con agentes especializados, considera usar patrones de orquestación:
+
+- [build-agent](./../agents/build-agent.md) - Agente especializado en implementar un archivo específico basado en instrucciones detalladas y contexto
+- [orch_scout_and_build](./orch_scout_and_build.md) - Workflow simplificado que orquesta exploración scout y construcción directa
+
+Usa comandos directos (como este) para construcción secuencial. Usa orquestación con build-agents para construcción paralela de múltiples archivos.

@@ -140,6 +140,15 @@ As a <user>, I want <action>, so that <benefit>
 <Additional context>
 ```
 
+## Orchestration Patterns
+
+Para tareas complejas multi-fase, considera usar comandos de orquestación que coordinan múltiples agentes especializados automáticamente:
+
+- [orch_plan_w_scouts_build_review](./orch_plan_w_scouts_build_review.md) - Workflow completo: exploración → planificación → construcción → revisión
+- [planner agent](./../agents/planner.md) - Agente especializado en crear planes de implementación estructurados
+
+Usa comandos directos (como este) para tareas de fase única. Usa orquestación para workflows multi-agente coordinados.
+
 ## Report
 
 Output ONLY the relative path to the plan file:
