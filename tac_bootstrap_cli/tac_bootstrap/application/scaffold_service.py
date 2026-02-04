@@ -640,6 +640,7 @@ class ScaffoldService:
         # Modules - all ADW infrastructure modules
         modules = [
             ("__init__.py", "Package init"),
+            ("adw_agent_sdk.py", "Agent SDK type-safe layer"),
             ("agent.py", "Claude Code wrapper"),
             ("state.py", "State persistence"),
             ("git_ops.py", "Git operations"),
