@@ -1,7 +1,10 @@
 """
-IDK: scaffold-service, plan-builder, code-generation, template-rendering, file-operations
-Responsibility: Builds scaffold plans from TACConfig and applies them to filesystem
-Invariants: Plans are idempotent, templates must exist, output directory must be writable
+IDK: scaffold-service, plan-builder, code-generation, template-rendering,
+     file-operations, expert-registration
+Responsibility: Builds scaffold plans from TACConfig and applies them to filesystem,
+                including TAC-13 expert agent templates
+Invariants: Plans are idempotent, templates must exist, output directory must be writable,
+            expert templates follow 3-component pattern
 """
 
 from dataclasses import dataclass, field
@@ -107,8 +110,11 @@ class ScaffoldService:
             (".claude", "Claude Code configuration"),
             (".claude/commands", "Slash commands"),
             (".claude/commands/e2e", "E2E test command examples"),
-            (".claude/commands/experts", "Expert command groups"),
-            (".claude/commands/experts/cc_hook_expert", "Claude Code hook expert commands"),
+            (".claude/commands/experts", "TAC-13 expert command groups"),
+            (".claude/commands/experts/cc_hook_expert", "Hook expert: Claude Code hooks"),
+            (".claude/commands/experts/cli", "CLI expert: TAC Bootstrap CLI"),
+            (".claude/commands/experts/adw", "ADW expert: AI Developer Workflows"),
+            (".claude/commands/experts/commands", "Commands expert: .claude/commands structure"),
             (".claude/agents", "Agent definitions"),
             (".claude/output-styles", "Output style presets"),
             (".claude/status_lines", "Claude Code status line definitions"),
@@ -280,7 +286,13 @@ class ScaffoldService:
         )
 
     def _add_claude_files(self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool) -> None:
-        """Add .claude/ configuration files."""
+        """Add .claude/ configuration files.
+
+        Includes TAC-13 expert agent templates following the dual-strategy pattern:
+        1. CLI Templates (Jinja2): In tac_bootstrap/templates/
+        2. Repo Implementations: Generated in .claude/commands/
+        3. Expertise Files: Working memory maintained by self-improve workflow
+        """
         action = FileAction.CREATE  # CREATE only creates if file doesn't exist
 
         # Settings
@@ -484,18 +496,48 @@ class ScaffoldService:
             executable=True,
         )
 
-        # Expert commands
+        # ============================================================================
+        # TAC-13: AGENT EXPERT COMMANDS
+        # ============================================================================
+        # Expert agents are self-learning command templates that maintain expertise files.
+        # Each expert has 3 components:
+        #   1. question.md    - Read-only Q&A using expertise file + codebase validation
+        #   2. self-improve.md - 7-phase self-improvement workflow
+        #   3. expertise.yaml  - Mental model (working memory, not source of truth)
+        #
+        # Pattern: experts/<domain>/{question,self-improve,expertise}.*
+        # Domains: cli, adw, commands, cc_hook_expert
+        # ============================================================================
+
+        # --- Hook Expert (pre-existing): Claude Code hooks implementation ---
         expert_commands = [
             ("experts/cc_hook_expert/cc_hook_expert_plan.md", "Hook expert planning command"),
             ("experts/cc_hook_expert/cc_hook_expert_build.md", "Hook expert build command"),
             ("experts/cc_hook_expert/cc_hook_expert_improve.md", "Hook expert improvement command"),
-            # TAC-13 Task 4: CLI Expert - Question Prompt
-            ("experts/cli/question.md", "CLI expert question prompt for read-only queries"),
-            # TAC-13: CLI Expert Self-Improve
-            ("experts/cli/self-improve.md", "CLI expert 7-phase self-improve workflow"),
-            # TAC-13 Task 8: ADW Expert Self-Improve
-            ("experts/adw/self-improve.md", "ADW expert 7-phase self-improve workflow"),
         ]
+
+        # --- CLI Expert (Tasks 4-6): TAC Bootstrap CLI architecture ---
+        expert_commands.extend([
+            ("experts/cli/question.md", "CLI expert question prompt for read-only queries"),
+            ("experts/cli/self-improve.md", "CLI expert 7-phase self-improve workflow"),
+        ])
+
+        # --- ADW Expert (Tasks 7-9): AI Developer Workflows ---
+        expert_commands.extend([
+            ("experts/adw/question.md", "ADW expert question prompt for workflow queries"),
+            ("experts/adw/self-improve.md", "ADW expert 7-phase self-improve workflow"),
+        ])
+
+        # --- Commands Expert (Tasks 10-12): .claude/commands/* structure ---
+        expert_commands.extend([
+            (
+                "experts/commands/question.md",
+                "Commands expert question prompt for command structure queries",
+            ),
+            ("experts/commands/self-improve.md", "Commands expert 7-phase self-improve workflow"),
+        ])
+
+        # Register all expert command .md files
         for cmd, reason in expert_commands:
             plan.add_file(
                 f".claude/commands/{cmd}",
@@ -504,50 +546,19 @@ class ScaffoldService:
                 reason=reason,
             )
 
-        # TAC-13 Task 6: CLI Expert Expertise Seed
-        plan.add_file(
-            ".claude/commands/experts/cli/expertise.yaml",
-            action=FileAction.CREATE,  # Don't overwrite if exists
-            template="claude/commands/experts/cli/expertise.yaml.j2",
-            reason="CLI expert expertise seed file",
-        )
-
-        # TAC-13 Task 9: ADW Expert Expertise Seed
-        plan.add_file(
-            ".claude/commands/experts/adw/expertise.yaml",
-            action=FileAction.CREATE,  # Don't overwrite if exists
-            template="claude/commands/experts/adw/expertise.yaml.j2",
-            reason="ADW expert expertise seed file",
-        )
-
-        # TAC-13 Task 7: ADW Expert - Question Prompt
-        expert_commands.append(
-            ("experts/adw/question.md", "ADW expert question prompt for workflow queries")
-        )
-
-        # TAC-13 Task 10: Commands Expert - Question Prompt
-        expert_commands.append(
-            (
-                "experts/commands/question.md",
-                "Commands expert question prompt for command structure queries",
+        # Register expert expertise seed files (don't overwrite if exists)
+        expertise_files = [
+            ("cli", "CLI expert expertise seed file"),
+            ("adw", "ADW expert expertise seed file"),
+            ("commands", "Commands expert expertise seed file"),
+        ]
+        for domain, reason in expertise_files:
+            plan.add_file(
+                f".claude/commands/experts/{domain}/expertise.yaml",
+                action=FileAction.CREATE,  # Don't overwrite if exists
+                template=f"claude/commands/experts/{domain}/expertise.yaml.j2",
+                reason=reason,
             )
-        )
-
-        # TAC-13 Task 11: Commands Expert - Self-Improve Prompt
-        expert_commands.append(
-            (
-                "experts/commands/self-improve.md",
-                "Commands expert 7-phase self-improve workflow",
-            )
-        )
-
-        # TAC-13 Task 12: Commands Expert Expertise Seed
-        plan.add_file(
-            ".claude/commands/experts/commands/expertise.yaml",
-            action=FileAction.CREATE,  # Don't overwrite if exists
-            template="claude/commands/experts/commands/expertise.yaml.j2",
-            reason="Commands expert expertise seed file",
-        )
 
         # E2E test command examples
         e2e_commands = [
