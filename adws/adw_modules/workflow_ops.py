@@ -483,7 +483,7 @@ def implement_plan_with_report(
     working_dir: Optional[str] = None,
     ai_docs_context: Optional[str] = None,  # TAC-9: Documentation context
 ) -> AgentPromptResponse:
-    """Implement the plan using /build_w_report command (TAC-10).
+    """Implement the plan using /build_w_report command (TAC).
 
     This variant generates a structured YAML report of all changes made,
     useful for tracking and documentation purposes.
@@ -690,7 +690,7 @@ def detect_relevant_docs(issue: GitHubIssue) -> list[str]:
         "Tac-9": ["token optimization", "cost reduction", "summarization"],
         "Tac-1": ["adw workflow", "sdlc", "isolated worktree", "zero touch"],
 
-        # Legacy TAC-13 specific docs
+        # Legacy TAC specific docs
         "Tac-13-agent-experts": ["expertise-driven development"],
         "expertise-file-structure": ["expertise yaml", "expertise structure", "expertise schema"],
         "meta-skill-pattern": ["meta-skill", "progressive disclosure", "skill levels"],
@@ -766,7 +766,7 @@ def scout_codebase(
     scale: str = "medium",
     working_dir: Optional[str] = None,
 ) -> AgentPromptResponse:
-    """Scout codebase using /scout command (TAC-12).
+    """Scout codebase using /scout command (TAC).
 
     Executes parallel scouting to explore codebases and find relevant files.
 
@@ -804,7 +804,7 @@ def plan_with_scouts(
     working_dir: Optional[str] = None,
     ai_docs_context: Optional[str] = None,  # TAC-9: Documentation context
 ) -> AgentPromptResponse:
-    """Create enhanced plan with parallel codebase exploration using /plan_w_scouters (TAC-12).
+    """Create enhanced plan with parallel codebase exploration using /plan_w_scouters (TAC).
 
     This command performs parallel scouting before planning, providing comprehensive codebase
     context for better implementation plans.
@@ -844,7 +844,7 @@ def build_in_parallel(
     working_dir: Optional[str] = None,
     ai_docs_context: Optional[str] = None,  # TAC-9: Documentation context
 ) -> AgentPromptResponse:
-    """Build implementation in parallel using /build_in_parallel (TAC-12).
+    """Build implementation in parallel using /build_in_parallel (TAC).
 
     This command delegates file creation to parallel build-agents for faster implementation.
 
@@ -882,7 +882,7 @@ def find_and_summarize(
     logger: logging.Logger,
     working_dir: Optional[str] = None,
 ) -> AgentPromptResponse:
-    """Find and summarize code using /find_and_summarize (TAC-12).
+    """Find and summarize code using /find_and_summarize (TAC).
 
     This command searches for code matching a term and provides a summary of findings.
 
@@ -1453,7 +1453,7 @@ def create_and_implement_patch(
 
 
 # ============================================================================
-# TAC-13: Expert System Integration
+# TAC: Expert System Integration
 # ============================================================================
 
 def consult_expert(
@@ -1477,14 +1477,14 @@ def consult_expert(
     Returns:
         AgentPromptResponse with expert's answer
     """
-    logger.info(f"TAC-13: Consulting {domain} expert")
+    logger.info(f"TAC: Consulting {domain} expert")
 
     request = AgentTemplateRequest(
         agent_name=f"{domain}_expert",
         slash_command=f"/experts:{domain}:question",
         args=[question],
         adw_id=adw_id,
-        model="haiku",  # TAC-13 Optimization: Use Haiku for Q&A (10x cheaper, sufficient for guidance)
+        model="haiku",  # TAC Optimization: Use Haiku for Q&A (10x cheaper, sufficient for guidance)
         working_dir=working_dir,
     )
 
@@ -1521,7 +1521,7 @@ def improve_expert_knowledge(
     Returns:
         AgentPromptResponse with self-improve report
     """
-    logger.info(f"TAC-13: Running self-improve for {domain} expert")
+    logger.info(f"TAC: Running self-improve for {domain} expert")
 
     # Build args for self-improve command
     args = []
@@ -1551,7 +1551,7 @@ def improve_expert_knowledge(
     return response
 
 
-# Agent name constants for TAC-13
+# Agent name constants for TAC
 AGENT_EXPERT_ADW = "adw_expert"
 AGENT_EXPERT_CLI = "cli_expert"
 AGENT_EXPERT_COMMANDS = "commands_expert"

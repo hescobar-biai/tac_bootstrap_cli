@@ -76,7 +76,7 @@ SlashCommand = Literal[
     "/load_ai_docs",
     "/load_bundle",
     "/prime_cc",
-    # TAC-10: Agent delegation and meta-prompting
+    # TAC: Agent delegation and meta-prompting
     "/background",
     "/parallel_subagents",
     "/t_metaprompt_workflow",
@@ -84,10 +84,10 @@ SlashCommand = Literal[
     "/quick-plan",
     "/in_loop_review",
     "/health_check",
-    # TAC-11: Exploration and clarification
+    # TAC: Exploration and clarification
     "/scout",
     "/question",
-    # TAC-12: Planning and orchestration
+    # TAC: Planning and orchestration
     "/all_tools",
     "/build",
     "/build_in_parallel",
@@ -97,7 +97,7 @@ SlashCommand = Literal[
     "/plan_w_scouters",
     "/prime_3",
     "/scout_plan_build",
-    # TAC-13: Expert system commands
+    # TAC: Expert system commands
     "/experts:adw:question",
     "/experts:adw:self-improve",
     "/experts:cli:question",

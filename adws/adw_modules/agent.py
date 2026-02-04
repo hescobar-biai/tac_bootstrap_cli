@@ -35,7 +35,7 @@ SLASH_COMMAND_MODEL_MAP: Final[Dict[SlashCommand, Dict[ModelSet, str]]] = {
     "/generate_branch_name": {"base": "sonnet", "heavy": "sonnet"},
     # Implementation (can benefit from opus for complex tasks)
     "/implement": {"base": "sonnet", "heavy": "opus"},
-    "/build_w_report": {"base": "sonnet", "heavy": "opus"},  # TAC-10: Build with YAML report
+    "/build_w_report": {"base": "sonnet", "heavy": "opus"},  # TAC: Build with YAML report
     # Testing
     "/test": {"base": "sonnet", "heavy": "sonnet"},
     "/resolve_failed_test": {"base": "sonnet", "heavy": "opus"},
@@ -53,7 +53,7 @@ SLASH_COMMAND_MODEL_MAP: Final[Dict[SlashCommand, Dict[ModelSet, str]]] = {
     "/bug": {"base": "sonnet", "heavy": "opus"},
     "/feature": {"base": "sonnet", "heavy": "opus"},
     "/patch": {"base": "sonnet", "heavy": "opus"},
-    "/quick-plan": {"base": "sonnet", "heavy": "opus"},  # TAC-10: Rapid planning
+    "/quick-plan": {"base": "sonnet", "heavy": "opus"},  # TAC: Rapid planning
     # Worktree and utilities
     "/install_worktree": {"base": "sonnet", "heavy": "sonnet"},
     "/track_agentic_kpis": {"base": "sonnet", "heavy": "sonnet"},
@@ -62,15 +62,15 @@ SLASH_COMMAND_MODEL_MAP: Final[Dict[SlashCommand, Dict[ModelSet, str]]] = {
     "/load_ai_docs": {"base": "sonnet", "heavy": "sonnet"},  # TAC-9: Load AI docs
     "/load_bundle": {"base": "sonnet", "heavy": "sonnet"},  # TAC-9: Load context bundle
     "/prime_cc": {"base": "sonnet", "heavy": "sonnet"},  # TAC-9: Claude Code priming
-    # TAC-10: Agent delegation (opus for complex orchestration)
-    "/background": {"base": "sonnet", "heavy": "opus"},  # TAC-10: Background delegation
-    "/parallel_subagents": {"base": "sonnet", "heavy": "opus"},  # TAC-10: Parallel agents
-    # TAC-10: Meta-prompting (opus for prompt generation)
-    "/t_metaprompt_workflow": {"base": "sonnet", "heavy": "opus"},  # TAC-10: Meta-prompt
-    # TAC-11: Exploration and clarification (lightweight)
-    "/scout": {"base": "sonnet", "heavy": "sonnet"},  # TAC-11: Scout command for exploration
-    "/question": {"base": "sonnet", "heavy": "sonnet"},  # TAC-11: Question command for clarification
-    # TAC-12: Planning and orchestration
+    # TAC: Agent delegation (opus for complex orchestration)
+    "/background": {"base": "sonnet", "heavy": "opus"},  # TAC: Background delegation
+    "/parallel_subagents": {"base": "sonnet", "heavy": "opus"},  # TAC: Parallel agents
+    # TAC: Meta-prompting (opus for prompt generation)
+    "/t_metaprompt_workflow": {"base": "sonnet", "heavy": "opus"},  # TAC: Meta-prompt
+    # TAC: Exploration and clarification (lightweight)
+    "/scout": {"base": "sonnet", "heavy": "sonnet"},  # TAC: Scout command for exploration
+    "/question": {"base": "sonnet", "heavy": "sonnet"},  # TAC: Question command for clarification
+    # TAC: Planning and orchestration
     "/all_tools": {"base": "haiku", "heavy": "haiku"},
     "/build": {"base": "sonnet", "heavy": "sonnet"},
     "/build_in_parallel": {"base": "sonnet", "heavy": "opus"},
@@ -592,7 +592,7 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
         "adw_classifier",
         "docs_loader",  # TAC-9: AI docs loader (read-only)
         "doc_summarizer",  # TAC-9: Documentation summarizer (read-only)
-        "codebase_scout",  # TAC-12: Codebase scout (read-only)
+        "codebase_scout",  # TAC: Codebase scout (read-only)
     }
 
     if effective_cwd:

@@ -47,7 +47,7 @@ def main():
     skip_e2e = "--skip-e2e" in sys.argv
     skip_resolution = "--skip-resolution" in sys.argv
 
-    # TAC-13: Enabled by default for orchestrated workflows (opt-out)
+    # TAC: Enabled by default for orchestrated workflows (opt-out)
     use_experts = "--no-experts" not in sys.argv
     expert_learn = "--no-expert-learn" not in sys.argv
 
@@ -88,9 +88,9 @@ def main():
         print("                        If not specified, topics are auto-detected from issue (TAC-9)")
         print("  --skip-e2e           Skip E2E test execution")
         print("  --skip-resolution    Skip test failure resolution")
-        print("  --no-experts         Disable TAC-13 expert consultation (enabled by default)")
-        print("  --no-expert-learn    Disable TAC-13 self-improve (enabled by default)")
-        print("\n🧠 TAC-13 Expert System: ENABLED BY DEFAULT for complete workflows")
+        print("  --no-experts         Disable TAC expert consultation (enabled by default)")
+        print("  --no-expert-learn    Disable TAC self-improve (enabled by default)")
+        print("\n🧠 TAC Expert System: ENABLED BY DEFAULT for complete workflows")
         print(f"\n⚠️  WARNING: This will automatically merge to {target_branch} if all phases pass!")
         sys.exit(1)
 
@@ -164,10 +164,10 @@ def main():
         plan_cmd.extend(["--load-docs", docs_to_load])
         logger.info(f"Passing documentation to planning phase: {docs_to_load}")
 
-    # TAC-13 Optimization: Only consult experts in Plan phase (guidance needed)
+    # TAC Optimization: Only consult experts in Plan phase (guidance needed)
     if use_experts:
         plan_cmd.append("--use-experts")
-        logger.info("TAC-13: Expert consultation enabled for plan phase")
+        logger.info("TAC: Expert consultation enabled for plan phase")
 
     print(f"\n=== ISOLATED PLAN PHASE ===")
     print(f"Running: {' '.join(plan_cmd)}")
@@ -200,7 +200,7 @@ def main():
         adw_id,
     ]
 
-    # TAC-13 Optimization: Build phase doesn't need expert consultation (direct implementation)
+    # TAC Optimization: Build phase doesn't need expert consultation (direct implementation)
 
     print(f"\n=== ISOLATED BUILD PHASE ===")
     print(f"Running: {' '.join(build_cmd)}")
@@ -247,7 +247,7 @@ def main():
     if skip_resolution:
         review_cmd.append("--skip-resolution")
 
-    # TAC-13 Optimization: Only consult experts in Review phase (validation critical)
+    # TAC Optimization: Only consult experts in Review phase (validation critical)
     if use_experts:
         review_cmd.append("--use-experts")
 
@@ -276,7 +276,7 @@ def main():
         adw_id,
     ]
 
-    # TAC-13 Optimization: Document phase only does final learning (full validation)
+    # TAC Optimization: Document phase only does final learning (full validation)
     if expert_learn:
         document_cmd.append("--expert-learn")
 

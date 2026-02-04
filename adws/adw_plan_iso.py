@@ -83,14 +83,14 @@ def main():
     parser.add_argument("--load-docs", type=str, default=None,
                        help="Load AI documentation for topic before planning (TAC-9)")
     parser.add_argument("--scout", action="store_true",
-                       help="Scout codebase before planning for better context (TAC-12)")
+                       help="Scout codebase before planning for better context (TAC)")
     parser.add_argument("--scout-scale", type=str, default="medium",
                        choices=["quick", "medium", "very_thorough"],
-                       help="Scale of codebase exploration: quick, medium, or very_thorough (TAC-12)")
+                       help="Scale of codebase exploration: quick, medium, or very_thorough (TAC)")
     parser.add_argument("--use-experts", action="store_true",
-                       help="Enable TAC-13 expert consultation (default: disabled)")
+                       help="Enable TAC expert consultation (default: disabled)")
     parser.add_argument("--expert-learn", action="store_true",
-                       help="Enable TAC-13 self-improve after planning")
+                       help="Enable TAC self-improve after planning")
 
     args = parser.parse_args()
 
@@ -225,12 +225,12 @@ def main():
                 format_issue_message(adw_id, "ops", f"⚠️ AI docs loading failed (continuing): {docs_response.output[:200]}"),
             )
 
-    # Scout codebase if requested (TAC-12)
+    # Scout codebase if requested (TAC)
     if use_scout:
         logger.info(f"Scouting codebase with scale: {scout_scale}")
         make_issue_comment(
             issue_number,
-            format_issue_message(adw_id, "ops", f"🔍 Scouting codebase for context (scale: {scout_scale}) (TAC-12)"),
+            format_issue_message(adw_id, "ops", f"🔍 Scouting codebase for context (scale: {scout_scale}) (TAC)"),
         )
 
         scout_response = scout_codebase(issue.body, adw_id, logger, scale=scout_scale)
@@ -239,7 +239,7 @@ def main():
             logger.info("Codebase scouting completed successfully")
             make_issue_comment(
                 issue_number,
-                format_issue_message(adw_id, "ops", "✅ Codebase scouting completed (TAC-12)"),
+                format_issue_message(adw_id, "ops", "✅ Codebase scouting completed (TAC)"),
             )
             state.update(scouting_results=scout_response.output, scout_scale=scout_scale)
             state.accumulate_tokens("scout", scout_response.token_usage)
@@ -279,13 +279,13 @@ def main():
             format_issue_message(adw_id, "ops", f"✅ Issue classified as: {issue_command}"),
         )
 
-    # TAC-13 REUSE: Consultar expertise antes de clarificaciones (MOVED for better context)
+    # TAC REUSE: Consultar expertise antes de clarificaciones (MOVED for better context)
     expert_guidance = None
     if use_experts and not skip_clarify:
-        logger.info("TAC-13: Consulting ADW expert for planning guidance")
+        logger.info("TAC: Consulting ADW expert for planning guidance")
         make_issue_comment(
             issue_number,
-            format_issue_message(adw_id, "ops", "🧠 Consulting ADW expert (TAC-13)"),
+            format_issue_message(adw_id, "ops", "🧠 Consulting ADW expert (TAC)"),
         )
 
         expert_question = f"""Given this issue:
@@ -488,12 +488,12 @@ Focus on: state management, worktree isolation, GitHub integration patterns."""
         format_issue_message(adw_id, AGENT_PLANNER, "✅ Building implementation plan in isolated environment"),
     )
 
-    # Use scout-enhanced planning if scouting was done (TAC-12)
+    # Use scout-enhanced planning if scouting was done (TAC)
     if state.get("scouting_results"):
-        logger.info("Using scout-enhanced planning with /plan_w_scouters (TAC-12)")
+        logger.info("Using scout-enhanced planning with /plan_w_scouters (TAC)")
         make_issue_comment(
             issue_number,
-            format_issue_message(adw_id, AGENT_PLANNER, "🔍 Using scout-enhanced planning (TAC-12)"),
+            format_issue_message(adw_id, AGENT_PLANNER, "🔍 Using scout-enhanced planning (TAC)"),
         )
         # plan_with_scouts takes just the description, not the full issue object
         plan_description = f"{issue.title}\n\n{issue.body}"
@@ -590,7 +590,7 @@ Focus on: state management, worktree isolation, GitHub integration patterns."""
         issue_number, format_issue_message(adw_id, AGENT_PLANNER, "✅ Plan committed")
     )
 
-    # TAC-13 Optimization: Learning phase moved to document phase (final validation)
+    # TAC Optimization: Learning phase moved to document phase (final validation)
     # Individual phases only consult experts, learning happens once at the end
 
     # Finalize git operations (push and PR)

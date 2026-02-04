@@ -327,9 +327,9 @@ def main():
     parser.add_argument("--skip-resolution", action="store_true",
                        help="Skip automatic resolution of blocker issues")
     parser.add_argument("--use-experts", action="store_true",
-                       help="Enable TAC-13 expert consultation")
+                       help="Enable TAC expert consultation")
     parser.add_argument("--expert-learn", action="store_true",
-                       help="Enable TAC-13 self-improve after review")
+                       help="Enable TAC self-improve after review")
 
     args = parser.parse_args()
 
@@ -410,9 +410,9 @@ def main():
         format_issue_message(adw_id, "ops", f"📋 Found spec file: {spec_file}")
     )
 
-    # TAC-13 REUSE: Consultar expertise antes de review
+    # TAC REUSE: Consultar expertise antes de review
     if use_experts:
-        logger.info("TAC-13: Consulting ADW expert for review criteria")
+        logger.info("TAC: Consulting ADW expert for review criteria")
 
         expert_question = f"""Reviewing spec: {spec_file}
 
@@ -535,7 +535,7 @@ Focus on: code quality, state management, GitHub integration, common pitfalls.""
         issue_number, format_issue_message(adw_id, AGENT_REVIEWER, "✅ Review committed")
     )
 
-    # TAC-13 Optimization: Learning phase moved to document phase (final validation)
+    # TAC Optimization: Learning phase moved to document phase (final validation)
     # Individual phases only consult experts, learning happens once at the end
 
     # Finalize git operations (push and PR)

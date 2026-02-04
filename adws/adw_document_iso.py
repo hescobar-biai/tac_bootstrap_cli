@@ -321,9 +321,9 @@ def main():
     parser.add_argument("issue_number", help="GitHub issue number")
     parser.add_argument("adw_id", help="ADW ID (required to locate worktree)")
     parser.add_argument("--use-experts", action="store_true",
-                       help="Enable TAC-13 expert consultation")
+                       help="Enable TAC expert consultation")
     parser.add_argument("--expert-learn", action="store_true",
-                       help="Enable TAC-13 self-improve after documentation")
+                       help="Enable TAC self-improve after documentation")
 
     args = parser.parse_args()
 
@@ -427,7 +427,7 @@ def main():
         format_issue_message(adw_id, "ops", f"📋 Found spec file: {spec_file}"),
     )
 
-    # TAC-13 REUSE: Consultar expertise para patrones de docs
+    # TAC REUSE: Consultar expertise para patrones de docs
     if use_experts:
         expert_question = f"""Documenting spec: {spec_file}
 
@@ -539,12 +539,12 @@ Focus on: ADW workflow docs, state diagrams, best practices."""
     # Track Agentic KPIs before finalizing - this never fails the workflow
     track_agentic_kpis(issue_number, adw_id, state, logger, worktree_path)
 
-    # TAC-13 LEARN: Final comprehensive update
+    # TAC LEARN: Final comprehensive update
     if expert_learn:
-        logger.info("TAC-13: Final self-improve for complete workflow")
+        logger.info("TAC: Final self-improve for complete workflow")
         make_issue_comment(
             issue_number,
-            format_issue_message(adw_id, "ops", "🎓 Final expertise update (TAC-13)"),
+            format_issue_message(adw_id, "ops", "🎓 Final expertise update (TAC)"),
         )
 
         improve_response = improve_expert_knowledge(
