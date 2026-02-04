@@ -55,7 +55,7 @@ def _rate_limit_delay():
 
 
 def _execute_with_retry(cmd, env, operation_name="operation"):
-    """Execute command with retries on rate limit errors."""
+    """Execute command with retries on rate limit and network errors."""
     global _last_comment_time
     result = None
 
@@ -68,17 +68,43 @@ def _execute_with_retry(cmd, env, operation_name="operation"):
         if result.returncode == 0:
             return result
 
-        # Check if it's a rate limit error
+        # Check if it's a retryable error
         stderr = result.stderr.lower()
-        if "too quickly" in stderr or "rate limit" in stderr:
-            wait_time = RETRY_BACKOFF * (attempt + 1)
+
+        # Network errors that should be retried
+        network_errors = [
+            "connection reset by peer",
+            "connection refused",
+            "connection timed out",
+            "timeout",
+            "temporary failure",
+            "network is unreachable",
+            "broken pipe",
+            "502 bad gateway",
+            "503 service unavailable",
+            "504 gateway timeout",
+        ]
+
+        is_rate_limit = "too quickly" in stderr or "rate limit" in stderr
+        is_network_error = any(err in stderr for err in network_errors)
+
+        if is_rate_limit or is_network_error:
+            # Determine wait time based on error type
+            if is_rate_limit:
+                wait_time = RETRY_BACKOFF * (attempt + 1)
+                error_type = "Rate limited"
+            else:
+                # For network errors, use exponential backoff starting at 2 seconds
+                wait_time = min(2 ** attempt, 30)  # Cap at 30 seconds
+                error_type = "Network error"
+
             print(
-                f"⏱️  Rate limited. Waiting {wait_time}s before retry {attempt + 1}/{MAX_RETRIES}...",
+                f"⏱️  {error_type}. Waiting {wait_time}s before retry {attempt + 1}/{MAX_RETRIES}...",
                 file=sys.stderr,
             )
             time.sleep(wait_time)
         else:
-            # Not a rate limit error, fail immediately
+            # Not a retryable error, fail immediately
             return result
 
     # All retries failed
