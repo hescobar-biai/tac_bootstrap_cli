@@ -462,6 +462,7 @@ class ScaffoldService:
             ("meta-agent.md", "Agent generation from specifications"),
             ("research-docs-fetcher.md", "Research and documentation fetcher agent"),
             ("build-agent.md", "Parallel build file implementation agent"),
+            ("planner.md", "Implementation planning specialist agent"),
             ("playwright-validator.md", "Playwright E2E validation agent"),
             ("scout-report-suggest.md", "Codebase scouting and analysis agent"),
             ("scout-report-suggest-fast.md", "Fast codebase scouting agent (haiku)"),

@@ -1,12 +1,12 @@
 ---
 name: scout-report-suggest-fast
-description: Use proactively to scout codebase issues, identify problem locations, and suggest resolutions. Fast variant optimized for speed using haiku model. Specialist for read-only analysis and reporting without making changes.
+description: Use proactively to scout codebase issues, identify problem locations, and suggest resolutions. Specialist for read-only analysis and reporting without making changes.
 tools: Read, Glob, Grep
 model: haiku
 color: blue
 ---
 
-# scout-report-suggest-fast
+# scout-report-suggest
 
 ## Purpose
 
