@@ -10,7 +10,7 @@ Usage:
   uv run adw_build_iso.py <issue-number> <adw-id> [--with-report]
 
 Options:
-  --with-report    Use /build_w_report for structured YAML change tracking (TAC-10)
+  --with-report    Use /build_w_report for structured YAML change tracking (TAC)
 
 Workflow:
 1. Load state and validate worktree exists
@@ -62,13 +62,13 @@ def main():
     parser.add_argument("issue_number", help="GitHub issue number")
     parser.add_argument("adw_id", help="ADW ID (required to locate worktree)")
     parser.add_argument("--with-report", action="store_true",
-                       help="Use /build_w_report for structured YAML change tracking (TAC-10)")
+                       help="Use /build_w_report for structured YAML change tracking (TAC)")
     parser.add_argument("--parallel", action="store_true",
-                       help="Use parallel build agents for faster implementation (TAC-12)")
+                       help="Use parallel build agents for faster implementation (TAC)")
     parser.add_argument("--use-experts", action="store_true",
-                       help="Enable TAC-13 expert consultation")
+                       help="Enable TAC expert consultation")
     parser.add_argument("--expert-learn", action="store_true",
-                       help="Enable TAC-13 self-improve after build")
+                       help="Enable TAC self-improve after build")
 
     args = parser.parse_args()
 
@@ -180,9 +180,9 @@ def main():
                            f"🏠 Worktree: {worktree_path}")
     )
 
-    # TAC-13 REUSE: Consultar expertise antes de build
+    # TAC REUSE: Consultar expertise antes de build
     if use_experts:
-        logger.info("TAC-13: Consulting ADW expert for build patterns")
+        logger.info("TAC: Consulting ADW expert for build patterns")
 
         planning_guidance = state.get("expert_planning_guidance", "")
 
@@ -206,21 +206,21 @@ Focus on: module composition, git operations, error recovery."""
             state.accumulate_tokens("adw_expert", expert_response.token_usage)
             state.save("adw_build_iso")
 
-    # Implement the plan (executing in worktree) with optional parallel build (TAC-12) or report (TAC-10)
+    # Implement the plan (executing in worktree) with optional parallel build (TAC) or report (TAC)
     logger.info("Implementing solution in worktree")
 
     if use_parallel:
-        logger.info("Using /build_in_parallel for faster implementation (TAC-12)")
+        logger.info("Using /build_in_parallel for faster implementation (TAC)")
         make_issue_comment(
             issue_number,
-            format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementing solution with parallel build agents (TAC-12)")
+            format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementing solution with parallel build agents (TAC)")
         )
         implement_response = build_in_parallel(plan_file, adw_id, logger, working_dir=worktree_path, ai_docs_context=ai_docs_context)
     elif with_report:
-        logger.info("Using /build_w_report for structured change tracking (TAC-10)")
+        logger.info("Using /build_w_report for structured change tracking (TAC)")
         make_issue_comment(
             issue_number,
-            format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementing solution with YAML report tracking (TAC-10)")
+            format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementing solution with YAML report tracking (TAC)")
         )
         implement_response = implement_plan_with_report(plan_file, adw_id, logger, working_dir=worktree_path, ai_docs_context=ai_docs_context)
     else:
@@ -296,7 +296,7 @@ Focus on: module composition, git operations, error recovery."""
         issue_number, format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementation committed")
     )
 
-    # TAC-13 Optimization: Learning phase moved to document phase (final validation)
+    # TAC Optimization: Learning phase moved to document phase (final validation)
     # Individual phases only consult experts, learning happens once at the end
 
     # Finalize git operations (push and PR)
