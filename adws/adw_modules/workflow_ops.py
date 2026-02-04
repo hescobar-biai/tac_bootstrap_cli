@@ -1628,10 +1628,11 @@ def extract_file_references_from_issue(
     for file_ref in file_references:
         # Try multiple locations
         possible_paths = [
-            os.path.join(search_dir, file_ref),           # Direct path
-            os.path.join(search_dir, "specs", file_ref),  # In specs/
-            os.path.join(search_dir, "ai_docs", file_ref),# In ai_docs/
-            os.path.join(search_dir, "app_docs", file_ref),# In app_docs/
+            os.path.join(search_dir, file_ref),              # Direct path
+            os.path.join(search_dir, "specs", file_ref),     # In specs/
+            os.path.join(search_dir, "ai_docs", file_ref),   # In ai_docs/
+            os.path.join(search_dir, "ai_docs/doc", file_ref),  # In ai_docs/doc/ ← ADDED
+            os.path.join(search_dir, "app_docs", file_ref),  # In app_docs/
         ]
 
         for file_path in possible_paths:

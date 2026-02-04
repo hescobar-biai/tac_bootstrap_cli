@@ -57,7 +57,8 @@ El sistema busca archivos en múltiples ubicaciones:
 1. **Ruta directa**: `plan_tasks_Tac_14.md` → `./plan_tasks_Tac_14.md`
 2. **En specs/**: `auth.md` → `./specs/auth.md`
 3. **En ai_docs/**: `architecture.md` → `./ai_docs/architecture.md`
-4. **En app_docs/**: `setup.md` → `./app_docs/setup.md`
+4. **En ai_docs/doc/**: `plan_tasks_Tac_14.md` → `./ai_docs/doc/plan_tasks_Tac_14.md` ← **NUEVO**
+5. **En app_docs/**: `setup.md` → `./app_docs/setup.md`
 
 ## Ejemplos Reales
 
