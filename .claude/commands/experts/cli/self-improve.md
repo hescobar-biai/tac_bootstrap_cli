@@ -17,6 +17,7 @@ This is the **Learn** step in the Act → Learn → Reuse loop.
 
 - **CHECK_GIT_DIFF**: `$1` (default: `false`) - If `true`, focus on recently changed files
 - **FOCUS_AREA**: `$2` (default: empty) - Optional area to focus on (e.g., "templates", "scaffold_service", "cli_commands")
+- **SUMMARY_MODE**: `$3` (default: `true`) - If `true`, use summarized diffs and selective file reading for token optimization
 - **EXPERTISE_FILE**: `.claude/commands/experts/cli/expertise.yaml` (static)
 - **CLI_ROOT**: `tac_bootstrap_cli/tac_bootstrap/` (static)
 - **MAX_LINES**: `1000` (static)
@@ -45,6 +46,53 @@ You are the CLI Expert updating your mental model. Follow the 7-phase workflow s
 
 **Execute only if CHECK_GIT_DIFF is `true`**
 
+#### Summary Mode (SUMMARY_MODE = true)
+
+Use compact diff summaries to minimize token usage:
+
+1. Get summary of changes:
+   ```bash
+   # High-level stats only
+   git diff --stat HEAD -- tac_bootstrap_cli/
+
+   # Just list changed files
+   git diff --name-status HEAD -- tac_bootstrap_cli/
+   ```
+
+2. Identify changed files and focus areas:
+   ```bash
+   # List only filenames
+   changed_files=$(git diff --name-only HEAD -- tac_bootstrap_cli/)
+   echo "$changed_files"
+   ```
+
+3. For critical changes, get focused diffs:
+   ```bash
+   # Only if scaffold_service.py changed - get function-level diff
+   if echo "$changed_files" | grep -q "scaffold_service.py"; then
+       git diff HEAD -- tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py | grep -A 3 -B 3 "^def "
+   fi
+
+   # Only if cli.py changed
+   if echo "$changed_files" | grep -q "cli.py"; then
+       git diff HEAD -- tac_bootstrap_cli/tac_bootstrap/interfaces/cli.py | grep -A 3 -B 3 "^def "
+   fi
+   ```
+
+4. Note focus areas based on changed files:
+   - If `scaffold_service.py` changed → focus on template registration
+   - If `cli.py` changed → focus on CLI commands
+   - If `templates/` changed → focus on template patterns
+   - If `domain/` changed → focus on data models
+
+5. Update FOCUS_AREA internally based on findings
+
+**Token Impact:** ~5K tokens instead of 500K-1M tokens
+
+#### Full Mode (SUMMARY_MODE = false)
+
+Use complete diffs for comprehensive validation:
+
 1. Run git diff to see recent changes:
    ```bash
    # Check unstaged changes
@@ -63,13 +111,11 @@ You are the CLI Expert updating your mental model. Follow the 7-phase workflow s
    git diff --name-only HEAD -- tac_bootstrap_cli/
    ```
 
-3. Note focus areas based on changes:
-   - If `scaffold_service.py` changed → focus on template registration
-   - If `cli.py` changed → focus on CLI commands
-   - If `templates/` changed → focus on template patterns
-   - If `domain/` changed → focus on data models
+3. Note focus areas based on changes (same as summary mode)
 
 4. Update FOCUS_AREA internally based on findings
+
+**Token Impact:** 500K-1M tokens (original behavior)
 
 **If CHECK_GIT_DIFF is `false`**: Skip to Phase 2
 
@@ -98,6 +144,50 @@ You are the CLI Expert updating your mental model. Follow the 7-phase workflow s
 ### Phase 3: Validate Expertise Against Codebase
 
 **Systematic validation of expertise claims**
+
+#### Summary Mode Validation (SUMMARY_MODE = true)
+
+**Focus on changed files only** - don't re-validate entire codebase:
+
+1. If `CHECK_GIT_DIFF=true` and `changed_files` exists, validate only changed files:
+   ```bash
+   # Read ONLY files that changed (use grep to extract relevant sections)
+   for file in $changed_files; do
+       echo "=== Validating $file ==="
+       # Extract only class and function definitions
+       grep -n "^class\|^def " "$file"
+   done
+   ```
+
+2. Validate expertise claims about changed files:
+   ```bash
+   # Check if line numbers shifted
+   # Verify function signatures match
+   # Update descriptions if logic changed
+
+   # Example: If scaffold_service.py changed
+   if echo "$changed_files" | grep -q "scaffold_service.py"; then
+       # Check class exists
+       grep -n "class ScaffoldService" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+
+       # Verify key methods
+       grep -n "def _add_claude_code_commands\|def scaffold_project" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+   fi
+   ```
+
+3. Skip files that didn't change (trust existing expertise)
+
+4. Quick discovery scan for new files only:
+   ```bash
+   # Find any new CLI files
+   find tac_bootstrap_cli/tac_bootstrap -name "*.py" | grep -v __pycache__
+   ```
+
+**Token Impact:** ~50K tokens (only changed files)
+
+#### Full Mode Validation (SUMMARY_MODE = false)
+
+**Comprehensive validation** - re-verify entire codebase:
 
 1. **Validate Overview Section**:
    ```bash
@@ -148,6 +238,8 @@ You are the CLI Expert updating your mental model. Follow the 7-phase workflow s
    ```
 
 5. **Check for Architectural Changes**:
+
+**Token Impact:** 300-500K tokens (full file reads)
    - New modules or packages?
    - Moved files?
    - Refactored functions?

@@ -553,12 +553,62 @@ Focus on: ADW workflow docs, state diagrams, best practices."""
             focus_area=None,  # Full validation
             adw_id=adw_id,
             logger=logger,
-            working_dir=worktree_path
+            working_dir=worktree_path,
+            summary_mode=True  # Use summary mode for token optimization
         )
 
         if improve_response.success:
             state.accumulate_tokens("adw_expert_improver", improve_response.token_usage)
             state.save("adw_document_iso")
+
+            # Commit expertise.yaml changes to preserve learning
+            logger.info("Committing expertise updates from learning phase")
+
+            try:
+                # Check if expertise files were modified
+                status_cmd = f"cd {worktree_path} && git status --porcelain .claude/commands/experts/"
+                result = subprocess.run(
+                    status_cmd,
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+
+                if result.returncode == 0 and result.stdout.strip():
+                    # Expertise files were modified, commit them
+                    commit_msg, error = create_commit(
+                        "expert_learner",
+                        GitHubIssue(
+                            number=int(issue_number),
+                            title=f"Update adw expertise from workflow learning",
+                            body="Expert system learning from ADW execution",
+                            state="open",
+                            author=GitHubUser(login="system"),
+                            created_at=datetime.now(),
+                            updated_at=datetime.now(),
+                            url="",
+                        ),
+                        "/chore",
+                        adw_id,
+                        logger,
+                        worktree_path,
+                    )
+
+                    if commit_msg and not error:
+                        logger.info(f"Committed expertise update: {commit_msg}")
+                        make_issue_comment(
+                            issue_number,
+                            format_issue_message(adw_id, "expert_learner", f"✅ ADW expertise updated and committed"),
+                        )
+                    elif error:
+                        logger.warning(f"Failed to commit expertise: {error}")
+                else:
+                    logger.info("No expertise changes to commit")
+
+            except Exception as e:
+                logger.warning(f"Failed to commit expertise update: {e}")
+                # Don't fail the workflow - learning is optional
 
     # Finalize git operations (push and PR)
     # Note: This will work from the worktree context

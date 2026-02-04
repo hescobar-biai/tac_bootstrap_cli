@@ -17,6 +17,7 @@ This is the **Learn** step in the Act → Learn → Reuse loop.
 
 - **CHECK_GIT_DIFF**: `$1` (default: `false`) - If `true`, focus on recently changed files
 - **FOCUS_AREA**: `$2` (default: empty) - Optional area to focus on (e.g., "frontmatter", "variables", "phases", "experts", "template_registration")
+- **SUMMARY_MODE**: `$3` (default: `true`) - If `true`, use summarized diffs and selective file reading for token optimization
 - **EXPERTISE_FILE**: `.claude/commands/experts/commands/expertise.yaml` (static)
 - **COMMANDS_ROOT**: `.claude/commands/` (static)
 - **TEMPLATES_ROOT**: `tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/` (static)
@@ -46,6 +47,54 @@ You are the Commands Expert updating your mental model. Follow the 7-phase workf
 
 **Execute only if CHECK_GIT_DIFF is `true`**
 
+#### Summary Mode (SUMMARY_MODE = true)
+
+Use compact diff summaries to minimize token usage:
+
+1. Get summary of changes:
+   ```bash
+   # High-level stats only
+   git diff --stat HEAD -- .claude/commands/
+   git diff --stat HEAD -- tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/
+
+   # Just list changed files
+   git diff --name-status HEAD -- .claude/commands/
+   git diff --name-status HEAD -- tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/
+   ```
+
+2. Identify changed files and focus areas:
+   ```bash
+   # List only filenames
+   changed_files=$(git diff --name-only HEAD -- .claude/commands/ tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/)
+   echo "$changed_files"
+   ```
+
+3. For critical changes, get focused diffs (only changed command frontmatter):
+   ```bash
+   # Only get first 20 lines of changed command files (frontmatter only)
+   for file in $changed_files; do
+       if [[ "$file" == *.md ]]; then
+           echo "=== $file frontmatter ==="
+           head -20 "$file"
+       fi
+   done
+   ```
+
+4. Note focus areas based on changed files:
+   - If command `.md` files changed → focus on frontmatter, variables, phases
+   - If template `.j2` files changed → focus on Jinja2 patterns, config variables
+   - If `scaffold_service.py` changed → focus on template registration
+   - If `experts/` commands changed → focus on expert architecture
+   - If `e2e/` commands changed → focus on test patterns
+
+5. Update FOCUS_AREA internally based on findings
+
+**Token Impact:** ~5K tokens instead of 500K-1M tokens
+
+#### Full Mode (SUMMARY_MODE = false)
+
+Use complete diffs for comprehensive validation:
+
 1. Run git diff to see recent changes:
    ```bash
    # Check unstaged changes
@@ -67,14 +116,11 @@ You are the Commands Expert updating your mental model. Follow the 7-phase workf
    git diff --name-only HEAD -- tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/
    ```
 
-3. Note focus areas based on changes:
-   - If command `.md` files changed → focus on frontmatter, variables, phases
-   - If template `.j2` files changed → focus on Jinja2 patterns, config variables
-   - If `scaffold_service.py` changed → focus on template registration
-   - If `experts/` commands changed → focus on expert architecture
-   - If `e2e/` commands changed → focus on test patterns
+3. Note focus areas based on changes (same as summary mode)
 
 4. Update FOCUS_AREA internally based on findings
+
+**Token Impact:** 500K-1M tokens (original behavior)
 
 **If CHECK_GIT_DIFF is `false`**: Skip to Phase 2
 
@@ -108,6 +154,50 @@ You are the Commands Expert updating your mental model. Follow the 7-phase workf
 ### Phase 3: Validate Expertise Against Codebase
 
 **Systematic validation of expertise claims**
+
+#### Summary Mode Validation (SUMMARY_MODE = true)
+
+**Focus on changed files only** - don't re-validate entire codebase:
+
+1. If `CHECK_GIT_DIFF=true` and `changed_files` exists, validate only changed files:
+   ```bash
+   # Read ONLY files that changed (extract frontmatter only)
+   for file in $changed_files; do
+       if [[ "$file" == *.md ]]; then
+           echo "=== Validating $file ==="
+           # Get only frontmatter (first 20 lines)
+           head -20 "$file"
+       fi
+   done
+   ```
+
+2. Validate expertise claims about changed files:
+   ```bash
+   # Check if frontmatter patterns match expertise
+   # Verify variable usage is documented
+   # Update descriptions if patterns changed
+
+   # Quick pattern checks
+   if echo "$changed_files" | grep -q ".md"; then
+       # Sample changed commands for frontmatter patterns
+       grep -h "allowed-tools:" $changed_files 2>/dev/null | head -5
+       grep -h "model:" $changed_files 2>/dev/null | head -5
+   fi
+   ```
+
+3. Skip files that didn't change (trust existing expertise)
+
+4. Quick discovery scan for new files only:
+   ```bash
+   # Find any new command files
+   find .claude/commands -name "*.md" | grep -v __pycache__
+   ```
+
+**Token Impact:** ~50K tokens (only changed files)
+
+#### Full Mode Validation (SUMMARY_MODE = false)
+
+**Comprehensive validation** - re-verify entire codebase:
 
 1. **Validate Overview Section**:
    ```bash
@@ -147,6 +237,8 @@ You are the Commands Expert updating your mental model. Follow the 7-phase workf
 
    # Read feature command
    cat .claude/commands/feature.md
+
+**Token Impact:** 300-500K tokens (full file reads)
 
    # Find variable definitions
    grep -A 5 "## Variables" .claude/commands/feature.md

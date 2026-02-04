@@ -17,8 +17,9 @@ This is the **Learn** step in the Act → Learn → Reuse loop.
 
 - **CHECK_GIT_DIFF**: `$1` (default: `false`) - If `true`, focus on recently changed files
 - **FOCUS_AREA**: `$2` (default: empty) - Optional area to focus on (e.g., "templates", "scaffold_service", "cli_commands")
+- **SUMMARY_MODE**: `$3` (default: `true`) - If `true`, use summarized diffs and selective file reading for token optimization
 - **EXPERTISE_FILE**: `.claude/commands/experts/cli/expertise.yaml` (static)
-- **CLI_ROOT**: Project CLI root directory (static)
+- **CLI_ROOT**: `tac_bootstrap_cli/tac_bootstrap/` (static)
 - **MAX_LINES**: `1000` (static)
 
 ## Instructions
@@ -45,31 +46,76 @@ You are the CLI Expert updating your mental model. Follow the 7-phase workflow s
 
 **Execute only if CHECK_GIT_DIFF is `true`**
 
+#### Summary Mode (SUMMARY_MODE = true)
+
+Use compact diff summaries to minimize token usage:
+
+1. Get summary of changes:
+   ```bash
+   # High-level stats only
+   git diff --stat HEAD -- tac_bootstrap_cli/
+
+   # Just list changed files
+   git diff --name-status HEAD -- tac_bootstrap_cli/
+   ```
+
+2. Identify changed files and focus areas:
+   ```bash
+   # List only filenames
+   changed_files=$(git diff --name-only HEAD -- tac_bootstrap_cli/)
+   echo "$changed_files"
+   ```
+
+3. For critical changes, get focused diffs:
+   ```bash
+   # Only if scaffold_service.py changed - get function-level diff
+   if echo "$changed_files" | grep -q "scaffold_service.py"; then
+       git diff HEAD -- tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py | grep -A 3 -B 3 "^def "
+   fi
+
+   # Only if cli.py changed
+   if echo "$changed_files" | grep -q "cli.py"; then
+       git diff HEAD -- tac_bootstrap_cli/tac_bootstrap/interfaces/cli.py | grep -A 3 -B 3 "^def "
+   fi
+   ```
+
+4. Note focus areas based on changed files:
+   - If `scaffold_service.py` changed → focus on template registration
+   - If `cli.py` changed → focus on CLI commands
+   - If `templates/` changed → focus on template patterns
+   - If `domain/` changed → focus on data models
+
+5. Update FOCUS_AREA internally based on findings
+
+**Token Impact:** ~5K tokens instead of 500K-1M tokens
+
+#### Full Mode (SUMMARY_MODE = false)
+
+Use complete diffs for comprehensive validation:
+
 1. Run git diff to see recent changes:
    ```bash
    # Check unstaged changes
-   git diff HEAD
+   git diff HEAD -- tac_bootstrap_cli/
 
    # Check staged changes
-   git diff --cached
+   git diff --cached -- tac_bootstrap_cli/
 
    # Check last commit
-   git log -1 --stat --oneline
+   git log -1 --stat --oneline -- tac_bootstrap_cli/
    ```
 
 2. Identify changed files in CLI domain:
    ```bash
    # List changed files
-   git diff --name-only HEAD
+   git diff --name-only HEAD -- tac_bootstrap_cli/
    ```
 
-3. Note focus areas based on changes:
-   - If scaffold/template files changed → focus on template registration
-   - If CLI command files changed → focus on CLI commands
-   - If core application files changed → focus on application logic
-   - If domain/model files changed → focus on data models
+3. Note focus areas based on changes (same as summary mode)
 
 4. Update FOCUS_AREA internally based on findings
+
+**Token Impact:** 500K-1M tokens (original behavior)
 
 **If CHECK_GIT_DIFF is `false`**: Skip to Phase 2
 
@@ -99,36 +145,101 @@ You are the CLI Expert updating your mental model. Follow the 7-phase workflow s
 
 **Systematic validation of expertise claims**
 
+#### Summary Mode Validation (SUMMARY_MODE = true)
+
+**Focus on changed files only** - don't re-validate entire codebase:
+
+1. If `CHECK_GIT_DIFF=true` and `changed_files` exists, validate only changed files:
+   ```bash
+   # Read ONLY files that changed (use grep to extract relevant sections)
+   for file in $changed_files; do
+       echo "=== Validating $file ==="
+       # Extract only class and function definitions
+       grep -n "^class\|^def " "$file"
+   done
+   ```
+
+2. Validate expertise claims about changed files:
+   ```bash
+   # Check if line numbers shifted
+   # Verify function signatures match
+   # Update descriptions if logic changed
+
+   # Example: If scaffold_service.py changed
+   if echo "$changed_files" | grep -q "scaffold_service.py"; then
+       # Check class exists
+       grep -n "class ScaffoldService" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+
+       # Verify key methods
+       grep -n "def _add_claude_code_commands\|def scaffold_project" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+   fi
+   ```
+
+3. Skip files that didn't change (trust existing expertise)
+
+4. Quick discovery scan for new files only:
+   ```bash
+   # Find any new CLI files
+   find tac_bootstrap_cli/tac_bootstrap -name "*.py" | grep -v __pycache__
+   ```
+
+**Token Impact:** ~50K tokens (only changed files)
+
+#### Full Mode Validation (SUMMARY_MODE = false)
+
+**Comprehensive validation** - re-verify entire codebase:
+
 1. **Validate Overview Section**:
    ```bash
    # Check if key_files exist and are current
-   # Read key files mentioned in expertise
+   for file in $(grep -A 10 "key_files:" .claude/commands/experts/cli/expertise.yaml | grep "- " | sed 's/.*- "\(.*\)"/\1/'); do
+       test -f "$file" && echo "✓ $file" || echo "✗ MISSING: $file"
+   done
    ```
 
 2. **Validate Core Implementation**:
    ```bash
    # For each component in core_implementation
+   # Example: Validate scaffold_service component
+
    # Read the actual file
+   cat tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+
    # Check if documented classes exist
+   grep -n "class ScaffoldService" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+
    # Verify method signatures
+   grep -n "def _add_claude_code_commands" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+
    # Check line numbers are accurate
+   sed -n '150,200p' tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
    ```
 
 3. **Validate Key Operations**:
    ```bash
    # Verify workflow patterns described in expertise
-   # Find actual implementation patterns
+   # Example: Template registration workflow
+
+   # Find actual registration calls
+   grep -n "plan.add_file" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
+
    # Verify pattern matches expertise description
+   grep -A 3 "plan.add_file" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
    ```
 
 4. **Discover New Information**:
    ```bash
    # Find files not yet documented
+   find tac_bootstrap_cli/tac_bootstrap -name "*.py" | grep -v __pycache__
+
    # Check for new important functions
-   # Discover new patterns or changes
+   grep -rn "^def " tac_bootstrap_cli/tac_bootstrap/application/
+   grep -rn "^class " tac_bootstrap_cli/tac_bootstrap/domain/
    ```
 
 5. **Check for Architectural Changes**:
+
+**Token Impact:** 300-500K tokens (full file reads)
    - New modules or packages?
    - Moved files?
    - Refactored functions?
@@ -151,19 +262,19 @@ Create a discrepancies report:
       Reality: method_old() was renamed to method_new()
 
 ### Missing Information
-- [ ] New file added: `path/to/new-file.ext`
+- [ ] New file added: `templates/claude/commands/new-command.md.j2`
       Not documented in expertise
 
-- [ ] New method in Component: `new_method()`
+- [ ] New method in ScaffoldService: `_add_tac_13_templates()`
       Should be documented in key_operations
 
 ### Incorrect Information
-- [ ] Expertise: "Pattern uses approach X"
-      Reality: Pattern changed to approach Y in recent refactor
+- [ ] Expertise: "Template registration uses pattern X"
+      Reality: Pattern changed to Y in recent refactor
 
 ### Gaps in Coverage
-- [ ] No documentation for: `path/to/important-file.ext`
-- [ ] Missing workflow: "How feature X works"
+- [ ] No documentation for: `infrastructure/filesystem.py`
+- [ ] Missing workflow: "How entity generation works"
 ```
 
 ### Phase 5: Update Expertise File
@@ -183,41 +294,55 @@ Create a discrepancies report:
 2. **Update Core Implementation**:
    ```yaml
    core_implementation:
-     component_name:
-       location: "path/to/file.ext"
+     scaffold_service:
+       location: "tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py"
        key_methods:
-         - name: "method_name"
+         - name: "_add_claude_code_commands"
            line_start: 150  # Update if moved
            line_end: 200
-           signature: "def method_name(params)"
-           logic: "Brief description of what it does"
+           signature: "def _add_claude_code_commands(self, plan: ScaffoldPlan) -> None"
+           logic: "Registers all command templates using plan.add_file() pattern"
+         - name: "_add_tac_13_templates"  # NEW method found
+           line_start: 205
+           line_end: 230
+           signature: "def _add_tac_13_templates(self, plan: ScaffoldPlan) -> None"
+           logic: "Registers TAC-13 agent expert templates"
    ```
 
 3. **Update Key Operations**:
    ```yaml
    key_operations:
-     operation_name:
+     template_registration:
        workflow: |
-         1. Step one
-         2. Step two
-         3. Step three
+         1. ScaffoldService.__init__ loads config
+         2. _add_claude_code_commands() registers base templates
+         3. _add_tac_13_templates() registers expert templates  # UPDATED
+         4. Each template: action, template path, reason
+         5. render_template() processes .j2 files
    ```
 
 4. **Add Recent Changes**:
    ```yaml
    recent_changes:
      - date: "2026-02-03"
-       description: "Brief description of changes"
-       files: ["file1.ext", "file2.ext"]
+       description: "Added TAC-13 agent expert templates"
+       files: ["scaffold_service.py", "templates/claude/commands/experts/"]
+     - date: "2026-02-01"
+       description: "Refactored template registration pattern"
+       files: ["scaffold_service.py"]
      # Keep only 5 most recent entries
    ```
 
-5. **Use Edit tool for surgical updates**:
-   - Update specific sections using Edit tool
-   - Preserve structure and formatting
+5. **Use Edit tool for updates**:
+   ```bash
+   # Update specific sections using Edit tool
+   # Example: Update line numbers for a method
+   ```
 
 6. **Or use Write tool for major changes**:
-   - If expertise needs significant restructuring, rewrite entire file
+   ```bash
+   # If expertise needs significant restructuring, rewrite entire file
+   ```
 
 ### Phase 6: Enforce Line Limit
 

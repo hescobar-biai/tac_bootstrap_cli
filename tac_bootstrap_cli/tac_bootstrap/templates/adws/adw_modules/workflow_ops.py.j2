@@ -1504,7 +1504,8 @@ def improve_expert_knowledge(
     focus_area: Optional[str],
     adw_id: str,
     logger: logging.Logger,
-    working_dir: Optional[str] = None
+    working_dir: Optional[str] = None,
+    summary_mode: bool = True
 ) -> AgentPromptResponse:
     """Update domain expert's expertise.yaml based on code changes.
 
@@ -1517,11 +1518,12 @@ def improve_expert_knowledge(
         adw_id: ADW workflow identifier
         logger: Logger instance
         working_dir: Working directory for agent execution
+        summary_mode: If True, use summarized diffs and selective file reading (default: True)
 
     Returns:
         AgentPromptResponse with self-improve report
     """
-    logger.info(f"TAC: Running self-improve for {domain} expert")
+    logger.info(f"TAC: Running self-improve for {domain} expert (summary_mode={summary_mode})")
 
     # Build args for self-improve command
     args = []
@@ -1532,11 +1534,16 @@ def improve_expert_knowledge(
 
     if focus_area:
         args.append(focus_area)
+    else:
+        args.append("")  # Placeholder for focus_area
+
+    # Add summary_mode as third argument
+    args.append("true" if summary_mode else "false")
 
     request = AgentTemplateRequest(
         agent_name=f"{domain}_expert_improver",
         slash_command=f"/experts:{domain}:self-improve",
-        args=args if args else None,
+        args=args,
         adw_id=adw_id,
         working_dir=working_dir,
     )

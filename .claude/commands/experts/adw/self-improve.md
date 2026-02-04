@@ -17,6 +17,7 @@ This is the **Learn** step in the Act → Learn → Reuse loop.
 
 - **CHECK_GIT_DIFF**: `$1` (default: `false`) - If `true`, focus on recently changed files
 - **FOCUS_AREA**: `$2` (default: empty) - Optional area to focus on (e.g., "state_management", "github_integration", "workflow_orchestration", "worktree_operations")
+- **SUMMARY_MODE**: `$3` (default: `true`) - If `true`, use summarized diffs and selective file reading for token optimization
 - **EXPERTISE_FILE**: `.claude/commands/experts/adw/expertise.yaml` (static)
 - **ADW_ROOT**: `adws/` (static)
 - **ADW_MODULES**: `adws/adw_modules/` (static)
@@ -46,6 +47,54 @@ You are the ADW Expert updating your mental model. Follow the 7-phase workflow s
 
 **Execute only if CHECK_GIT_DIFF is `true`**
 
+#### Summary Mode (SUMMARY_MODE = true)
+
+Use compact diff summaries to minimize token usage:
+
+1. Get summary of changes:
+   ```bash
+   # High-level stats only
+   git diff --stat HEAD -- adws/
+
+   # Just list changed files
+   git diff --name-status HEAD -- adws/
+   ```
+
+2. Identify changed files and focus areas:
+   ```bash
+   # List only filenames
+   changed_files=$(git diff --name-only HEAD -- adws/)
+   echo "$changed_files"
+   ```
+
+3. For critical changes, get focused diffs:
+   ```bash
+   # Only if state.py changed - get function-level diff
+   if echo "$changed_files" | grep -q "state.py"; then
+       git diff HEAD -- adws/adw_modules/state.py | grep -A 3 -B 3 "^def "
+   fi
+
+   # Only if workflow_ops.py changed
+   if echo "$changed_files" | grep -q "workflow_ops.py"; then
+       git diff HEAD -- adws/adw_modules/workflow_ops.py | grep -A 3 -B 3 "^def "
+   fi
+   ```
+
+4. Note focus areas based on changed files:
+   - If `adw_modules/state.py` changed → focus on state management
+   - If `adw_modules/github.py` or `git_ops.py` changed → focus on GitHub integration
+   - If `adw_modules/workflow_ops.py` changed → focus on workflow orchestration
+   - If `adw_modules/worktree_ops.py` changed → focus on worktree operations
+   - If `adw_*_iso.py` changed → focus on isolation patterns
+
+5. Update FOCUS_AREA internally based on findings
+
+**Token Impact:** ~5K tokens instead of 500K-1M tokens
+
+#### Full Mode (SUMMARY_MODE = false)
+
+Use complete diffs for comprehensive validation:
+
 1. Run git diff to see recent changes:
    ```bash
    # Check unstaged changes
@@ -64,14 +113,11 @@ You are the ADW Expert updating your mental model. Follow the 7-phase workflow s
    git diff --name-only HEAD -- adws/
    ```
 
-3. Note focus areas based on changes:
-   - If `adw_modules/state.py` changed → focus on state management
-   - If `adw_modules/github.py` or `git_ops.py` changed → focus on GitHub integration
-   - If `adw_modules/workflow_ops.py` changed → focus on workflow orchestration
-   - If `adw_modules/worktree_ops.py` changed → focus on worktree operations
-   - If `adw_*_iso.py` changed → focus on isolation patterns
+3. Note focus areas based on changes (same as summary mode)
 
 4. Update FOCUS_AREA internally based on findings
+
+**Token Impact:** 500K-1M tokens (original behavior)
 
 **If CHECK_GIT_DIFF is `false`**: Skip to Phase 2
 
@@ -102,6 +148,53 @@ You are the ADW Expert updating your mental model. Follow the 7-phase workflow s
 ### Phase 3: Validate Expertise Against Codebase
 
 **Systematic validation of expertise claims**
+
+#### Summary Mode Validation (SUMMARY_MODE = true)
+
+**Focus on changed files only** - don't re-validate entire codebase:
+
+1. If `CHECK_GIT_DIFF=true` and `changed_files` exists, validate only changed files:
+   ```bash
+   # Read ONLY files that changed (use grep to extract relevant sections)
+   for file in $changed_files; do
+       echo "=== Validating $file ==="
+       # Extract only class and function definitions
+       grep -n "^class\|^def " "$file"
+   done
+   ```
+
+2. Validate expertise claims about changed files:
+   ```bash
+   # Check if line numbers shifted
+   # Verify function signatures match
+   # Update descriptions if logic changed
+
+   # Example: If state.py changed
+   if echo "$changed_files" | grep -q "state.py"; then
+       # Check class exists
+       grep -n "class ADWState" adws/adw_modules/state.py
+
+       # Verify key methods
+       grep -n "def load\|def save\|def update" adws/adw_modules/state.py
+   fi
+   ```
+
+3. Skip files that didn't change (trust existing expertise)
+
+4. Quick discovery scan for new files only:
+   ```bash
+   # Find any new workflows
+   find adws -name "adw_*_iso.py" | grep -v __pycache__
+
+   # Find any new modules
+   find adws/adw_modules -name "*.py" | grep -v __pycache__
+   ```
+
+**Token Impact:** ~50K tokens (only changed files)
+
+#### Full Mode Validation (SUMMARY_MODE = false)
+
+**Comprehensive validation** - re-verify entire codebase:
 
 1. **Validate Overview Section**:
    ```bash
@@ -184,6 +277,8 @@ You are the ADW Expert updating your mental model. Follow the 7-phase workflow s
    - Changed orchestration patterns?
    - New trigger integrations?
    - Updated state management patterns?
+
+**Token Impact:** 300-500K tokens (full file reads)
 
 ### Phase 4: Identify Discrepancies
 
