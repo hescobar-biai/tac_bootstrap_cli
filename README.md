@@ -23,6 +23,7 @@ proyecto/
 │   │   ├── prime.md            # Priming del agente
 │   │   ├── feature.md          # Planificacion features
 │   │   ├── implement.md        # Ejecucion de planes
+│   │   ├── experts/            # Agent Experts (TAC-13)
 │   │   └── ...
 │   └── hooks/                  # Automatizacion
 │       ├── pre_tool_use.py     # Validacion pre-ejecucion
@@ -374,13 +375,15 @@ Archivos generados en disco
 
 ## TAC-12 Integration
 
-TAC-12 transforms TAC Bootstrap into a complete agentic engineering platform with three core capabilities:
+TAC-12 transforms TAC Bootstrap into a complete agentic engineering platform with four core capabilities:
 
 **Agents** - Advanced orchestration with isolated workflows (`adw_*_iso.py` scripts) that enable parallel execution, safety isolation, and complete traceability. Each workflow runs independently in its own context.
 
 **Hooks** - Automated validation, logging, and event handling through hook scripts in `.claude/hooks/`. Hooks intercept tool execution, validate inputs, log outcomes, and send notifications—creating a complete feedback loop.
 
 **Observability** - KPI tracking and state management utilities providing visibility into agentic execution. Track metrics like execution time, tool invocations, and decision outcomes.
+
+**Agent Experts (TAC-13)** - Self-improving agents that evolve domain-specific mental models through an ACT → LEARN → REUSE loop. Expert agents maintain expertise files (max 1000 lines YAML) that capture patterns, decisions, and institutional knowledge for high-risk domains like security, billing, and complex architectures.
 
 ### Quick Start
 
@@ -410,6 +413,7 @@ Este proyecto implementa los conceptos del curso **Tactical Agentic Coding (TAC)
 | TAC-6 | Review & Document | /review, /document |
 | TAC-7 | Zero-Touch | adw_sdlc_zte_iso.py |
 | TAC-8 | Prioritize Agentics | 50%+ tiempo en capa agentica |
+| TAC-13 | Agent Experts | .claude/commands/experts/ |
 
 Ver [ai_docs/doc/](ai_docs/doc/) para documentacion completa del curso.
 
