@@ -365,6 +365,10 @@ class ScaffoldService:
             "plan_w_scouters",
             "plan",
             "scout_plan_build",
+            # TAC-14: Orchestrator commands
+            "orch_plan_w_scouts_build_review",
+            "orch_scout_and_build",
+            "orch_one_shot_agent",
         ]
 
         for cmd in commands:
