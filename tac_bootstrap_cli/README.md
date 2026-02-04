@@ -387,6 +387,68 @@ When multiple topics are detected, they are all loaded and concatenated:
 - ✅ `adw_sdlc_iso.py` - Full SDLC without auto-merge
 - ✅ `adw_sdlc_zte_iso.py` - Zero Touch Execution with auto-merge
 
+### Agent Experts (TAC-13)
+
+TAC-13 introduces **self-improving agent experts** that follow an Act → Learn → Reuse loop. Unlike generic agents, experts maintain domain-specific knowledge in **expertise files** (YAML-based mental models) that evolve with your codebase through self-improvement cycles.
+
+**Key Concepts:**
+
+- **Expertise Files**: Persistent YAML knowledge bases containing domain insights, patterns, and gotchas
+- **Self-Improvement**: Experts validate their mental models against actual code and update expertise automatically
+- **Specialization**: Domain-focused agents (CLI, ADW, Commands) outperform generic agents for their specific areas
+- **Meta-Agentic Capabilities**: Generate new commands and agent definitions from natural language
+
+**When to Use Experts vs Generic Agents:**
+
+Use experts when:
+- Task requires deep domain knowledge (template registration, ADW state management, command structure)
+- You want accumulated wisdom from previous iterations
+- Self-improvement loop adds value (expertise evolves with codebase)
+
+Use generic agents for:
+- One-off tasks without domain specialization
+- Exploratory work where no expertise exists yet
+- Simple operations that don't benefit from accumulated knowledge
+
+**Usage Examples:**
+
+```bash
+# Query CLI expert about domain-specific concepts
+/experts:cli:question "How does template registration work?"
+
+# Self-improve CLI expert after making code changes
+/experts:cli:self-improve true
+
+# Orchestrate expert through full workflow (plan → build → improve)
+/expert-orchestrate cli "Add new template for hooks"
+
+# Scale experts in parallel for high-confidence results
+/expert-parallel cli "Review scaffold service logic" 5
+```
+
+**Available Expert Domains:**
+
+| Expert Domain | Expertise Coverage | Commands |
+|---------------|-------------------|----------|
+| `cli` | tac-bootstrap CLI, templates, scaffold service | `/experts:cli:question`, `/experts:cli:self-improve` |
+| `adw` (optional) | AI Developer Workflows, state management | `/experts:adw:question`, `/experts:adw:self-improve` |
+| `commands` (optional) | Slash command structure, variables | `/experts:commands:question`, `/experts:commands:self-improve` |
+
+**Meta-Agentic Commands:**
+
+TAC-13 includes extensibility tools for evolving your agentic layer:
+
+- `/meta-prompt` - Generate new slash commands from natural language descriptions
+- `/meta-agent` - Generate new agent definitions (.md + .j2 template files)
+
+These enable **progressive disclosure**: start with basic expert queries, graduate to orchestration workflows, then extend the system with custom commands and agents as needs evolve.
+
+**Integration with Other TAC Features:**
+
+- **TAC-9 (Documentation Loading)**: Experts use expertise files as specialized documentation
+- **TAC-12 (Orchestration)**: Expert agents can be orchestrated for complex multi-phase workflows
+- **Progressive Path**: `/experts:cli:question` (beginner) → `/expert-orchestrate` (intermediate) → `/expert-parallel` (advanced)
+
 ## TAC-12 Multi-Agent Orchestration
 
 TAC-12 enhances orchestration capabilities for complex, multi-phase workflows with improved parallel execution and observability.
