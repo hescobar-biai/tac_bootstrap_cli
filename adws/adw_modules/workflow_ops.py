@@ -681,8 +681,17 @@ def detect_relevant_docs(issue: GitHubIssue) -> list[str]:
         "anthropic_quick_start": ["anthropic api", "claude api", "anthropic sdk"],
         "claude_code_cli_reference": ["claude code cli", "claude-code", "claude code reference"],
 
-        # TAC-13 - Agent Experts
-        "Tac-13-agent-experts": ["agent expert", "expertise file", "self-improving", "mental model", "act learn reuse"],
+        # TAC Course Topics - Framework-specific
+        "Tac-14": ["agent definition", "custom agent", "yaml frontmatter", "jinja2 template", "class-2", "orchestration"],
+        "Tac-13": ["agent expert", "expertise file", "self-improving", "mental model", "act learn reuse"],
+        "Tac-12": ["scout", "codebase exploration", "parallel scouting", "scout agent"],
+        "Tac-11": ["hook", "automation", "pre-commit", "post-commit", "event trigger"],
+        "Tac-10": ["documentation loading", "ai docs", "context loading"],
+        "Tac-9": ["token optimization", "cost reduction", "summarization"],
+        "Tac-1": ["adw workflow", "sdlc", "isolated worktree", "zero touch"],
+
+        # Legacy TAC-13 specific docs
+        "Tac-13-agent-experts": ["expertise-driven development"],
         "expertise-file-structure": ["expertise yaml", "expertise structure", "expertise schema"],
         "meta-skill-pattern": ["meta-skill", "progressive disclosure", "skill levels"],
     }

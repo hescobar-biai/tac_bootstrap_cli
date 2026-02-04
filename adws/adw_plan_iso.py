@@ -251,7 +251,67 @@ def main():
                 format_issue_message(adw_id, "ops", f"⚠️ Scouting failed (continuing): {scout_response.output[:200]}"),
             )
 
-    # Clarification phase (optional) - skip if already cached in state
+    # Classify the issue - skip if already cached in state (MOVED BEFORE clarification for better context)
+    cached_issue_class = state.get("issue_class")
+    if cached_issue_class:
+        logger.info(f"Using cached classification from state: {cached_issue_class} (saving tokens)")
+        issue_command = cached_issue_class
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", f"♻️ Using cached classification: {issue_command} (token optimization)"),
+        )
+    else:
+        issue_command, error = classify_issue(issue, adw_id, logger)
+
+        if error:
+            logger.error(f"Error classifying issue: {error}")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"❌ Error classifying issue: {error}"),
+            )
+            sys.exit(1)
+
+        state.update(issue_class=issue_command)
+        state.save("adw_plan_iso")
+        logger.info(f"Issue classified as: {issue_command}")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", f"✅ Issue classified as: {issue_command}"),
+        )
+
+    # TAC-13 REUSE: Consultar expertise antes de clarificaciones (MOVED for better context)
+    expert_guidance = None
+    if use_experts and not skip_clarify:
+        logger.info("TAC-13: Consulting ADW expert for planning guidance")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", "🧠 Consulting ADW expert (TAC-13)"),
+        )
+
+        expert_question = f"""Given this issue:
+Title: {issue.title}
+Type: {issue_command}
+Body (truncated): {issue.body[:500]}...
+
+What planning patterns should I apply from ADW expertise?
+Focus on: state management, worktree isolation, GitHub integration patterns."""
+
+        expert_response = consult_expert(
+            domain="adw",
+            question=expert_question,
+            adw_id=adw_id,
+            logger=logger,
+            working_dir=None
+        )
+
+        if expert_response.success:
+            expert_guidance = expert_response.output
+            state.update(expert_planning_guidance=expert_response.output)
+            state.accumulate_tokens("adw_expert", expert_response.token_usage)
+            state.save("adw_plan_iso")
+            logger.info("Expert guidance stored in state")
+
+    # Clarification phase (optional) - NOW WITH MAXIMUM CONTEXT (docs + scout + classification + expert)
     clarification_text = None
     cached_clarification = state.get("clarification")
     if cached_clarification and not skip_clarify:
@@ -268,10 +328,10 @@ def main():
         skip_clarify = True  # Skip API call since we have cached data
 
     if not skip_clarify:
-        logger.info("Starting clarification phase")
+        logger.info("Starting clarification phase with full context (docs + scout + classification + expert)")
         make_issue_comment(
             issue_number,
-            format_issue_message(adw_id, "ops", "🔍 Analyzing issue for ambiguities..."),
+            format_issue_message(adw_id, "ops", "🔍 Analyzing issue for ambiguities (with full context)..."),
         )
 
         clarification_response, clarify_error = clarify_issue(issue, adw_id, logger, working_dir=None)
@@ -316,7 +376,7 @@ def main():
             # Auto-resolve clarifications instead of pausing
             from adw_modules.workflow_ops import resolve_clarifications
 
-            # Pass ai_docs context if available to help with decision-making
+            # Pass ai_docs context AND expert guidance if available to help with decision-making
             resolved_text, resolve_error = resolve_clarifications(
                 issue, clarification_response, adw_id, logger, working_dir=None,
                 ai_docs_context=ai_docs_context
@@ -347,64 +407,6 @@ def main():
                 issue_number,
                 format_issue_message(adw_id, "ops", "✅ No ambiguities detected - proceeding with planning"),
             )
-
-    # Classify the issue - skip if already cached in state
-    cached_issue_class = state.get("issue_class")
-    if cached_issue_class:
-        logger.info(f"Using cached classification from state: {cached_issue_class} (saving tokens)")
-        issue_command = cached_issue_class
-        make_issue_comment(
-            issue_number,
-            format_issue_message(adw_id, "ops", f"♻️ Using cached classification: {issue_command} (token optimization)"),
-        )
-    else:
-        issue_command, error = classify_issue(issue, adw_id, logger)
-
-        if error:
-            logger.error(f"Error classifying issue: {error}")
-            make_issue_comment(
-                issue_number,
-                format_issue_message(adw_id, "ops", f"❌ Error classifying issue: {error}"),
-            )
-            sys.exit(1)
-
-        state.update(issue_class=issue_command)
-        state.save("adw_plan_iso")
-        logger.info(f"Issue classified as: {issue_command}")
-        make_issue_comment(
-            issue_number,
-            format_issue_message(adw_id, "ops", f"✅ Issue classified as: {issue_command}"),
-        )
-
-    # TAC-13 REUSE: Consultar expertise antes de planificar
-    if use_experts and not skip_clarify:
-        logger.info("TAC-13: Consulting ADW expert for planning guidance")
-        make_issue_comment(
-            issue_number,
-            format_issue_message(adw_id, "ops", "🧠 Consulting ADW expert (TAC-13)"),
-        )
-
-        expert_question = f"""Given this issue:
-Title: {issue.title}
-Type: {issue_command}
-Body (truncated): {issue.body[:500]}...
-
-What planning patterns should I apply from ADW expertise?
-Focus on: state management, worktree isolation, GitHub integration patterns."""
-
-        expert_response = consult_expert(
-            domain="adw",
-            question=expert_question,
-            adw_id=adw_id,
-            logger=logger,
-            working_dir=None
-        )
-
-        if expert_response.success:
-            state.update(expert_planning_guidance=expert_response.output)
-            state.accumulate_tokens("adw_expert", expert_response.token_usage)
-            state.save("adw_plan_iso")
-            logger.info("Expert guidance stored in state")
 
     # Generate branch name - skip if already cached in state
     cached_branch_name = state.get("branch_name")
