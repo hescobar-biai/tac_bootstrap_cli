@@ -55,11 +55,13 @@ architecture:
     triggers:
       path: "adws/adw_triggers/"
       purpose: "Event-driven workflow triggers"
+      count: 5
       types:
-        - cron: "Time-based workflow execution"
-        - webhook: "GitHub webhook handlers"
-        - issue: "Issue-based workflow triggers"
-        - parallel: "Parallel workflow orchestration"
+        - trigger_cron.py: "Time-based workflow execution (scheduled tasks)"
+        - trigger_webhook.py: "GitHub webhook handlers (issue events, PR events)"
+        - trigger_issue_chain.py: "Sequential issue-based workflow chaining"
+        - trigger_issue_parallel.py: "Parallel execution of multiple issue workflows"
+        - trigger_plan_parallel.py: "Parallel planning phase execution"
 
 core_implementation:
 
@@ -122,7 +124,7 @@ core_implementation:
   workflow_orchestration:
     location: "adws/adw_modules/workflow_ops.py"
     purpose: "Shared workflow operations and utilities"
-    line_count: "~400 lines"
+    line_count: "~1547 lines"
 
     key_functions:
       ensure_adw_id:
@@ -262,20 +264,25 @@ core_implementation:
           - MAX_RETRIES: "5 attempts"
           - RETRY_BACKOFF: "10.0 seconds"
 
-      get_issue_comments:
-        signature: "def get_issue_comments(issue_number: str, repo_path: str) -> List[GitHubComment]"
+      fetch_issue_comments:
+        signature: "def fetch_issue_comments(repo_path: str, issue_number: int) -> List[Dict]"
         purpose: "Fetch all comments for issue"
         integration: "Used for comment filtering and history"
 
-      filter_bot_comments:
-        signature: "def filter_bot_comments(comments: List[GitHubComment]) -> List[GitHubComment]"
-        purpose: "Remove ADW-AGENTS comments to prevent context pollution"
-        pattern: "Filters comments containing [ADW-AGENTS] identifier"
+      get_current_gh_user:
+        signature: "def get_current_gh_user() -> Optional[str]"
+        purpose: "Get current GitHub CLI authenticated user"
+        integration: "Used for issue assignment checks"
 
-      create_pull_request:
-        signature: "def create_pull_request(title: str, body: str, base_branch: str, head_branch: str) -> Dict"
-        logic: "Execute: gh pr create --title --body --base --head"
-        integration: "Used by adw_ship_iso.py for PR creation"
+      assign_issue_to_me:
+        signature: "def assign_issue_to_me(issue_id: str) -> bool"
+        logic: "Assign issue to current GitHub user"
+        integration: "Used by workflows to claim issues"
+
+      mark_issue_in_progress:
+        signature: "def mark_issue_in_progress(issue_id: str) -> None"
+        purpose: "Add 'in progress' label to issue"
+        integration: "Called at workflow start"
 
       get_repo_url:
         signature: "def get_repo_url() -> str"
@@ -328,36 +335,34 @@ core_implementation:
   worktree_management:
     location: "adws/adw_modules/worktree_ops.py"
     purpose: "Git worktree operations for workflow isolation"
-    line_count: "~250 lines"
+    line_count: "~154 lines"
 
     key_functions:
       create_worktree:
-        signature: "def create_worktree(worktree_path: Path, branch_name: str, base_branch: str = 'main') -> Path"
+        signature: "def create_worktree(adw_id: str, branch_name: str, logger: logging.Logger) -> Tuple[str, Optional[str]]"
         logic: |
           1. Ensure worktree directory: trees/{branch_name}
-          2. Create worktree: git worktree add {path} -b {branch} origin/{base}
-          3. Return absolute worktree path
+          2. Create worktree: git worktree add {path} -b {branch}
+          3. Return (worktree_path, error_message)
         pattern: "Worktrees enable parallel workflow execution"
 
+      validate_worktree:
+        signature: "def validate_worktree(adw_id: str, state: ADWState) -> Tuple[bool, Optional[str]]"
+        purpose: "Validate worktree exists and is in correct state"
+        pattern: "Checks worktree path exists and matches state"
+
       remove_worktree:
-        signature: "def remove_worktree(worktree_path: Path)"
+        signature: "def remove_worktree(adw_id: str, logger: logging.Logger) -> Tuple[bool, Optional[str]]"
         logic: |
           1. Execute: git worktree remove {path}
           2. Cleanup worktree directory
+          3. Return (success, error_message)
         integration: "Called by ship workflow after merge"
 
-      list_worktrees:
-        signature: "def list_worktrees() -> List[Dict[str, str]]"
-        logic: |
-          1. Execute: git worktree list --porcelain
-          2. Parse output into list of worktree dicts
-          3. Return [{worktree, HEAD, branch}, ...]
-        integration: "Used for worktree discovery and cleanup"
-
       get_worktree_path:
-        signature: "def get_worktree_path(branch_name: str) -> Optional[Path]"
-        purpose: "Find existing worktree for branch"
-        pattern: "Searches trees/ directory for matching branch"
+        signature: "def get_worktree_path(adw_id: str) -> str"
+        purpose: "Get worktree path for ADW ID"
+        pattern: "Returns trees/{adw_id} path"
 
     worktree_isolation_pattern:
       purpose: "Enable parallel workflow execution without conflicts"
@@ -465,13 +470,13 @@ key_operations:
     workflow: |
       1. Load state from adw_id
       2. Push branch to origin
-      3. Execute /pull_request to generate PR
-      4. Create PR via GitHub API
-      5. Post PR link to issue
-      6. If auto_merge: merge PR and cleanup worktree
+      3. Execute /pull_request slash command to create PR (via Claude Code agent)
+      4. Post PR link to issue
+      5. If auto_merge: merge PR and cleanup worktree
     options:
       auto_merge: "Automatically merge PR after creation"
       cleanup: "Remove worktree after successful merge"
+    note: "PR creation uses /pull_request command, not direct GitHub API"
 
   state_persistence:
     file: "adw_state.json"
@@ -814,7 +819,21 @@ integrations:
 
 recent_changes:
   - date: "2026-02-04"
-    description: "Self-improve run: Updated expertise with expert system command types and composite workflows"
+    description: "Self-improve run: Corrected line counts, updated function signatures, fixed GitHub module documentation"
+    files:
+      - ".claude/commands/experts/adw/expertise.yaml"
+    impact: |
+      Fixed discrepancies:
+      - workflow_ops.py line count: 400 → 1547
+      - worktree_ops.py line count: 250 → 154
+      - Updated worktree function signatures (adw_id-based, not path-based)
+      - Corrected GitHub module functions (removed non-existent create_pull_request, filter_bot_comments)
+      - Added actual GitHub functions (assign_issue_to_me, mark_issue_in_progress, get_current_gh_user)
+      - Enhanced trigger documentation with actual file names
+      - Clarified PR creation via /pull_request slash command
+
+  - date: "2026-02-04"
+    description: "Initial self-improve: Updated expertise with expert system command types and composite workflows"
     files:
       - "adws/adw_modules/data_types.py"
       - ".claude/commands/experts/adw/expertise.yaml"
