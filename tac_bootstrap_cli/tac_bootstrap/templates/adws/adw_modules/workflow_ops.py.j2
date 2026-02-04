@@ -739,13 +739,13 @@ def detect_relevant_docs(issue: GitHubIssue) -> list[str]:
                                 topic_scores[topic_name] = 20  # Highest priority
                                 continue
 
-                    # MEDIUM PRIORITY: PLAN documents
-                    if "plan" in title and "plan" in topic_lower:
+                    # MEDIUM PRIORITY: PLAN documents (check title OR body)
+                    if ("plan" in title or "plan" in body) and "plan" in topic_lower:
                         topic_scores[topic_name] = 15
                         continue
 
-                    # LOW PRIORITY: Exact filename in title (case-insensitive)
-                    if topic_lower in title:
+                    # LOW PRIORITY: Exact filename in title OR body (case-insensitive)
+                    if topic_lower in title or topic_lower in body:
                         topic_scores[topic_name] = 5
 
     except Exception:
