@@ -55,6 +55,8 @@ from adw_modules.workflow_ops import (
     summarize_doc_content,
     scout_codebase,
     plan_with_scouts,
+    consult_expert,
+    improve_expert_knowledge,
     AGENT_PLANNER,
 )
 from adw_modules.utils import setup_logger, check_env_vars
@@ -85,6 +87,10 @@ def main():
     parser.add_argument("--scout-scale", type=str, default="medium",
                        choices=["quick", "medium", "very_thorough"],
                        help="Scale of codebase exploration: quick, medium, or very_thorough (TAC-12)")
+    parser.add_argument("--use-experts", action="store_true",
+                       help="Enable TAC-13 expert consultation (default: disabled)")
+    parser.add_argument("--expert-learn", action="store_true",
+                       help="Enable TAC-13 self-improve after planning")
 
     args = parser.parse_args()
 
@@ -94,6 +100,8 @@ def main():
     load_docs_topic = args.load_docs
     use_scout = args.scout
     scout_scale = args.scout_scale
+    use_experts = args.use_experts
+    expert_learn = args.expert_learn
 
     # Ensure ADW ID exists with initialized state
     temp_logger = setup_logger(adw_id, "adw_plan_iso") if adw_id else None
@@ -368,6 +376,36 @@ def main():
             format_issue_message(adw_id, "ops", f"✅ Issue classified as: {issue_command}"),
         )
 
+    # TAC-13 REUSE: Consultar expertise antes de planificar
+    if use_experts and not skip_clarify:
+        logger.info("TAC-13: Consulting ADW expert for planning guidance")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", "🧠 Consulting ADW expert (TAC-13)"),
+        )
+
+        expert_question = f"""Given this issue:
+Title: {issue.title}
+Type: {issue_command}
+Body (truncated): {issue.body[:500]}...
+
+What planning patterns should I apply from ADW expertise?
+Focus on: state management, worktree isolation, GitHub integration patterns."""
+
+        expert_response = consult_expert(
+            domain="adw",
+            question=expert_question,
+            adw_id=adw_id,
+            logger=logger,
+            working_dir=None
+        )
+
+        if expert_response.success:
+            state.update(expert_planning_guidance=expert_response.output)
+            state.accumulate_tokens("adw_expert", expert_response.token_usage)
+            state.save("adw_plan_iso")
+            logger.info("Expert guidance stored in state")
+
     # Generate branch name - skip if already cached in state
     cached_branch_name = state.get("branch_name")
     if cached_branch_name:
@@ -549,6 +587,28 @@ def main():
     make_issue_comment(
         issue_number, format_issue_message(adw_id, AGENT_PLANNER, "✅ Plan committed")
     )
+
+    # TAC-13 LEARN: Actualizar expertise después de planificación
+    if expert_learn:
+        logger.info("TAC-13: Running self-improve to capture planning patterns")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", "🔄 Updating ADW expertise (TAC-13)"),
+        )
+
+        improve_response = improve_expert_knowledge(
+            domain="adw",
+            check_git_diff=True,
+            focus_area="planning_phase",
+            adw_id=adw_id,
+            logger=logger,
+            working_dir=worktree_path
+        )
+
+        if improve_response.success:
+            state.accumulate_tokens("adw_expert_improver", improve_response.token_usage)
+            state.save("adw_plan_iso")
+            logger.info("Expert knowledge updated")
 
     # Finalize git operations (push and PR)
     # Note: This will work from the worktree context

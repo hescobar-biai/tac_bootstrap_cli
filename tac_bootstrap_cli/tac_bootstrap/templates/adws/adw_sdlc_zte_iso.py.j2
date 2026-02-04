@@ -47,6 +47,10 @@ def main():
     skip_e2e = "--skip-e2e" in sys.argv
     skip_resolution = "--skip-resolution" in sys.argv
 
+    # TAC-13: Enabled by default for orchestrated workflows (opt-out)
+    use_experts = "--no-experts" not in sys.argv
+    expert_learn = "--no-expert-learn" not in sys.argv
+
     # Check for manual docs override (TAC-9 hybrid approach)
     manual_docs = None
     if "--load-docs" in sys.argv:
@@ -61,11 +65,15 @@ def main():
         sys.argv.remove("--skip-e2e")
     if skip_resolution:
         sys.argv.remove("--skip-resolution")
+    if "--no-experts" in sys.argv:
+        sys.argv.remove("--no-experts")
+    if "--no-expert-learn" in sys.argv:
+        sys.argv.remove("--no-expert-learn")
 
     if len(sys.argv) < 2:
         target_branch = get_target_branch()
         print(
-            "Usage: uv run adw_sdlc_zte_iso.py <issue-number> [adw-id] [--load-docs TOPICS] [--skip-e2e] [--skip-resolution]"
+            "Usage: uv run adw_sdlc_zte_iso.py <issue-number> [adw-id] [--load-docs TOPICS] [--skip-e2e] [--skip-resolution] [--no-experts] [--no-expert-learn]"
         )
         print("\n🚀 Zero Touch Execution: Complete SDLC with automatic shipping")
         print("\nThis runs the complete isolated Software Development Life Cycle:")
@@ -80,6 +88,9 @@ def main():
         print("                        If not specified, topics are auto-detected from issue (TAC-9)")
         print("  --skip-e2e           Skip E2E test execution")
         print("  --skip-resolution    Skip test failure resolution")
+        print("  --no-experts         Disable TAC-13 expert consultation (enabled by default)")
+        print("  --no-expert-learn    Disable TAC-13 self-improve (enabled by default)")
+        print("\n🧠 TAC-13 Expert System: ENABLED BY DEFAULT for complete workflows")
         print(f"\n⚠️  WARNING: This will automatically merge to {target_branch} if all phases pass!")
         sys.exit(1)
 
@@ -153,6 +164,14 @@ def main():
         plan_cmd.extend(["--load-docs", docs_to_load])
         logger.info(f"Passing documentation to planning phase: {docs_to_load}")
 
+    # Add TAC-13 expert flags if enabled
+    if use_experts:
+        plan_cmd.append("--use-experts")
+        logger.info("TAC-13: Expert consultation enabled for plan phase")
+    if expert_learn:
+        plan_cmd.append("--expert-learn")
+        logger.info("TAC-13: Expert learning enabled for plan phase")
+
     print(f"\n=== ISOLATED PLAN PHASE ===")
     print(f"Running: {' '.join(plan_cmd)}")
     plan = subprocess.run(plan_cmd)
@@ -183,6 +202,13 @@ def main():
         issue_number,
         adw_id,
     ]
+
+    # Add TAC-13 expert flags if enabled
+    if use_experts:
+        build_cmd.append("--use-experts")
+    if expert_learn:
+        build_cmd.append("--expert-learn")
+
     print(f"\n=== ISOLATED BUILD PHASE ===")
     print(f"Running: {' '.join(build_cmd)}")
     build = subprocess.run(build_cmd)
@@ -228,6 +254,12 @@ def main():
     if skip_resolution:
         review_cmd.append("--skip-resolution")
 
+    # Add TAC-13 expert flags if enabled
+    if use_experts:
+        review_cmd.append("--use-experts")
+    if expert_learn:
+        review_cmd.append("--expert-learn")
+
     print(f"\n=== ISOLATED REVIEW PHASE ===")
     print(f"Running: {' '.join(review_cmd)}")
     review = subprocess.run(review_cmd)
@@ -252,6 +284,13 @@ def main():
         issue_number,
         adw_id,
     ]
+
+    # Add TAC-13 expert flags if enabled
+    if use_experts:
+        document_cmd.append("--use-experts")
+    if expert_learn:
+        document_cmd.append("--expert-learn")
+
     print(f"\n=== ISOLATED DOCUMENTATION PHASE ===")
     print(f"Running: {' '.join(document_cmd)}")
     document = subprocess.run(document_cmd)

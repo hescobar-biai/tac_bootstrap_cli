@@ -40,6 +40,8 @@ from adw_modules.workflow_ops import (
     build_in_parallel,
     create_commit,
     format_issue_message,
+    consult_expert,
+    improve_expert_knowledge,
     AGENT_IMPLEMENTOR,
 )
 from adw_modules.utils import setup_logger, check_env_vars
@@ -63,6 +65,10 @@ def main():
                        help="Use /build_w_report for structured YAML change tracking (TAC-10)")
     parser.add_argument("--parallel", action="store_true",
                        help="Use parallel build agents for faster implementation (TAC-12)")
+    parser.add_argument("--use-experts", action="store_true",
+                       help="Enable TAC-13 expert consultation")
+    parser.add_argument("--expert-learn", action="store_true",
+                       help="Enable TAC-13 self-improve after build")
 
     args = parser.parse_args()
 
@@ -70,6 +76,8 @@ def main():
     adw_id = args.adw_id
     with_report = args.with_report
     use_parallel = args.parallel
+    use_experts = args.use_experts
+    expert_learn = args.expert_learn
 
     # Try to load existing state
     temp_logger = setup_logger(adw_id, "adw_build_iso")
@@ -172,6 +180,32 @@ def main():
                            f"🏠 Worktree: {worktree_path}")
     )
 
+    # TAC-13 REUSE: Consultar expertise antes de build
+    if use_experts:
+        logger.info("TAC-13: Consulting ADW expert for build patterns")
+
+        planning_guidance = state.get("expert_planning_guidance", "")
+
+        expert_question = f"""I'm implementing this plan: {plan_file}
+
+Previous guidance: {planning_guidance[:200] if planning_guidance else "None"}
+
+What build patterns should I follow?
+Focus on: module composition, git operations, error recovery."""
+
+        expert_response = consult_expert(
+            domain="adw",
+            question=expert_question,
+            adw_id=adw_id,
+            logger=logger,
+            working_dir=worktree_path
+        )
+
+        if expert_response.success:
+            state.update(expert_build_guidance=expert_response.output)
+            state.accumulate_tokens("adw_expert", expert_response.token_usage)
+            state.save("adw_build_iso")
+
     # Implement the plan (executing in worktree) with optional parallel build (TAC-12) or report (TAC-10)
     logger.info("Implementing solution in worktree")
 
@@ -261,7 +295,24 @@ def main():
     make_issue_comment(
         issue_number, format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementation committed")
     )
-    
+
+    # TAC-13 LEARN: Actualizar expertise con patrones de build
+    if expert_learn:
+        logger.info("TAC-13: Learning from build execution")
+
+        improve_response = improve_expert_knowledge(
+            domain="adw",
+            check_git_diff=True,
+            focus_area="implementation_phase",
+            adw_id=adw_id,
+            logger=logger,
+            working_dir=worktree_path
+        )
+
+        if improve_response.success:
+            state.accumulate_tokens("adw_expert_improver", improve_response.token_usage)
+            state.save("adw_build_iso")
+
     # Finalize git operations (push and PR)
     # Note: This will work from the worktree context
     finalize_git_operations(state, logger, cwd=worktree_path)

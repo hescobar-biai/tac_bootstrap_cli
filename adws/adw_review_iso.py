@@ -45,6 +45,8 @@ from adw_modules.workflow_ops import (
     format_issue_message,
     implement_plan,
     find_spec_file,
+    consult_expert,
+    improve_expert_knowledge,
 )
 from adw_modules.utils import setup_logger, parse_json, check_env_vars
 from adw_modules.data_types import (
@@ -317,21 +319,25 @@ def main():
     # Load environment variables
     load_dotenv()
     
-    # Check for --skip-resolution flag
-    skip_resolution = "--skip-resolution" in sys.argv
-    if skip_resolution:
-        sys.argv.remove("--skip-resolution")
-    
-    # Parse command line args
-    # INTENTIONAL: adw-id is REQUIRED - we need it to find the worktree
-    if len(sys.argv) < 3:
-        print("Usage: uv run adw_review_iso.py <issue-number> <adw-id> [--skip-resolution]")
-        print("\nError: adw-id is required to locate the worktree")
-        print("Run adw_plan_iso.py or adw_patch_iso.py first to create the worktree")
-        sys.exit(1)
-    
-    issue_number = sys.argv[1]
-    adw_id = sys.argv[2]
+    # Parse command line args with argparse
+    import argparse
+    parser = argparse.ArgumentParser(description="ADW Review Iso - Agentic review in isolated worktrees")
+    parser.add_argument("issue_number", help="GitHub issue number")
+    parser.add_argument("adw_id", help="ADW ID (required to locate worktree)")
+    parser.add_argument("--skip-resolution", action="store_true",
+                       help="Skip automatic resolution of blocker issues")
+    parser.add_argument("--use-experts", action="store_true",
+                       help="Enable TAC-13 expert consultation")
+    parser.add_argument("--expert-learn", action="store_true",
+                       help="Enable TAC-13 self-improve after review")
+
+    args = parser.parse_args()
+
+    issue_number = args.issue_number
+    adw_id = args.adw_id
+    skip_resolution = args.skip_resolution
+    use_experts = args.use_experts
+    expert_learn = args.expert_learn
     
     # Try to load existing state
     temp_logger = setup_logger(adw_id, "adw_review_iso")
@@ -403,7 +409,29 @@ def main():
         issue_number,
         format_issue_message(adw_id, "ops", f"📋 Found spec file: {spec_file}")
     )
-    
+
+    # TAC-13 REUSE: Consultar expertise antes de review
+    if use_experts:
+        logger.info("TAC-13: Consulting ADW expert for review criteria")
+
+        expert_question = f"""Reviewing spec: {spec_file}
+
+What review criteria should I apply?
+Focus on: code quality, state management, GitHub integration, common pitfalls."""
+
+        expert_response = consult_expert(
+            domain="adw",
+            question=expert_question,
+            adw_id=adw_id,
+            logger=logger,
+            working_dir=worktree_path
+        )
+
+        if expert_response.success:
+            state.update(expert_review_criteria=expert_response.output)
+            state.accumulate_tokens("adw_expert", expert_response.token_usage)
+            state.save("adw_review_iso")
+
     # Run review with retry logic
     review_attempt = 0
     review_result = None
@@ -506,7 +534,22 @@ def main():
     make_issue_comment(
         issue_number, format_issue_message(adw_id, AGENT_REVIEWER, "✅ Review committed")
     )
-    
+
+    # TAC-13 LEARN: Capturar patrones de review
+    if expert_learn:
+        improve_response = improve_expert_knowledge(
+            domain="adw",
+            check_git_diff=True,
+            focus_area="review_phase",
+            adw_id=adw_id,
+            logger=logger,
+            working_dir=worktree_path
+        )
+
+        if improve_response.success:
+            state.accumulate_tokens("adw_expert_improver", improve_response.token_usage)
+            state.save("adw_review_iso")
+
     # Finalize git operations (push and PR)
     # Note: This will work from the worktree context
     finalize_git_operations(state, logger, cwd=worktree_path)

@@ -1441,3 +1441,107 @@ def create_and_implement_patch(
     )
 
     return patch_file_path, implement_response
+
+
+# ============================================================================
+# TAC-13: Expert System Integration
+# ============================================================================
+
+def consult_expert(
+    domain: str,
+    question: str,
+    adw_id: str,
+    logger: logging.Logger,
+    working_dir: Optional[str] = None
+) -> AgentPromptResponse:
+    """Consult domain expert using expertise.yaml before making decisions.
+
+    This is the REUSE phase of the Act → Learn → Reuse loop.
+
+    Args:
+        domain: Expert domain (adw, cli, commands)
+        question: Question to ask the expert
+        adw_id: ADW workflow identifier
+        logger: Logger instance
+        working_dir: Working directory for agent execution
+
+    Returns:
+        AgentPromptResponse with expert's answer
+    """
+    logger.info(f"TAC-13: Consulting {domain} expert")
+
+    request = AgentTemplateRequest(
+        agent_name=f"{domain}_expert",
+        slash_command=f"/experts:{domain}:question",
+        args=[question],
+        adw_id=adw_id,
+        working_dir=working_dir,
+    )
+
+    response = execute_template(request)
+
+    if response.success:
+        logger.info(f"Expert consultation successful ({len(response.output)} chars)")
+    else:
+        logger.warning(f"Expert consultation failed: {response.output}")
+
+    return response
+
+
+def improve_expert_knowledge(
+    domain: str,
+    check_git_diff: bool,
+    focus_area: Optional[str],
+    adw_id: str,
+    logger: logging.Logger,
+    working_dir: Optional[str] = None
+) -> AgentPromptResponse:
+    """Update domain expert's expertise.yaml based on code changes.
+
+    This is the LEARN phase of the Act → Learn → Reuse loop.
+
+    Args:
+        domain: Expert domain (adw, cli, commands)
+        check_git_diff: If True, focus on recently changed files
+        focus_area: Optional area to focus validation
+        adw_id: ADW workflow identifier
+        logger: Logger instance
+        working_dir: Working directory for agent execution
+
+    Returns:
+        AgentPromptResponse with self-improve report
+    """
+    logger.info(f"TAC-13: Running self-improve for {domain} expert")
+
+    # Build args for self-improve command
+    args = []
+    if check_git_diff:
+        args.append("true")
+    else:
+        args.append("false")
+
+    if focus_area:
+        args.append(focus_area)
+
+    request = AgentTemplateRequest(
+        agent_name=f"{domain}_expert_improver",
+        slash_command=f"/experts:{domain}:self-improve",
+        args=args if args else None,
+        adw_id=adw_id,
+        working_dir=working_dir,
+    )
+
+    response = execute_template(request)
+
+    if response.success:
+        logger.info(f"Expert self-improve completed successfully")
+    else:
+        logger.warning(f"Expert self-improve failed: {response.output}")
+
+    return response
+
+
+# Agent name constants for TAC-13
+AGENT_EXPERT_ADW = "adw_expert"
+AGENT_EXPERT_CLI = "cli_expert"
+AGENT_EXPERT_COMMANDS = "commands_expert"

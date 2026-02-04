@@ -42,6 +42,8 @@ from adw_modules.workflow_ops import (
     create_commit,
     format_issue_message,
     find_spec_file,
+    consult_expert,
+    improve_expert_knowledge,
 )
 from adw_modules.utils import setup_logger, check_env_vars, get_target_branch
 from adw_modules.data_types import (
@@ -313,16 +315,22 @@ def main():
     # Load environment variables
     load_dotenv()
 
-    # Parse command line args
-    # INTENTIONAL: adw-id is REQUIRED - we need it to find the worktree
-    if len(sys.argv) < 3:
-        print("Usage: uv run adw_document_iso.py <issue-number> <adw-id>")
-        print("\nError: adw-id is required to locate the worktree")
-        print("Run adw_plan_iso.py or adw_patch_iso.py first to create the worktree")
-        sys.exit(1)
+    # Parse command line args with argparse
+    import argparse
+    parser = argparse.ArgumentParser(description="ADW Document Iso - Documentation in isolated worktrees")
+    parser.add_argument("issue_number", help="GitHub issue number")
+    parser.add_argument("adw_id", help="ADW ID (required to locate worktree)")
+    parser.add_argument("--use-experts", action="store_true",
+                       help="Enable TAC-13 expert consultation")
+    parser.add_argument("--expert-learn", action="store_true",
+                       help="Enable TAC-13 self-improve after documentation")
 
-    issue_number = sys.argv[1]
-    adw_id = sys.argv[2]
+    args = parser.parse_args()
+
+    issue_number = args.issue_number
+    adw_id = args.adw_id
+    use_experts = args.use_experts
+    expert_learn = args.expert_learn
 
     # Try to load existing state
     temp_logger = setup_logger(adw_id, "adw_document_iso")
@@ -419,6 +427,25 @@ def main():
         format_issue_message(adw_id, "ops", f"📋 Found spec file: {spec_file}"),
     )
 
+    # TAC-13 REUSE: Consultar expertise para patrones de docs
+    if use_experts:
+        expert_question = f"""Documenting spec: {spec_file}
+
+What documentation patterns should I follow?
+Focus on: ADW workflow docs, state diagrams, best practices."""
+
+        expert_response = consult_expert(
+            domain="adw",
+            question=expert_question,
+            adw_id=adw_id,
+            logger=logger,
+            working_dir=worktree_path
+        )
+
+        if expert_response.success:
+            state.accumulate_tokens("adw_expert", expert_response.token_usage)
+            state.save("adw_document_iso")
+
     # Generate documentation (executing in worktree)
     logger.info("Generating documentation")
     make_issue_comment(
@@ -511,6 +538,27 @@ def main():
 
     # Track Agentic KPIs before finalizing - this never fails the workflow
     track_agentic_kpis(issue_number, adw_id, state, logger, worktree_path)
+
+    # TAC-13 LEARN: Final comprehensive update
+    if expert_learn:
+        logger.info("TAC-13: Final self-improve for complete workflow")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", "🎓 Final expertise update (TAC-13)"),
+        )
+
+        improve_response = improve_expert_knowledge(
+            domain="adw",
+            check_git_diff=True,
+            focus_area=None,  # Full validation
+            adw_id=adw_id,
+            logger=logger,
+            working_dir=worktree_path
+        )
+
+        if improve_response.success:
+            state.accumulate_tokens("adw_expert_improver", improve_response.token_usage)
+            state.save("adw_document_iso")
 
     # Finalize git operations (push and PR)
     # Note: This will work from the worktree context

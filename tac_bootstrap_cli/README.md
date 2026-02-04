@@ -229,20 +229,33 @@ See [Agents Documentation](docs/agents.md) for details.
 
 ## ADW Workflows
 
-AI Developer Workflows automate the SDLC:
+AI Developer Workflows automate the SDLC with **TAC-13 expert system enabled by default** in orchestrated workflows:
 
 ```bash
-# Full SDLC (auto-detects documentation)
-uv run adws/adw_sdlc_iso.py --issue 123
+# Full SDLC (TAC-13 enabled, auto-detects documentation)
+uv run adws/adw_sdlc_iso.py 123
+# ✅ Expert guidance active in all phases
+# ✅ Documentation auto-detected from issue
+# ✅ Expertise updated after each phase
+
+# Zero Touch Execution (TAC-13 enabled + auto-merge)
+uv run adws/adw_sdlc_zte_iso.py 123
+# ✅ Complete automation with expert guidance
+# ⚠️  Auto-merges to main if all phases pass
+
+# Disable TAC-13 if needed
+uv run adws/adw_sdlc_iso.py 123 --no-experts
+# ⚪ Traditional workflow without expert system
 
 # With manual documentation override
-uv run adws/adw_sdlc_iso.py --issue 123 --load-docs ddd,api
+uv run adws/adw_sdlc_iso.py 123 --load-docs ddd,api
+# ✅ TAC-13 still active + manual docs
 
 # Plan + Build
-uv run adws/adw_plan_build_iso.py --issue 123
+uv run adws/adw_plan_build_iso.py 123
 
 # Quick patch
-uv run adws/adw_patch_iso.py --issue 456
+uv run adws/adw_patch_iso.py 456
 ```
 
 ### Intelligent Documentation Loading (TAC-9)
@@ -386,6 +399,84 @@ When multiple topics are detected, they are all loaded and concatenated:
 **Available in Both Workflows:**
 - ✅ `adw_sdlc_iso.py` - Full SDLC without auto-merge
 - ✅ `adw_sdlc_zte_iso.py` - Zero Touch Execution with auto-merge
+
+### TAC-13 Integration in ADW Workflows
+
+TAC-13 (Act → Learn → Reuse) is **enabled by default** in orchestrated workflows (SDLC and ZTE) to provide automatic expert guidance and continuous learning throughout all workflow phases.
+
+**Default Behavior:**
+
+| Workflow Type | TAC-13 Status | Override |
+|--------------|---------------|----------|
+| **Orchestrators** (adw_sdlc_iso.py, adw_sdlc_zte_iso.py) | ✅ **Enabled by default** | `--no-experts --no-expert-learn` |
+| **Individual ADWs** (plan, build, review, document) | ⚪ Disabled by default | `--use-experts --expert-learn` |
+
+**Why Default-ON for Orchestrators:**
+- Complete workflows are complex and benefit most from expert guidance
+- Cumulative learning across phases (plan → build → review → document)
+- Simplified UX - no flags to remember
+- Individual ADWs retain flexibility for fine-grained control
+
+**Act → Learn → Reuse Cycle:**
+
+```
+PLAN Phase:
+  🔄 REUSE: Consult expertise.yaml for planning patterns
+  ⚙️  ACT: Generate plan with expert context
+  📚 LEARN: Update expertise (focus: planning_phase)
+
+BUILD Phase:
+  🔄 REUSE: Consult expertise.yaml for implementation patterns
+  ⚙️  ACT: Implement with expert guidance
+  📚 LEARN: Update expertise (focus: implementation_phase)
+
+REVIEW Phase:
+  🔄 REUSE: Consult expertise.yaml for review criteria
+  ⚙️  ACT: Review with expert context
+  📚 LEARN: Update expertise (focus: review_phase)
+
+DOCUMENT Phase:
+  🔄 REUSE: Consult expertise.yaml for documentation patterns
+  ⚙️  ACT: Generate docs with expert context
+  📚 LEARN: Full validation across all phases
+```
+
+**Usage Examples:**
+
+```bash
+# Full SDLC with TAC-13 (automatic)
+uv run adws/adw_sdlc_iso.py 123
+# ✅ TAC-13 active in all phases
+# ✅ Expertise updated after each phase
+# ✅ No flags needed
+
+# Disable TAC-13 if needed (opt-out)
+uv run adws/adw_sdlc_iso.py 123 --no-experts --no-expert-learn
+# ⚪ Traditional behavior without expert guidance
+
+# Zero Touch Execution with TAC-13 (automatic)
+uv run adws/adw_sdlc_zte_iso.py 123
+# ✅ TAC-13 active + automatic merge
+# ✅ Maximum automation level
+
+# Individual ADW with TAC-13 (opt-in)
+uv run adws/adw_plan_iso.py 123 --use-experts --expert-learn
+# ✅ TAC-13 active for this phase only
+```
+
+**Benefits:**
+
+1. **Knowledge Accumulation**: Expertise grows with each workflow execution
+2. **Consistency**: All phases use the same expert knowledge base
+3. **Quality**: Expert guidance improves decision-making automatically
+4. **Observability**: Expert consultations logged to GitHub issues
+5. **Token Tracking**: Usage tracked in ADW state summaries
+
+**Token Impact:**
+
+- Overhead: ~27% more tokens per workflow
+- ROI: Better quality, fewer bugs, reduced rework
+- Controlled: Opt-out available for simple tasks
 
 ### Agent Experts (TAC-13)
 
