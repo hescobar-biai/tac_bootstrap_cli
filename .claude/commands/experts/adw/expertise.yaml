@@ -1,7 +1,7 @@
 overview:
   description: "AI Developer Workflows - Automated SDLC orchestration with isolated worktrees and GitHub integration"
   purpose: "Execute complete software development lifecycle through composable workflow scripts"
-  last_updated: "2026-02-04T16:30:00"
+  last_updated: "2026-02-04T17:00:00"
   total_files: 25
   key_files:
     - "adws/adw_sdlc_iso.py"
@@ -124,7 +124,7 @@ core_implementation:
   workflow_orchestration:
     location: "adws/adw_modules/workflow_ops.py"
     purpose: "Shared workflow operations and utilities"
-    line_count: "~1547 lines"
+    line_count: "~1684 lines"
 
     key_functions:
       consult_expert:
@@ -150,6 +150,30 @@ core_implementation:
           4. Log completion status
         integration: "Called by phase workflows when --expert-learn enabled"
         focus_areas: ["planning_phase", "review_phase", "build_phase", "document_phase"]
+
+      extract_file_references_from_issue:
+        signature: "def extract_file_references_from_issue(issue: GitHubIssue, logger: logging.Logger, working_dir: Optional[str]) -> dict[str, str]"
+        lines: "1561-1659"
+        purpose: "Auto-detect and load markdown files referenced in issue body and comments"
+        logic: |
+          1. Scan issue body and comments for file references (e.g., plan_tasks_Tac_14.md)
+          2. Search in multiple locations: specs/, ai_docs/, ai_docs/doc/, root
+          3. Load file content if found
+          4. Return dict mapping file paths to content
+        patterns:
+          - "*.md file references in issue text"
+          - "Support paths: specs/*, ai_docs/*, ai_docs/doc/*, root/*"
+        integration: "Called by adw_plan_iso.py in both scout and standard planning paths"
+
+      format_file_references_for_context:
+        signature: "def format_file_references_for_context(file_references: dict[str, str]) -> str"
+        lines: "1660-1684"
+        purpose: "Format loaded file references as context for agent prompts"
+        logic: |
+          1. Build markdown section with file paths and content
+          2. Format as code blocks for agent consumption
+          3. Return empty string if no files
+        integration: "Used by adw_plan_iso.py to append file content to planning context"
 
       ensure_adw_id:
         signature: "def ensure_adw_id(issue_number: str, adw_id: Optional[str]) -> str"
@@ -243,16 +267,8 @@ core_implementation:
         pattern: "SLASH_COMMAND_MODEL_MAP dict with base/heavy variants"
 
     model_selection:
-      base_set: "Cost-optimized - sonnet for most operations"
-      heavy_set: "Quality-optimized - opus for complex planning and implementation"
-      commands_using_opus:
-        - "/implement (heavy)"
-        - "/build_w_report (heavy)"
-        - "/resolve_failed_test (heavy)"
-        - "/document (heavy)"
-        - "/feature (heavy)"
-        - "/bug (heavy)"
-        - "/chore (heavy)"
+      base_set: "Cost-optimized - sonnet for all"
+      heavy_set: "Quality-optimized - opus for planning, implementation, resolution, documentation"
 
     token_tracking:
       purpose: "Monitor and report token usage per agent"
@@ -281,7 +297,7 @@ core_implementation:
         signature: "def make_issue_comment(issue_number: str, message: str, repo_path: str)"
         logic: |
           1. Rate limit delay (5s between calls, 3s initial)
-          2. Retry with exponential backoff on rate limit errors
+          2. Retry with exponential backoff on rate limit AND network errors
           3. Execute: gh api repos/{repo_path}/issues/{issue_number}/comments
           4. Post JSON body with comment text
         pattern: "Always includes [ADW-AGENTS] identifier"
@@ -290,6 +306,25 @@ core_implementation:
           - INITIAL_DELAY: "3.0 seconds"
           - MAX_RETRIES: "5 attempts"
           - RETRY_BACKOFF: "10.0 seconds"
+
+      _execute_with_retry:
+        signature: "def _execute_with_retry(cmd, env, operation_name='operation')"
+        lines: "57-113"
+        purpose: "Execute GitHub CLI commands with retry on rate limits AND network errors"
+        logic: |
+          1. Execute command via subprocess
+          2. Check for retryable errors in stderr
+          3. Rate limit errors: wait RETRY_BACKOFF * (attempt + 1) seconds
+          4. Network errors: exponential backoff 2^attempt, capped at 30s
+          5. Retry up to MAX_RETRIES times
+          6. Return result (success or final failure)
+        network_errors_handled:
+          - "connection reset by peer"
+          - "connection refused / timed out"
+          - "temporary failure / network unreachable"
+          - "broken pipe"
+          - "502 bad gateway / 503 service unavailable / 504 gateway timeout"
+        integration: "Used internally by all GitHub API operations"
 
       fetch_issue_comments:
         signature: "def fetch_issue_comments(repo_path: str, issue_number: int) -> List[Dict]"
@@ -424,7 +459,9 @@ key_operations:
           - "Generate branch name"
           - "Create feature branch"
           - "TAC-13: Consult ADW expert for planning guidance (if --use-experts)"
-          - "Generate spec file via /feature|/bug|/chore|/patch"
+          - "Extract file references from issue body and comments (auto-load .md files)"
+          - "Load referenced files and append to planning context"
+          - "Generate spec file via /feature|/bug|/chore|/patch with file context"
           - "Save plan_file to state"
           - "TAC-13: Learn from planning phase (if --expert-learn)"
 
@@ -555,30 +592,9 @@ key_operations:
     fallback: "--load-docs flag for manual override"
 
   model_selection_strategy:
-    base_set:
-      purpose: "Cost-optimized execution"
-      default_model: "sonnet"
-      use_cases:
-        - "Development workflows"
-        - "Repeated iterations"
-        - "Simple tasks"
-
-    heavy_set:
-      purpose: "Quality-optimized execution"
-      model_upgrades:
-        - "sonnet to opus for planning commands"
-        - "sonnet to opus for complex implementation"
-        - "sonnet to opus for failure resolution"
-      use_cases:
-        - "Production workflows"
-        - "Complex features"
-        - "Critical bug fixes"
-
-    command_specific:
-      lightweight: "Always sonnet (classify, commit, test)"
-      planning: "base=sonnet, heavy=opus"
-      implementation: "base=sonnet, heavy=opus"
-      resolution: "base=sonnet, heavy=opus"
+    base_set: "Cost-optimized - sonnet default for dev iterations"
+    heavy_set: "Quality-optimized - opus for planning/build/resolution in prod"
+    pattern: "Lightweight ops (classify, commit, test) always use sonnet"
 
 best_practices:
 
@@ -905,6 +921,31 @@ integrations:
 
 recent_changes:
   - date: "2026-02-04"
+    description: "Self-improve run: Added file reference auto-loading and enhanced GitHub retry logic"
+    files:
+      - "adws/adw_modules/workflow_ops.py"
+      - "adws/adw_modules/github.py"
+      - "adws/adw_plan_iso.py"
+      - ".claude/commands/experts/adw/expertise.yaml"
+    impact: |
+      File reference auto-loading (commits 7938b3b, 6a4d663):
+      - Added extract_file_references_from_issue() (workflow_ops.py:1561-1659)
+      - Added format_file_references_for_context() (workflow_ops.py:1660-1684)
+      - Planning phase now auto-loads .md files referenced in issue body/comments
+      - Search locations: specs/, ai_docs/, ai_docs/doc/, root
+      - Integration in both scout-enhanced and standard planning paths
+      - Posts GitHub comment showing loaded files
+
+      Enhanced GitHub integration (commit a31a50c):
+      - _execute_with_retry() now handles network errors in addition to rate limits
+      - Network error types: connection reset, timeout, 502/503/504 errors
+      - Exponential backoff for network errors (2^attempt, capped at 30s)
+      - Improved resilience for GitHub API operations
+
+      Updated line counts:
+      - workflow_ops.py: 1547 → 1684 lines
+
+  - date: "2026-02-04"
     description: "Self-improve run: Added TAC-13 expert system integration details from commit 4164f72"
     files:
       - ".claude/commands/experts/adw/expertise.yaml"
@@ -925,39 +966,13 @@ recent_changes:
       - Documented focus areas for self-improve: planning_phase, review_phase, build_phase, document_phase
 
   - date: "2026-02-04"
-    description: "Self-improve run: Corrected line counts, updated function signatures, fixed GitHub module documentation"
-    files:
-      - ".claude/commands/experts/adw/expertise.yaml"
+    description: "Earlier self-improve runs: Line count corrections, GitHub module updates, expert system integration"
     impact: |
-      Fixed discrepancies:
-      - workflow_ops.py line count: 400 → 1547
-      - worktree_ops.py line count: 250 → 154
-      - Updated worktree function signatures (adw_id-based, not path-based)
-      - Corrected GitHub module functions (removed non-existent create_pull_request, filter_bot_comments)
-      - Added actual GitHub functions (assign_issue_to_me, mark_issue_in_progress, get_current_gh_user)
-      - Enhanced trigger documentation with actual file names
+      - Fixed workflow_ops.py line count: 400 → 1547
+      - Corrected worktree function signatures (adw_id-based)
+      - Added GitHub functions: assign_issue_to_me, mark_issue_in_progress, get_current_gh_user
       - Clarified PR creation via /pull_request slash command
-
-  - date: "2026-02-04"
-    description: "Initial self-improve: Updated expertise with expert system command types and composite workflows"
-    files:
-      - "adws/adw_modules/data_types.py"
-      - ".claude/commands/experts/adw/expertise.yaml"
-    impact: "Expertise now includes TAC-13 expert commands in SlashCommand type and documents composite workflow patterns"
-
-  - date: "2026-02-03"
-    description: "TAC-13 Task 9: Created ADW expert expertise file"
-    files:
-      - ".claude/commands/experts/adw/expertise.yaml"
-      - "tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/experts/adw/expertise.yaml.j2"
-      - "tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py"
-    impact: "ADW expert can now maintain mental model across sessions"
-
-  - date: "2026-02-02"
-    description: "TAC-13 Task 8: Added ADW expert self-improve workflow"
-    files:
-      - ".claude/commands/experts/adw/self-improve.md"
-    impact: "ADW expertise file can be validated and updated automatically"
+      - Added TAC-13 expert commands to SlashCommand type
 
 expert_system_integration:
   adw_expert:

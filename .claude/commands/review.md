@@ -149,3 +149,9 @@ Generar un archivo markdown de checklist de validación y guardarlo junto al arc
 - Si falta la sección de comandos de validación, notar "No se especificaron comandos de validación"
 - Asegurar escapado apropiado de markdown para caracteres especiales en el texto de criterios
 - Preservar el formato exacto de los criterios de aceptación del spec
+
+## Orchestration Patterns
+
+Los workflows de orquestación completos incluyen fases de revisión automática con agentes especializados que validan el código contra especificaciones y criterios de aceptación. Consulta los comandos de orquestación para workflows multi-agente que incluyen revisión integrada:
+
+- [orch_plan_w_scouts_build_review](./orch_plan_w_scouts_build_review.md) - Workflow completo que incluye fase de revisión automática
