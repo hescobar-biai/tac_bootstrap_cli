@@ -1,7 +1,7 @@
 overview:
   description: "AI Developer Workflows - Automated SDLC orchestration with isolated worktrees and GitHub integration"
   purpose: "Execute complete software development lifecycle through composable workflow scripts"
-  last_updated: "2026-02-04"
+  last_updated: "2026-02-04T16:30:00"
   total_files: 25
   key_files:
     - "adws/adw_sdlc_iso.py"
@@ -127,6 +127,30 @@ core_implementation:
     line_count: "~1547 lines"
 
     key_functions:
+      consult_expert:
+        signature: "def consult_expert(domain: str, question: str, adw_id: str, logger: logging.Logger, working_dir: Optional[str]) -> AgentPromptResponse"
+        lines: "1450-1488"
+        purpose: "REUSE phase of Act → Learn → Reuse loop - consult domain expert using expertise.yaml"
+        logic: |
+          1. Build slash command: /experts:{domain}:question
+          2. Execute via AgentTemplateRequest
+          3. Return expert answer in AgentPromptResponse
+          4. Log success/failure
+        integration: "Called by plan, build, review, document phases when --use-experts enabled"
+        domains: ["adw", "cli", "commands"]
+
+      improve_expert_knowledge:
+        signature: "def improve_expert_knowledge(domain: str, check_git_diff: bool, focus_area: Optional[str], adw_id: str, logger: logging.Logger, working_dir: Optional[str]) -> AgentPromptResponse"
+        lines: "1491-1541"
+        purpose: "LEARN phase of Act → Learn → Reuse loop - update expertise.yaml based on code changes"
+        logic: |
+          1. Build args: [check_git_diff, focus_area]
+          2. Execute /experts:{domain}:self-improve
+          3. Return self-improve report
+          4. Log completion status
+        integration: "Called by phase workflows when --expert-learn enabled"
+        focus_areas: ["planning_phase", "review_phase", "build_phase", "document_phase"]
+
       ensure_adw_id:
         signature: "def ensure_adw_id(issue_number: str, adw_id: Optional[str]) -> str"
         lines: "~50-100"
@@ -170,6 +194,9 @@ core_implementation:
       AGENT_CLASSIFIER: "issue_classifier"
       AGENT_BRANCH_GENERATOR: "branch_generator"
       AGENT_PR_CREATOR: "pr_creator"
+      AGENT_EXPERT_ADW: "adw_expert"
+      AGENT_EXPERT_CLI: "cli_expert"
+      AGENT_EXPERT_COMMANDS: "commands_expert"
       MAX_ISSUE_BODY_LENGTH: 2000
 
   agent_execution:
@@ -385,6 +412,10 @@ key_operations:
   sdlc_workflow_execution:
     command: "uv run adws/adw_sdlc_iso.py <issue-number> [adw-id]"
     description: "Execute complete SDLC pipeline from issue to documentation"
+    expert_system_flags:
+      use_experts: "Enable expert consultation (default: on, opt-out: --no-experts)"
+      expert_learn: "Enable expert learning after phases (default: on, opt-out: --no-expert-learn)"
+      integration: "SDLC orchestrator passes flags to all phase workflows"
     phases:
       1_plan:
         script: "adw_plan_iso.py"
@@ -392,17 +423,21 @@ key_operations:
           - "Classify issue (feature/bug/chore/patch)"
           - "Generate branch name"
           - "Create feature branch"
+          - "TAC-13: Consult ADW expert for planning guidance (if --use-experts)"
           - "Generate spec file via /feature|/bug|/chore|/patch"
           - "Save plan_file to state"
+          - "TAC-13: Learn from planning phase (if --expert-learn)"
 
       2_build:
         script: "adw_build_iso.py"
         actions:
           - "Create worktree for isolated execution"
+          - "TAC-13: Consult ADW expert for build patterns (if --use-experts)"
           - "Execute /build_w_report with plan_file"
           - "Generate YAML build report"
           - "Commit changes with /commit"
           - "Update state with build results"
+          - "TAC-13: Learn from build phase (if --expert-learn)"
 
       3_test:
         script: "adw_test_iso.py"
@@ -416,17 +451,21 @@ key_operations:
       4_review:
         script: "adw_review_iso.py"
         actions:
+          - "TAC-13: Consult ADW expert for review criteria (if --use-experts)"
           - "Execute /review with plan_file"
           - "Check code quality and adherence to plan"
           - "Generate review report"
           - "Commit review fixes if needed"
+          - "TAC-13: Learn from review phase (if --expert-learn)"
 
       5_document:
         script: "adw_document_iso.py"
         actions:
+          - "TAC-13: Consult ADW expert for documentation patterns (if --use-experts)"
           - "Execute /document for feature documentation"
           - "Generate user-facing documentation"
           - "Commit documentation with /commit"
+          - "TAC-13: Learn from documentation phase (if --expert-learn)"
 
     state_transitions:
       - "plan → build: pass adw_id and plan_file"
@@ -804,9 +843,14 @@ integrations:
     experts:
       - cli_expert: "CLI and code generation expertise"
       - adw_expert: "ADW workflow expertise (this file)"
+      - commands_expert: "Slash commands expertise"
     commands:
       - "/experts:adw:question"
       - "/experts:adw:self-improve"
+      - "/experts:cli:question"
+      - "/experts:cli:self-improve"
+      - "/experts:commands:question"
+      - "/experts:commands:self-improve"
     integration_point: "All workflows via expert consultation"
     workflow: |
       1. Agent consults expertise file for guidance
@@ -817,7 +861,69 @@ integrations:
       - "Consistent decision-making"
       - "Accumulated domain knowledge"
 
+    act_learn_reuse_implementation:
+      reuse_phase:
+        function: "consult_expert(domain, question, adw_id, logger, working_dir)"
+        location: "adws/adw_modules/workflow_ops.py:1450-1488"
+        pattern: |
+          1. Phase workflow calls consult_expert() with domain-specific question
+          2. Function executes /experts:{domain}:question via agent
+          3. Expert responds using expertise.yaml knowledge
+          4. Response stored in state and tokens accumulated
+        example_questions:
+          planning: "What planning patterns should I apply from ADW expertise?"
+          review: "What review criteria should I apply?"
+          build: "What build patterns should I follow?"
+          document: "What documentation patterns should I use?"
+
+      learn_phase:
+        function: "improve_expert_knowledge(domain, check_git_diff, focus_area, adw_id, logger, working_dir)"
+        location: "adws/adw_modules/workflow_ops.py:1491-1541"
+        pattern: |
+          1. Phase workflow calls improve_expert_knowledge() after completion
+          2. Function executes /experts:{domain}:self-improve with focus_area
+          3. Self-improve validates expertise against codebase
+          4. Updates expertise.yaml with new patterns learned
+          5. Response tokens accumulated in state
+        focus_areas:
+          planning_phase: "adw_plan_iso.py"
+          review_phase: "adw_review_iso.py"
+          build_phase: "adw_build_iso.py"
+          document_phase: "adw_document_iso.py"
+
+      orchestrator_integration:
+        location: "adws/adw_sdlc_iso.py:46-242"
+        flags:
+          use_experts: "--use-experts flag passed to phase workflows (default on)"
+          expert_learn: "--expert-learn flag passed to phase workflows (default on)"
+          opt_out: "--no-experts and --no-expert-learn for disabling"
+        pattern: |
+          1. SDLC orchestrator checks for --no-experts and --no-expert-learn flags
+          2. Sets use_experts and expert_learn booleans (default True)
+          3. Passes flags to each phase subprocess command
+          4. Phase workflows conditionally call expert functions based on flags
+
 recent_changes:
+  - date: "2026-02-04"
+    description: "Self-improve run: Added TAC-13 expert system integration details from commit 4164f72"
+    files:
+      - ".claude/commands/experts/adw/expertise.yaml"
+      - "adws/adw_modules/workflow_ops.py"
+      - "adws/adw_plan_iso.py"
+      - "adws/adw_build_iso.py"
+      - "adws/adw_review_iso.py"
+      - "adws/adw_document_iso.py"
+      - "adws/adw_sdlc_iso.py"
+    impact: |
+      Added TAC-13 Act → Learn → Reuse loop implementation:
+      - Documented consult_expert() function (workflow_ops.py:1450-1488)
+      - Documented improve_expert_knowledge() function (workflow_ops.py:1491-1541)
+      - Added expert system agent constants (AGENT_EXPERT_ADW, AGENT_EXPERT_CLI, AGENT_EXPERT_COMMANDS)
+      - Documented --use-experts and --expert-learn flags in SDLC orchestrator
+      - Updated all phase workflow actions to include expert consultation steps
+      - Added detailed Act→Learn→Reuse implementation patterns with examples
+      - Documented focus areas for self-improve: planning_phase, review_phase, build_phase, document_phase
+
   - date: "2026-02-04"
     description: "Self-improve run: Corrected line counts, updated function signatures, fixed GitHub module documentation"
     files:
