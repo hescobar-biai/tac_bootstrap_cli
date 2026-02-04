@@ -2061,3 +2061,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When updating TAC-12 Integration section with new capabilities
     - When documenting expertise files and self-improving agents
     - When ensuring TAC-13 is discoverable from repository entry points
+
+- app_docs/feature-618-skills-system-implementation.md
+  - Conditions:
+    - When working with the Skills System (.claude/skills/)
+    - When implementing or modifying agent skills (SKILL.md files)
+    - When working with progressive disclosure pattern (5/15/80 rule)
+    - When registering skills templates in scaffold_service.py
+    - When creating or modifying meta-skill functionality
+    - When understanding YAML frontmatter structure for skills
+    - When generating projects that need Skills System
+    - When working with TAC-14 features

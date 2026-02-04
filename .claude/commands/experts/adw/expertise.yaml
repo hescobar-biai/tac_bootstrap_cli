@@ -1,7 +1,7 @@
 overview:
   description: "AI Developer Workflows - Automated SDLC orchestration with isolated worktrees and GitHub integration"
   purpose: "Execute complete software development lifecycle through composable workflow scripts"
-  last_updated: "2026-02-03"
+  last_updated: "2026-02-04T16:30:00"
   total_files: 25
   key_files:
     - "adws/adw_sdlc_iso.py"
@@ -30,6 +30,11 @@ architecture:
         - adw_document_iso.py: "Documentation generation phase"
         - adw_patch_iso.py: "Quick patch workflow for simple fixes"
         - adw_ship_iso.py: "PR creation and merging workflow"
+        - adw_plan_build_iso.py: "Composite: plan + build only"
+        - adw_plan_build_test_iso.py: "Composite: plan + build + test"
+        - adw_plan_build_test_review_iso.py: "Composite: plan + build + test + review"
+        - adw_plan_build_review_iso.py: "Composite: plan + build + review (skip test)"
+        - adw_plan_build_document_iso.py: "Composite: plan + build + document"
 
     modules:
       path: "adws/adw_modules/"
@@ -42,7 +47,7 @@ architecture:
         - github.py: "GitHub API operations (issues, comments, PRs)"
         - git_ops.py: "Git operations (branching, merging, status)"
         - worktree_ops.py: "Git worktree management for isolation"
-        - data_types.py: "Pydantic models for type safety"
+        - data_types.py: "Pydantic models and SlashCommand type definitions (includes TAC-13 expert commands)"
         - tool_sequencer.py: "Tool call sequencing for multi-step operations"
         - utils.py: "Logging, parsing, and utility functions"
         - r2_uploader.py: "Cloudflare R2 uploader for context bundles"
@@ -50,11 +55,13 @@ architecture:
     triggers:
       path: "adws/adw_triggers/"
       purpose: "Event-driven workflow triggers"
+      count: 5
       types:
-        - cron: "Time-based workflow execution"
-        - webhook: "GitHub webhook handlers"
-        - issue: "Issue-based workflow triggers"
-        - parallel: "Parallel workflow orchestration"
+        - trigger_cron.py: "Time-based workflow execution (scheduled tasks)"
+        - trigger_webhook.py: "GitHub webhook handlers (issue events, PR events)"
+        - trigger_issue_chain.py: "Sequential issue-based workflow chaining"
+        - trigger_issue_parallel.py: "Parallel execution of multiple issue workflows"
+        - trigger_plan_parallel.py: "Parallel planning phase execution"
 
 core_implementation:
 
@@ -117,9 +124,33 @@ core_implementation:
   workflow_orchestration:
     location: "adws/adw_modules/workflow_ops.py"
     purpose: "Shared workflow operations and utilities"
-    line_count: "~400 lines"
+    line_count: "~1547 lines"
 
     key_functions:
+      consult_expert:
+        signature: "def consult_expert(domain: str, question: str, adw_id: str, logger: logging.Logger, working_dir: Optional[str]) -> AgentPromptResponse"
+        lines: "1450-1488"
+        purpose: "REUSE phase of Act → Learn → Reuse loop - consult domain expert using expertise.yaml"
+        logic: |
+          1. Build slash command: /experts:{domain}:question
+          2. Execute via AgentTemplateRequest
+          3. Return expert answer in AgentPromptResponse
+          4. Log success/failure
+        integration: "Called by plan, build, review, document phases when --use-experts enabled"
+        domains: ["adw", "cli", "commands"]
+
+      improve_expert_knowledge:
+        signature: "def improve_expert_knowledge(domain: str, check_git_diff: bool, focus_area: Optional[str], adw_id: str, logger: logging.Logger, working_dir: Optional[str]) -> AgentPromptResponse"
+        lines: "1491-1541"
+        purpose: "LEARN phase of Act → Learn → Reuse loop - update expertise.yaml based on code changes"
+        logic: |
+          1. Build args: [check_git_diff, focus_area]
+          2. Execute /experts:{domain}:self-improve
+          3. Return self-improve report
+          4. Log completion status
+        integration: "Called by phase workflows when --expert-learn enabled"
+        focus_areas: ["planning_phase", "review_phase", "build_phase", "document_phase"]
+
       ensure_adw_id:
         signature: "def ensure_adw_id(issue_number: str, adw_id: Optional[str]) -> str"
         lines: "~50-100"
@@ -163,12 +194,15 @@ core_implementation:
       AGENT_CLASSIFIER: "issue_classifier"
       AGENT_BRANCH_GENERATOR: "branch_generator"
       AGENT_PR_CREATOR: "pr_creator"
+      AGENT_EXPERT_ADW: "adw_expert"
+      AGENT_EXPERT_CLI: "cli_expert"
+      AGENT_EXPERT_COMMANDS: "commands_expert"
       MAX_ISSUE_BODY_LENGTH: 2000
 
   agent_execution:
     location: "adws/adw_modules/agent.py"
     purpose: "Claude Code agent orchestration with model selection"
-    line_count: "~600 lines"
+    line_count: "~920 lines"
 
     key_functions:
       execute_prompt:
@@ -194,9 +228,9 @@ core_implementation:
           6. Return structured response
         integration: "Primary method for workflow script execution"
 
-      get_model_for_command:
-        signature: "def get_model_for_command(slash_command: str, model_set: str) -> str"
-        purpose: "Model selection based on command complexity and model_set"
+      get_model_for_slash_command:
+        signature: "def get_model_for_slash_command(request: AgentTemplateRequest, default: str = 'sonnet') -> str"
+        purpose: "Model selection based on command complexity and model_set from ADW state"
         mapping:
           base_models:
             lightweight: "sonnet (classify, commit, test)"
@@ -257,20 +291,25 @@ core_implementation:
           - MAX_RETRIES: "5 attempts"
           - RETRY_BACKOFF: "10.0 seconds"
 
-      get_issue_comments:
-        signature: "def get_issue_comments(issue_number: str, repo_path: str) -> List[GitHubComment]"
+      fetch_issue_comments:
+        signature: "def fetch_issue_comments(repo_path: str, issue_number: int) -> List[Dict]"
         purpose: "Fetch all comments for issue"
         integration: "Used for comment filtering and history"
 
-      filter_bot_comments:
-        signature: "def filter_bot_comments(comments: List[GitHubComment]) -> List[GitHubComment]"
-        purpose: "Remove ADW-AGENTS comments to prevent context pollution"
-        pattern: "Filters comments containing [ADW-AGENTS] identifier"
+      get_current_gh_user:
+        signature: "def get_current_gh_user() -> Optional[str]"
+        purpose: "Get current GitHub CLI authenticated user"
+        integration: "Used for issue assignment checks"
 
-      create_pull_request:
-        signature: "def create_pull_request(title: str, body: str, base_branch: str, head_branch: str) -> Dict"
-        logic: "Execute: gh pr create --title --body --base --head"
-        integration: "Used by adw_ship_iso.py for PR creation"
+      assign_issue_to_me:
+        signature: "def assign_issue_to_me(issue_id: str) -> bool"
+        logic: "Assign issue to current GitHub user"
+        integration: "Used by workflows to claim issues"
+
+      mark_issue_in_progress:
+        signature: "def mark_issue_in_progress(issue_id: str) -> None"
+        purpose: "Add 'in progress' label to issue"
+        integration: "Called at workflow start"
 
       get_repo_url:
         signature: "def get_repo_url() -> str"
@@ -323,36 +362,34 @@ core_implementation:
   worktree_management:
     location: "adws/adw_modules/worktree_ops.py"
     purpose: "Git worktree operations for workflow isolation"
-    line_count: "~250 lines"
+    line_count: "~154 lines"
 
     key_functions:
       create_worktree:
-        signature: "def create_worktree(worktree_path: Path, branch_name: str, base_branch: str = 'main') -> Path"
+        signature: "def create_worktree(adw_id: str, branch_name: str, logger: logging.Logger) -> Tuple[str, Optional[str]]"
         logic: |
           1. Ensure worktree directory: trees/{branch_name}
-          2. Create worktree: git worktree add {path} -b {branch} origin/{base}
-          3. Return absolute worktree path
+          2. Create worktree: git worktree add {path} -b {branch}
+          3. Return (worktree_path, error_message)
         pattern: "Worktrees enable parallel workflow execution"
 
+      validate_worktree:
+        signature: "def validate_worktree(adw_id: str, state: ADWState) -> Tuple[bool, Optional[str]]"
+        purpose: "Validate worktree exists and is in correct state"
+        pattern: "Checks worktree path exists and matches state"
+
       remove_worktree:
-        signature: "def remove_worktree(worktree_path: Path)"
+        signature: "def remove_worktree(adw_id: str, logger: logging.Logger) -> Tuple[bool, Optional[str]]"
         logic: |
           1. Execute: git worktree remove {path}
           2. Cleanup worktree directory
+          3. Return (success, error_message)
         integration: "Called by ship workflow after merge"
 
-      list_worktrees:
-        signature: "def list_worktrees() -> List[Dict[str, str]]"
-        logic: |
-          1. Execute: git worktree list --porcelain
-          2. Parse output into list of worktree dicts
-          3. Return [{worktree, HEAD, branch}, ...]
-        integration: "Used for worktree discovery and cleanup"
-
       get_worktree_path:
-        signature: "def get_worktree_path(branch_name: str) -> Optional[Path]"
-        purpose: "Find existing worktree for branch"
-        pattern: "Searches trees/ directory for matching branch"
+        signature: "def get_worktree_path(adw_id: str) -> str"
+        purpose: "Get worktree path for ADW ID"
+        pattern: "Returns trees/{adw_id} path"
 
     worktree_isolation_pattern:
       purpose: "Enable parallel workflow execution without conflicts"
@@ -375,6 +412,10 @@ key_operations:
   sdlc_workflow_execution:
     command: "uv run adws/adw_sdlc_iso.py <issue-number> [adw-id]"
     description: "Execute complete SDLC pipeline from issue to documentation"
+    expert_system_flags:
+      use_experts: "Enable expert consultation (default: on, opt-out: --no-experts)"
+      expert_learn: "Enable expert learning after phases (default: on, opt-out: --no-expert-learn)"
+      integration: "SDLC orchestrator passes flags to all phase workflows"
     phases:
       1_plan:
         script: "adw_plan_iso.py"
@@ -382,17 +423,21 @@ key_operations:
           - "Classify issue (feature/bug/chore/patch)"
           - "Generate branch name"
           - "Create feature branch"
+          - "TAC-13: Consult ADW expert for planning guidance (if --use-experts)"
           - "Generate spec file via /feature|/bug|/chore|/patch"
           - "Save plan_file to state"
+          - "TAC-13: Learn from planning phase (if --expert-learn)"
 
       2_build:
         script: "adw_build_iso.py"
         actions:
           - "Create worktree for isolated execution"
+          - "TAC-13: Consult ADW expert for build patterns (if --use-experts)"
           - "Execute /build_w_report with plan_file"
           - "Generate YAML build report"
           - "Commit changes with /commit"
           - "Update state with build results"
+          - "TAC-13: Learn from build phase (if --expert-learn)"
 
       3_test:
         script: "adw_test_iso.py"
@@ -406,17 +451,21 @@ key_operations:
       4_review:
         script: "adw_review_iso.py"
         actions:
+          - "TAC-13: Consult ADW expert for review criteria (if --use-experts)"
           - "Execute /review with plan_file"
           - "Check code quality and adherence to plan"
           - "Generate review report"
           - "Commit review fixes if needed"
+          - "TAC-13: Learn from review phase (if --expert-learn)"
 
       5_document:
         script: "adw_document_iso.py"
         actions:
+          - "TAC-13: Consult ADW expert for documentation patterns (if --use-experts)"
           - "Execute /document for feature documentation"
           - "Generate user-facing documentation"
           - "Commit documentation with /commit"
+          - "TAC-13: Learn from documentation phase (if --expert-learn)"
 
     state_transitions:
       - "plan → build: pass adw_id and plan_file"
@@ -460,13 +509,13 @@ key_operations:
     workflow: |
       1. Load state from adw_id
       2. Push branch to origin
-      3. Execute /pull_request to generate PR
-      4. Create PR via GitHub API
-      5. Post PR link to issue
-      6. If auto_merge: merge PR and cleanup worktree
+      3. Execute /pull_request slash command to create PR (via Claude Code agent)
+      4. Post PR link to issue
+      5. If auto_merge: merge PR and cleanup worktree
     options:
       auto_merge: "Automatically merge PR after creation"
       cleanup: "Remove worktree after successful merge"
+    note: "PR creation uses /pull_request command, not direct GitHub API"
 
   state_persistence:
     file: "adw_state.json"
@@ -794,9 +843,14 @@ integrations:
     experts:
       - cli_expert: "CLI and code generation expertise"
       - adw_expert: "ADW workflow expertise (this file)"
+      - commands_expert: "Slash commands expertise"
     commands:
       - "/experts:adw:question"
       - "/experts:adw:self-improve"
+      - "/experts:cli:question"
+      - "/experts:cli:self-improve"
+      - "/experts:commands:question"
+      - "/experts:commands:self-improve"
     integration_point: "All workflows via expert consultation"
     workflow: |
       1. Agent consults expertise file for guidance
@@ -807,7 +861,90 @@ integrations:
       - "Consistent decision-making"
       - "Accumulated domain knowledge"
 
+    act_learn_reuse_implementation:
+      reuse_phase:
+        function: "consult_expert(domain, question, adw_id, logger, working_dir)"
+        location: "adws/adw_modules/workflow_ops.py:1450-1488"
+        pattern: |
+          1. Phase workflow calls consult_expert() with domain-specific question
+          2. Function executes /experts:{domain}:question via agent
+          3. Expert responds using expertise.yaml knowledge
+          4. Response stored in state and tokens accumulated
+        example_questions:
+          planning: "What planning patterns should I apply from ADW expertise?"
+          review: "What review criteria should I apply?"
+          build: "What build patterns should I follow?"
+          document: "What documentation patterns should I use?"
+
+      learn_phase:
+        function: "improve_expert_knowledge(domain, check_git_diff, focus_area, adw_id, logger, working_dir)"
+        location: "adws/adw_modules/workflow_ops.py:1491-1541"
+        pattern: |
+          1. Phase workflow calls improve_expert_knowledge() after completion
+          2. Function executes /experts:{domain}:self-improve with focus_area
+          3. Self-improve validates expertise against codebase
+          4. Updates expertise.yaml with new patterns learned
+          5. Response tokens accumulated in state
+        focus_areas:
+          planning_phase: "adw_plan_iso.py"
+          review_phase: "adw_review_iso.py"
+          build_phase: "adw_build_iso.py"
+          document_phase: "adw_document_iso.py"
+
+      orchestrator_integration:
+        location: "adws/adw_sdlc_iso.py:46-242"
+        flags:
+          use_experts: "--use-experts flag passed to phase workflows (default on)"
+          expert_learn: "--expert-learn flag passed to phase workflows (default on)"
+          opt_out: "--no-experts and --no-expert-learn for disabling"
+        pattern: |
+          1. SDLC orchestrator checks for --no-experts and --no-expert-learn flags
+          2. Sets use_experts and expert_learn booleans (default True)
+          3. Passes flags to each phase subprocess command
+          4. Phase workflows conditionally call expert functions based on flags
+
 recent_changes:
+  - date: "2026-02-04"
+    description: "Self-improve run: Added TAC-13 expert system integration details from commit 4164f72"
+    files:
+      - ".claude/commands/experts/adw/expertise.yaml"
+      - "adws/adw_modules/workflow_ops.py"
+      - "adws/adw_plan_iso.py"
+      - "adws/adw_build_iso.py"
+      - "adws/adw_review_iso.py"
+      - "adws/adw_document_iso.py"
+      - "adws/adw_sdlc_iso.py"
+    impact: |
+      Added TAC-13 Act → Learn → Reuse loop implementation:
+      - Documented consult_expert() function (workflow_ops.py:1450-1488)
+      - Documented improve_expert_knowledge() function (workflow_ops.py:1491-1541)
+      - Added expert system agent constants (AGENT_EXPERT_ADW, AGENT_EXPERT_CLI, AGENT_EXPERT_COMMANDS)
+      - Documented --use-experts and --expert-learn flags in SDLC orchestrator
+      - Updated all phase workflow actions to include expert consultation steps
+      - Added detailed Act→Learn→Reuse implementation patterns with examples
+      - Documented focus areas for self-improve: planning_phase, review_phase, build_phase, document_phase
+
+  - date: "2026-02-04"
+    description: "Self-improve run: Corrected line counts, updated function signatures, fixed GitHub module documentation"
+    files:
+      - ".claude/commands/experts/adw/expertise.yaml"
+    impact: |
+      Fixed discrepancies:
+      - workflow_ops.py line count: 400 → 1547
+      - worktree_ops.py line count: 250 → 154
+      - Updated worktree function signatures (adw_id-based, not path-based)
+      - Corrected GitHub module functions (removed non-existent create_pull_request, filter_bot_comments)
+      - Added actual GitHub functions (assign_issue_to_me, mark_issue_in_progress, get_current_gh_user)
+      - Enhanced trigger documentation with actual file names
+      - Clarified PR creation via /pull_request slash command
+
+  - date: "2026-02-04"
+    description: "Initial self-improve: Updated expertise with expert system command types and composite workflows"
+    files:
+      - "adws/adw_modules/data_types.py"
+      - ".claude/commands/experts/adw/expertise.yaml"
+    impact: "Expertise now includes TAC-13 expert commands in SlashCommand type and documents composite workflow patterns"
+
   - date: "2026-02-03"
     description: "TAC-13 Task 9: Created ADW expert expertise file"
     files:
@@ -821,12 +958,6 @@ recent_changes:
     files:
       - ".claude/commands/experts/adw/self-improve.md"
     impact: "ADW expertise file can be validated and updated automatically"
-
-  - date: "2026-02-01"
-    description: "TAC-13 Task 7: Added ADW expert question prompt"
-    files:
-      - ".claude/commands/experts/adw/question.md"
-    impact: "Users can query ADW workflows and patterns via expert agent"
 
 expert_system_integration:
   adw_expert:
