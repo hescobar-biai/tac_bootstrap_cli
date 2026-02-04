@@ -247,37 +247,37 @@ class TestSemanticVersion:
         """Test less than comparison."""
         assert SemanticVersion("1.0.0") < SemanticVersion("2.0.0")
         assert SemanticVersion("1.2.3") < SemanticVersion("1.2.4")
-        assert SemanticVersion("0.2.0") < SemanticVersion("0.7.1")
+        assert SemanticVersion("0.2.0") < SemanticVersion("0.8.0")
         assert not (SemanticVersion("1.2.3") < SemanticVersion("1.2.3"))
 
     def test_less_than_with_string(self):
         """Test less than comparison with string."""
         v1 = SemanticVersion("0.6.0")
-        assert v1 < "0.7.1"
+        assert v1 < "0.8.0"
         assert not (v1 < "0.1.0")
 
     def test_less_than_or_equal_comparison(self):
         """Test less than or equal comparison."""
-        assert SemanticVersion("0.7.1") <= SemanticVersion("0.7.1")
+        assert SemanticVersion("0.8.0") <= SemanticVersion("0.8.0")
         assert SemanticVersion("1.2.3") <= SemanticVersion("1.2.3")
         assert not (SemanticVersion("2.0.0") <= SemanticVersion("1.0.0"))
 
     def test_greater_than_comparison(self):
         """Test greater than comparison."""
-        assert SemanticVersion("0.7.1") > SemanticVersion("0.2.0")
+        assert SemanticVersion("0.8.0") > SemanticVersion("0.2.0")
         assert SemanticVersion("2.0.0") > SemanticVersion("1.0.0")
         assert SemanticVersion("1.2.4") > SemanticVersion("1.2.3")
         assert not (SemanticVersion("1.2.3") > SemanticVersion("1.2.3"))
 
     def test_greater_than_with_string(self):
         """Test greater than comparison with string."""
-        v1 = SemanticVersion("0.7.1")
+        v1 = SemanticVersion("0.8.0")
         assert v1 > "0.2.0"
         assert not (v1 > "1.0.0")
 
     def test_greater_than_or_equal_comparison(self):
         """Test greater than or equal comparison."""
-        assert SemanticVersion("0.7.1") >= SemanticVersion("0.7.1")
+        assert SemanticVersion("0.8.0") >= SemanticVersion("0.8.0")
         assert SemanticVersion("1.2.3") >= SemanticVersion("1.2.3")
         assert not (SemanticVersion("1.0.0") >= SemanticVersion("2.0.0"))
 
@@ -289,7 +289,7 @@ class TestSemanticVersion:
     def test_comparison_minor_version(self):
         """Test that minor version is considered when major is equal."""
         assert SemanticVersion("1.3.0") > SemanticVersion("1.2.9")
-        assert SemanticVersion("0.7.1") > SemanticVersion("0.2.9")
+        assert SemanticVersion("0.8.0") > SemanticVersion("0.2.9")
 
     def test_comparison_patch_version(self):
         """Test that patch version is considered when major and minor are equal."""
@@ -367,16 +367,16 @@ class TestSemanticVersion:
         """Test that versions can be sorted correctly."""
         versions = [
             SemanticVersion("1.0.0"),
-            SemanticVersion("0.7.1"),
-            SemanticVersion("0.7.1"),
+            SemanticVersion("0.8.0"),
+            SemanticVersion("0.8.0"),
             SemanticVersion("1.2.3"),
             SemanticVersion("0.1.0"),
         ]
         sorted_versions = sorted(versions)
         assert sorted_versions == [
             SemanticVersion("0.1.0"),
-            SemanticVersion("0.7.1"),
-            SemanticVersion("0.7.1"),
+            SemanticVersion("0.8.0"),
+            SemanticVersion("0.8.0"),
             SemanticVersion("1.0.0"),
             SemanticVersion("1.2.3"),
         ]
