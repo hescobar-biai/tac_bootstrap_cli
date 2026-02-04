@@ -2029,3 +2029,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When debugging or extending the meta-agent generator
     - When implementing similar meta-command patterns (agents that generate other artifacts)
     - When documenting agent creation workflows
+
+- app_docs/feature-chore_Tac_13_Task_21-expert-orchestrate-verification.md
+  - Conditions:
+    - When verifying template implementation for meta-agentic commands
+    - When understanding the dual strategy pattern for template creation
+    - When working with expert-orchestrate template or similar orchestration workflows
+    - When validating TAC-13 task implementations (verification tasks)
+    - When understanding the 3-phase expert workflow (Plan → Build → Improve)
+    - When implementing template registration in scaffold_service.py
+    - When creating verification documentation or checklists
+    - When working with Jinja2 templates using {{ config }} variables
