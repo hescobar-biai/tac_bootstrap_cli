@@ -94,6 +94,10 @@ def main():
     # Set up logger for detection phase
     logger = setup_logger(adw_id, "adw_sdlc_iso")
 
+    # Load existing state to check which phases are already completed
+    state = ADWState(adw_id)
+    completed_phases = state.get("all_adws", [])
+
     # Detect or use manual docs (TAC-9 hybrid approach)
     docs_to_load = None
     if manual_docs:
@@ -123,115 +127,160 @@ def main():
     # Get the directory where this script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Run isolated plan with the ADW ID
-    plan_cmd = [
-        "uv",
-        "run",
-        os.path.join(script_dir, "adw_plan_iso.py"),
-        issue_number,
-        adw_id,
-    ]
+    # Run isolated plan with the ADW ID (skip if already completed)
+    if "adw_plan_iso" in completed_phases:
+        print(f"\n=== ISOLATED PLAN PHASE ===")
+        print("✓ Plan phase already completed - skipping")
+        logger.info("Plan phase already completed, skipping execution")
+    else:
+        plan_cmd = [
+            "uv",
+            "run",
+            os.path.join(script_dir, "adw_plan_iso.py"),
+            issue_number,
+            adw_id,
+        ]
 
-    # Add documentation loading if detected or manually specified (TAC-9)
-    if docs_to_load:
-        plan_cmd.extend(["--load-docs", docs_to_load])
-        logger.info(f"Passing documentation to planning phase: {docs_to_load}")
+        # Add documentation loading if detected or manually specified (TAC-9)
+        if docs_to_load:
+            plan_cmd.extend(["--load-docs", docs_to_load])
+            logger.info(f"Passing documentation to planning phase: {docs_to_load}")
 
-    # TAC Optimization: Only consult experts in Plan phase (guidance needed)
-    if use_experts:
-        plan_cmd.append("--use-experts")
-        logger.info("TAC: Expert consultation enabled for plan phase")
+        # TAC Optimization: Only consult experts in Plan phase (guidance needed)
+        if use_experts:
+            plan_cmd.append("--use-experts")
+            logger.info("TAC: Expert consultation enabled for plan phase")
 
-    print(f"\n=== ISOLATED PLAN PHASE ===")
-    print(f"Running: {' '.join(plan_cmd)}")
-    plan = subprocess.run(plan_cmd)
-    if plan.returncode == 2:
-        # Exit code 2 = paused for clarifications
-        print("⏸️  Plan phase paused - awaiting user clarifications")
-        print("Please answer the clarification questions on the GitHub issue,")
-        print("then re-run this workflow to continue.")
-        sys.exit(2)  # Propagate paused state
-    elif plan.returncode != 0:
-        print("Isolated plan phase failed")
-        sys.exit(1)
+        print(f"\n=== ISOLATED PLAN PHASE ===")
+        print(f"Running: {' '.join(plan_cmd)}")
+        plan = subprocess.run(plan_cmd)
+        if plan.returncode == 2:
+            # Exit code 2 = paused for clarifications
+            print("⏸️  Plan phase paused - awaiting user clarifications")
+            print("Please answer the clarification questions on the GitHub issue,")
+            print("then re-run this workflow to continue.")
+            sys.exit(2)  # Propagate paused state
+        elif plan.returncode != 0:
+            print("Isolated plan phase failed")
+            sys.exit(1)
 
-    # Run isolated build with the ADW ID
-    build_cmd = [
-        "uv",
-        "run",
-        os.path.join(script_dir, "adw_build_iso.py"),
-        issue_number,
-        adw_id,
-    ]
+        # Reload state after plan completes
+        state = ADWState(adw_id)
+        completed_phases = state.get("all_adws", [])
 
-    # TAC Optimization: Build phase doesn't need expert consultation (direct implementation)
+    # Run isolated build with the ADW ID (skip if already completed)
+    if "adw_build_iso" in completed_phases:
+        print(f"\n=== ISOLATED BUILD PHASE ===")
+        print("✓ Build phase already completed - skipping")
+        logger.info("Build phase already completed, skipping execution")
+    else:
+        build_cmd = [
+            "uv",
+            "run",
+            os.path.join(script_dir, "adw_build_iso.py"),
+            issue_number,
+            adw_id,
+        ]
 
-    print(f"\n=== ISOLATED BUILD PHASE ===")
-    print(f"Running: {' '.join(build_cmd)}")
-    build = subprocess.run(build_cmd)
-    if build.returncode != 0:
-        print("Isolated build phase failed")
-        sys.exit(1)
+        # TAC Optimization: Build phase doesn't need expert consultation (direct implementation)
 
-    # Run isolated test with the ADW ID
-    test_cmd = [
-        "uv",
-        "run",
-        os.path.join(script_dir, "adw_test_iso.py"),
-        issue_number,
-        adw_id,
-        "--skip-e2e",  # Always skip E2E tests in SDLC workflows
-    ]
-    
-    print(f"\n=== ISOLATED TEST PHASE ===")
-    print(f"Running: {' '.join(test_cmd)}")
-    test = subprocess.run(test_cmd)
-    if test.returncode != 0:
-        print("Isolated test phase failed")
-        # Note: Continue anyway as some tests might be flaky
-        print("WARNING: Test phase failed but continuing with review")
+        print(f"\n=== ISOLATED BUILD PHASE ===")
+        print(f"Running: {' '.join(build_cmd)}")
+        build = subprocess.run(build_cmd)
+        if build.returncode != 0:
+            print("Isolated build phase failed")
+            sys.exit(1)
 
-    # Run isolated review with the ADW ID
-    review_cmd = [
-        "uv",
-        "run",
-        os.path.join(script_dir, "adw_review_iso.py"),
-        issue_number,
-        adw_id,
-    ]
-    if skip_resolution:
-        review_cmd.append("--skip-resolution")
+        # Reload state after build completes
+        state = ADWState(adw_id)
+        completed_phases = state.get("all_adws", [])
 
-    # TAC Optimization: Only consult experts in Review phase (validation critical)
-    if use_experts:
-        review_cmd.append("--use-experts")
+    # Run isolated test with the ADW ID (skip if already completed)
+    if "adw_test_iso" in completed_phases:
+        print(f"\n=== ISOLATED TEST PHASE ===")
+        print("✓ Test phase already completed - skipping")
+        logger.info("Test phase already completed, skipping execution")
+    else:
+        test_cmd = [
+            "uv",
+            "run",
+            os.path.join(script_dir, "adw_test_iso.py"),
+            issue_number,
+            adw_id,
+            "--skip-e2e",  # Always skip E2E tests in SDLC workflows
+        ]
 
-    print(f"\n=== ISOLATED REVIEW PHASE ===")
-    print(f"Running: {' '.join(review_cmd)}")
-    review = subprocess.run(review_cmd)
-    if review.returncode != 0:
-        print("Isolated review phase failed")
-        sys.exit(1)
+        print(f"\n=== ISOLATED TEST PHASE ===")
+        print(f"Running: {' '.join(test_cmd)}")
+        test = subprocess.run(test_cmd)
+        if test.returncode != 0:
+            print("Isolated test phase failed")
+            # Note: Continue anyway as some tests might be flaky
+            print("WARNING: Test phase failed but continuing with review")
 
-    # Run isolated documentation with the ADW ID
-    document_cmd = [
-        "uv",
-        "run",
-        os.path.join(script_dir, "adw_document_iso.py"),
-        issue_number,
-        adw_id,
-    ]
+        # Reload state after test completes
+        state = ADWState(adw_id)
+        completed_phases = state.get("all_adws", [])
 
-    # TAC Optimization: Document phase only does final learning (full validation)
-    if expert_learn:
-        document_cmd.append("--expert-learn")
+    # Run isolated review with the ADW ID (skip if already completed)
+    if "adw_review_iso" in completed_phases:
+        print(f"\n=== ISOLATED REVIEW PHASE ===")
+        print("✓ Review phase already completed - skipping")
+        logger.info("Review phase already completed, skipping execution")
+    else:
+        review_cmd = [
+            "uv",
+            "run",
+            os.path.join(script_dir, "adw_review_iso.py"),
+            issue_number,
+            adw_id,
+        ]
+        if skip_resolution:
+            review_cmd.append("--skip-resolution")
 
-    print(f"\n=== ISOLATED DOCUMENTATION PHASE ===")
-    print(f"Running: {' '.join(document_cmd)}")
-    document = subprocess.run(document_cmd)
-    if document.returncode != 0:
-        print("Isolated documentation phase failed")
-        sys.exit(1)
+        # TAC Optimization: Only consult experts in Review phase (validation critical)
+        if use_experts:
+            review_cmd.append("--use-experts")
+
+        print(f"\n=== ISOLATED REVIEW PHASE ===")
+        print(f"Running: {' '.join(review_cmd)}")
+        review = subprocess.run(review_cmd)
+        if review.returncode != 0:
+            print("Isolated review phase failed")
+            sys.exit(1)
+
+        # Reload state after review completes
+        state = ADWState(adw_id)
+        completed_phases = state.get("all_adws", [])
+
+    # Run isolated documentation with the ADW ID (skip if already completed)
+    if "adw_document_iso" in completed_phases:
+        print(f"\n=== ISOLATED DOCUMENTATION PHASE ===")
+        print("✓ Documentation phase already completed - skipping")
+        logger.info("Documentation phase already completed, skipping execution")
+    else:
+        document_cmd = [
+            "uv",
+            "run",
+            os.path.join(script_dir, "adw_document_iso.py"),
+            issue_number,
+            adw_id,
+        ]
+
+        # TAC Optimization: Document phase only does final learning (full validation)
+        if expert_learn:
+            document_cmd.append("--expert-learn")
+
+        print(f"\n=== ISOLATED DOCUMENTATION PHASE ===")
+        print(f"Running: {' '.join(document_cmd)}")
+        document = subprocess.run(document_cmd)
+        if document.returncode != 0:
+            print("Isolated documentation phase failed")
+            sys.exit(1)
+
+        # Reload state after documentation completes
+        state = ADWState(adw_id)
+        completed_phases = state.get("all_adws", [])
 
     print(f"\n=== ISOLATED SDLC COMPLETED ===")
     print(f"ADW ID: {adw_id}")
