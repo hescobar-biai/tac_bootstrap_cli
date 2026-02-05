@@ -20,7 +20,8 @@ credentials.json
 {{ config.paths.logs_dir }}/
 *.log
 
-# Agent outputs (can be large)
+# Agent outputs (runtime generated, not committed)
+# Includes: context_bundles, hook_logs, scout_files, security_logs, workflow outputs
 agents/
 
 # Git worktrees
