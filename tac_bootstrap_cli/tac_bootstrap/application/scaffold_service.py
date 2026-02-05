@@ -655,6 +655,7 @@ class ScaffoldService:
             ("r2_uploader.py", "Cloudflare R2 uploader"),
             ("tool_sequencer.py", "Tool sequence orchestration"),
             ("orch_database_models.py", "SQLite database models for orchestrator (TAC-14)"),
+            ("adw_database.py", "SQLite database operations with aiosqlite (TAC-14)"),
         ]
 
         for module, reason in modules:
