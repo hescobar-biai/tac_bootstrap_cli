@@ -382,7 +382,7 @@ Focus on: state management, worktree isolation, GitHub integration patterns."""
             question=expert_question,
             adw_id=adw_id,
             logger=logger,
-            working_dir=None
+            working_dir=worktree_path
         )
 
         if expert_response.success:
