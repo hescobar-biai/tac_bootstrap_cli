@@ -552,24 +552,176 @@ def load_ai_docs(
     return response
 
 
+def _get_summary_cache_path(topic: str, content_hash: str) -> str:
+    """Get cache file path for a documentation summary.
+
+    Args:
+        topic: Documentation topic name
+        content_hash: Hash of the documentation content
+
+    Returns:
+        Path to cache file
+    """
+    cache_dir = os.path.join("agents", "doc_cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    safe_topic = topic.replace('/', '_').replace(' ', '_')
+    return os.path.join(cache_dir, f"{safe_topic}_{content_hash[:12]}.txt")
+
+
+def _load_cached_summary(topic: str, content: str, logger: logging.Logger) -> Optional[str]:
+    """Load cached summary if available.
+
+    Args:
+        topic: Documentation topic name
+        content: Full documentation content
+        logger: Logger instance
+
+    Returns:
+        Cached summary or None if not found
+    """
+    import hashlib
+    content_hash = hashlib.sha256(content.encode()).hexdigest()
+    cache_path = _get_summary_cache_path(topic, content_hash)
+
+    if os.path.exists(cache_path):
+        logger.info(f"Using cached summary for '{topic}' (hash: {content_hash[:12]})")
+        with open(cache_path, 'r', encoding='utf-8') as f:
+            return f.read()
+
+    return None
+
+
+def _save_summary_cache(topic: str, content: str, summary: str, logger: logging.Logger):
+    """Save summary to cache.
+
+    Args:
+        topic: Documentation topic name
+        content: Full documentation content
+        summary: Summarized content
+        logger: Logger instance
+    """
+    import hashlib
+    content_hash = hashlib.sha256(content.encode()).hexdigest()
+    cache_path = _get_summary_cache_path(topic, content_hash)
+
+    try:
+        with open(cache_path, 'w', encoding='utf-8') as f:
+            f.write(summary)
+        logger.debug(f"Cached summary for '{topic}' at {cache_path}")
+    except Exception as e:
+        logger.warning(f"Failed to cache summary for '{topic}': {e}")
+
+
+def extract_relevant_sections(
+    content: str,
+    issue: GitHubIssue,
+    topic: str,
+    logger: logging.Logger,
+) -> str:
+    """Extract only relevant sections from documentation based on issue context.
+
+    Reduces token consumption by ~60-80% by extracting only sections that match
+    keywords from the issue title/body, rather than summarizing entire document.
+
+    Args:
+        content: Full documentation content
+        issue: GitHub issue to match against
+        topic: Documentation topic name
+        logger: Logger instance
+
+    Returns:
+        Extracted relevant sections or full content if extraction fails
+    """
+    if not content or len(content) < 500:
+        # Too short to extract sections, return as-is
+        return content
+
+    # Extract keywords from issue
+    issue_text = f"{issue.title} {issue.body or ''}".lower()
+    keywords = set()
+
+    # Common technical keywords to prioritize
+    for word in issue_text.split():
+        word = word.strip('.,;:!?()[]{}')
+        if len(word) > 3 and word.isalnum():  # Skip short words and non-alphanumeric
+            keywords.add(word)
+
+    if not keywords:
+        return content
+
+    # Split content into sections (by headers)
+    sections = []
+    current_section = []
+
+    for line in content.split('\n'):
+        # Detect markdown headers
+        if line.startswith('#'):
+            if current_section:
+                sections.append('\n'.join(current_section))
+                current_section = []
+        current_section.append(line)
+
+    if current_section:
+        sections.append('\n'.join(current_section))
+
+    # Score sections based on keyword matches
+    scored_sections = []
+    for section in sections:
+        section_lower = section.lower()
+        score = sum(1 for kw in keywords if kw in section_lower)
+        if score > 0:
+            scored_sections.append((score, section))
+
+    if not scored_sections:
+        logger.debug(f"No keyword matches in '{topic}', using full content")
+        return content
+
+    # Sort by score and take top sections (max 40% of original)
+    scored_sections.sort(reverse=True, key=lambda x: x[0])
+    max_chars = int(len(content) * 0.4)  # Max 40% of original size
+
+    extracted = []
+    total_chars = 0
+    for score, section in scored_sections:
+        if total_chars + len(section) > max_chars:
+            break
+        extracted.append(section)
+        total_chars += len(section)
+
+    if extracted:
+        result = '\n\n'.join(extracted)
+        reduction_pct = ((len(content) - len(result)) / len(content) * 100)
+        logger.info(f"Extracted sections from '{topic}': {len(content)} → {len(result)} chars ({reduction_pct:.1f}% reduction)")
+        return result
+
+    return content
+
+
 def summarize_doc_content(
     content: str,
     topic: str,
     adw_id: str,
     logger: logging.Logger,
-    max_summary_tokens: int = 300,
+    max_summary_tokens: int = 200,
+    issue: Optional[GitHubIssue] = None,
 ) -> str:
     """Summarize documentation content using haiku model for token optimization (TAC-9).
 
     Creates concise summaries of documentation to reduce token consumption
-    by 70-80% while preserving essential information for agents.
+    by 70-85% while preserving essential information for agents.
+
+    Optimizations:
+    1. Cache system - Reuses summaries for identical content
+    2. Section extraction - Extracts only relevant sections before summarizing
+    3. Aggressive summarization - Reduced default from 300 to 200 tokens
 
     Args:
         content: Full documentation content to summarize
         topic: Documentation topic name
         adw_id: ADW session ID
         logger: Logger instance
-        max_summary_tokens: Target max tokens for summary (default 300)
+        max_summary_tokens: Target max tokens for summary (default 200)
+        issue: Optional GitHub issue for section extraction
 
     Returns:
         Summarized documentation content
@@ -578,29 +730,38 @@ def summarize_doc_content(
         # Content too short to summarize, return as-is
         return content
 
+    # Check cache first
+    cached_summary = _load_cached_summary(topic, content, logger)
+    if cached_summary:
+        return cached_summary
+
+    # Extract relevant sections if issue provided (saves 60-80% tokens)
+    if issue:
+        content = extract_relevant_sections(content, issue, topic, logger)
+
     logger.debug(f"Summarizing documentation for topic: {topic}")
 
     # Import here to avoid circular dependencies
     from adw_modules.data_types import AgentPromptRequest
     from adw_modules.agent import execute_prompt
 
-    # Create summarization request using haiku model for speed and cost efficiency
-    summarization_prompt = f"""Summarize this documentation concisely for an AI agent working on a task.
+    # Improved summarization prompt - more aggressive
+    summarization_prompt = f"""Create an ultra-concise summary for an AI agent.
 
-**Documentation Topic:** {topic}
+**Topic:** {topic}
 
-**Instructions:**
-- Extract ONLY the most critical information an agent needs
-- Focus on: key concepts, workflow steps, constraints, gotchas
-- Use bullet points for clarity
-- Target {max_summary_tokens} tokens max
-- Preserve code examples if they're essential
-- Remove verbose explanations and redundant content
+**Rules:**
+- ONLY essential facts and patterns needed for implementation
+- Use bullets, no prose
+- Max {max_summary_tokens} tokens total
+- Keep code snippets minimal (1-2 lines max)
+- Skip: intro, background, explanations
+- Include: API signatures, gotchas, constraints
 
-**Original Documentation:**
+**Content:**
 {content}
 
-**Concise Summary:**"""
+**Summary:**"""
 
     # Create output file for the summarization
     output_file = f"/tmp/adw_doc_summary_{adw_id}_{topic.replace('/', '_')}.txt"
@@ -622,6 +783,10 @@ def summarize_doc_content(
         summary_len = len(summary)
         reduction_pct = ((original_len - summary_len) / original_len * 100) if original_len > 0 else 0
         logger.info(f"Summarized '{topic}': {original_len} → {summary_len} chars ({reduction_pct:.1f}% reduction)")
+
+        # Cache the summary for future use
+        _save_summary_cache(topic, content, summary, logger)
+
         return summary
     else:
         logger.warning(f"Failed to summarize '{topic}', using original content")
