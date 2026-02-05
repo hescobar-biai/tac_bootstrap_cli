@@ -638,6 +638,50 @@ def load_ai_docs(
     return response
 
 
+def _get_doc_cache_index_path() -> str:
+    """Get path to documentation cache index file.
+
+    The index tracks which documentation has been cached and is reused across workflows.
+    This enables smart caching of common documentation (e.g., TAC-14 docs used by all tasks).
+
+    Returns:
+        Path to cache index JSON file
+    """
+    cache_dir = os.path.join("agents", "doc_cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    return os.path.join(cache_dir, "index.json")
+
+
+def _load_cache_index() -> Dict[str, Any]:
+    """Load the documentation cache index.
+
+    Returns:
+        Dictionary with cache metadata for smart reuse
+    """
+    index_path = _get_doc_cache_index_path()
+    if os.path.exists(index_path):
+        try:
+            with open(index_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return {"topics": {}, "stats": {"hits": 0, "saves": 0, "tokens_saved": 0}}
+    return {"topics": {}, "stats": {"hits": 0, "saves": 0, "tokens_saved": 0}}
+
+
+def _save_cache_index(index: Dict[str, Any]):
+    """Save the documentation cache index.
+
+    Args:
+        index: Cache index dictionary to save
+    """
+    index_path = _get_doc_cache_index_path()
+    try:
+        with open(index_path, 'w', encoding='utf-8') as f:
+            json.dump(index, f, indent=2)
+    except Exception:
+        pass  # Silent fail for cache index updates
+
+
 def _get_summary_cache_path(topic: str, content_hash: str) -> str:
     """Get cache file path for a documentation summary.
 
@@ -655,7 +699,12 @@ def _get_summary_cache_path(topic: str, content_hash: str) -> str:
 
 
 def _load_cached_summary(topic: str, content: str, logger: logging.Logger) -> Optional[str]:
-    """Load cached summary if available.
+    """Load cached summary if available and update cache statistics.
+
+    Smart caching system that:
+    1. Checks for cached summaries by topic + content hash
+    2. Tracks cache hits and token savings in global index
+    3. Enables automatic reuse of common docs (e.g., TAC-14 across all tasks)
 
     Args:
         topic: Documentation topic name
@@ -670,15 +719,38 @@ def _load_cached_summary(topic: str, content: str, logger: logging.Logger) -> Op
     cache_path = _get_summary_cache_path(topic, content_hash)
 
     if os.path.exists(cache_path):
-        logger.info(f"Using cached summary for '{topic}' (hash: {content_hash[:12]})")
-        with open(cache_path, 'r', encoding='utf-8') as f:
-            return f.read()
+        try:
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                cached = f.read()
+
+            # Update cache statistics
+            index = _load_cache_index()
+            if topic not in index["topics"]:
+                index["topics"][topic] = {}
+            index["topics"][topic][content_hash[:12]] = {
+                "hits": index["topics"][topic].get(content_hash[:12], {}).get("hits", 0) + 1,
+                "cached_size": len(cached),
+                "original_size": len(content),
+                "tokens_saved_estimate": (len(content) - len(cached)) // 4,  # Rough estimate
+            }
+            index["stats"]["hits"] += 1
+            index["stats"]["tokens_saved"] += (len(content) - len(cached)) // 4
+            _save_cache_index(index)
+
+            tokens_saved = (len(content) - len(cached)) // 4
+            logger.info(f"✓ Using cached summary for '{topic}' (saved ~{tokens_saved} tokens, hash: {content_hash[:12]})")
+            return cached
+        except Exception as e:
+            logger.debug(f"Failed to load cache for {topic}: {e}")
 
     return None
 
 
 def _save_summary_cache(topic: str, content: str, summary: str, logger: logging.Logger):
-    """Save summary to cache.
+    """Save summary to cache and update global index for smart reuse.
+
+    Smart caching that enables automatic reuse of common documentation across workflows.
+    For example, TAC-14 documentation is cached once and reused by all TAC-14 tasks.
 
     Args:
         topic: Documentation topic name
@@ -693,9 +765,50 @@ def _save_summary_cache(topic: str, content: str, summary: str, logger: logging.
     try:
         with open(cache_path, 'w', encoding='utf-8') as f:
             f.write(summary)
-        logger.debug(f"Cached summary for '{topic}' at {cache_path}")
+
+        # Update cache index for smart reuse across workflows
+        index = _load_cache_index()
+        if topic not in index["topics"]:
+            index["topics"][topic] = {}
+
+        index["topics"][topic][content_hash[:12]] = {
+            "hits": 0,
+            "cached_size": len(summary),
+            "original_size": len(content),
+            "tokens_saved_estimate": (len(content) - len(summary)) // 4,
+            "created_at": str(os.path.getmtime(cache_path) if os.path.exists(cache_path) else 0),
+        }
+        index["stats"]["saves"] += 1
+        index["stats"]["tokens_saved"] += (len(content) - len(summary)) // 4
+        _save_cache_index(index)
+
+        reduction_pct = ((len(content) - len(summary)) / len(content) * 100) if len(content) > 0 else 0
+        logger.debug(f"✓ Cached summary for '{topic}' ({reduction_pct:.1f}% reduction, {content_hash[:12]})")
     except Exception as e:
         logger.warning(f"Failed to cache summary for '{topic}': {e}")
+
+
+def get_cache_statistics() -> Dict[str, Any]:
+    """Get documentation cache statistics for reporting.
+
+    Returns summary of cache efficiency, hits, and savings.
+
+    Returns:
+        Dictionary with cache stats including:
+        - total_hits: Number of cache hits across all workflows
+        - total_saves: Number of cache saves
+        - tokens_saved: Estimated tokens saved by caching
+        - cached_topics: Number of unique documentation topics cached
+    """
+    index = _load_cache_index()
+    stats = index.get("stats", {})
+    return {
+        "total_hits": stats.get("hits", 0),
+        "total_saves": stats.get("saves", 0),
+        "tokens_saved": stats.get("tokens_saved", 0),
+        "cached_topics": len(index.get("topics", {})),
+        "cache_index_path": _get_doc_cache_index_path(),
+    }
 
 
 def extract_relevant_sections(
