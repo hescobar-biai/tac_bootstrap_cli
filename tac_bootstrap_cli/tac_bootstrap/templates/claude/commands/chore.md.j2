@@ -28,6 +28,13 @@ issue_json: $3
 - Use the reasoning model: think carefully about the steps.
 - `{{ config.paths.adws_dir }}/*.py` are uv single-file scripts. Run with `uv run <script_name>`.
 
+**⚡ TOKEN OPTIMIZATION RULES (CRITICAL):**
+- **DO NOT repeat chore description** - Already in `issue_json`, reference by ID only
+- **Keep plan under 500 tokens** - Chores should be straightforward and brief
+- **List actions only** - No explanations of why, just what and how
+- **Minimal context** - Only essential background info
+- **Checklist format** - Use bullets and short action items
+
 ## Relevant Files
 
 Key files for {{ config.project.name }}:

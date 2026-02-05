@@ -31,6 +31,13 @@ issue_json: $3
 - Keep it simple.
 - If you need a new library, use `{{ config.commands.install }}` and report it in Notes.
 
+**⚡ TOKEN OPTIMIZATION RULES (CRITICAL):**
+- **DO NOT repeat bug description** - Already in `issue_json`, reference by ID only
+- **Keep plan under 600 tokens** - Bug fixes should be surgical and brief
+- **Focus on root cause** - Skip verbose explanations, state facts only
+- **Minimal reproduction** - Only essential steps to reproduce
+- **Short fix description** - One paragraph maximum per file change
+
 ## Relevant Files
 
 Key files for {{ config.project.name }}:

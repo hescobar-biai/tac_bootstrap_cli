@@ -30,6 +30,13 @@ issue_json: $3
 - If you need a new library, use `{{ config.commands.install }}` and report it in Notes.
 - Keep it simple - don't use unnecessary decorators.
 
+**⚡ TOKEN OPTIMIZATION RULES (CRITICAL):**
+- **DO NOT repeat issue body/title** - Already provided via `issue_json`, reference by ID only
+- **Keep plan under 800 tokens** - Use bullets and short sentences, not prose
+- **Output ONLY deltas** - Don't re-explain what's in the issue
+- **Follow template exactly** - No additional sections or verbose explanations
+- **Be surgical** - One line per file, one line per task
+
 ## Relevant Files
 
 Key files for {{ config.project.name }}:

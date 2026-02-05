@@ -25,6 +25,13 @@ issue_screenshots: $5 (optional) - list of paths to screenshots separated by com
 - Base validation on the validation steps from `spec_path` if provided.
 - Replace each <placeholder> in the format with specific details.
 
+**⚡ TOKEN OPTIMIZATION RULES (CRITICAL):**
+- **DO NOT repeat review findings** - They're in `review_change_request`, reference by ID
+- **Keep patch plan under 400 tokens** - Patches should be surgical and minimal
+- **One line per change** - File + exact change needed, nothing more
+- **No context repetition** - The review already provided it
+- **Minimal validation** - Only test what changed, skip redundant checks
+
 ## Relevant Files
 
 Key files for {{ config.project.name }}:
