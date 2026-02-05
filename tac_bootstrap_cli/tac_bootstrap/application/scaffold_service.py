@@ -111,6 +111,9 @@ class ScaffoldService:
         # Add orchestrator web backend
         self._add_orchestrator_web(plan, config, existing_repo)
 
+        # Add orchestrator frontend (Vue 3 + TypeScript)
+        self._add_orchestrator_frontend(plan, config, existing_repo)
+
         return plan
 
     def _add_directories(self, plan: ScaffoldPlan, config: TACConfig) -> None:
@@ -1100,6 +1103,120 @@ class ScaffoldService:
             template="orchestrator_web/routers/websocket.py.j2",
             reason="WebSocket for real-time updates",
         )
+
+    def _add_orchestrator_frontend(
+        self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
+    ) -> None:
+        """Add orchestrator_frontend/ Vue 3 + TypeScript frontend files (TAC-14 Task 13).
+
+        Adds Vue 3 SPA with Pinia state management and WebSocket integration:
+        - package.json: Vue 3, Pinia, Tailwind, Shadcn/Vue dependencies
+        - vite.config.ts.j2: Build configuration with template variables
+        - src/main.ts: Vue app initialization
+        - src/App.vue: Root component
+        - src/stores/: Pinia stores (agent, ui, ws)
+        - src/services/: WebSocket and REST clients
+        - src/components/: Vue SFC components (Swimlane, TaskCard, etc.)
+        - src/composables/: Vue composition functions (keyboard, command palette)
+        - .env.j2: Templated environment variables
+        """
+        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
+
+        # Add directory structure
+        plan.add_directory("apps", "Application projects")
+        plan.add_directory("apps/orchestrator_3_stream", "Orchestrator application")
+        plan.add_directory("apps/orchestrator_3_stream/frontend", "Orchestrator web frontend")
+
+        # Add frontend files from template
+        plan.add_file(
+            "apps/orchestrator_3_stream/frontend/package.json",
+            action=action,
+            template="apps/orchestrator_3_stream/frontend/package.json",
+            reason="Frontend dependencies",
+        )
+        plan.add_file(
+            "apps/orchestrator_3_stream/frontend/.env.j2",
+            action=action,
+            template="apps/orchestrator_3_stream/frontend/.env.j2",
+            reason="Templated environment variables",
+        )
+        plan.add_file(
+            "apps/orchestrator_3_stream/frontend/vite.config.ts.j2",
+            action=action,
+            template="apps/orchestrator_3_stream/frontend/vite.config.ts.j2",
+            reason="Templated Vite configuration",
+        )
+        plan.add_file(
+            "apps/orchestrator_3_stream/frontend/index.html",
+            action=action,
+            template="apps/orchestrator_3_stream/frontend/index.html",
+            reason="HTML entry point",
+        )
+        plan.add_file(
+            "apps/orchestrator_3_stream/frontend/tsconfig.json",
+            action=action,
+            template="apps/orchestrator_3_stream/frontend/tsconfig.json",
+            reason="TypeScript configuration",
+        )
+        plan.add_file(
+            "apps/orchestrator_3_stream/frontend/tsconfig.node.json",
+            action=action,
+            template="apps/orchestrator_3_stream/frontend/tsconfig.node.json",
+            reason="TypeScript Node configuration",
+        )
+        plan.add_file(
+            "apps/orchestrator_3_stream/frontend/tailwind.config.js",
+            action=action,
+            template="apps/orchestrator_3_stream/frontend/tailwind.config.js",
+            reason="Tailwind CSS configuration",
+        )
+        plan.add_file(
+            "apps/orchestrator_3_stream/frontend/postcss.config.js",
+            action=action,
+            template="apps/orchestrator_3_stream/frontend/postcss.config.js",
+            reason="PostCSS configuration",
+        )
+        plan.add_file(
+            "apps/orchestrator_3_stream/frontend/env.d.ts",
+            action=action,
+            template="apps/orchestrator_3_stream/frontend/env.d.ts",
+            reason="TypeScript environment variable types",
+        )
+
+        # Source files
+        frontend_files = [
+            ("src/main.ts", "Vue app entry point"),
+            ("src/App.vue", "Root component"),
+            ("src/types/models.ts", "TypeScript type definitions"),
+            ("src/stores/agent-store.ts", "Pinia agent state"),
+            ("src/stores/ui-store.ts", "Pinia UI state"),
+            ("src/stores/ws-store.ts", "Pinia WebSocket state"),
+            ("src/services/ws-client.ts", "WebSocket client"),
+            ("src/services/api-client.ts", "REST API client"),
+            ("src/components/SwimlaneBoard.vue", "Main swimlane board"),
+            ("src/components/AgentLane.vue", "Agent swimlane"),
+            ("src/components/TaskCard.vue", "Task card component"),
+            ("src/components/CommandPalette.vue", "Command palette overlay"),
+            ("src/composables/use-keyboard.ts", "Keyboard shortcuts hook"),
+            ("src/composables/use-command-palette.ts", "Command palette logic"),
+        ]
+
+        for path, reason in frontend_files:
+            # Read Vue/TypeScript files as static content (don't template them)
+            # to avoid Jinja2 conflicts with Vue syntax ({{ }}, @, :class, etc.)
+            frontend_path = f"apps/orchestrator_3_stream/frontend/{path}"
+            template_path = self.template_repo.templates_dir / frontend_path
+            try:
+                content = template_path.read_text(encoding='utf-8')
+                plan.add_file(
+                    frontend_path,
+                    action=action,
+                    content=content,
+                    reason=reason,
+                )
+            except Exception:
+                # If file doesn't exist or can't be read, skip it
+                continue
 
     def apply_plan(
         self,

@@ -88,6 +88,14 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When working on observability section for hooks and logging
     - When expanding command reference tables
 
+- app_docs/feature-feature_Tac_14_Task_13-orchestrator-frontend.md
+  - Conditions:
+    - When working on Vue 3 frontend components
+    - When debugging WebSocket client or API integration
+    - When implementing keyboard shortcuts or command palette
+    - When configuring Pinia state management
+    - When setting up environment variables for orchestrator frontend
+
 ## Fractal Documentation
 
 - When working with documentation or understanding code structure:

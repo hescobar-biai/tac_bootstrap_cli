@@ -443,6 +443,36 @@ class BootstrapConfig(BaseModel):
     readme: bool = Field(default=True, description="Generate README.md")
 
 
+class OrchestratorConfig(BaseModel):
+    """
+    Orchestrator frontend configuration.
+
+    Defines API endpoints, WebSocket settings, and port configuration
+    for the orchestrator frontend application.
+    """
+
+    api_base_url: str = Field(
+        default="http://localhost:8000",
+        description="Base URL for orchestrator API"
+    )
+    ws_base_url: str = Field(
+        default="ws://localhost:8000",
+        description="Base URL for WebSocket connection"
+    )
+    frontend_port: int = Field(
+        default=5173,
+        description="Port for frontend development server",
+        ge=1024,
+        le=65535
+    )
+    polling_interval: int = Field(
+        default=5000,
+        description="Polling interval in milliseconds for fallback polling",
+        ge=100,
+        le=60000
+    )
+
+
 class BootstrapMetadata(BaseModel):
     """
     Bootstrap generation metadata for audit trail and traceability.
@@ -571,6 +601,9 @@ class TACConfig(BaseModel):
     templates: TemplatesConfig = Field(default=TemplatesConfig(), description="Template file paths")
     bootstrap: BootstrapConfig = Field(
         default=BootstrapConfig(), description="Bootstrap options for new projects"
+    )
+    orchestrator: OrchestratorConfig = Field(
+        default=OrchestratorConfig(), description="Orchestrator frontend configuration"
     )
     metadata: BootstrapMetadata | None = Field(
         default=None, description="Bootstrap generation metadata for audit trail"
