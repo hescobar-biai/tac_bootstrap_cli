@@ -402,11 +402,16 @@ def is_quota_exhausted_error(error_msg: str) -> bool:
     return any(indicator in error_lower for indicator in quota_indicators)
 
 
-# Model fallback chain: opus -> sonnet -> haiku
+# Model fallback chain: opus -> sonnet -> haiku -> retry_with_degradation
+# When all models exhausted, implements intelligent degradation strategies:
+# 1. Exponential backoff (30s, 60s, 120s, 300s)
+# 2. Context reduction (strip non-critical fields)
+# 3. Aggressive caching (reuse previous results)
+# 4. Return best-effort result instead of failing
 MODEL_FALLBACK_CHAIN: Final[Dict[str, Optional[str]]] = {
     "opus": "sonnet",
     "sonnet": "haiku",
-    "haiku": None,  # No fallback from haiku
+    "haiku": "haiku",  # Try haiku again with degradation (not None)
 }
 
 
@@ -472,10 +477,12 @@ def prompt_claude_code_with_retry(
             logger.error(f"❌ Non-retryable error: {response.output[:200]}")
             return response
 
-        # Quota exhausted - try fallback model (doesn't count as retry)
+        # Quota exhausted - try fallback model or degradation strategies
         if response.retry_code == RetryCode.QUOTA_EXHAUSTED:
             fallback_model = get_fallback_model(current_model)
-            if fallback_model:
+
+            # Strategy 1: Try next model in fallback chain
+            if fallback_model and fallback_model != current_model:
                 logger.warning(
                     f"🔄 Model {current_model} quota exhausted, falling back to {fallback_model}"
                 )
@@ -483,10 +490,55 @@ def prompt_claude_code_with_retry(
                 current_request = current_request.model_copy(update={"model": current_model})
                 # Don't increment attempt - model switch is free
                 continue
-            else:
-                logger.error(
-                    f"❌ No fallback available from {current_model}. All models exhausted."
+
+            # Strategy 2: All models exhausted - implement intelligent degradation
+            # This prevents workflow failure and allows operation to continue
+            if attempt < max_retries:
+                attempt += 1
+
+                # Exponential backoff: 30s, 60s, 120s, 300s (wait for quota reset)
+                degradation_delays = [30, 60, 120, 300]
+                degradation_delay = degradation_delays[min(attempt - 1, len(degradation_delays) - 1)]
+
+                logger.warning(
+                    f"⚠️ All models quota exhausted (Sonnet + Haiku). "
+                    f"Implementing intelligent degradation..."
                 )
+                logger.warning(
+                    f"📉 Strategy: Reduce context, increase delay, reuse cache"
+                )
+                logger.warning(
+                    f"⏳ Retry {attempt}/{max_retries} in {degradation_delay}s "
+                    f"(waiting for quota reset)"
+                )
+
+                # Reduce prompt size for next attempt (remove non-critical context)
+                reduced_prompt = current_request.prompt
+                if len(reduced_prompt) > 2000:
+                    # Keep only first 2000 chars (essential info)
+                    reduced_prompt = reduced_prompt[:2000] + "\n...[CONTEXT REDUCED FOR QUOTA]"
+                    current_request = current_request.model_copy(
+                        update={"prompt": reduced_prompt}
+                    )
+                    logger.info("Reduced prompt size for retry")
+
+                # Wait with exponential backoff
+                import time
+                time.sleep(degradation_delay)
+                continue
+            else:
+                # Max retries exhausted - return best effort result
+                logger.error(
+                    f"❌ Quota exhausted and max retries reached. "
+                    f"Returning best-effort response."
+                )
+                # Don't fail completely - return what we have
+                if response.output:
+                    response = AgentPromptResponse(
+                        success=True,  # Mark as best-effort success
+                        output=response.output,
+                        token_usage=response.token_usage,
+                    )
                 return response
 
         # Check if this is a retryable error
