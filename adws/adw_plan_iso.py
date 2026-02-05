@@ -157,9 +157,11 @@ def main():
         state.save("adw_plan_iso")
 
     # Load AI documentation if requested (TAC-9)
-    # Token optimization: Planning phase uses max 2 docs with 200 token summaries
-    MAX_DOCS_PLANNING = 2
-    MAX_SUMMARY_TOKENS_PLANNING = 200
+    # Token optimization: Limits configured in config.yml
+    from adw_modules.workflow_ops import get_token_optimization_config
+    token_config = get_token_optimization_config()
+    MAX_DOCS_PLANNING = token_config["max_docs_planning"]
+    MAX_SUMMARY_TOKENS_PLANNING = token_config["max_summary_tokens_planning"]
 
     ai_docs_context = None
     if load_docs_topic:

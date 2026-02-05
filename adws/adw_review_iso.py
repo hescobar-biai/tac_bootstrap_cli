@@ -164,11 +164,12 @@ def upload_review_screenshots(
     if not review_result.screenshots:
         return
 
-    # Token optimization: Limit to 3 screenshots maximum
-    MAX_SCREENSHOTS = 3
-    if len(review_result.screenshots) > MAX_SCREENSHOTS:
-        logger.info(f"Limiting screenshots from {len(review_result.screenshots)} to {MAX_SCREENSHOTS} for token optimization")
-        review_result.screenshots = review_result.screenshots[:MAX_SCREENSHOTS]
+    # Token optimization: Limit screenshots (configured in config.yml)
+    from adw_modules.workflow_ops import get_token_optimization_config
+    max_screenshots = get_token_optimization_config()["max_screenshots"]
+    if len(review_result.screenshots) > max_screenshots:
+        logger.info(f"Limiting screenshots from {len(review_result.screenshots)} to {max_screenshots} for token optimization")
+        review_result.screenshots = review_result.screenshots[:max_screenshots]
 
     logger.info(f"Uploading {len(review_result.screenshots)} screenshots")
     uploader = R2Uploader(logger)
