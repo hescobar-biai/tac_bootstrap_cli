@@ -85,10 +85,6 @@ def main():
     if state:
         # Found existing state - use the issue number from state if available
         issue_number = state.get("issue_number", issue_number)
-        make_issue_comment(
-            issue_number,
-            f"{adw_id}_ops: 🔍 Found existing state - resuming isolated build\n```json\n{json.dumps(state.data, indent=2)}\n```"
-        )
     else:
         # No existing state found
         logger = setup_logger(adw_id, "adw_build_iso")
@@ -180,31 +176,8 @@ def main():
                            f"🏠 Worktree: {worktree_path}")
     )
 
-    # TAC REUSE: Consultar expertise antes de build
-    if use_experts:
-        logger.info("TAC: Consulting ADW expert for build patterns")
-
-        planning_guidance = state.get("expert_planning_guidance", "")
-
-        expert_question = f"""I'm implementing this plan: {plan_file}
-
-Previous guidance: {planning_guidance[:200] if planning_guidance else "None"}
-
-What build patterns should I follow?
-Focus on: module composition, git operations, error recovery."""
-
-        expert_response = consult_expert(
-            domain="adw",
-            question=expert_question,
-            adw_id=adw_id,
-            logger=logger,
-            working_dir=worktree_path
-        )
-
-        if expert_response.success:
-            state.update(expert_build_guidance=expert_response.output)
-            state.accumulate_tokens("adw_expert", expert_response.token_usage)
-            state.save("adw_build_iso")
+    # TAC Optimization: Expert consultation removed from build phase (only in plan phase)
+    # Build phase uses the guidance from planning phase if available
 
     # Implement the plan (executing in worktree) with optional parallel build (TAC) or report (TAC)
     logger.info("Implementing solution in worktree")
@@ -311,12 +284,7 @@ Focus on: module composition, git operations, error recovery."""
     # Save final state
     state.save("adw_build_iso")
 
-    # Post final state summary with token usage to issue
-    token_summary = state.get_token_summary()
-    make_issue_comment(
-        issue_number,
-        f"{adw_id}_ops: 📋 Build phase completed\n\n{token_summary}"
-    )
+    # Token summary moved to final workflow completion (adw_sdlc_iso.py)
 
 
 if __name__ == "__main__":

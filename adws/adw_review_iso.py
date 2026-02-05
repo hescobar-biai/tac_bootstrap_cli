@@ -150,20 +150,26 @@ def upload_review_screenshots(
     logger: logging.Logger
 ) -> None:
     """Upload screenshots to R2 and update review result with URLs.
-    
+
     Args:
         review_result: Review result containing screenshot paths
         adw_id: ADW workflow ID
         worktree_path: Path to the worktree
         logger: Logger instance
-        
+
     Note:
         This modifies review_result in-place by setting screenshot_urls
         and updating issue.screenshot_url fields.
     """
     if not review_result.screenshots:
         return
-        
+
+    # Token optimization: Limit to 3 screenshots maximum
+    MAX_SCREENSHOTS = 3
+    if len(review_result.screenshots) > MAX_SCREENSHOTS:
+        logger.info(f"Limiting screenshots from {len(review_result.screenshots)} to {MAX_SCREENSHOTS} for token optimization")
+        review_result.screenshots = review_result.screenshots[:MAX_SCREENSHOTS]
+
     logger.info(f"Uploading {len(review_result.screenshots)} screenshots")
     uploader = R2Uploader(logger)
     
@@ -345,10 +351,6 @@ def main():
     if state:
         # Found existing state - use the issue number from state if available
         issue_number = state.get("issue_number", issue_number)
-        make_issue_comment(
-            issue_number,
-            f"{adw_id}_ops: 🔍 Found existing state - starting isolated review\n```json\n{json.dumps(state.data, indent=2)}\n```"
-        )
     else:
         # No existing state found
         logger = setup_logger(adw_id, "adw_review_iso")
@@ -410,27 +412,8 @@ def main():
         format_issue_message(adw_id, "ops", f"📋 Found spec file: {spec_file}")
     )
 
-    # TAC REUSE: Consultar expertise antes de review
-    if use_experts:
-        logger.info("TAC: Consulting ADW expert for review criteria")
-
-        expert_question = f"""Reviewing spec: {spec_file}
-
-What review criteria should I apply?
-Focus on: code quality, state management, GitHub integration, common pitfalls."""
-
-        expert_response = consult_expert(
-            domain="adw",
-            question=expert_question,
-            adw_id=adw_id,
-            logger=logger,
-            working_dir=worktree_path
-        )
-
-        if expert_response.success:
-            state.update(expert_review_criteria=expert_response.output)
-            state.accumulate_tokens("adw_expert", expert_response.token_usage)
-            state.save("adw_review_iso")
+    # TAC Optimization: Expert consultation removed from review phase (only in plan phase)
+    # Review phase uses the guidance from planning phase if available
 
     # Run review with retry logic
     review_attempt = 0
@@ -549,12 +532,6 @@ Focus on: code quality, state management, GitHub integration, common pitfalls.""
     
     # Save final state
     state.save("adw_review_iso")
-    
-    # Post final state summary to issue
-    make_issue_comment(
-        issue_number,
-        f"{adw_id}_ops: 📋 Final review state:\n```json\n{json.dumps(state.data, indent=2)}\n```"
-    )
 
 
 if __name__ == "__main__":

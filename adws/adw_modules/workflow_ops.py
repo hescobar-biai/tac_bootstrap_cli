@@ -1624,6 +1624,12 @@ def extract_file_references_from_issue(
 
     logger.info(f"Total: {len(file_references)} unique file reference(s) from issue body + comments")
 
+    # Token optimization: Limit to 3 files maximum
+    MAX_FILE_REFERENCES = 3
+    if len(file_references) > MAX_FILE_REFERENCES:
+        logger.info(f"Limiting file references from {len(file_references)} to {MAX_FILE_REFERENCES} for token optimization")
+        file_references = set(list(file_references)[:MAX_FILE_REFERENCES])
+
     # Try to load each file
     for file_ref in file_references:
         # Try multiple locations
