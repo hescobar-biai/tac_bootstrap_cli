@@ -523,7 +523,6 @@ def prompt_claude_code_with_retry(
                     logger.info("Reduced prompt size for retry")
 
                 # Wait with exponential backoff
-                import time
                 time.sleep(degradation_delay)
                 continue
             else:
