@@ -59,13 +59,12 @@ trees/
 # Claude hooks logs
 logs/
 
-# Agent output directories (but not template directories)
+# Agent output directories (runtime generated, not committed)
 agents/*
-!agents/context_bundles/
-!agents/hook_logs/
-!agents/scout_files/
-!agents/security_logs/
 !tac_bootstrap_cli/tac_bootstrap/templates/claude/agents/
+
+# Note: context_bundles, hook_logs, scout_files, security_logs are runtime
+# generated and should NOT be committed. Keep agents/* to ignore them all.
 
 claude-max-output.json
 claude-max-output.jsonl
@@ -116,12 +115,8 @@ credentials.json
 logs/
 *.log
 
-# Agent outputs (can be large, but not template directories)
+# Agent outputs (runtime generated, not committed)
 agents/*
-!agents/context_bundles/
-!agents/hook_logs/
-!agents/scout_files/
-!agents/security_logs/
 !tac_bootstrap_cli/tac_bootstrap/templates/claude/agents/
 
 # Git worktrees
