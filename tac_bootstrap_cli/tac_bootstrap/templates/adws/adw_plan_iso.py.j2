@@ -86,9 +86,9 @@ def main():
                        help="Load AI documentation for topic before planning (TAC-9)")
     parser.add_argument("--scout", action="store_true",
                        help="Scout codebase before planning for better context (TAC)")
-    parser.add_argument("--scout-scale", type=str, default="medium",
+    parser.add_argument("--scout-scale", type=str, default="quick",
                        choices=["quick", "medium", "very_thorough"],
-                       help="Scale of codebase exploration: quick, medium, or very_thorough (TAC)")
+                       help="Scale of codebase exploration: quick (default), medium, or very_thorough (TAC)")
     parser.add_argument("--use-experts", action="store_true",
                        help="Enable TAC expert consultation (default: disabled)")
     parser.add_argument("--expert-learn", action="store_true",
@@ -148,15 +148,10 @@ def main():
         issue_number, format_issue_message(adw_id, "ops", "✅ Starting isolated planning phase")
     )
 
-    make_issue_comment(
-        issue_number,
-        f"{adw_id}_ops: 🔍 Using state\n```json\n{json.dumps(state.data, indent=2)}\n```",
-    )
-
     # Load AI documentation if requested (TAC-9)
-    # Token optimization: Planning phase uses max 3 docs with 300 token summaries
-    MAX_DOCS_PLANNING = 3
-    MAX_SUMMARY_TOKENS_PLANNING = 300
+    # Token optimization: Planning phase uses max 2 docs with 200 token summaries
+    MAX_DOCS_PLANNING = 2
+    MAX_SUMMARY_TOKENS_PLANNING = 200
 
     ai_docs_context = None
     if load_docs_topic:
@@ -645,12 +640,7 @@ Focus on: state management, worktree isolation, GitHub integration patterns."""
     # Save final state
     state.save("adw_plan_iso")
 
-    # Post final state summary with token usage to issue
-    token_summary = state.get_token_summary()
-    make_issue_comment(
-        issue_number,
-        f"{adw_id}_ops: 📋 Planning phase completed\n\n{token_summary}"
-    )
+    # Token summary moved to final workflow completion (adw_sdlc_iso.py)
 
 
 if __name__ == "__main__":
