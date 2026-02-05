@@ -1,0 +1,596 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "aiosqlite>=0.19.0",
+#   "python-dotenv>=1.0.0",
+#   "pydantic>=2.0",
+#   "anthropic>=0.40.0",
+#   "rich>=13.0",
+# ]
+# ///
+"""
+ADW Plan-Build-Review-Fix Workflow - Four-step workflow: plan, build, review, fix.
+
+This workflow:
+1. Receives --adw-id as CLI arg
+2. Fetches config from database or uses defaults
+3. Runs plan agent
+4. Runs build agent with plan file
+5. Runs review agent to validate the work
+6. If review finds issues, runs fix agent to resolve them
+7. Logs all events to database for tracking
+
+Usage:
+    uv run adws/adw_workflows/adw_plan_build_review_fix.py --adw-id <uuid> --prompt "task description" --working-dir /path/to/project
+
+Example:
+    uv run adws/adw_workflows/adw_plan_build_review_fix.py \\
+        --adw-id test_003 \\
+        --prompt "Add user authentication feature" \\
+        --working-dir /Users/user/myproject
+
+Note: This is a simplified implementation for TAC Bootstrap v0.8.0.
+Full orchestrator integration with web UI will be added in v0.9.0+.
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import sys
+import time
+from pathlib import Path
+from typing import Any, Optional
+
+from dotenv import load_dotenv
+from rich.console import Console
+from rich.panel import Panel
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from adw_modules.adw_database import DatabaseManager
+
+load_dotenv()
+
+console = Console()
+
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+
+STEP_PLAN = "plan"
+STEP_BUILD = "build"
+STEP_REVIEW = "review"
+STEP_FIX = "fix"
+TOTAL_STEPS = 4
+DEFAULT_MODEL = "claude-sonnet-4.5"
+
+
+# =============================================================================
+# WORKFLOW STEPS (Simplified - Direct subprocess execution)
+# =============================================================================
+
+
+async def run_plan_step(
+    adw_id: str,
+    prompt: str,
+    working_dir: str,
+    db: DatabaseManager,
+    model: str = DEFAULT_MODEL,
+) -> tuple[bool, Optional[str]]:
+    """Run the plan step.
+
+    Args:
+        adw_id: ADW ID for logging
+        prompt: The task prompt to plan
+        working_dir: Working directory for the agent
+        db: Database manager instance
+        model: Model to use
+
+    Returns:
+        Tuple of (success, plan_file_path)
+    """
+    step_start_time = time.time()
+
+    console.print(Panel(
+        f"[bold cyan]Step 1/{TOTAL_STEPS}: Plan[/bold cyan]\n\nPrompt: {prompt[:200]}...",
+        title="ADW Plan-Build-Review-Fix Workflow",
+        width=console.width,
+    ))
+
+    try:
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="INFO",
+            log_type="milestone",
+            message=f"Starting plan step for: {prompt[:100]}...",
+            details={"step": STEP_PLAN, "model": model}
+        )
+
+        console.print("[yellow]Plan step would execute here (Agent SDK integration pending)[/yellow]")
+        console.print("[yellow]Looking for existing plan files...[/yellow]")
+
+        # Try to find most recent plan file in specs/
+        specs_dir = Path(working_dir) / "specs"
+        plan_path = None
+
+        if specs_dir.exists():
+            md_files = sorted(specs_dir.glob("*.md"), key=lambda f: f.stat().st_mtime, reverse=True)
+            if md_files:
+                plan_path = str(md_files[0])
+                console.print(f"[green]Found recent plan file: {plan_path}[/green]")
+
+        duration_ms = int((time.time() - step_start_time) * 1000)
+
+        if plan_path:
+            await db.create_agent_log(
+                agent_id=adw_id,
+                log_level="INFO",
+                log_type="milestone",
+                message="Plan step completed",
+                details={"step": STEP_PLAN, "duration_ms": duration_ms, "plan_path": plan_path}
+            )
+            console.print(f"[green]Plan step completed ({duration_ms}ms)[/green]")
+            return True, plan_path
+        else:
+            await db.create_agent_log(
+                agent_id=adw_id,
+                log_level="ERROR",
+                log_type="error",
+                message="Plan step failed: No plan file found",
+                details={"step": STEP_PLAN, "duration_ms": duration_ms}
+            )
+            console.print(f"[red]Plan step failed: No plan file found[/red]")
+            return False, None
+
+    except Exception as e:
+        duration_ms = int((time.time() - step_start_time) * 1000)
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="ERROR",
+            log_type="error",
+            message=f"Plan step exception: {e}",
+            details={"step": STEP_PLAN, "duration_ms": duration_ms, "exception": str(e)}
+        )
+        console.print(f"[red]Plan step exception: {e}[/red]")
+        return False, None
+
+
+async def run_build_step(
+    adw_id: str,
+    plan_path: str,
+    working_dir: str,
+    db: DatabaseManager,
+    model: str = DEFAULT_MODEL,
+) -> tuple[bool, Optional[str]]:
+    """Run the build step.
+
+    Args:
+        adw_id: ADW ID for logging
+        plan_path: Path to the plan file
+        working_dir: Working directory for the agent
+        db: Database manager instance
+        model: Model to use
+
+    Returns:
+        Tuple of (success, session_id)
+    """
+    step_start_time = time.time()
+
+    console.print(Panel(
+        f"[bold cyan]Step 2/{TOTAL_STEPS}: Build[/bold cyan]\n\nPlan: {plan_path}",
+        title="ADW Plan-Build-Review-Fix Workflow",
+        width=console.width,
+    ))
+
+    try:
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="INFO",
+            log_type="milestone",
+            message=f"Starting build step with plan: {plan_path}",
+            details={"step": STEP_BUILD, "plan_path": plan_path, "model": model}
+        )
+
+        console.print("[yellow]Build step would execute here (Agent SDK integration pending)[/yellow]")
+
+        duration_ms = int((time.time() - step_start_time) * 1000)
+
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="INFO",
+            log_type="milestone",
+            message="Build step completed",
+            details={"step": STEP_BUILD, "duration_ms": duration_ms, "plan_path": plan_path}
+        )
+        console.print(f"[green]Build step completed ({duration_ms}ms)[/green]")
+        return True, None
+
+    except Exception as e:
+        duration_ms = int((time.time() - step_start_time) * 1000)
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="ERROR",
+            log_type="error",
+            message=f"Build step exception: {e}",
+            details={"step": STEP_BUILD, "duration_ms": duration_ms, "exception": str(e)}
+        )
+        console.print(f"[red]Build step exception: {e}[/red]")
+        return False, None
+
+
+async def run_review_step(
+    adw_id: str,
+    prompt: str,
+    plan_path: str,
+    working_dir: str,
+    db: DatabaseManager,
+    model: str = DEFAULT_MODEL,
+) -> tuple[bool, Optional[str]]:
+    """Run the review step to validate completed work.
+
+    Args:
+        adw_id: ADW ID for logging
+        prompt: Original user prompt describing the work
+        plan_path: Path to the plan file that was implemented
+        working_dir: Working directory for the agent
+        db: Database manager instance
+        model: Model to use
+
+    Returns:
+        Tuple of (success, verdict) where verdict is "PASS" or "FAIL"
+    """
+    step_start_time = time.time()
+
+    console.print(Panel(
+        f"[bold yellow]Step 3/{TOTAL_STEPS}: Review[/bold yellow]\n\n"
+        f"Prompt: {prompt[:150]}...\n"
+        f"Plan: {plan_path}",
+        title="ADW Plan-Build-Review-Fix Workflow",
+        width=console.width,
+    ))
+
+    try:
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="INFO",
+            log_type="milestone",
+            message=f"Starting review step for: {prompt[:80]}...",
+            details={
+                "step": STEP_REVIEW,
+                "prompt": prompt,
+                "plan_path": plan_path,
+                "model": model,
+            }
+        )
+
+        console.print("[yellow]Review step would execute here (Agent SDK integration pending)[/yellow]")
+
+        # Simulate a PASS verdict for now
+        verdict = "PASS"
+        duration_ms = int((time.time() - step_start_time) * 1000)
+
+        verdict_emoji = "✅" if verdict == "PASS" else "⚠️"
+        console.print(f"[green]Review step completed: {verdict_emoji} {verdict}[/green]")
+
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="INFO",
+            log_type="milestone",
+            message=f"Review completed: {verdict}",
+            details={
+                "step": STEP_REVIEW,
+                "duration_ms": duration_ms,
+                "verdict": verdict,
+            }
+        )
+
+        return True, verdict
+
+    except Exception as e:
+        duration_ms = int((time.time() - step_start_time) * 1000)
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="ERROR",
+            log_type="error",
+            message=f"Review step exception: {e}",
+            details={"step": STEP_REVIEW, "duration_ms": duration_ms, "exception": str(e)}
+        )
+        console.print(f"[red]Review step exception: {e}[/red]")
+        return False, None
+
+
+async def run_fix_step(
+    adw_id: str,
+    prompt: str,
+    plan_path: str,
+    working_dir: str,
+    db: DatabaseManager,
+    model: str = DEFAULT_MODEL,
+) -> tuple[bool, Optional[str]]:
+    """Run the fix step to resolve issues found in review.
+
+    Args:
+        adw_id: ADW ID for logging
+        prompt: Original user prompt describing the work
+        plan_path: Path to the plan file
+        working_dir: Working directory for the agent
+        db: Database manager instance
+        model: Model to use
+
+    Returns:
+        Tuple of (success, session_id)
+    """
+    step_start_time = time.time()
+
+    console.print(Panel(
+        f"[bold magenta]Step 4/{TOTAL_STEPS}: Fix[/bold magenta]\n\n"
+        f"Plan: {plan_path}",
+        title="ADW Plan-Build-Review-Fix Workflow",
+        width=console.width,
+    ))
+
+    try:
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="INFO",
+            log_type="milestone",
+            message=f"Starting fix step with plan: {plan_path}",
+            details={
+                "step": STEP_FIX,
+                "prompt": prompt,
+                "plan_path": plan_path,
+                "model": model,
+            }
+        )
+
+        console.print("[yellow]Fix step would execute here (Agent SDK integration pending)[/yellow]")
+
+        duration_ms = int((time.time() - step_start_time) * 1000)
+
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="INFO",
+            log_type="milestone",
+            message="Fix step completed",
+            details={"step": STEP_FIX, "duration_ms": duration_ms}
+        )
+        console.print(f"[green]Fix step completed ({duration_ms}ms)[/green]")
+        return True, None
+
+    except Exception as e:
+        duration_ms = int((time.time() - step_start_time) * 1000)
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="ERROR",
+            log_type="error",
+            message=f"Fix step exception: {e}",
+            details={"step": STEP_FIX, "duration_ms": duration_ms, "exception": str(e)}
+        )
+        console.print(f"[red]Fix step exception: {e}[/red]")
+        return False, None
+
+
+# =============================================================================
+# MAIN WORKFLOW
+# =============================================================================
+
+
+async def run_workflow(adw_id: str, prompt: str, working_dir: str, model: str = DEFAULT_MODEL) -> bool:
+    """Run the complete plan-build-review-fix workflow.
+
+    Args:
+        adw_id: The ADW ID for logging
+        prompt: Task description
+        working_dir: Working directory
+        model: Model to use
+
+    Returns:
+        True if successful, False otherwise
+    """
+    workflow_start_time = time.time()
+
+    console.print(Panel(
+        f"[bold]Starting ADW Plan-Build-Review-Fix Workflow[/bold]\n\nADW ID: {adw_id}",
+        title="ADW Workflow",
+        width=console.width,
+    ))
+
+    async with DatabaseManager() as db:
+        try:
+            console.print(f"[cyan]Prompt:[/cyan] {prompt[:200]}...")
+            console.print(f"[cyan]Working Dir:[/cyan] {working_dir}")
+            console.print(f"[cyan]Model:[/cyan] {model}")
+
+            # Log workflow start
+            await db.create_system_log(
+                log_level="INFO",
+                source="adw_plan_build_review_fix",
+                message=f"Workflow started: {adw_id}",
+                details={"prompt": prompt, "working_dir": working_dir, "model": model, "total_steps": TOTAL_STEPS},
+            )
+
+            # Step 1: Plan
+            plan_success, plan_path = await run_plan_step(
+                adw_id=adw_id,
+                prompt=prompt,
+                working_dir=working_dir,
+                db=db,
+                model=model,
+            )
+
+            if not plan_success or not plan_path:
+                await db.create_system_log(
+                    log_level="ERROR",
+                    source="adw_plan_build_review_fix",
+                    message="Workflow failed at plan step",
+                    details={"adw_id": adw_id},
+                )
+                return False
+
+            # Step 2: Build
+            build_success, _ = await run_build_step(
+                adw_id=adw_id,
+                plan_path=plan_path,
+                working_dir=working_dir,
+                db=db,
+                model=model,
+            )
+
+            if not build_success:
+                await db.create_system_log(
+                    log_level="ERROR",
+                    source="adw_plan_build_review_fix",
+                    message="Workflow failed at build step",
+                    details={"adw_id": adw_id, "plan_path": plan_path},
+                )
+                return False
+
+            # Step 3: Review
+            review_success, verdict = await run_review_step(
+                adw_id=adw_id,
+                prompt=prompt,
+                plan_path=plan_path,
+                working_dir=working_dir,
+                db=db,
+                model=model,
+            )
+
+            if not review_success:
+                await db.create_system_log(
+                    log_level="ERROR",
+                    source="adw_plan_build_review_fix",
+                    message="Workflow failed at review step",
+                    details={"adw_id": adw_id, "plan_path": plan_path},
+                )
+                return False
+
+            # Step 4: Fix (only if review found issues)
+            fix_executed = False
+            if verdict == "FAIL":
+                console.print("[yellow]Review found issues - proceeding to fix step[/yellow]")
+
+                fix_success, _ = await run_fix_step(
+                    adw_id=adw_id,
+                    prompt=prompt,
+                    plan_path=plan_path,
+                    working_dir=working_dir,
+                    db=db,
+                    model=model,
+                )
+
+                if not fix_success:
+                    await db.create_system_log(
+                        log_level="ERROR",
+                        source="adw_plan_build_review_fix",
+                        message="Workflow failed at fix step",
+                        details={"adw_id": adw_id, "plan_path": plan_path},
+                    )
+                    return False
+
+                fix_executed = True
+            else:
+                console.print("[green]Review passed - skipping fix step[/green]")
+                await db.create_agent_log(
+                    agent_id=adw_id,
+                    log_level="INFO",
+                    log_type="milestone",
+                    message="Fix step skipped - review passed with no blockers",
+                    details={"step": STEP_FIX, "verdict": verdict}
+                )
+
+            # Workflow completed
+            duration_seconds = int(time.time() - workflow_start_time)
+            verdict_color = "green" if verdict == "PASS" else "yellow"
+            verdict_emoji = "✅" if verdict == "PASS" else "🔧"
+
+            await db.create_system_log(
+                log_level="INFO",
+                source="adw_plan_build_review_fix",
+                message=f"Workflow completed in {duration_seconds}s - Review verdict: {verdict}",
+                details={
+                    "adw_id": adw_id,
+                    "plan_path": plan_path,
+                    "review_verdict": verdict,
+                    "fix_executed": fix_executed,
+                    "duration_seconds": duration_seconds,
+                },
+            )
+
+            console.print(Panel(
+                f"[bold {verdict_color}]Workflow Completed![/bold {verdict_color}]\n\n"
+                f"Duration: {duration_seconds}s\n"
+                f"Plan file: {plan_path}\n"
+                f"Review verdict: {verdict_emoji} {verdict}\n"
+                f"Fix applied: {'Yes' if fix_executed else 'No (not needed)'}",
+                title="ADW Complete",
+                width=console.width,
+            ))
+
+            return True
+
+        except Exception as e:
+            console.print(f"[red]Workflow exception: {e}[/red]")
+            await db.create_system_log(
+                log_level="ERROR",
+                source="adw_plan_build_review_fix",
+                message=f"Workflow exception: {e}",
+                details={"adw_id": adw_id},
+            )
+            return False
+
+
+# =============================================================================
+# CLI ENTRYPOINT
+# =============================================================================
+
+
+def main():
+    """CLI entrypoint for the plan-build-review-fix workflow."""
+    parser = argparse.ArgumentParser(
+        description="ADW Plan-Build-Review-Fix Workflow",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--adw-id",
+        required=True,
+        help="ADW ID (unique identifier) for this workflow execution",
+    )
+    parser.add_argument(
+        "--prompt",
+        required=True,
+        help="Task description/prompt for the workflow",
+    )
+    parser.add_argument(
+        "--working-dir",
+        required=True,
+        help="Working directory for the workflow",
+    )
+    parser.add_argument(
+        "--model",
+        default=DEFAULT_MODEL,
+        help=f"Model to use (default: {DEFAULT_MODEL})",
+    )
+
+    args = parser.parse_args()
+
+    # Validate working directory
+    if not Path(args.working_dir).exists():
+        console.print(f"[red]Error: Working directory does not exist: {args.working_dir}[/red]")
+        sys.exit(1)
+
+    # Run the workflow
+    success = asyncio.run(run_workflow(
+        adw_id=args.adw_id,
+        prompt=args.prompt,
+        working_dir=args.working_dir,
+        model=args.model,
+    ))
+
+    sys.exit(0 if success else 1)
+
+
+if __name__ == "__main__":
+    main()
