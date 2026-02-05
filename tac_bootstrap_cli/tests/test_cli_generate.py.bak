@@ -1,0 +1,499 @@
+"""Tests for generate CLI command."""
+
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
+
+import yaml
+from typer.testing import CliRunner
+
+from tac_bootstrap.domain.entity_config import FieldSpec, FieldType
+from tac_bootstrap.interfaces.cli import app
+
+runner = CliRunner()
+
+
+def create_test_project(tmpdir: Path) -> Path:
+    """Create a test project with config.yml."""
+    config_dict = {
+        "version": "0.8.0",
+        "schema_version": 1,
+        "project": {
+            "name": "test-project",
+            "language": "python",
+            "package_manager": "uv",
+            "architecture": "ddd",
+        },
+        "paths": {
+            "app_root": "src",
+        },
+        "commands": {
+            "start": "python -m app",
+            "test": "pytest",
+        },
+        "claude": {
+            "settings": {
+                "project_name": "test-project",
+            },
+        },
+    }
+
+    config_path = tmpdir / "config.yml"
+    with open(config_path, "w") as f:
+        yaml.dump(config_dict, f)
+
+    return tmpdir
+
+
+class TestGenerateCommand:
+    """Test generate command."""
+
+    def test_invalid_subcommand(self):
+        """Test error on invalid subcommand."""
+        result = runner.invoke(app, ["generate", "invalid", "Product"])
+
+        assert result.exit_code == 1
+        assert "Unknown subcommand 'invalid'" in result.stdout
+
+    def test_non_interactive_with_fields(self):
+        """Test non-interactive mode with --fields."""
+        import os
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = create_test_project(Path(tmpdir))
+            original_cwd = os.getcwd()
+
+            try:
+                # Change to project directory
+                os.chdir(project_dir)
+
+                result = runner.invoke(
+                    app,
+                    [
+                        "generate",
+                        "entity",
+                        "Product",
+                        "-c",
+                        "catalog",
+                        "--no-interactive",
+                        "--fields",
+                        "name:str:required,price:float:required,description:text",
+                    ],
+                )
+
+                assert result.exit_code == 0
+                assert "Entity generated successfully" in result.stdout
+
+                # Verify files were created
+                entity_path = project_dir / "domain" / "catalog" / "entities" / "product.py"
+                assert entity_path.exists()
+            finally:
+                os.chdir(original_cwd)
+
+    def test_auto_capability_generation(self):
+        """Test automatic capability generation from entity name."""
+        import os
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = create_test_project(Path(tmpdir))
+            original_cwd = os.getcwd()
+
+            try:
+                os.chdir(project_dir)
+
+                result = runner.invoke(
+                    app,
+                    [
+                        "generate",
+                        "entity",
+                        "ProductCategory",
+                        "--no-interactive",
+                        "--fields",
+                        "name:str",
+                    ],
+                )
+
+                assert result.exit_code == 0
+                assert "Auto-generated capability: product-category" in result.stdout
+            finally:
+                os.chdir(original_cwd)
+
+    def test_dry_run_mode(self):
+        """Test --dry-run doesn't create files."""
+        import os
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = create_test_project(Path(tmpdir))
+            original_cwd = os.getcwd()
+
+            try:
+                os.chdir(project_dir)
+
+                result = runner.invoke(
+                    app,
+                    [
+                        "generate",
+                        "entity",
+                        "Product",
+                        "-c",
+                        "catalog",
+                        "--no-interactive",
+                        "--fields",
+                        "name:str",
+                        "--dry-run",
+                    ],
+                )
+
+                assert result.exit_code == 0
+                assert "Dry Run - Preview" in result.stdout
+                assert "Would create:" in result.stdout
+
+                # Verify no files were created
+                entity_path = project_dir / "domain" / "catalog" / "entities" / "product.py"
+                assert not entity_path.exists()
+            finally:
+                os.chdir(original_cwd)
+
+    def test_missing_config_yml(self):
+        """Test error when config.yml is missing."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with runner.isolated_filesystem(temp_dir=tmpdir):
+                result = runner.invoke(
+                    app,
+                    [
+                        "generate",
+                        "entity",
+                        "Product",
+                        "--no-interactive",
+                        "--fields",
+                        "name:str",
+                    ],
+                )
+
+                assert result.exit_code == 1
+                assert "No config.yml found" in result.stdout
+
+    def test_wrong_architecture(self):
+        """Test error with non-DDD architecture."""
+        import os
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = Path(tmpdir)
+
+            # Create config with SIMPLE architecture
+            config_dict = {
+                "version": "0.8.0",
+                "schema_version": 1,
+                "project": {
+                    "name": "test-project",
+                    "language": "python",
+                    "package_manager": "uv",
+                    "architecture": "simple",
+                },
+                "paths": {
+                    "app_root": "src",
+                },
+                "commands": {
+                    "start": "python -m app",
+                    "test": "pytest",
+                },
+                "claude": {
+                    "settings": {
+                        "project_name": "test-project",
+                    },
+                },
+            }
+
+            config_path = project_dir / "config.yml"
+            with open(config_path, "w") as f:
+                yaml.dump(config_dict, f)
+            original_cwd = os.getcwd()
+
+            try:
+                os.chdir(project_dir)
+
+                result = runner.invoke(
+                    app,
+                    [
+                        "generate",
+                        "entity",
+                        "Product",
+                        "--no-interactive",
+                        "--fields",
+                        "name:str",
+                    ],
+                )
+
+                assert result.exit_code == 1
+                assert "Entity generation requires architecture" in result.stdout
+
+            finally:
+                os.chdir(original_cwd)
+    def test_non_interactive_without_fields(self):
+        """Test error in non-interactive mode without --fields."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            create_test_project(Path(tmpdir))
+
+            with runner.isolated_filesystem(temp_dir=tmpdir):
+                result = runner.invoke(
+                    app,
+                    [
+                        "generate",
+                        "entity",
+                        "Product",
+                        "--no-interactive",
+                    ],
+                )
+
+                assert result.exit_code == 1
+                assert "--fields is required in non-interactive mode" in result.stdout
+
+    def test_invalid_field_type(self):
+        """Test error with invalid field type."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            create_test_project(Path(tmpdir))
+
+            with runner.isolated_filesystem(temp_dir=tmpdir):
+                result = runner.invoke(
+                    app,
+                    [
+                        "generate",
+                        "entity",
+                        "Product",
+                        "--no-interactive",
+                        "--fields",
+                        "name:invalid_type",
+                    ],
+                )
+
+                assert result.exit_code == 1
+                assert "Unknown field type" in result.stdout
+
+    def test_async_mode(self):
+        """Test --async flag generates async repository."""
+        import os
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = create_test_project(Path(tmpdir))
+            original_cwd = os.getcwd()
+
+            try:
+                os.chdir(project_dir)
+
+                result = runner.invoke(
+                    app,
+                    [
+                        "generate",
+                        "entity",
+                        "Product",
+                        "-c",
+                        "catalog",
+                        "--no-interactive",
+                        "--fields",
+                        "name:str",
+                        "--async",
+                    ],
+                )
+
+                assert result.exit_code == 0
+
+                # Verify async repository was created
+                repo_path = (
+                    project_dir
+                    / "infrastructure"
+                    / "catalog"
+                    / "repositories"
+                    / "product_repository.py"
+                )
+                assert repo_path.exists()
+
+                content = repo_path.read_text()
+                assert "BaseRepositoryAsync" in content
+
+            finally:
+                os.chdir(original_cwd)
+    def test_with_events_flag(self):
+        """Test --with-events flag generates events file."""
+        import os
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = create_test_project(Path(tmpdir))
+            original_cwd = os.getcwd()
+
+            try:
+                os.chdir(project_dir)
+
+                result = runner.invoke(
+                    app,
+                    [
+                        "generate",
+                        "entity",
+                        "Product",
+                        "-c",
+                        "catalog",
+                        "--no-interactive",
+                        "--fields",
+                        "name:str",
+                        "--with-events",
+                    ],
+                )
+
+                assert result.exit_code == 0
+
+                # Verify events file was created
+                events_path = (
+                    project_dir
+                    / "domain"
+                    / "catalog"
+                    / "events"
+                    / "product_events.py"
+                )
+                assert events_path.exists()
+
+                content = events_path.read_text()
+                assert "ProductCreated" in content
+                assert "ProductUpdated" in content
+                assert "ProductDeleted" in content
+
+            finally:
+                os.chdir(original_cwd)
+    def test_authorized_flag(self):
+        """Test --authorized flag adds auth decorators."""
+        import os
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = create_test_project(Path(tmpdir))
+            original_cwd = os.getcwd()
+
+            try:
+                os.chdir(project_dir)
+
+                result = runner.invoke(
+                    app,
+                    [
+                        "generate",
+                        "entity",
+                        "Product",
+                        "-c",
+                        "catalog",
+                        "--no-interactive",
+                        "--fields",
+                        "name:str",
+                        "--authorized",
+                    ],
+                )
+
+                assert result.exit_code == 0
+
+                # Verify routes have auth decorator
+                routes_path = (
+                    project_dir
+                    / "interfaces"
+                    / "api"
+                    / "catalog"
+                    / "product_routes.py"
+                )
+                assert routes_path.exists()
+
+                content = routes_path.read_text()
+                # Check for get_current_user dependency (JWT auth)
+                assert "get_current_user" in content
+                assert "CurrentUser" in content
+                assert "organization_id" in content
+
+            finally:
+                os.chdir(original_cwd)
+
+    @patch("tac_bootstrap.interfaces.entity_wizard.run_entity_field_wizard")
+    def test_interactive_mode(self, mock_wizard):
+        """Test interactive mode calls wizard."""
+        import os
+
+        # Mock wizard to return fields
+        mock_wizard.return_value = [
+            FieldSpec(name="name", field_type=FieldType.STRING, required=True),
+            FieldSpec(name="price", field_type=FieldType.FLOAT, required=True),
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = create_test_project(Path(tmpdir))
+            original_cwd = os.getcwd()
+
+            try:
+                os.chdir(project_dir)
+
+                result = runner.invoke(
+                    app,
+                    [
+                        "generate",
+                        "entity",
+                        "Product",
+                        "-c",
+                        "catalog",
+                        # interactive is True by default
+                    ],
+                )
+
+                assert result.exit_code == 0
+                assert mock_wizard.called
+            finally:
+                os.chdir(original_cwd)
+
+    def test_force_mode(self):
+        """Test --force overwrites existing files."""
+        import os
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = create_test_project(Path(tmpdir))
+
+            # Create existing entity
+            entity_path = project_dir / "domain" / "catalog" / "entities" / "product.py"
+            entity_path.parent.mkdir(parents=True, exist_ok=True)
+            entity_path.write_text("# OLD CONTENT")
+            original_cwd = os.getcwd()
+
+            try:
+                os.chdir(project_dir)
+
+                # First attempt without --force should fail
+                result = runner.invoke(
+                    app,
+                    [
+                        "generate",
+                        "entity",
+                        "Product",
+                        "-c",
+                        "catalog",
+                        "--no-interactive",
+                        "--fields",
+                        "name:str",
+                    ],
+                )
+
+                assert result.exit_code == 1
+                assert "already exists" in result.stdout
+
+                # Second attempt with --force should succeed
+                result = runner.invoke(
+                    app,
+                    [
+                        "generate",
+                        "entity",
+                        "Product",
+                        "-c",
+                        "catalog",
+                        "--no-interactive",
+                        "--fields",
+                        "name:str",
+                        "--force",
+                    ],
+                )
+
+                assert result.exit_code == 0
+
+                # Verify file was overwritten
+                content = entity_path.read_text()
+                assert "# OLD CONTENT" not in content
+                assert "class Product" in content
+            finally:
+                os.chdir(original_cwd)

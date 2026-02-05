@@ -108,6 +108,9 @@ class ScaffoldService:
         # Add fractal documentation scripts
         self._add_fractal_docs_scripts(plan, config)
 
+        # Add orchestrator web backend
+        self._add_orchestrator_web(plan, config, existing_repo)
+
         return plan
 
     def _add_directories(self, plan: ScaffoldPlan, config: TACConfig) -> None:
@@ -1028,6 +1031,75 @@ class ScaffoldService:
 
         # Docs directory
         plan.add_directory("docs", "Fractal documentation output")
+
+    def _add_orchestrator_web(
+        self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
+    ) -> None:
+        """Add orchestrator_web/ FastAPI backend files (TAC-14 Task 12).
+
+        Adds FastAPI backend with SQLite persistence:
+        - main.py: FastAPI app with DatabaseManager lifespan
+        - routers/: CQRS endpoints for agents, runtime, WebSocket
+        - dependencies.py: Dependency injection
+        - .env.sample: Environment variables template
+        """
+        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
+
+        # Add directory structure
+        plan.add_directory("orchestrator_web", "Orchestrator web backend")
+        plan.add_directory("orchestrator_web/routers", "FastAPI routers")
+
+        # Add main files
+        plan.add_file(
+            "orchestrator_web/__init__.py",
+            action=action,
+            template="orchestrator_web/__init__.py.j2",
+            reason="Orchestrator package init",
+        )
+        plan.add_file(
+            "orchestrator_web/main.py",
+            action=action,
+            template="orchestrator_web/main.py.j2",
+            reason="FastAPI app with lifespan manager",
+        )
+        plan.add_file(
+            "orchestrator_web/dependencies.py",
+            action=action,
+            template="orchestrator_web/dependencies.py.j2",
+            reason="FastAPI dependency injection",
+        )
+        plan.add_file(
+            "orchestrator_web/.env.sample",
+            action=action,
+            template="orchestrator_web/.env.sample",
+            reason="Environment variables template",
+        )
+
+        # Add routers
+        plan.add_file(
+            "orchestrator_web/routers/__init__.py",
+            action=action,
+            template="orchestrator_web/routers/__init__.py.j2",
+            reason="Routers package init",
+        )
+        plan.add_file(
+            "orchestrator_web/routers/agents.py",
+            action=action,
+            template="orchestrator_web/routers/agents.py.j2",
+            reason="CQRS endpoints for orchestrator agents",
+        )
+        plan.add_file(
+            "orchestrator_web/routers/runtime.py",
+            action=action,
+            template="orchestrator_web/routers/runtime.py.j2",
+            reason="Endpoints for runtime agents and logs",
+        )
+        plan.add_file(
+            "orchestrator_web/routers/websocket.py",
+            action=action,
+            template="orchestrator_web/routers/websocket.py.j2",
+            reason="WebSocket for real-time updates",
+        )
 
     def apply_plan(
         self,

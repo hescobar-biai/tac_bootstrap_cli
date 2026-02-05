@@ -306,6 +306,36 @@ class ModelPolicy(BaseModel):
     fallback: str = Field(default="haiku", description="Fallback model when quota is exhausted")
 
 
+class TokenOptimizationConfig(BaseModel):
+    """
+    Token usage optimization settings.
+
+    Controls various limits to reduce token consumption in ADW workflows.
+    """
+
+    max_issue_body_length: int = Field(
+        default=2000, description="Truncate issue body to reduce token usage"
+    )
+    max_file_reference_size: int = Field(
+        default=5000, description="Max chars per referenced file"
+    )
+    max_clarification_length: int = Field(
+        default=1000, description="Max chars for clarification responses"
+    )
+    max_docs_planning: int = Field(
+        default=2, description="Max documentation files to load in planning phase"
+    )
+    max_summary_tokens_planning: int = Field(
+        default=200, description="Max tokens per doc summary in planning"
+    )
+    max_file_references: int = Field(
+        default=3, description="Max number of files to load from issue references"
+    )
+    max_screenshots: int = Field(
+        default=3, description="Max screenshots to upload in review phase"
+    )
+
+
 class AgenticSpec(BaseModel):
     """
     Agentic layer configuration.
@@ -334,6 +364,9 @@ class AgenticSpec(BaseModel):
     safety: SafetyConfig = Field(default=SafetyConfig(), description="Safety constraints")
     workflows: WorkflowsConfig = Field(
         default=WorkflowsConfig(), description="Workflow configuration"
+    )
+    token_optimization: TokenOptimizationConfig = Field(
+        default=TokenOptimizationConfig(), description="Token usage optimization settings"
     )
 
 

@@ -15,8 +15,9 @@ dependencies = [
     "jinja2>=3.1.2",
     "pydantic>=2.5.0",
     "pyyaml>=6.0.1",
-    "packaging>=23.0",  # Para comparación de versiones
+    "packaging>=23.0", # Para comparación de versiones
     "gitpython>=3.1.0",
+    "uvicorn[standard]>=0.40.0",
 ]
 
 [project.optional-dependencies]
