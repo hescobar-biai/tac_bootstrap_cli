@@ -1,8 +1,8 @@
 overview:
   description: "AI Developer Workflows - Automated SDLC orchestration with isolated worktrees and GitHub integration"
   purpose: "Execute complete software development lifecycle through composable workflow scripts"
-  last_updated: "2026-02-05T01:56:55"
-  total_files: 39
+  last_updated: "2026-02-05T12:25:55"
+  total_files: 41
   key_files:
     - "adws/adw_sdlc_iso.py"
     - "adws/adw_sdlc_zte_iso.py"
@@ -12,6 +12,8 @@ overview:
     - "adws/adw_modules/github.py"
     - "adws/adw_modules/git_ops.py"
     - "adws/adw_modules/worktree_ops.py"
+    - "adws/adw_modules/adw_database.py"
+    - "adws/adw_database.py"
 
 architecture:
   pattern: "Composable Workflow Architecture"
@@ -39,7 +41,7 @@ architecture:
     modules:
       path: "adws/adw_modules/"
       purpose: "Reusable infrastructure and utilities"
-      count: 12
+      count: 14
       key_modules:
         - state.py: "Persistent state management via ADWState class"
         - workflow_ops.py: "Shared operations (ADW ID management, doc detection)"
@@ -53,6 +55,7 @@ architecture:
         - r2_uploader.py: "Cloudflare R2 uploader for context bundles"
         - adw_agent_sdk.py: "Abstract typed layer for Claude Agent SDK with Pydantic models (hooks, messages, sessions)"
         - orch_database_models.py: "SQLite database Pydantic models for orchestrator state (OrchestratorAgent, Agent, Prompt, AgentLog, SystemLog)"
+        - adw_database.py: "Async DatabaseManager implementation for SQLite operations (1012 lines, zero-config with auto-schema)"
 
     schema:
       path: "adws/schema/"
@@ -425,6 +428,29 @@ core_implementation:
         - SystemLog: "System-level orchestrator operation logs"
 
     integration: "Schema v0.8.0 at adws/schema/orchestrator.db (gitignored), zero-config SQLite with aiosqlite support"
+
+  database_implementation:
+    location: "adws/adw_modules/adw_database.py"
+    purpose: "Async SQLite database manager for orchestrator persistence (TAC-14 Task 8)"
+    line_count: "1012 lines"
+
+    DatabaseManager_class:
+      lines: "109-1012"
+      purpose: "Zero-configuration async database operations with auto-schema initialization"
+      features:
+        - "Automatic schema initialization from schema_orchestrator.sql"
+        - "WAL mode for concurrent read/write operations"
+        - "Explicit transaction control (BEGIN, COMMIT, ROLLBACK)"
+        - "Connection pooling and async context management"
+        - "Typed operations using orch_database_models.py"
+      integration: "Used by workflow orchestrator for persistent state tracking"
+      database_location: "adws/schema/orchestrator.db (gitignored)"
+
+    standalone_script:
+      location: "adws/adw_database.py"
+      purpose: "Standalone CLI script for database testing and operations (480 lines)"
+      usage: "uv run adws/adw_database.py"
+      pattern: "Demonstrates DatabaseManager usage with example queries"
       create_worktree:
         signature: "def create_worktree(adw_id: str, branch_name: str, logger: logging.Logger) -> Tuple[str, Optional[str]]"
         logic: |
@@ -453,19 +479,8 @@ core_implementation:
 
     worktree_isolation_pattern:
       purpose: "Enable parallel workflow execution without conflicts"
-      structure: |
-        repo_root/
-        ├── .git/           (main repo)
-        ├── adws/           (workflow scripts - shared)
-        └── trees/          (isolated worktrees)
-            ├── feature-branch-1/
-            ├── feature-branch-2/
-            └── bugfix-branch-1/
-      benefits:
-        - "Each workflow has independent working directory"
-        - "No git state conflicts between parallel workflows"
-        - "Safe concurrent execution of multiple ADWs"
-        - "Isolated port assignments for test servers"
+      structure: "repo_root/.git (main) + adws/ (shared) + trees/ (isolated worktrees per branch)"
+      benefits: "Independent dirs, no git conflicts, safe concurrent ADWs, isolated ports"
 
 key_operations:
 
@@ -674,19 +689,8 @@ best_practices:
 
   composable_workflows:
     principle: "Workflows compose via ADW ID and state handoff"
-    patterns:
-      - "SDLC workflows call phase workflows sequentially"
-      - "Each phase is independently executable"
-      - "State persistence enables workflow chaining"
-      - "ADW ID serves as workflow identifier"
-    example: |
-      # Run individual phases
-      uv run adws/adw_plan_iso.py 571 feature_Tac_13_Task_9
-      uv run adws/adw_build_iso.py feature_Tac_13_Task_9
-      uv run adws/adw_test_iso.py feature_Tac_13_Task_9
-
-      # Or run complete SDLC
-      uv run adws/adw_sdlc_iso.py 571
+    pattern: "SDLC calls phases sequentially, each independently executable, state enables chaining"
+    usage: "Individual: adw_plan_iso.py <issue> <adw_id>, or Complete: adw_sdlc_iso.py <issue>"
 
   documentation_integration:
     principle: "TAC-9 automatic documentation detection"
@@ -946,6 +950,20 @@ integrations:
 
 recent_changes:
   - date: "2026-02-05"
+    description: "Added async SQLite database implementation with DatabaseManager class (TAC-14 Task 8)"
+    files:
+      - "adws/adw_modules/adw_database.py"
+      - "adws/adw_database.py"
+    impact: |
+      Database implementation (commits 26a95b7 + 9c06fb9):
+      - Added adw_database.py module (1012 lines) with async DatabaseManager
+      - Zero-config pattern with auto-schema initialization
+      - WAL mode for concurrent operations, explicit transaction control
+      - Standalone CLI script (480 lines) for testing
+      - Integrates with orch_database_models.py for typed operations
+      - Database: adws/schema/orchestrator.db (gitignored)
+
+  - date: "2026-02-05"
     description: "Added SQLite database Pydantic models module (orch_database_models.py) with 5 model classes"
     files:
       - "adws/adw_modules/orch_database_models.py"
@@ -958,28 +976,9 @@ recent_changes:
       - Complements schema/ directory implementation from Task 6
 
   - date: "2026-02-04"
-    description: "Added SQLite schema implementation for orchestrator state tracking (TAC-14 Task 6)"
-    files:
-      - "adws/schema/README.md"
-      - "adws/schema/schema_orchestrator.sql"
-      - "adws/schema/migrations/001_initial.sql"
-    impact: |
-      SQLite schema (commit 266666d):
-      - Added schema/ directory with orchestrator database schema
-      - Defines tables: orchestrator_agents, agents, prompts, agent_logs, system_logs
-      - Zero-config pattern with auto-initialization
-      - Schema v0.8.0 for persistent state tracking
-      - Supports async via aiosqlite
-      - Database location: adws/schema/orchestrator.db (gitignored)
-
-  - date: "2026-02-04"
-    description: "ZTE workflow enhancements, Agent SDK module, and file reference auto-loading"
-    files:
-      - "adws/adw_sdlc_zte_iso.py"
-      - "adws/adw_modules/adw_agent_sdk.py"
-      - "adws/adw_modules/workflow_ops.py"
-      - "adws/adw_modules/github.py"
-    impact: "ZTE auto-loads .md files. Agent SDK (1655 lines) added. GitHub retry handles network errors."
+    description: "SQLite schema + ZTE + Agent SDK + file auto-loading"
+    files: ["adws/schema/*", "adws/adw_sdlc_zte_iso.py", "adws/adw_modules/adw_agent_sdk.py"]
+    impact: "Schema v0.8.0, ZTE .md auto-load, Agent SDK (1655 lines), GitHub network retry"
 
 expert_system_integration:
   adw_expert:
