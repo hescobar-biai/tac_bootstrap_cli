@@ -148,6 +148,14 @@ def main():
         issue_number, format_issue_message(adw_id, "ops", "✅ Starting isolated planning phase")
     )
 
+    # Create context bundle for token optimization (avoid re-sending full issue to each phase)
+    from adw_modules.workflow_ops import create_context_bundle, load_context_bundle
+    bundle_created = create_context_bundle(adw_id, issue, logger)
+    if bundle_created:
+        logger.info("Context bundle created successfully")
+        state.update(context_bundle_created=True)
+        state.save("adw_plan_iso")
+
     # Load AI documentation if requested (TAC-9)
     # Token optimization: Planning phase uses max 2 docs with 200 token summaries
     MAX_DOCS_PLANNING = 2
@@ -590,6 +598,19 @@ Focus on: state management, worktree isolation, GitHub integration patterns."""
         issue_number,
         format_issue_message(adw_id, "ops", f"✅ Plan file created: {plan_file_path}"),
     )
+
+    # Update context bundle with planning decisions
+    from adw_modules.workflow_ops import update_context_bundle_decisions
+    planning_decisions = f"""- Plan file: {plan_file_path}
+- Issue classified as: {issue_command}
+- Branch: {branch_name}
+- Worktree: {worktree_path}"""
+    if clarification_text:
+        planning_decisions += f"\n- Clarifications resolved"
+    if ai_docs_context:
+        planning_decisions += f"\n- Documentation loaded: {load_docs_topic}"
+
+    update_context_bundle_decisions(adw_id, "Planning", planning_decisions, logger)
 
     # Create commit message
     logger.info("Creating plan commit")
