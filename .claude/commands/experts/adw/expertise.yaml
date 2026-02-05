@@ -1,7 +1,7 @@
 overview:
   description: "AI Developer Workflows - Automated SDLC orchestration with isolated worktrees and GitHub integration"
   purpose: "Execute complete software development lifecycle through composable workflow scripts"
-  last_updated: "2026-02-04T20:30:00"
+  last_updated: "2026-02-05T01:56:55"
   total_files: 39
   key_files:
     - "adws/adw_sdlc_iso.py"
@@ -52,6 +52,7 @@ architecture:
         - utils.py: "Logging, parsing, and utility functions"
         - r2_uploader.py: "Cloudflare R2 uploader for context bundles"
         - adw_agent_sdk.py: "Abstract typed layer for Claude Agent SDK with Pydantic models (hooks, messages, sessions)"
+        - orch_database_models.py: "SQLite database Pydantic models for orchestrator state (OrchestratorAgent, Agent, Prompt, AgentLog, SystemLog)"
 
     schema:
       path: "adws/schema/"
@@ -409,7 +410,21 @@ core_implementation:
     purpose: "Git worktree operations for workflow isolation"
     line_count: "~154 lines"
 
-    key_functions:
+  database_models:
+    location: "adws/adw_modules/orch_database_models.py"
+    purpose: "SQLite database Pydantic models for orchestrator state tracking"
+    line_count: "343 lines"
+
+    key_models:
+      models_range: "65-343"
+      model_classes:
+        - OrchestratorAgent: "Agent instance in workflow system (id, name, status, metadata)"
+        - Agent: "Claude Code execution record (model, timestamps, status, result)"
+        - Prompt: "Prompt templates and variables for agent execution"
+        - AgentLog: "Agent execution logs (tool calls, tokens, responses)"
+        - SystemLog: "System-level orchestrator operation logs"
+
+    integration: "Schema v0.8.0 at adws/schema/orchestrator.db (gitignored), zero-config SQLite with aiosqlite support"
       create_worktree:
         signature: "def create_worktree(adw_id: str, branch_name: str, logger: logging.Logger) -> Tuple[str, Optional[str]]"
         logic: |
@@ -930,6 +945,18 @@ integrations:
           4. Phase workflows conditionally call expert functions based on flags
 
 recent_changes:
+  - date: "2026-02-05"
+    description: "Added SQLite database Pydantic models module (orch_database_models.py) with 5 model classes"
+    files:
+      - "adws/adw_modules/orch_database_models.py"
+    impact: |
+      Database models module (commit 77ac525, 343 lines):
+      - Added orch_database_models.py with typed Pydantic models
+      - Defines: OrchestratorAgent, Agent, Prompt, AgentLog, SystemLog
+      - Provides type-safe interface for SQLite schema
+      - Supports validation and serialization for orchestrator state
+      - Complements schema/ directory implementation from Task 6
+
   - date: "2026-02-04"
     description: "Added SQLite schema implementation for orchestrator state tracking (TAC-14 Task 6)"
     files:
@@ -946,24 +973,13 @@ recent_changes:
       - Database location: adws/schema/orchestrator.db (gitignored)
 
   - date: "2026-02-04"
-    description: "ZTE workflow now auto-loads file references from issue (hybrid detection)"
+    description: "ZTE workflow enhancements, Agent SDK module, and file reference auto-loading"
     files:
       - "adws/adw_sdlc_zte_iso.py"
-    impact: |
-      ZTE enhancement (commit 2d0387f):
-      - ZTE workflow calls extract_file_references_from_issue()
-      - Auto-loads .md files referenced in issue body/comments
-      - Improves planning context for fully automated workflows
-
-  - date: "2026-02-04"
-    description: "Added Agent SDK module (adw_agent_sdk.py, 1655 lines) with typed Pydantic models for Claude Agent SDK"
-    files: ["adws/adw_modules/adw_agent_sdk.py"]
-    impact: "Abstract layer for hooks, messages, sessions - not yet integrated with workflows"
-
-  - date: "2026-02-04"
-    description: "File reference auto-loading and enhanced GitHub retry logic"
-    files: ["adws/adw_modules/workflow_ops.py", "adws/adw_modules/github.py", "adws/adw_plan_iso.py"]
-    impact: "Auto-loads .md files from issue. GitHub retry handles network errors. workflow_ops: 1684 lines"
+      - "adws/adw_modules/adw_agent_sdk.py"
+      - "adws/adw_modules/workflow_ops.py"
+      - "adws/adw_modules/github.py"
+    impact: "ZTE auto-loads .md files. Agent SDK (1655 lines) added. GitHub retry handles network errors."
 
 expert_system_integration:
   adw_expert:
