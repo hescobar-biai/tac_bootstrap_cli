@@ -68,6 +68,42 @@ async def main():
 asyncio.run(main())
 ```
 
+Agent Logging with Error Resilience
+-----------------------------------
+The log_agent_event() method provides graceful error handling - logging failures
+never crash orchestrator agents. Errors are logged to stderr instead.
+
+```python
+async def agent_workflow(db: DatabaseManager, agent_id: str):
+    # High-level logging - never raises exceptions
+    await db.log_agent_event(
+        agent_id=agent_id,
+        log_type="milestone",
+        message="Starting code analysis",
+        metadata={"files_queued": 42}
+    )
+
+    # ... perform work ...
+
+    # Query logs by type across all agents
+    all_errors = await db.get_logs_by_type("error", limit=50)
+    print(f"System has {len(all_errors)} error logs")
+
+    # Query logs for specific agent
+    agent_errors = await db.get_agent_logs_by_type(
+        agent_id=agent_id,
+        log_type="error",
+        limit=10
+    )
+
+    # Get recent activity across all agents
+    recent = await db.get_recent_logs(limit=100)
+
+    # Manual cleanup of old logs (not auto-executed)
+    deleted = await db.cleanup_old_logs(days=90)
+    print(f"Deleted {deleted} old logs")
+```
+
 Database Lifecycle
 ------------------
 1. Instantiate: `db = DatabaseManager("orchestrator.db")`
@@ -873,6 +909,245 @@ class DatabaseManager:
 
         except aiosqlite.Error as e:
             error_msg = f"Failed to list recent agent_logs: {e}"
+            logger.error(error_msg)
+            raise aiosqlite.Error(error_msg) from e
+
+    async def log_agent_event(
+        self,
+        agent_id: str,
+        log_type: str,
+        message: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        log_level: str = "INFO"
+    ) -> Optional[int]:
+        """
+        High-level convenience method for logging agent events with graceful error handling.
+
+        This method wraps create_agent_log() with try/except to ensure logging failures
+        never crash orchestrator agents. If database write fails, logs to stderr and
+        returns None.
+
+        Args:
+            agent_id: Foreign key to agents.id
+            log_type: One of: 'state_change', 'milestone', 'error', 'performance',
+                      'tool_call', 'cost_update'
+            message: Log message text
+            metadata: Optional JSON metadata dict (serialized to TEXT)
+            log_level: One of: 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
+                      (default: 'INFO')
+
+        Returns:
+            Integer log ID on success, None on error (never raises exceptions)
+
+        Example:
+            >>> await db.log_agent_event(
+            ...     agent_id="550e8400-e29b-41d4-a716-446655440000",
+            ...     log_type="milestone",
+            ...     message="Completed code analysis",
+            ...     metadata={"files_analyzed": 42, "duration_ms": 1250}
+            ... )
+            123  # Returns log ID
+        """
+        import sys
+
+        try:
+            log_id = await self.create_agent_log(
+                agent_id=agent_id,
+                log_level=log_level,
+                log_type=log_type,
+                message=message,
+                details=metadata
+            )
+            return log_id
+        except aiosqlite.Error as e:
+            # Graceful degradation: log to stderr, never crash agent
+            warning_msg = (
+                f"WARNING: Database logging failed for agent {agent_id}: {e}\n"
+                f"         Message: {message}\n"
+            )
+            sys.stderr.write(warning_msg)
+            return None
+        except Exception as e:
+            # Catch-all for unexpected errors
+            warning_msg = (
+                f"WARNING: Unexpected error during agent logging: {e}\n"
+                f"         Agent: {agent_id}, Message: {message}\n"
+            )
+            sys.stderr.write(warning_msg)
+            return None
+
+    async def get_agent_logs_by_type(
+        self,
+        agent_id: str,
+        log_type: str,
+        limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """
+        Query agent logs filtered by agent_id and log_type with limit.
+
+        Args:
+            agent_id: UUID of agent to filter by
+            log_type: Log type filter ('state_change', 'milestone', 'error', etc.)
+            limit: Maximum number of logs to return (default: 100)
+
+        Returns:
+            List of log dicts ordered by creation time (newest first)
+
+        Example:
+            >>> error_logs = await db.get_agent_logs_by_type(
+            ...     agent_id="550e8400-e29b-41d4-a716-446655440000",
+            ...     log_type="error",
+            ...     limit=50
+            ... )
+            >>> print(f"Found {len(error_logs)} error logs")
+        """
+        try:
+            async with self.conn.execute(
+                """
+                SELECT * FROM agent_logs
+                WHERE agent_id = ? AND log_type = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (agent_id, log_type, limit)
+            ) as cursor:
+                rows = await cursor.fetchall()
+                results = []
+
+                for row in rows:
+                    log_dict = dict(row)
+                    # Deserialize JSON details
+                    if log_dict.get('details'):
+                        try:
+                            log_dict['details'] = json.loads(log_dict['details'])
+                        except json.JSONDecodeError:
+                            logger.warning(f"Failed to parse details JSON for log {log_dict['id']}")
+                    results.append(log_dict)
+
+                logger.debug(f"Retrieved {len(results)} logs for agent {agent_id}, type={log_type}")
+                return results
+
+        except aiosqlite.Error as e:
+            error_msg = f"Failed to get agent_logs by type for {agent_id}: {e}"
+            logger.error(error_msg)
+            raise aiosqlite.Error(error_msg) from e
+
+    async def get_logs_by_type(
+        self,
+        log_type: str,
+        limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """
+        Query logs by type across all agents.
+
+        Useful for finding all errors, milestones, or performance logs across
+        the entire orchestrator system.
+
+        Args:
+            log_type: Log type filter ('state_change', 'milestone', 'error',
+                      'performance', 'tool_call', 'cost_update')
+            limit: Maximum number of logs to return (default: 100)
+
+        Returns:
+            List of log dicts ordered by creation time (newest first)
+
+        Example:
+            >>> all_errors = await db.get_logs_by_type("error", limit=200)
+            >>> print(f"Found {len(all_errors)} errors across all agents")
+        """
+        try:
+            async with self.conn.execute(
+                """
+                SELECT * FROM agent_logs
+                WHERE log_type = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                """,
+                (log_type, limit)
+            ) as cursor:
+                rows = await cursor.fetchall()
+                results = []
+
+                for row in rows:
+                    log_dict = dict(row)
+                    # Deserialize JSON details
+                    if log_dict.get('details'):
+                        try:
+                            log_dict['details'] = json.loads(log_dict['details'])
+                        except json.JSONDecodeError:
+                            logger.warning(f"Failed to parse details JSON for log {log_dict['id']}")
+                    results.append(log_dict)
+
+                logger.debug(f"Retrieved {len(results)} logs for type={log_type}")
+                return results
+
+        except aiosqlite.Error as e:
+            error_msg = f"Failed to get logs by type {log_type}: {e}"
+            logger.error(error_msg)
+            raise aiosqlite.Error(error_msg) from e
+
+    async def get_recent_logs(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """
+        Query recent logs across all agents (alias for list_recent_agent_logs).
+
+        Useful for dashboard views showing recent activity across the entire
+        orchestrator system.
+
+        Args:
+            limit: Maximum number of logs to return (default: 100)
+
+        Returns:
+            List of log dicts ordered by creation time (newest first)
+
+        Example:
+            >>> recent = await db.get_recent_logs(limit=50)
+            >>> for log in recent[:10]:
+            ...     print(f"{log['created_at']}: {log['message']}")
+        """
+        # Delegate to existing method
+        return await self.list_recent_agent_logs(limit=limit)
+
+    async def cleanup_old_logs(self, days: int = 30) -> int:
+        """
+        Delete agent logs older than specified number of days.
+
+        IMPORTANT: This is a utility method for MANUAL cleanup only.
+        It is NOT auto-executed. Users must call it explicitly or schedule
+        via cron/systemd timer.
+
+        Args:
+            days: Delete logs older than this many days (default: 30)
+
+        Returns:
+            Number of logs deleted
+
+        Example:
+            >>> # Delete logs older than 90 days
+            >>> deleted = await db.cleanup_old_logs(days=90)
+            >>> print(f"Deleted {deleted} old logs")
+
+            >>> # Schedule via cron (example):
+            >>> # 0 2 * * * cd /path/to/project && python -c "import asyncio; from adw_database import DatabaseManager; asyncio.run(DatabaseManager('orchestrator.db').cleanup_old_logs(30))"
+        """
+        from datetime import timedelta
+
+        try:
+            # Calculate cutoff timestamp
+            cutoff = datetime.utcnow() - timedelta(days=days)
+            cutoff_iso = cutoff.isoformat()
+
+            cursor = await self.conn.execute(
+                "DELETE FROM agent_logs WHERE created_at < ?",
+                (cutoff_iso,)
+            )
+            await self.conn.commit()
+
+            deleted_count = cursor.rowcount
+            logger.info(f"Deleted {deleted_count} agent_logs older than {days} days")
+            return deleted_count
+
+        except aiosqlite.Error as e:
+            error_msg = f"Failed to cleanup old agent_logs: {e}"
             logger.error(error_msg)
             raise aiosqlite.Error(error_msg) from e
 
