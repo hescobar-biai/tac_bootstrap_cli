@@ -425,8 +425,9 @@ def get_fallback_model(current_model: str) -> Optional[str]:
 
 def prompt_claude_code_with_retry(
     request: AgentPromptRequest,
-    max_retries: int = 5,
+    max_retries: int = 15,
     base_delay: int = 5,
+    max_wait_time: int = 3600,  # 1 hour timeout for quota reset
 ) -> AgentPromptResponse:
     """Execute Claude Code with intelligent retry logic and model fallback.
 
@@ -434,16 +435,18 @@ def prompt_claude_code_with_retry(
     - Exponential backoff with jitter
     - Longer delays for rate limiting (starts at 30s)
     - Automatic model fallback when quota is exhausted (opus -> sonnet -> haiku)
+    - Intelligent degradation when all models exhausted (waits for quota reset)
+    - Continues until success or timeout (default: 1 hour)
     - Detailed logging during retries
-    - Configurable max retries and base delay
 
     Args:
         request: The prompt request configuration
-        max_retries: Maximum number of retry attempts (default: 5)
+        max_retries: Maximum number of retry attempts (default: 15)
         base_delay: Base delay in seconds for exponential backoff (default: 5)
+        max_wait_time: Maximum total time to wait for quota reset in seconds (default: 3600 = 1 hour)
 
     Returns:
-        AgentPromptResponse with output and retry code
+        AgentPromptResponse with output or best-effort result
     """
     logger = get_retry_logger(request.adw_id)
     original_model = request.model
@@ -462,7 +465,9 @@ def prompt_claude_code_with_retry(
     ]
 
     attempt = 0
-    while attempt <= max_retries:
+    start_time = time.time()
+
+    while attempt <= max_retries or (time.time() - start_time) < max_wait_time:
         # Execute the request
         response = prompt_claude_code(current_request)
 
@@ -527,19 +532,39 @@ def prompt_claude_code_with_retry(
                 time.sleep(degradation_delay)
                 continue
             else:
-                # Max retries exhausted - return best effort result
-                logger.error(
-                    f"❌ Quota exhausted and max retries reached. "
-                    f"Returning best-effort response."
-                )
-                # Don't fail completely - return what we have
-                if response.output:
-                    response = AgentPromptResponse(
-                        success=True,  # Mark as best-effort success
-                        output=response.output,
-                        token_usage=response.token_usage,
+                # Max retries exhausted - check if time limit still has room
+                elapsed_time = time.time() - start_time
+                if elapsed_time < max_wait_time:
+                    # Still within time limit - continue with degradation retries
+                    attempt += 1
+                    degradation_delays = [30, 60, 120, 300]
+                    degradation_delay = degradation_delays[min(attempt - 1, len(degradation_delays) - 1)]
+
+                    logger.warning(
+                        f"⚠️ Max retries reached ({max_retries}) but time limit not exceeded. "
+                        f"Continuing degradation retry..."
                     )
-                return response
+                    logger.warning(
+                        f"⏳ Degradation retry (attempt {attempt}) in {degradation_delay}s "
+                        f"(elapsed: {elapsed_time:.0f}s / {max_wait_time}s)"
+                    )
+
+                    time.sleep(degradation_delay)
+                    continue
+                else:
+                    # Time limit exceeded - return best effort result
+                    logger.error(
+                        f"❌ Time limit exceeded ({max_wait_time}s). "
+                        f"Returning best-effort response after {attempt} attempts."
+                    )
+                    # Don't fail completely - return what we have
+                    if response.output:
+                        response = AgentPromptResponse(
+                            success=True,  # Mark as best-effort success
+                            output=response.output,
+                            token_usage=response.token_usage,
+                        )
+                    return response
 
         # Check if this is a retryable error
         if response.retry_code in retryable_codes:
@@ -577,11 +602,29 @@ def prompt_claude_code_with_retry(
                 logger.info(f"🔄 Retrying attempt {attempt + 1} with model {current_model}...")
                 continue
             else:
-                logger.error(
-                    f"❌ Max retries ({max_retries}) exhausted. "
-                    f"Last error: {response.retry_code.value}"
-                )
-                return response
+                # Max retries exhausted - check if time limit still has room
+                elapsed_time = time.time() - start_time
+                if elapsed_time < max_wait_time:
+                    # Still within time limit - continue with long wait
+                    attempt += 1
+                    degradation_delay = 300  # 5-minute wait for quota reset
+                    logger.warning(
+                        f"⚠️ Max retries reached ({max_retries}) but time limit not exceeded. "
+                        f"Continuing with longer waits..."
+                    )
+                    logger.warning(
+                        f"⏳ Retry {attempt} in {degradation_delay}s "
+                        f"(elapsed: {elapsed_time:.0f}s / {max_wait_time}s)"
+                    )
+                    time.sleep(degradation_delay)
+                    continue
+                else:
+                    # Time limit exceeded
+                    logger.error(
+                        f"❌ Max retries ({max_retries}) exhausted and time limit exceeded. "
+                        f"Last error: {response.retry_code.value}"
+                    )
+                    return response
 
         # Unknown error code - return as-is
         return response
