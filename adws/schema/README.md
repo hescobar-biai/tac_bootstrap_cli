@@ -1,0 +1,364 @@
+# TAC Bootstrap Orchestrator Database Schema
+
+## Overview
+
+The TAC Bootstrap orchestrator uses SQLite for persistent state tracking of agent workflows, prompts, and execution logs. This zero-configuration database automatically initializes on first access and provides full observability into agent orchestration.
+
+**Schema Version:** 0.8.0
+**Database Engine:** SQLite 3.35+
+**Async Driver:** aiosqlite >=0.19.0
+
+### Core Tables
+
+| Table | Purpose | Record Count |
+|-------|---------|--------------|
+| `orchestrator_agents` | Agent type definitions (templates) | Low (~10-50) |
+| `agents` | Runtime agent instances per workflow | Medium (100s-1000s) |
+| `prompts` | Individual LLM prompt executions | High (1000s-10000s) |
+| `agent_logs` | Agent lifecycle events | High (1000s-10000s) |
+| `system_logs` | System-wide logging | High (1000s-10000s) |
+
+## Database Location
+
+**Default Path:**
+```
+adws/schema/orchestrator.db
+```
+
+**Override via Environment Variable:**
+```bash
+export TAC_ORCHESTRATOR_DB=/path/to/custom/location.db
+```
+
+The database file is automatically created on first access and gitignored by default. No manual setup required.
+
+## Auto-Initialization
+
+The database follows a **zero-config** pattern:
+
+1. On first import of database module, check if DB file exists
+2. If not exists, create file and run `schema_orchestrator.sql`
+3. If exists, verify schema version and run migrations if needed
+4. Enable WAL mode for concurrency
+5. Enable foreign key constraints
+
+All initialization happens transparently in `adw_database.py` (Task 8).
+
+## Schema Tables
+
+### 1. orchestrator_agents
+
+Agent type definitions registered in the system. These are templates that spawn runtime instances.
+
+**Key Fields:**
+- `id` (TEXT): UUID primary key
+- `name` (TEXT): Unique agent type name (e.g., 'sdlc_planner')
+- `agent_type` (TEXT): Classification (planner, builder, reviewer, tester, orchestrator, utility)
+- `capabilities` (TEXT): JSON array of capabilities
+- `default_model` (TEXT): Default LLM model
+- `created_at`, `updated_at` (TEXT): ISO 8601 timestamps
+
+**Constraints:**
+- UNIQUE on `name`
+- CHECK on `agent_type` enum values
+- Auto-update trigger on `updated_at`
+
+### 2. agents
+
+Runtime instances of agents spawned during workflow executions. Each workflow session spawns one or more agents.
+
+**Key Fields:**
+- `id` (TEXT): UUID primary key
+- `orchestrator_agent_id` (TEXT): FK to orchestrator_agents
+- `session_id` (TEXT): Groups agents in same workflow
+- `parent_agent_id` (TEXT): FK to parent agent (for hierarchical spawning)
+- `status` (TEXT): Agent state (initializing, planning, executing, reviewing, completed, failed, cancelled)
+- `context`, `config` (TEXT): JSON objects
+- `started_at`, `completed_at` (TEXT): Timestamps
+- `cost_usd` (REAL): Accumulated cost
+- `error_message` (TEXT): Error details if failed
+
+**Constraints:**
+- FK to orchestrator_agents with CASCADE delete
+- FK to parent agent with SET NULL
+- CHECK on `status` enum values
+
+### 3. prompts
+
+Individual LLM prompt executions within an agent's lifecycle. Each prompt represents a single request-response cycle.
+
+**Key Fields:**
+- `id` (TEXT): UUID primary key
+- `agent_id` (TEXT): FK to agents
+- `prompt_type` (TEXT): Type (adw, command, followup, correction, tool_call)
+- `prompt_name` (TEXT): Name of ADW/command
+- `prompt_text`, `response_text` (TEXT): Request and response
+- `status` (TEXT): Execution status (pending, streaming, completed, failed, cancelled)
+- `model_used` (TEXT): LLM model identifier
+- `tokens_input`, `tokens_output` (INTEGER): Token counts
+- `cost_usd` (REAL): Prompt cost
+- `latency_ms` (INTEGER): Response time
+- `created_at`, `completed_at` (TEXT): Timestamps
+- `error_message` (TEXT): Error details if failed
+
+**Constraints:**
+- FK to agents with CASCADE delete
+- CHECK on `prompt_type` and `status` enum values
+
+### 4. agent_logs
+
+Lifecycle events for individual agents (state transitions, milestones, errors).
+
+**Key Fields:**
+- `id` (INTEGER): Auto-increment primary key
+- `agent_id` (TEXT): FK to agents
+- `log_level` (TEXT): Severity (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+- `log_type` (TEXT): Event category (state_change, milestone, error, performance, tool_call, cost_update)
+- `message` (TEXT): Human-readable log message
+- `details` (TEXT): JSON object with additional context
+- `created_at` (TEXT): Timestamp
+
+**Constraints:**
+- FK to agents with CASCADE delete
+- CHECK on `log_level` and `log_type` enum values
+
+### 5. system_logs
+
+System-wide events not tied to specific agents (orchestrator operations, database events, WebSocket connections).
+
+**Key Fields:**
+- `id` (INTEGER): Auto-increment primary key
+- `log_level` (TEXT): Severity (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+- `component` (TEXT): System component (orchestrator, database, websocket, api)
+- `message` (TEXT): Log message
+- `details` (TEXT): JSON object
+- `created_at` (TEXT): Timestamp
+
+**Constraints:**
+- CHECK on `log_level` enum values
+
+## Data Types: SQLite → Python Mapping
+
+| SQLite Type | Python Type | Usage | Notes |
+|-------------|-------------|-------|-------|
+| TEXT | `str` | IDs, names, messages | UUIDs stored as strings |
+| TEXT | `datetime` | Timestamps | ISO 8601 format, use `datetime('now')` |
+| TEXT | `dict` | JSON objects | Serialize with `json.dumps()` |
+| INTEGER | `int` | Counts, IDs | Auto-increment for logs |
+| REAL | `float` / `Decimal` | Costs | Use `Decimal` for financial precision |
+
+**UUID Handling:**
+```python
+import uuid
+agent_id = str(uuid.uuid4())  # Store as TEXT
+```
+
+**Timestamp Handling:**
+```python
+from datetime import datetime
+# SQLite default: datetime('now') in UTC
+# Python parsing: datetime.fromisoformat(timestamp_str)
+```
+
+**JSON Handling:**
+```python
+import json
+context = json.dumps({"key": "value"})  # Store as TEXT
+parsed = json.loads(context)            # Load from TEXT
+```
+
+## Concurrency: WAL Mode
+
+SQLite Write-Ahead Logging (WAL) mode is enabled for better concurrency:
+
+**Benefits:**
+- Multiple readers + single writer simultaneously
+- Readers don't block writers
+- Writers don't block readers
+- Better crash recovery
+
+**Enabled via:**
+```sql
+PRAGMA journal_mode=WAL;
+```
+
+**Important:** WAL creates two additional files:
+- `orchestrator.db-shm` (shared memory)
+- `orchestrator.db-wal` (write-ahead log)
+
+These are managed automatically by SQLite. All three files should be gitignored.
+
+**aiosqlite Integration:**
+```python
+import aiosqlite
+
+async with aiosqlite.connect("orchestrator.db") as db:
+    await db.execute("PRAGMA journal_mode=WAL")
+    await db.execute("PRAGMA foreign_keys=ON")
+    # ... perform operations
+```
+
+## Migrations
+
+Versioned SQL migration files are stored in `migrations/` directory:
+
+```
+migrations/
+├── 001_initial.sql         # Initial schema (this file)
+├── 002_add_indexes.sql     # Future migration example
+└── 003_alter_agents.sql    # Future migration example
+```
+
+**Migration Naming Convention:**
+- Format: `NNN_description.sql`
+- NNN: Zero-padded sequential number (001, 002, ...)
+- description: Snake_case brief description
+
+**Migration Strategy:**
+1. Each migration file is idempotent (uses `IF NOT EXISTS`)
+2. Migrations run in numerical order
+3. Track applied migrations in `schema_version` table (future enhancement)
+4. Manual application: `sqlite3 orchestrator.db < migrations/001_initial.sql`
+
+## Performance: Strategic Indexes
+
+Six indexes optimize common query patterns:
+
+1. **idx_agents_session**: Lookup agents by workflow session
+2. **idx_agents_orch**: Lookup agents by orchestrator_agent_id
+3. **idx_prompts_agent**: Lookup prompts for specific agent
+4. **idx_prompts_status**: Filter prompts by status (pending, failed)
+5. **idx_agent_logs_agent**: Lookup logs for specific agent
+6. **idx_system_logs_level**: Filter system logs by severity
+
+**Query Performance Guidelines:**
+- Always filter by indexed columns when possible
+- Use `EXPLAIN QUERY PLAN` to verify index usage
+- Consider adding indexes if queries >100ms consistently
+
+## Inspection and Debugging
+
+### Using sqlite3 CLI
+
+**Open database:**
+```bash
+sqlite3 adws/schema/orchestrator.db
+```
+
+**Useful commands:**
+```sql
+-- List all tables
+.tables
+
+-- Show schema for a table
+.schema orchestrator_agents
+
+-- Show all indexes
+.indexes
+
+-- Query examples
+SELECT * FROM orchestrator_agents;
+SELECT name, status FROM agents WHERE session_id = 'session-123';
+SELECT COUNT(*) FROM prompts WHERE status = 'pending';
+SELECT * FROM agent_logs WHERE log_level = 'ERROR' ORDER BY created_at DESC LIMIT 10;
+
+-- Performance analysis
+.timer ON
+EXPLAIN QUERY PLAN SELECT * FROM agents WHERE session_id = 'session-123';
+```
+
+**Export data:**
+```bash
+# Dump entire database
+sqlite3 orchestrator.db .dump > backup.sql
+
+# Export specific table as CSV
+sqlite3 -header -csv orchestrator.db "SELECT * FROM prompts;" > prompts.csv
+```
+
+**Vacuum and optimize:**
+```bash
+# Reclaim space and optimize
+sqlite3 orchestrator.db "VACUUM;"
+
+# Analyze for query planner
+sqlite3 orchestrator.db "ANALYZE;"
+```
+
+## Future Upgrade: PostgreSQL Migration
+
+For production deployments requiring high concurrency (>10 concurrent users), multi-node HA, or >1M log records, upgrade to PostgreSQL.
+
+**Migration Path:**
+1. Export SQLite data: `sqlite3 orchestrator.db .dump > export.sql`
+2. Use pgloader for automated conversion:
+   ```bash
+   pgloader orchestrator.db postgresql://user:pass@localhost/tac_orchestrator
+   ```
+3. Update connection string in `adw_database.py`
+4. Run PostgreSQL-specific optimizations (vacuum, analyze)
+
+**Schema Translation:**
+- TEXT (UUIDs) → UUID type
+- TEXT (timestamps) → TIMESTAMPTZ
+- TEXT (JSON) → JSONB
+- REAL → DECIMAL for costs
+- All indexes preserved
+
+**Recommended PostgreSQL version:** 14+
+
+## Troubleshooting
+
+### Database locked errors
+- **Cause:** Multiple writers or long-running transactions
+- **Solution:** Ensure WAL mode enabled, use short transactions, close connections properly
+
+### Missing foreign key constraints
+- **Cause:** `PRAGMA foreign_keys=OFF` (SQLite default)
+- **Solution:** Always run `PRAGMA foreign_keys=ON` after connecting
+
+### Slow queries
+- **Diagnosis:** Use `EXPLAIN QUERY PLAN`
+- **Solution:** Ensure queries use indexes, add indexes if needed, run `ANALYZE`
+
+### Schema version mismatch
+- **Diagnosis:** Check migration files applied
+- **Solution:** Run missing migrations in order
+
+### Disk space issues
+- **Cause:** Unbounded log growth
+- **Solution:** Implement retention policy (Task 19: utility scripts)
+
+## Related Files
+
+- **Schema Definition:** `schema_orchestrator.sql`
+- **Migrations:** `migrations/001_initial.sql`
+- **Pydantic Models:** `adws/adw_modules/orch_database_models.py` (Task 7)
+- **Database Operations:** `adws/adw_modules/adw_database.py` (Task 8)
+- **Test Suite:** `tac_bootstrap_cli/tests/test_database.py` (Task 15)
+- **Utility Scripts:** `scripts/setup_database.sh` (Task 19)
+
+## Security Considerations
+
+- Database file permissions: 0600 (owner read/write only)
+- No sensitive data in logs (redact API keys, credentials)
+- Parameterized queries only (prevent SQL injection)
+- No external network access (local file only)
+
+## Backup Recommendations
+
+**Development:**
+- Gitignore `*.db` files
+- Manual backups before major migrations
+
+**Production:**
+- Automated daily backups via cron
+- Retention: 30 days
+- Test restore process monthly
+
+## Additional Resources
+
+- [SQLite Documentation](https://www.sqlite.org/docs.html)
+- [aiosqlite Documentation](https://aiosqlite.omnilib.dev/)
+- [SQLite WAL Mode](https://www.sqlite.org/wal.html)
+- [pgloader Documentation](https://pgloader.readthedocs.io/)
