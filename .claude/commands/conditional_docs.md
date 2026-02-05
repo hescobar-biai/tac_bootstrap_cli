@@ -2072,3 +2072,16 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When understanding YAML frontmatter structure for skills
     - When generating projects that need Skills System
     - When working with TAC-14 features
+
+- app_docs/feature-feature_Tac_14_Task_8-sqlite-database-operations.md
+  - Conditions:
+    - When implementing database persistence for orchestrator workflows
+    - When working with SQLite/aiosqlite async operations
+    - When understanding DatabaseManager class and CRUD operations
+    - When implementing orchestrator agent tracking (orchestrator_agents, agents tables)
+    - When working with agent logs, prompts, or system logs tables
+    - When migrating from SQLite to PostgreSQL (migration path documented)
+    - When configuring database paths or environment variables
+    - When understanding zero-configuration database patterns
+    - When working with DDD Lite infrastructure layer for TAC-14
+    - When integrating database operations into ADW workflows
