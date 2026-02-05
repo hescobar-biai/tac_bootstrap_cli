@@ -1,103 +1,121 @@
-"""CQRS endpoints for orchestrator agents."""
+"""Orchestrator Agents Router - CQRS endpoints for orchestrator_agents table."""
 
-from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from typing import Any
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel, Field
 
-from adws.adw_modules.adw_database import DatabaseManager
-from orchestrator_web.dependencies import get_db_manager
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from adw_modules.adw_database import DatabaseManager
+from dependencies import get_db_manager
 
 router = APIRouter()
 
 
-class CreateOrchestratorAgentRequest(BaseModel):
-    """Request model for creating an orchestrator agent."""
-    name: str
+# Pydantic Models for Request/Response
+class OrchestratorAgentCreate(BaseModel):
+    """Request model for creating orchestrator agent."""
+    name: str = Field(..., min_length=1, max_length=255)
     description: str
-    type: str
-    capabilities: dict
-    model: str = "claude-sonnet-4"
+    agent_type: str = Field(..., description="Agent type: 'skill', 'custom', 'orchestrator'")
+    capabilities: str = Field(..., description="Comma-separated capabilities")
+    default_model: str = Field(default="claude-sonnet-3.5")
+    metadata: dict[str, Any] | None = None
 
 
-class UpdateOrchestratorAgentRequest(BaseModel):
-    """Request model for updating an orchestrator agent."""
-    name: str | None = None
+class OrchestratorAgentUpdate(BaseModel):
+    """Request model for updating orchestrator agent."""
     description: str | None = None
-    type: str | None = None
-    capabilities: dict | None = None
-    model: str | None = None
+    agent_type: str | None = None
+    capabilities: str | None = None
+    default_model: str | None = None
+    is_active: bool | None = None
+    metadata: dict[str, Any] | None = None
 
+
+# CQRS Endpoints
 
 @router.get("/agents")
-async def list_agents(
-    db: Annotated[DatabaseManager, Depends(get_db_manager)]
-):
-    """List all orchestrator agents."""
+async def list_orchestrator_agents(
+    db: DatabaseManager = Depends(get_db_manager)
+) -> list[dict[str, Any]]:
+    """List all orchestrator agents (query side)."""
     agents = await db.list_orchestrator_agents()
-    return {"agents": agents}
+    return agents
 
 
 @router.post("/agents", status_code=201)
-async def create_agent(
-    request: CreateOrchestratorAgentRequest,
-    db: Annotated[DatabaseManager, Depends(get_db_manager)]
-):
-    """Create a new orchestrator agent."""
+async def create_orchestrator_agent(
+    agent: OrchestratorAgentCreate,
+    db: DatabaseManager = Depends(get_db_manager)
+) -> dict[str, Any]:
+    """Create new orchestrator agent (command side)."""
     agent_id = await db.create_orchestrator_agent(
-        name=request.name,
-        description=request.description,
-        type=request.type,
-        capabilities=request.capabilities,
-        model=request.model
+        name=agent.name,
+        description=agent.description,
+        agent_type=agent.agent_type,
+        capabilities=agent.capabilities,
+        default_model=agent.default_model,
+        metadata=agent.metadata
     )
-    return {"id": agent_id, "message": "Agent created successfully"}
+    
+    # Return created agent
+    created = await db.get_orchestrator_agent(agent_id)
+    if not created:
+        raise HTTPException(status_code=500, detail="Failed to retrieve created agent")
+    
+    return created
 
 
 @router.get("/agents/{agent_id}")
-async def get_agent(
+async def get_orchestrator_agent(
     agent_id: str,
-    db: Annotated[DatabaseManager, Depends(get_db_manager)]
-):
-    """Get a specific orchestrator agent by ID."""
+    db: DatabaseManager = Depends(get_db_manager)
+) -> dict[str, Any]:
+    """Get orchestrator agent by ID (query side)."""
     agent = await db.get_orchestrator_agent(agent_id)
-    if agent is None:
-        raise HTTPException(status_code=404, detail="Agent not found")
+    if not agent:
+        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
     return agent
 
 
 @router.put("/agents/{agent_id}")
-async def update_agent(
+async def update_orchestrator_agent(
     agent_id: str,
-    request: UpdateOrchestratorAgentRequest,
-    db: Annotated[DatabaseManager, Depends(get_db_manager)]
-):
-    """Update an orchestrator agent."""
-    # Build update dict with only provided fields
-    updates = {}
-    if request.name is not None:
-        updates["name"] = request.name
-    if request.description is not None:
-        updates["description"] = request.description
-    if request.type is not None:
-        updates["type"] = request.type
-    if request.capabilities is not None:
-        updates["capabilities"] = request.capabilities
-    if request.model is not None:
-        updates["model"] = request.model
-
-    if not updates:
-        raise HTTPException(status_code=400, detail="No fields to update")
-
-    await db.update_orchestrator_agent(agent_id, **updates)
-    return {"message": "Agent updated successfully"}
+    updates: OrchestratorAgentUpdate,
+    db: DatabaseManager = Depends(get_db_manager)
+) -> dict[str, Any]:
+    """Update orchestrator agent (command side)."""
+    # Check agent exists
+    existing = await db.get_orchestrator_agent(agent_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    
+    # Build update dict (only provided fields)
+    update_data = updates.model_dump(exclude_unset=True)
+    
+    await db.update_orchestrator_agent(agent_id, **update_data)
+    
+    # Return updated agent
+    updated = await db.get_orchestrator_agent(agent_id)
+    if not updated:
+        raise HTTPException(status_code=500, detail="Failed to retrieve updated agent")
+    
+    return updated
 
 
-@router.delete("/agents/{agent_id}")
-async def delete_agent(
+@router.delete("/agents/{agent_id}", status_code=204)
+async def delete_orchestrator_agent(
     agent_id: str,
-    db: Annotated[DatabaseManager, Depends(get_db_manager)]
+    db: DatabaseManager = Depends(get_db_manager)
 ):
-    """Delete an orchestrator agent."""
+    """Delete orchestrator agent (command side)."""
+    # Check agent exists
+    existing = await db.get_orchestrator_agent(agent_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    
     await db.delete_orchestrator_agent(agent_id)
-    return {"message": "Agent deleted successfully"}
+    return None
