@@ -23,6 +23,8 @@ from adw_modules.utils import parse_json, get_target_branch
 
 # Token optimization constants
 MAX_ISSUE_BODY_LENGTH = 2000  # Truncate issue body to reduce token usage
+MAX_FILE_REFERENCE_SIZE = 5000  # Max chars per referenced file (Task #13)
+MAX_CLARIFICATION_LENGTH = 1000  # Max chars for clarification responses (Task #13)
 
 
 # Agent name constants
@@ -333,11 +335,16 @@ The following documentation has been loaded and should inform your decisions:
 Use this documentation to make informed decisions aligned with project standards and best practices.
 """
 
+    # Token optimization: Use truncated issue body (Task #13)
+    issue_body_truncated = issue.body or ""
+    if len(issue_body_truncated) > MAX_ISSUE_BODY_LENGTH:
+        issue_body_truncated = issue_body_truncated[:MAX_ISSUE_BODY_LENGTH] + f"\n\n[TRUNCATED - full body exceeds {MAX_ISSUE_BODY_LENGTH} chars]"
+
     prompt = f"""You are a senior software architect making implementation decisions.
 
 ## Issue
 Title: {issue.title}
-Body: {issue.body}
+Body: {issue_body_truncated}
 {context_section}
 ## Questions to Resolve
 {questions_text}
@@ -394,6 +401,12 @@ Return JSON:
             resolved_md += f"**Q:** {d.get('question', 'N/A')}\n"
             resolved_md += f"**A:** {d.get('decision', 'N/A')}\n"
             resolved_md += f"*{d.get('rationale', 'N/A')}*\n\n"
+
+        # Token optimization: Limit clarification text size (Task #13)
+        if len(resolved_md) > MAX_CLARIFICATION_LENGTH:
+            original_len = len(resolved_md)
+            resolved_md = resolved_md[:MAX_CLARIFICATION_LENGTH] + f"\n\n[TRUNCATED - clarifications exceed {MAX_CLARIFICATION_LENGTH} chars, showing first {MAX_CLARIFICATION_LENGTH} of {original_len}]"
+            logger.info(f"Truncated clarifications: {original_len} → {len(resolved_md)} chars")
 
         logger.info(f"Auto-resolved {len(data.get('decisions', []))} clarifications")
         return resolved_md, None
@@ -1811,8 +1824,16 @@ def extract_file_references_from_issue(
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:
                         content = f.read()
+
+                        # Token optimization: Limit file size (Task #13)
+                        if len(content) > MAX_FILE_REFERENCE_SIZE:
+                            original_size = len(content)
+                            content = content[:MAX_FILE_REFERENCE_SIZE] + f"\n\n[TRUNCATED - file exceeds {MAX_FILE_REFERENCE_SIZE} chars, showing first {MAX_FILE_REFERENCE_SIZE} of {original_size}]"
+                            logger.info(f"✓ Loaded referenced file (truncated): {file_ref} ({original_size} → {len(content)} chars)")
+                        else:
+                            logger.info(f"✓ Loaded referenced file: {file_ref} ({len(content)} chars)")
+
                         loaded_files[file_ref] = content
-                        logger.info(f"✓ Loaded referenced file: {file_ref} ({len(content)} chars)")
                         break  # Found and loaded, skip other paths
                 except Exception as e:
                     logger.warning(f"Failed to read {file_path}: {e}")
