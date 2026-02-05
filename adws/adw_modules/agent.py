@@ -496,6 +496,8 @@ def prompt_claude_code_with_retry(
 
         # Quota exhausted - try fallback model or degradation strategies
         if response.retry_code == RetryCode.QUOTA_EXHAUSTED:
+            # Log the actual error for debugging false positives
+            logger.warning(f"📋 Error triggering quota detection: {response.output[:300]}")
             fallback_model = get_fallback_model(current_model)
 
             # Strategy 1: Try next model in fallback chain
