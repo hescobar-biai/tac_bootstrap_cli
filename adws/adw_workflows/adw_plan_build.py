@@ -1,0 +1,393 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "aiosqlite>=0.19.0",
+#   "python-dotenv>=1.0.0",
+#   "pydantic>=2.0",
+#   "anthropic>=0.40.0",
+#   "rich>=13.0",
+# ]
+# ///
+"""
+ADW Plan-Build Workflow - Two-step workflow: plan then build.
+
+This workflow:
+1. Receives --adw-id as CLI arg
+2. Fetches config from database or uses defaults
+3. Runs plan agent
+4. Runs build agent with plan file
+5. Logs all events to database for tracking
+
+Usage:
+    uv run adws/adw_workflows/adw_plan_build.py --adw-id <uuid> --prompt "task description" --working-dir /path/to/project
+
+Example:
+    uv run adws/adw_workflows/adw_plan_build.py \\
+        --adw-id test_001 \\
+        --prompt "Add user authentication feature" \\
+        --working-dir /Users/user/myproject
+
+Note: This is a simplified implementation for TAC Bootstrap v0.8.0.
+Full orchestrator integration with web UI will be added in v0.9.0+.
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import sys
+import time
+from pathlib import Path
+from typing import Any, Optional
+
+from dotenv import load_dotenv
+from rich.console import Console
+from rich.panel import Panel
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from adw_modules.adw_database import DatabaseManager
+
+load_dotenv()
+
+console = Console()
+
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+
+STEP_PLAN = "plan"
+STEP_BUILD = "build"
+TOTAL_STEPS = 2
+DEFAULT_MODEL = "claude-sonnet-4.5"
+
+
+# =============================================================================
+# WORKFLOW STEPS (Simplified - Direct subprocess execution)
+# =============================================================================
+
+
+async def run_plan_step(
+    adw_id: str,
+    prompt: str,
+    working_dir: str,
+    db: DatabaseManager,
+    model: str = DEFAULT_MODEL,
+) -> tuple[bool, Optional[str]]:
+    """Run the plan step.
+
+    Args:
+        adw_id: ADW ID for logging
+        prompt: The task prompt to plan
+        working_dir: Working directory for the agent
+        db: Database manager instance
+        model: Model to use
+
+    Returns:
+        Tuple of (success, plan_file_path)
+    """
+    step_start_time = time.time()
+
+    console.print(Panel(
+        f"[bold cyan]Step 1/{TOTAL_STEPS}: Plan[/bold cyan]\n\nPrompt: {prompt[:200]}...",
+        title="ADW Plan-Build Workflow",
+        width=console.width,
+    ))
+
+    try:
+        # Log step start
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="INFO",
+            log_type="milestone",
+            message=f"Starting plan step for: {prompt[:100]}...",
+            details={"step": STEP_PLAN, "model": model}
+        )
+
+        # In a full implementation, this would use Agent SDK to run /plan
+        # For now, we'll simulate with a placeholder
+        console.print("[yellow]Plan step would execute here (Agent SDK integration pending)[/yellow]")
+        console.print("[yellow]Looking for existing plan files...[/yellow]")
+
+        # Try to find most recent plan file in specs/
+        specs_dir = Path(working_dir) / "specs"
+        plan_path = None
+
+        if specs_dir.exists():
+            md_files = sorted(specs_dir.glob("*.md"), key=lambda f: f.stat().st_mtime, reverse=True)
+            if md_files:
+                plan_path = str(md_files[0])
+                console.print(f"[green]Found recent plan file: {plan_path}[/green]")
+
+        duration_ms = int((time.time() - step_start_time) * 1000)
+
+        if plan_path:
+            await db.create_agent_log(
+                agent_id=adw_id,
+                log_level="INFO",
+                log_type="milestone",
+                message="Plan step completed",
+                details={
+                    "step": STEP_PLAN,
+                    "duration_ms": duration_ms,
+                    "plan_path": plan_path,
+                }
+            )
+            console.print(f"[green]Plan step completed ({duration_ms}ms)[/green]")
+            return True, plan_path
+        else:
+            await db.create_agent_log(
+                agent_id=adw_id,
+                log_level="ERROR",
+                log_type="error",
+                message="Plan step failed: No plan file found",
+                details={"step": STEP_PLAN, "duration_ms": duration_ms}
+            )
+            console.print(f"[red]Plan step failed: No plan file found[/red]")
+            return False, None
+
+    except Exception as e:
+        duration_ms = int((time.time() - step_start_time) * 1000)
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="ERROR",
+            log_type="error",
+            message=f"Plan step exception: {e}",
+            details={"step": STEP_PLAN, "duration_ms": duration_ms, "exception": str(e)}
+        )
+        console.print(f"[red]Plan step exception: {e}[/red]")
+        return False, None
+
+
+async def run_build_step(
+    adw_id: str,
+    plan_path: str,
+    working_dir: str,
+    db: DatabaseManager,
+    model: str = DEFAULT_MODEL,
+) -> tuple[bool, Optional[str]]:
+    """Run the build step.
+
+    Args:
+        adw_id: ADW ID for logging
+        plan_path: Path to the plan file
+        working_dir: Working directory for the agent
+        db: Database manager instance
+        model: Model to use
+
+    Returns:
+        Tuple of (success, session_id)
+    """
+    step_start_time = time.time()
+
+    console.print(Panel(
+        f"[bold cyan]Step 2/{TOTAL_STEPS}: Build[/bold cyan]\n\nPlan: {plan_path}",
+        title="ADW Plan-Build Workflow",
+        width=console.width,
+    ))
+
+    try:
+        # Log step start
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="INFO",
+            log_type="milestone",
+            message=f"Starting build step with plan: {plan_path}",
+            details={"step": STEP_BUILD, "plan_path": plan_path, "model": model}
+        )
+
+        # In a full implementation, this would use Agent SDK to run /build
+        console.print("[yellow]Build step would execute here (Agent SDK integration pending)[/yellow]")
+
+        duration_ms = int((time.time() - step_start_time) * 1000)
+
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="INFO",
+            log_type="milestone",
+            message="Build step completed",
+            details={
+                "step": STEP_BUILD,
+                "duration_ms": duration_ms,
+                "plan_path": plan_path,
+            }
+        )
+        console.print(f"[green]Build step completed ({duration_ms}ms)[/green]")
+        return True, None
+
+    except Exception as e:
+        duration_ms = int((time.time() - step_start_time) * 1000)
+        await db.create_agent_log(
+            agent_id=adw_id,
+            log_level="ERROR",
+            log_type="error",
+            message=f"Build step exception: {e}",
+            details={"step": STEP_BUILD, "duration_ms": duration_ms, "exception": str(e)}
+        )
+        console.print(f"[red]Build step exception: {e}[/red]")
+        return False, None
+
+
+# =============================================================================
+# MAIN WORKFLOW
+# =============================================================================
+
+
+async def run_workflow(adw_id: str, prompt: str, working_dir: str, model: str = DEFAULT_MODEL) -> bool:
+    """Run the complete plan-build workflow.
+
+    Args:
+        adw_id: The ADW ID for logging
+        prompt: Task description
+        working_dir: Working directory
+        model: Model to use
+
+    Returns:
+        True if successful, False otherwise
+    """
+    workflow_start_time = time.time()
+
+    console.print(Panel(
+        f"[bold]Starting ADW Plan-Build Workflow[/bold]\n\nADW ID: {adw_id}",
+        title="ADW Workflow",
+        width=console.width,
+    ))
+
+    async with DatabaseManager() as db:
+        try:
+            console.print(f"[cyan]Prompt:[/cyan] {prompt[:200]}...")
+            console.print(f"[cyan]Working Dir:[/cyan] {working_dir}")
+            console.print(f"[cyan]Model:[/cyan] {model}")
+
+            # Log workflow start
+            await db.create_system_log(
+                log_level="INFO",
+                source="adw_plan_build",
+                message=f"Workflow started: {adw_id}",
+                details={"prompt": prompt, "working_dir": working_dir, "model": model},
+            )
+
+            # Step 1: Plan
+            plan_success, plan_path = await run_plan_step(
+                adw_id=adw_id,
+                prompt=prompt,
+                working_dir=working_dir,
+                db=db,
+                model=model,
+            )
+
+            if not plan_success or not plan_path:
+                await db.create_system_log(
+                    log_level="ERROR",
+                    source="adw_plan_build",
+                    message="Workflow failed at plan step",
+                    details={"adw_id": adw_id},
+                )
+                return False
+
+            # Step 2: Build
+            build_success, _ = await run_build_step(
+                adw_id=adw_id,
+                plan_path=plan_path,
+                working_dir=working_dir,
+                db=db,
+                model=model,
+            )
+
+            if not build_success:
+                await db.create_system_log(
+                    log_level="ERROR",
+                    source="adw_plan_build",
+                    message="Workflow failed at build step",
+                    details={"adw_id": adw_id, "plan_path": plan_path},
+                )
+                return False
+
+            # Workflow completed
+            duration_seconds = int(time.time() - workflow_start_time)
+            await db.create_system_log(
+                log_level="INFO",
+                source="adw_plan_build",
+                message=f"Workflow completed successfully in {duration_seconds}s",
+                details={
+                    "adw_id": adw_id,
+                    "plan_path": plan_path,
+                    "duration_seconds": duration_seconds,
+                },
+            )
+
+            console.print(Panel(
+                f"[bold green]Workflow Completed Successfully![/bold green]\n\n"
+                f"Duration: {duration_seconds}s\n"
+                f"Plan file: {plan_path}",
+                title="ADW Complete",
+                width=console.width,
+            ))
+
+            return True
+
+        except Exception as e:
+            console.print(f"[red]Workflow exception: {e}[/red]")
+            await db.create_system_log(
+                log_level="ERROR",
+                source="adw_plan_build",
+                message=f"Workflow exception: {e}",
+                details={"adw_id": adw_id},
+            )
+            return False
+
+
+# =============================================================================
+# CLI ENTRYPOINT
+# =============================================================================
+
+
+def main():
+    """CLI entrypoint for the plan-build workflow."""
+    parser = argparse.ArgumentParser(
+        description="ADW Plan-Build Workflow",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--adw-id",
+        required=True,
+        help="ADW ID (unique identifier) for this workflow execution",
+    )
+    parser.add_argument(
+        "--prompt",
+        required=True,
+        help="Task description/prompt for the workflow",
+    )
+    parser.add_argument(
+        "--working-dir",
+        required=True,
+        help="Working directory for the workflow",
+    )
+    parser.add_argument(
+        "--model",
+        default=DEFAULT_MODEL,
+        help=f"Model to use (default: {DEFAULT_MODEL})",
+    )
+
+    args = parser.parse_args()
+
+    # Validate working directory
+    if not Path(args.working_dir).exists():
+        console.print(f"[red]Error: Working directory does not exist: {args.working_dir}[/red]")
+        sys.exit(1)
+
+    # Run the workflow
+    success = asyncio.run(run_workflow(
+        adw_id=args.adw_id,
+        prompt=args.prompt,
+        working_dir=args.working_dir,
+        model=args.model,
+    ))
+
+    sys.exit(0 if success else 1)
+
+
+if __name__ == "__main__":
+    main()

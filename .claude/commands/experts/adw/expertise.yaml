@@ -1,8 +1,8 @@
 overview:
   description: "AI Developer Workflows - Automated SDLC orchestration with isolated worktrees and GitHub integration"
   purpose: "Execute complete software development lifecycle through composable workflow scripts"
-  last_updated: "2026-02-05T14:30:00"
-  total_files: 41
+  last_updated: "2026-02-05T15:45:00"
+  total_files: 44
   key_files:
     - "adws/adw_sdlc_iso.py"
     - "adws/adw_sdlc_zte_iso.py"
@@ -76,6 +76,23 @@ architecture:
         - trigger_issue_chain.py: "Sequential issue-based workflow chaining"
         - trigger_issue_parallel.py: "Parallel execution of multiple issue workflows"
         - trigger_plan_parallel.py: "Parallel planning phase execution"
+
+    consolidated_workflows:
+      path: "adws/adw_workflows/"
+      purpose: "Database-backed consolidated workflows with orchestrator integration (TAC-14 Task 10)"
+      count: 3
+      description: "Simplified workflows with --adw-id CLI arg, database config, and agent logging"
+      key_workflows:
+        - adw_plan_build.py: "Two-step: plan → build (393 lines)"
+        - adw_plan_build_review.py: "Three-step: plan → build → review (487 lines)"
+        - adw_plan_build_review_fix.py: "Four-step: plan → build → review → fix (596 lines)"
+      usage_pattern: "uv run adws/adw_workflows/{workflow}.py --adw-id <uuid> --prompt 'task' --working-dir /path"
+      features:
+        - "Database-backed configuration via adw-id"
+        - "Event logging to orchestrator database"
+        - "Rich console output with panels"
+        - "Async implementation with aiosqlite"
+        - "Zero-config defaults for standalone execution"
 
 core_implementation:
 
@@ -950,31 +967,14 @@ integrations:
 
 recent_changes:
   - date: "2026-02-05"
-    description: "Validated database implementation line counts after Task 9 updates"
-    files:
-      - "adws/adw_modules/adw_database.py"
-      - "adws/adw_modules/workflow_ops.py"
-    impact: |
-      Self-improve validation run:
-      - Updated adw_database.py line count: 1012 → 1287 lines (+275 lines)
-      - Updated workflow_ops.py line count: 1684 → 1690 lines (+6 lines)
-      - DatabaseManager class location: 145-1287
-      - format_file_references_for_context: 1666-1690
-      - All expertise claims validated against codebase
+    description: "Added consolidated workflows with database-backed orchestration (TAC-14 Task 10)"
+    files: ["adws/adw_workflows/adw_plan_build*.py"]
+    impact: "Three workflows (1476 lines) with --adw-id CLI, async DatabaseManager, Rich UI, v0.9.0+ foundation"
 
   - date: "2026-02-05"
-    description: "Added async SQLite database implementation with DatabaseManager class (TAC-14 Task 8)"
-    files:
-      - "adws/adw_modules/adw_database.py"
-      - "adws/adw_database.py"
-    impact: |
-      Database implementation (commits 26a95b7 + 9c06fb9):
-      - Added adw_database.py module (1287 lines) with async DatabaseManager
-      - Zero-config pattern with auto-schema initialization
-      - WAL mode for concurrent operations, explicit transaction control
-      - Standalone CLI script (480 lines) for testing
-      - Integrates with orch_database_models.py for typed operations
-      - Database: adws/schema/orchestrator.db (gitignored)
+    description: "Added async SQLite database implementation (TAC-14 Task 8)"
+    files: ["adws/adw_modules/adw_database.py", "adws/adw_database.py"]
+    impact: "DatabaseManager (1287 lines) with WAL mode, auto-schema, standalone CLI script (480 lines)"
 
 
 

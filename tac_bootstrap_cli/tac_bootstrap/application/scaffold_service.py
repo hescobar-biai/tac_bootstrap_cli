@@ -90,6 +90,9 @@ class ScaffoldService:
         # Add ADW files
         self._add_adw_files(plan, config, existing_repo)
 
+        # Add consolidated workflow files (TAC-14 Task 10)
+        self._add_adw_workflow_files(plan, config, existing_repo)
+
         # Add schema files
         self._add_schema_files(plan, config, existing_repo)
 
@@ -738,6 +741,40 @@ class ScaffoldService:
             reason="Parallel execution of tasks from plan files",
             executable=True,
         )
+
+    def _add_adw_workflow_files(
+        self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
+    ) -> None:
+        """Add consolidated workflow templates to plan (TAC-14 Task 10).
+
+        Adds three database-backed orchestration workflows:
+        - adw_plan_build.py: Basic Plan → Build orchestration
+        - adw_plan_build_review.py: Plan → Build → Review with validation
+        - adw_plan_build_review_fix.py: Plan → Build → Review → Fix with self-healing
+        """
+        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
+        adws_dir = config.paths.adws_dir
+
+        workflows = [
+            ("adw_plan_build.py", "Plan + Build workflow with database logging"),
+            (
+                "adw_plan_build_review.py",
+                "Plan + Build + Review workflow with database logging",
+            ),
+            (
+                "adw_plan_build_review_fix.py",
+                "Plan + Build + Review + Fix workflow with database logging",
+            ),
+        ]
+
+        for workflow, reason in workflows:
+            plan.add_file(
+                f"{adws_dir}/adw_workflows/{workflow}",
+                action=action,
+                template=f"adws/adw_workflows/{workflow}.j2",
+                reason=reason,
+                executable=True,
+            )
 
     def _add_schema_files(self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool) -> None:
         """Add adws/schema/ database schema files.
