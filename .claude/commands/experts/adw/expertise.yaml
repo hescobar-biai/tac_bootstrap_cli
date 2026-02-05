@@ -1,8 +1,8 @@
 overview:
   description: "AI Developer Workflows - Automated SDLC orchestration with isolated worktrees and GitHub integration"
   purpose: "Execute complete software development lifecycle through composable workflow scripts"
-  last_updated: "2026-02-04T19:00:00"
-  total_files: 26
+  last_updated: "2026-02-04T20:30:00"
+  total_files: 39
   key_files:
     - "adws/adw_sdlc_iso.py"
     - "adws/adw_sdlc_zte_iso.py"
@@ -53,10 +53,19 @@ architecture:
         - r2_uploader.py: "Cloudflare R2 uploader for context bundles"
         - adw_agent_sdk.py: "Abstract typed layer for Claude Agent SDK with Pydantic models (hooks, messages, sessions)"
 
+    schema:
+      path: "adws/schema/"
+      purpose: "SQLite database schema for orchestrator state tracking"
+      files:
+        - README.md: "Database schema documentation and usage guide"
+        - schema_orchestrator.sql: "Main schema definition with tables for agents, prompts, logs"
+        - migrations/001_initial.sql: "Initial migration script for schema v0.8.0"
+      description: "Zero-config SQLite database for persistent agent workflow tracking (Task 6)"
+
     triggers:
       path: "adws/adw_triggers/"
       purpose: "Event-driven workflow triggers"
-      count: 6
+      count: 5
       types:
         - trigger_cron.py: "Time-based workflow execution (scheduled tasks)"
         - trigger_webhook.py: "GitHub webhook handlers (issue events, PR events)"
@@ -130,7 +139,7 @@ core_implementation:
     key_functions:
       consult_expert:
         signature: "def consult_expert(domain: str, question: str, adw_id: str, logger: logging.Logger, working_dir: Optional[str]) -> AgentPromptResponse"
-        lines: "1450-1488"
+        lines: "1459-1498"
         purpose: "REUSE phase of Act → Learn → Reuse loop - consult domain expert using expertise.yaml"
         logic: |
           1. Build slash command: /experts:{domain}:question
@@ -142,7 +151,7 @@ core_implementation:
 
       improve_expert_knowledge:
         signature: "def improve_expert_knowledge(domain: str, check_git_diff: bool, focus_area: Optional[str], adw_id: str, logger: logging.Logger, working_dir: Optional[str]) -> AgentPromptResponse"
-        lines: "1491-1541"
+        lines: "1501-1558"
         purpose: "LEARN phase of Act → Learn → Reuse loop - update expertise.yaml based on code changes"
         logic: |
           1. Build args: [check_git_diff, focus_area]
@@ -922,64 +931,39 @@ integrations:
 
 recent_changes:
   - date: "2026-02-04"
-    description: "Added Agent SDK module with Pydantic models for Claude Agent SDK control"
+    description: "Added SQLite schema implementation for orchestrator state tracking (TAC-14 Task 6)"
     files:
-      - "adws/adw_modules/adw_agent_sdk.py"
+      - "adws/schema/README.md"
+      - "adws/schema/schema_orchestrator.sql"
+      - "adws/schema/migrations/001_initial.sql"
     impact: |
-      Agent SDK module (commit 0b22471):
-      - Added adw_agent_sdk.py with 1655 lines, 45 classes/functions
-      - Provides typed Pydantic models for Agent SDK configuration
-      - Includes: ModelName, HookEventName, PermissionDecision, MessageType enums
-      - Includes: ToolPermissions, TokenUsage, HookContext, HookResponse models
-      - Includes: PreToolUseInput/Output, PostToolUseOutput, UserPromptSubmitInput/Output
-      - Includes: SystemInitMessage, ResultMessage, ErrorMessage models
-      - Abstract layer - not yet integrated with ADW workflows
-      - Future use: Control Agent SDK hooks, sessions, and permissions from ADW
+      SQLite schema (commit 266666d):
+      - Added schema/ directory with orchestrator database schema
+      - Defines tables: orchestrator_agents, agents, prompts, agent_logs, system_logs
+      - Zero-config pattern with auto-initialization
+      - Schema v0.8.0 for persistent state tracking
+      - Supports async via aiosqlite
+      - Database location: adws/schema/orchestrator.db (gitignored)
 
   - date: "2026-02-04"
-    description: "Self-improve run: Added file reference auto-loading and enhanced GitHub retry logic"
+    description: "ZTE workflow now auto-loads file references from issue (hybrid detection)"
     files:
-      - "adws/adw_modules/workflow_ops.py"
-      - "adws/adw_modules/github.py"
-      - "adws/adw_plan_iso.py"
-      - ".claude/commands/experts/adw/expertise.yaml"
+      - "adws/adw_sdlc_zte_iso.py"
     impact: |
-      File reference auto-loading (commits 7938b3b, 6a4d663):
-      - Added extract_file_references_from_issue() (workflow_ops.py:1561-1659)
-      - Added format_file_references_for_context() (workflow_ops.py:1660-1684)
-      - Planning phase now auto-loads .md files referenced in issue body/comments
-      - Search locations: specs/, ai_docs/, ai_docs/doc/, root
-      - Integration in both scout-enhanced and standard planning paths
-      - Posts GitHub comment showing loaded files
-
-      Enhanced GitHub integration (commit a31a50c):
-      - _execute_with_retry() now handles network errors in addition to rate limits
-      - Network error types: connection reset, timeout, 502/503/504 errors
-      - Exponential backoff for network errors (2^attempt, capped at 30s)
-      - Improved resilience for GitHub API operations
-
-      Updated line counts:
-      - workflow_ops.py: 1547 → 1684 lines
+      ZTE enhancement (commit 2d0387f):
+      - ZTE workflow calls extract_file_references_from_issue()
+      - Auto-loads .md files referenced in issue body/comments
+      - Improves planning context for fully automated workflows
 
   - date: "2026-02-04"
-    description: "Self-improve run: Added TAC-13 expert system integration details from commit 4164f72"
-    files:
-      - ".claude/commands/experts/adw/expertise.yaml"
-      - "adws/adw_modules/workflow_ops.py"
-      - "adws/adw_plan_iso.py"
-      - "adws/adw_build_iso.py"
-      - "adws/adw_review_iso.py"
-      - "adws/adw_document_iso.py"
-      - "adws/adw_sdlc_iso.py"
-    impact: |
-      Added TAC-13 Act → Learn → Reuse loop implementation:
-      - Documented consult_expert() function (workflow_ops.py:1450-1488)
-      - Documented improve_expert_knowledge() function (workflow_ops.py:1491-1541)
-      - Added expert system agent constants (AGENT_EXPERT_ADW, AGENT_EXPERT_CLI, AGENT_EXPERT_COMMANDS)
-      - Documented --use-experts and --expert-learn flags in SDLC orchestrator
-      - Updated all phase workflow actions to include expert consultation steps
-      - Added detailed Act→Learn→Reuse implementation patterns with examples
-      - Documented focus areas for self-improve: planning_phase, review_phase, build_phase, document_phase
+    description: "Added Agent SDK module (adw_agent_sdk.py, 1655 lines) with typed Pydantic models for Claude Agent SDK"
+    files: ["adws/adw_modules/adw_agent_sdk.py"]
+    impact: "Abstract layer for hooks, messages, sessions - not yet integrated with workflows"
+
+  - date: "2026-02-04"
+    description: "File reference auto-loading and enhanced GitHub retry logic"
+    files: ["adws/adw_modules/workflow_ops.py", "adws/adw_modules/github.py", "adws/adw_plan_iso.py"]
+    impact: "Auto-loads .md files from issue. GitHub retry handles network errors. workflow_ops: 1684 lines"
 
 expert_system_integration:
   adw_expert:
