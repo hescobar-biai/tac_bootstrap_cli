@@ -288,13 +288,32 @@ def main():
     
     # Update issue number from state if available
     issue_number = state.get("issue_number", issue_number)
-    
-    # Track that this ADW workflow has run
-    state.append_adw_id("adw_ship_iso")
-    
+
     # Set up logger with ADW ID
     logger = setup_logger(adw_id, "adw_ship_iso")
+
+    # Check if ship phase already completed
+    completed_phases = state.get("all_adws", [])
+    if "adw_ship_iso" in completed_phases:
+        logger.info("Ship phase already completed - nothing to do")
+        print("✓ Ship phase already completed - branch already merged")
+        try:
+            make_issue_comment(
+                issue_number,
+                format_issue_message(
+                    adw_id,
+                    AGENT_SHIPPER,
+                    "✓ Ship phase already completed - branch already merged to target"
+                )
+            )
+        except Exception as e:
+            logger.warning(f"Failed to post comment: {e}")
+        sys.exit(0)
+
     logger.info(f"ADW Ship Iso starting - ID: {adw_id}, Issue: {issue_number}")
+
+    # Track that this ADW workflow has run
+    state.append_adw_id("adw_ship_iso")
     
     # Validate environment
     check_env_vars(logger)
