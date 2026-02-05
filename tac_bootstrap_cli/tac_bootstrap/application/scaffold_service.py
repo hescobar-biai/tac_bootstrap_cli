@@ -90,6 +90,9 @@ class ScaffoldService:
         # Add ADW files
         self._add_adw_files(plan, config, existing_repo)
 
+        # Add schema files
+        self._add_schema_files(plan, config, existing_repo)
+
         # Add script files
         self._add_script_files(plan, config, existing_repo)
 
@@ -732,6 +735,41 @@ class ScaffoldService:
             template="adws/adw_triggers/trigger_plan_parallel.py.j2",
             reason="Parallel execution of tasks from plan files",
             executable=True,
+        )
+
+    def _add_schema_files(self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool) -> None:
+        """Add adws/schema/ database schema files.
+
+        Creates SQLite schema for orchestrator database (TAC-14 Task 6):
+        - schema_orchestrator.sql: Complete schema with 5 tables, triggers, indexes
+        - README.md: Zero-config documentation, data types, migrations guide
+        - migrations/.gitkeep: Preserve migrations directory in git
+        """
+        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
+        adws_dir = config.paths.adws_dir
+
+        # Schema SQL file
+        plan.add_file(
+            f"{adws_dir}/schema/schema_orchestrator.sql",
+            action=action,
+            template="adws/schema/schema_orchestrator.sql.j2",
+            reason="SQLite orchestrator database schema",
+        )
+
+        # Schema README
+        plan.add_file(
+            f"{adws_dir}/schema/README.md",
+            action=action,
+            template="adws/schema/README.md.j2",
+            reason="Database schema documentation",
+        )
+
+        # Migrations directory .gitkeep
+        plan.add_file(
+            f"{adws_dir}/schema/migrations/.gitkeep",
+            action=action,
+            template="adws/schema/migrations/.gitkeep",
+            reason="Preserve migrations directory in git",
         )
 
     def _add_script_files(self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool) -> None:
