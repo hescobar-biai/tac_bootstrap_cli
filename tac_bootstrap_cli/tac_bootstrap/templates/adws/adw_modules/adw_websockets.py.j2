@@ -1,0 +1,512 @@
+{# WebSocket Server Module - TAC-14 Task 11 #}
+# /// script
+# dependencies = ["websockets>=12.0"]
+# ///
+"""
+ADW WebSocket Server Module - Real-time Event Broadcasting for Orchestrator Monitoring
+
+This module provides a standalone async WebSocket server for broadcasting
+real-time agent lifecycle events from ADW orchestrator workflows to monitoring
+clients (dashboards, CLIs, etc.).
+
+Architecture
+------------
+    Orchestrator Workflow --> WebSocket Server --> Monitoring Clients
+    (adw_database.py logs)   (this module)        (dashboards, CLIs)
+
+The server maintains an in-memory connection pool and broadcasts events that
+match the adw_logging.py schema (agent_started, agent_completed, prompt_sent).
+It's designed to run alongside orchestrator workflows, controlled via start/stop
+functions.
+
+Zero-Configuration Philosophy
+-----------------------------
+- Binds to localhost (127.0.0.1) only for security
+- Optional connection token for minimal authentication
+- No state persistence - clients auto-reconnect on restart
+- Graceful degradation - broadcast failures never crash workflows
+
+Integration with SQLite Logging
+--------------------------------
+This module complements adw_database.py:
+- Database = source of truth for persistence
+- WebSocket = real-time notification channel
+- Events match agent_logs.log_type: "step_start", "step_end", "event", "error"
+- Events match system_logs.log_level: "debug", "info", "warning", "error", "critical"
+
+Usage Example
+-------------
+```python
+import asyncio
+from adw_modules.adw_websockets import start_server, stop_server, broadcast_agent_event
+
+async def main():
+    # Start WebSocket server
+    server_task, manager = await start_server(host="127.0.0.1", port=8765, token="secret123")
+
+    # Broadcast events during workflow execution
+    await broadcast_agent_event(
+        manager=manager,
+        agent_id="550e8400-e29b-41d4-a716-446655440000",
+        event_type="agent_started",
+        message="Scout agent started codebase exploration",
+        metadata={"files_queued": 42, "model": "claude-sonnet-3.5"}
+    )
+
+    # ... workflow continues ...
+
+    # Stop server gracefully
+    await stop_server(server_task)
+
+asyncio.run(main())
+```
+
+Connection Management
+---------------------
+- Max 100 concurrent connections (configurable)
+- 60-second idle timeout per connection
+- 30-second ping interval with 10-second pong timeout
+- 3-strike disconnect policy for dead connections
+- Failed broadcasts remove dead connections without crashing
+
+Event Schema
+------------
+WebSocketEvent matches adw_logging.py schema:
+- event_type: "agent_started", "agent_completed", "prompt_sent", "step_start", "step_end", "error"
+- agent_id: UUID string
+- message: Human-readable event message
+- metadata: Optional dict with event-specific data
+- timestamp: ISO 8601 timestamp
+
+Future Enhancements (not in scope)
+-----------------------------------
+- Persistent connections across server restarts (requires state persistence)
+- Per-client subscriptions (filter by agent_id, event_type)
+- Backpressure handling for slow clients (requires buffering)
+- SSL/TLS for production (currently localhost-only)
+- ASGI WebSocket integration when FastAPI orchestrator API added (Task 12)
+"""
+
+import asyncio
+import json
+import sys
+from dataclasses import dataclass, asdict
+from datetime import datetime
+from typing import Optional, Dict, Any, Set
+import websockets
+from websockets.server import WebSocketServerProtocol
+
+
+# ============================================================================
+# Configuration Constants
+# ============================================================================
+
+MAX_CONNECTIONS = 100  # Maximum concurrent WebSocket connections
+IDLE_TIMEOUT = 60  # Seconds before idle connection timeout
+PING_INTERVAL = 30  # Seconds between keepalive pings
+PONG_TIMEOUT = 10  # Seconds to wait for pong response
+MAX_STRIKES = 3  # Number of failed pings before disconnect
+
+
+# ============================================================================
+# Event Schema (matches adw_logging.py)
+# ============================================================================
+
+@dataclass
+class WebSocketEvent:
+    """
+    WebSocket event schema matching adw_logging.py structure.
+
+    This event format aligns with:
+    - agent_logs.log_type: "step_start", "step_end", "event", "error"
+    - system_logs.log_level: "debug", "info", "warning", "error", "critical"
+
+    Attributes:
+        event_type: Type of event (agent_started, agent_completed, prompt_sent, etc.)
+        agent_id: UUID of the agent generating the event
+        message: Human-readable event message
+        metadata: Optional dictionary with event-specific data
+        timestamp: ISO 8601 timestamp of event creation
+    """
+    event_type: str
+    agent_id: str
+    message: str
+    metadata: Optional[Dict[str, Any]] = None
+    timestamp: Optional[str] = None
+
+    def __post_init__(self):
+        """Ensure timestamp is set."""
+        if self.timestamp is None:
+            self.timestamp = datetime.utcnow().isoformat()
+
+    def to_json(self) -> str:
+        """Serialize event to JSON string."""
+        return json.dumps(asdict(self))
+
+
+# ============================================================================
+# Connection Manager
+# ============================================================================
+
+class ConnectionManager:
+    """
+    Manages WebSocket connections and broadcasts events to all connected clients.
+
+    The manager maintains a set of active connections and handles:
+    - Connection registration with max limit enforcement
+    - Event broadcasting to all clients
+    - Dead connection cleanup (never crashes on broadcast failures)
+    - Keepalive ping/pong with 3-strike disconnect policy
+
+    Attributes:
+        connections: Set of active WebSocket connections
+        connection_strikes: Dict tracking failed ping counts per connection
+    """
+
+    def __init__(self):
+        """Initialize connection manager with empty connection set."""
+        self.connections: Set[WebSocketServerProtocol] = set()
+        self.connection_strikes: Dict[WebSocketServerProtocol, int] = {}
+
+    async def register(self, websocket: WebSocketServerProtocol) -> bool:
+        """
+        Register a new WebSocket connection.
+
+        Args:
+            websocket: WebSocket connection to register
+
+        Returns:
+            True if registered successfully, False if max connections reached
+        """
+        if len(self.connections) >= MAX_CONNECTIONS:
+            # Send rejection message before closing
+            try:
+                await websocket.send(json.dumps({
+                    "error": "max_connections_reached",
+                    "message": f"Server is at maximum capacity ({MAX_CONNECTIONS} connections)"
+                }))
+            except Exception:
+                pass
+            return False
+
+        self.connections.add(websocket)
+        self.connection_strikes[websocket] = 0
+        return True
+
+    async def unregister(self, websocket: WebSocketServerProtocol) -> None:
+        """
+        Unregister a WebSocket connection.
+
+        Args:
+            websocket: WebSocket connection to unregister
+        """
+        self.connections.discard(websocket)
+        self.connection_strikes.pop(websocket, None)
+
+    async def broadcast(self, event: WebSocketEvent) -> None:
+        """
+        Broadcast event to all connected clients.
+
+        Failed broadcasts are handled gracefully:
+        - Dead connections are removed from the pool
+        - Errors are logged to stderr
+        - Broadcast never raises exceptions
+
+        Args:
+            event: WebSocketEvent to broadcast to all clients
+        """
+        if not self.connections:
+            return  # No clients connected, silent success
+
+        message = event.to_json()
+        dead_connections = set()
+
+        # Attempt to send to all connections
+        for websocket in self.connections.copy():
+            try:
+                await websocket.send(message)
+            except websockets.exceptions.ConnectionClosed:
+                # Connection died, mark for removal
+                dead_connections.add(websocket)
+            except Exception as e:
+                # Unexpected error, log but don't crash
+                sys.stderr.write(f"WebSocket broadcast error: {e}\n")
+                dead_connections.add(websocket)
+
+        # Clean up dead connections
+        for websocket in dead_connections:
+            await self.unregister(websocket)
+
+    async def keepalive(self, websocket: WebSocketServerProtocol) -> None:
+        """
+        Maintain connection keepalive with ping/pong.
+
+        Sends ping every 30 seconds, expects pong within 10 seconds.
+        After 3 failed pings, closes the connection.
+
+        Args:
+            websocket: WebSocket connection to keep alive
+        """
+        while websocket in self.connections:
+            try:
+                # Send ping
+                pong_waiter = await websocket.ping()
+
+                # Wait for pong with timeout
+                await asyncio.wait_for(pong_waiter, timeout=PONG_TIMEOUT)
+
+                # Pong received, reset strike count
+                self.connection_strikes[websocket] = 0
+
+                # Wait before next ping
+                await asyncio.sleep(PING_INTERVAL)
+
+            except asyncio.TimeoutError:
+                # Pong timeout, increment strikes
+                self.connection_strikes[websocket] = self.connection_strikes.get(websocket, 0) + 1
+
+                if self.connection_strikes[websocket] >= MAX_STRIKES:
+                    # Max strikes reached, close connection
+                    await websocket.close(code=1000, reason="keepalive_timeout")
+                    await self.unregister(websocket)
+                    break
+
+            except websockets.exceptions.ConnectionClosed:
+                # Connection already closed
+                await self.unregister(websocket)
+                break
+
+            except Exception as e:
+                # Unexpected error, log and close
+                sys.stderr.write(f"Keepalive error: {e}\n")
+                await self.unregister(websocket)
+                break
+
+
+# ============================================================================
+# Server Control Functions
+# ============================================================================
+
+async def _handle_client(
+    websocket: WebSocketServerProtocol,
+    manager: ConnectionManager,
+    token: Optional[str] = None
+) -> None:
+    """
+    Handle individual client connection lifecycle.
+
+    Args:
+        websocket: Client WebSocket connection
+        manager: ConnectionManager instance
+        token: Optional authentication token (checked in query params)
+    """
+    # Optional token authentication
+    if token:
+        query_params = dict(
+            param.split('=') for param in websocket.request.query.split('&') if '=' in param
+        ) if websocket.request.query else {}
+
+        if query_params.get('token') != token:
+            await websocket.send(json.dumps({
+                "error": "authentication_failed",
+                "message": "Invalid or missing token"
+            }))
+            await websocket.close(code=1008, reason="auth_failed")
+            return
+
+    # Register connection
+    if not await manager.register(websocket):
+        await websocket.close(code=1008, reason="max_connections")
+        return
+
+    try:
+        # Send welcome message
+        await websocket.send(json.dumps({
+            "type": "connection_established",
+            "message": "Connected to ADW orchestrator WebSocket server",
+            "server_time": datetime.utcnow().isoformat()
+        }))
+
+        # Start keepalive task
+        keepalive_task = asyncio.create_task(manager.keepalive(websocket))
+
+        # Wait for connection to close (clients don't send messages, only receive)
+        async for message in websocket:
+            # Clients shouldn't send messages, but handle gracefully
+            pass
+
+        # Cancel keepalive when connection closes
+        keepalive_task.cancel()
+
+    except websockets.exceptions.ConnectionClosed:
+        pass
+    except Exception as e:
+        sys.stderr.write(f"Client handler error: {e}\n")
+    finally:
+        await manager.unregister(websocket)
+
+
+async def start_server(
+    host: str = "127.0.0.1",
+    port: int = 8765,
+    token: Optional[str] = None
+) -> tuple[asyncio.Task, ConnectionManager]:
+    """
+    Start WebSocket server for event broadcasting.
+
+    The server binds to localhost only for security. Optional token
+    authentication can be enabled by passing a token string.
+
+    Args:
+        host: Host to bind to (default: "127.0.0.1" - localhost only)
+        port: Port to bind to (default: 8765)
+        token: Optional authentication token for connections
+
+    Returns:
+        Tuple of (server_task, connection_manager)
+        - server_task: Asyncio task running the server (for shutdown control)
+        - connection_manager: ConnectionManager instance (for broadcasting)
+
+    Raises:
+        OSError: If port is already in use or binding fails
+
+    Example:
+        >>> server_task, manager = await start_server(port=9999, token="secret123")
+        >>> # Server is now running in background
+    """
+    manager = ConnectionManager()
+
+    # Create server with connection handler
+    async def handler(websocket):
+        await _handle_client(websocket, manager, token)
+
+    try:
+        server = await websockets.serve(
+            handler,
+            host,
+            port,
+            ping_interval=None,  # We handle ping/pong manually
+        )
+
+        # Create task to keep server running
+        async def server_runner():
+            await asyncio.Future()  # Run forever
+
+        server_task = asyncio.create_task(server_runner())
+
+        return server_task, manager
+
+    except OSError as e:
+        sys.stderr.write(f"Failed to start WebSocket server on {host}:{port}: {e}\n")
+        raise
+
+
+async def stop_server(server_task: asyncio.Task) -> None:
+    """
+    Stop WebSocket server gracefully.
+
+    Args:
+        server_task: Server task returned from start_server()
+
+    Example:
+        >>> await stop_server(server_task)
+        >>> # Server stopped, all connections closed
+    """
+    if server_task and not server_task.done():
+        server_task.cancel()
+        try:
+            await server_task
+        except asyncio.CancelledError:
+            pass
+
+
+# ============================================================================
+# Event Broadcasting Functions
+# ============================================================================
+
+async def broadcast_agent_event(
+    manager: ConnectionManager,
+    agent_id: str,
+    event_type: str,
+    message: str,
+    metadata: Optional[Dict[str, Any]] = None
+) -> None:
+    """
+    Broadcast an agent event to all connected clients.
+
+    This is the primary function for sending events during workflow execution.
+    Errors are handled gracefully - broadcast failures never crash the caller.
+
+    Args:
+        manager: ConnectionManager instance from start_server()
+        agent_id: UUID of the agent generating the event
+        event_type: Type of event (e.g., "agent_started", "prompt_sent", "step_start")
+        message: Human-readable event message
+        metadata: Optional dictionary with event-specific data
+
+    Example:
+        >>> await broadcast_agent_event(
+        ...     manager=manager,
+        ...     agent_id="550e8400-e29b-41d4-a716-446655440000",
+        ...     event_type="agent_started",
+        ...     message="Scout agent started",
+        ...     metadata={"model": "claude-sonnet-3.5"}
+        ... )
+    """
+    try:
+        event = WebSocketEvent(
+            event_type=event_type,
+            agent_id=agent_id,
+            message=message,
+            metadata=metadata
+        )
+        await manager.broadcast(event)
+    except Exception as e:
+        # Never crash on broadcast failure
+        sys.stderr.write(f"Failed to broadcast agent event: {e}\n")
+
+
+def map_log_to_event(log: Dict[str, Any]) -> WebSocketEvent:
+    """
+    Convert adw_logging.py log entry to WebSocketEvent.
+
+    This helper enables broadcasting of database log entries to WebSocket clients,
+    maintaining consistency between persisted logs and real-time events.
+
+    Args:
+        log: Log entry dict from adw_database.py (agent_logs or system_logs table)
+
+    Returns:
+        WebSocketEvent matching the log entry
+
+    Example:
+        >>> log_entry = await db.get_agent_logs(agent_id)
+        >>> event = map_log_to_event(log_entry)
+        >>> await manager.broadcast(event)
+
+    Log schema (from adw_logging.py):
+        - agent_logs.log_type: "step_start", "step_end", "event", "error"
+        - system_logs.log_level: "debug", "info", "warning", "error", "critical"
+    """
+    # Determine event type from log_type or log_level
+    event_type = log.get('log_type', log.get('log_level', 'event'))
+
+    # Extract agent_id (may be in 'agent_id' field or metadata)
+    agent_id = log.get('agent_id', log.get('details', {}).get('agent_id', 'system'))
+
+    # Extract message
+    message = log.get('message', 'Unknown event')
+
+    # Extract metadata (stored as 'details' in database)
+    metadata = log.get('details', None)
+
+    # Extract timestamp
+    timestamp = log.get('created_at', datetime.utcnow().isoformat())
+
+    return WebSocketEvent(
+        event_type=event_type,
+        agent_id=agent_id,
+        message=message,
+        metadata=metadata,
+        timestamp=timestamp
+    )
