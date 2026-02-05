@@ -893,6 +893,31 @@ Use it to align your work with project standards, patterns, and best practices.
 """
         prompt = prompt + docs_suffix
 
+    # CRITICAL: Add worktree reminder at the VERY END if working_dir is specified
+    # This ensures it's the last thing the agent reads before execution
+    if request.working_dir:
+        worktree_reminder = f"""
+
+---
+
+# 🚨 CRITICAL WORKING DIRECTORY INSTRUCTION
+
+**YOU ARE WORKING IN AN ISOLATED WORKTREE, NOT THE MAIN REPOSITORY**
+
+- **Working Directory**: `{request.working_dir}`
+- **DO NOT make changes to the main repository**
+- **ALL file operations (Read, Write, Edit, Glob, Grep) happen in the worktree**
+- **The worktree is a separate directory - changes here do NOT affect main**
+- **Git operations (status, add, commit) will be run in this worktree**
+
+**When you see relative paths like `specs/plan.md`, they resolve to `{request.working_dir}/specs/plan.md`**
+
+This is a safety feature to isolate development work. All your changes will be reviewed before merging to main.
+
+---
+"""
+        prompt = prompt + worktree_reminder
+
     # Create output directory with adw_id at project root
     # __file__ is in adws/adw_modules/, so we need to go up 3 levels to get to project root
     project_root = os.path.dirname(
