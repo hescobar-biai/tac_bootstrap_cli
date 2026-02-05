@@ -29,6 +29,13 @@ issue_json: $3
 - Usar el reasoning model: pensar cuidadosamente sobre los pasos.
 - `adws/*.py` son scripts uv single-file. Ejecutar con `uv run <script_name>`.
 
+**⚡ TOKEN OPTIMIZATION RULES (CRITICAL):**
+- **DO NOT repeat chore description** - Already in `issue_json`, reference by ID only
+- **Keep plan under 500 tokens** - Chores should be straightforward and brief
+- **List actions only** - No explanations of why, just what and how
+- **Minimal context** - Only essential background info
+- **Checklist format** - Use bullets and short action items
+
 ## Relevant Files
 
 Archivos clave para TAC Bootstrap CLI:

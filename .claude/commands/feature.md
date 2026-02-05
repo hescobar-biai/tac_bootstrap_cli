@@ -28,6 +28,13 @@ issue_json: $3
 - IMPORTANTE: Reemplazar cada <placeholder> en el formato con valores reales.
 - Usar el reasoning model: pensar cuidadosamente sobre requerimientos y approach.
 - Seguir patrones y convenciones existentes del proyecto.
+
+**⚡ TOKEN OPTIMIZATION RULES (CRITICAL):**
+- **DO NOT repeat issue body/title** - Already provided via `issue_json`, reference by ID only
+- **Keep plan under 800 tokens** - Use bullets and short sentences, not prose
+- **Output ONLY deltas** - Don't re-explain what's in the issue
+- **Follow template exactly** - No additional sections or verbose explanations
+- **Be surgical** - One line per file, one line per task
 - Si necesitas una nueva librería, usar `uv add` y reportarlo en Notes.
 - Mantener simplicidad - no usar decoradores innecesarios.
 

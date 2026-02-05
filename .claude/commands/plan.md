@@ -21,6 +21,14 @@ issue_json: $3
 - Follow existing project patterns and conventions
 - Keep solutions simple - don't over-engineer
 
+## ⚡ TOKEN OPTIMIZATION RULES (CRITICAL)
+
+**DO NOT repeat issue body/title/description in the plan** - Reference by ID only
+**Keep output under 800 tokens** - Use bullets, not prose
+**Output ONLY deltas** - Don't re-explain what's already in the issue
+**Use structured format** - Follow the plan template exactly, no additional sections
+**Be concise** - One line per file, one line per task, short explanations
+
 ## Planning Workflow
 
 ### Step 1: Understand Requirements

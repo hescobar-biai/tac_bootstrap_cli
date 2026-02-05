@@ -25,6 +25,13 @@ issue_screenshots: $5 (opcional) - lista de paths a screenshots separados por co
 - Basar la validación en los pasos de validación del `spec_path` si se proporciona.
 - Reemplazar cada <placeholder> en el formato con detalles específicos.
 
+**⚡ TOKEN OPTIMIZATION RULES (CRITICAL):**
+- **DO NOT repeat review findings** - They're in `review_change_request`, reference by ID
+- **Keep patch plan under 400 tokens** - Patches should be surgical and minimal
+- **One line per change** - File + exact change needed, nothing more
+- **No context repetition** - The review already provided it
+- **Minimal validation** - Only test what changed, skip redundant checks
+
 ## Relevant Files
 
 Archivos clave para TAC Bootstrap CLI:

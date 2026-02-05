@@ -10,6 +10,13 @@ documentation_screenshots_dir: $3 si se proporciona, de lo contrario dejar en bl
 
 ## Instructions
 
+**⚡ TOKEN OPTIMIZATION RULES (CRITICAL):**
+- **DO NOT repeat spec content** - Summarize in 1-2 sentences what was built
+- **Keep docs under 600 tokens** - Technical docs should be concise
+- **Focus on "what" and "how to use"** - Skip implementation details unless critical
+- **Use code blocks** - Show don't tell with examples
+- **Bullet points for features** - No prose, just facts
+
 ### 1. Analizar Cambios
 - Ejecutar `git diff origin/main --stat` para ver archivos cambiados
 - Ejecutar `git diff origin/main --name-only` para lista de archivos

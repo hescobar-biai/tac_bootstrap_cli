@@ -16,6 +16,13 @@ review_image_dir: `<absolute path to codebase>/agents/<adw_id>/<agent_name>/revi
 - Encontrar spec file buscando specs/*.md que coincida con el branch
 - Leer el spec file para entender requerimientos
 
+**⚡ TOKEN OPTIMIZATION RULES (CRITICAL):**
+- **DO NOT re-explain the spec** - Reference it, don't repeat it
+- **Keep findings under 600 tokens** - Prioritize issues by severity
+- **Table format for issues** - File | Issue | Severity | Fix (one line each)
+- **Only critical findings** - Skip minor style issues or non-blockers
+- **No verbose test output** - Show only failures, not all test results
+
 ### Para TAC Bootstrap CLI
 
 Si los cambios son en `tac_bootstrap_cli/`:

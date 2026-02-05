@@ -28,6 +28,13 @@ issue_json: $3
 - IMPORTANTE: Reemplazar cada <placeholder> en el formato con valores reales.
 - Usar el reasoning model: pensar cuidadosamente sobre la causa raíz.
 - IMPORTANTE: Ser quirúrgico - resolver el bug específico sin desviarse.
+
+**⚡ TOKEN OPTIMIZATION RULES (CRITICAL):**
+- **DO NOT repeat bug description** - Already in `issue_json`, reference by ID only
+- **Keep plan under 600 tokens** - Bug fixes should be surgical and brief
+- **Focus on root cause** - Skip verbose explanations, state facts only
+- **Minimal reproduction** - Only essential steps to reproduce
+- **Short fix description** - One paragraph maximum per file change
 - IMPORTANTE: Mínimo número de cambios para resolver el bug.
 - Mantener simplicidad.
 - Si necesitas una nueva librería, usar `uv add` y reportarlo en Notes.
