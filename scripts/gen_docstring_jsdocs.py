@@ -266,10 +266,20 @@ def get_changed_files(repo: Path) -> List[Path]:
     """Get list of changed files from git (unstaged + staged)."""
     changed = []
     try:
+        # Get the git root directory
+        git_root_result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=repo if repo.is_dir() else repo.parent,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        git_root = Path(git_root_result.stdout.strip())
+
         # Get unstaged changes
         result = subprocess.run(
             ["git", "diff", "--name-only", "HEAD"],
-            cwd=repo,
+            cwd=git_root,
             capture_output=True,
             text=True,
             check=True
@@ -279,16 +289,22 @@ def get_changed_files(repo: Path) -> List[Path]:
         # Get staged changes
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only"],
-            cwd=repo,
+            cwd=git_root,
             capture_output=True,
             text=True,
             check=True
         )
         changed.extend(result.stdout.strip().split("\n") if result.stdout.strip() else [])
 
-        # Deduplicate and convert to Path objects
+        # Deduplicate and convert to absolute Path objects relative to git root
         unique_files = list(set(changed))
-        return [repo / f for f in unique_files if f]
+        absolute_paths = [git_root / f for f in unique_files if f]
+
+        # Filter to only include files within the target repo path
+        repo_absolute = repo.resolve()
+        filtered_paths = [p for p in absolute_paths if p.resolve().is_relative_to(repo_absolute)]
+
+        return filtered_paths
     except subprocess.CalledProcessError as e:
         print(f"Warning: git command failed: {e}", file=sys.stderr)
         return []
