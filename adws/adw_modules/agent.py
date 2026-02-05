@@ -388,18 +388,30 @@ def is_quota_exhausted_error(error_msg: str) -> bool:
     This is different from rate limiting - quota exhausted means the user
     has hit their usage limit and needs to wait for reset or use a different model.
     """
+    error_lower = error_msg.lower()
+
+    # Specific quota exhaustion patterns
     quota_indicators = [
         "hit your limit",
         "limit reached",
         "usage limit",
         "quota exceeded",
         "quota exhausted",
-        "resets",  # "resets 1pm" pattern
         "monthly limit",
         "daily limit",
+        "credit balance",
+        "insufficient credits",
     ]
-    error_lower = error_msg.lower()
-    return any(indicator in error_lower for indicator in quota_indicators)
+
+    # Check for basic indicators
+    if any(indicator in error_lower for indicator in quota_indicators):
+        return True
+
+    # Check for "resets" only when accompanied by "limit" or "quota"
+    if "resets" in error_lower and ("limit" in error_lower or "quota" in error_lower):
+        return True
+
+    return False
 
 
 # Model fallback chain: opus -> sonnet -> haiku -> retry_with_degradation
@@ -857,6 +869,8 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
             # Check for quota exhausted (user hit their usage limit)
             if is_quota_exhausted_error(error_msg):
                 retry_code = RetryCode.QUOTA_EXHAUSTED
+                # Debug: log error message for quota detection verification
+                logging.debug(f"Quota exhausted detected from error: {error_msg[:200]}")
             # Check for rate limiting (temporary, can retry)
             elif is_rate_limited_error(error_msg):
                 retry_code = RetryCode.RATE_LIMITED
