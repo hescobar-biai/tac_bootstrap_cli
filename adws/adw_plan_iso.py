@@ -134,12 +134,6 @@ def main():
         logger.error(f"Error getting repository URL: {e}")
         sys.exit(1)
 
-    # Check if worktree already exists
-    valid, error = validate_worktree(adw_id, state)
-    if valid:
-        logger.info(f"Using existing worktree for {adw_id}")
-        worktree_path = state.get("worktree_path")
-
     # Fetch issue details
     issue: GitHubIssue = fetch_issue(issue_number, repo_path)
 
@@ -147,6 +141,84 @@ def main():
     make_issue_comment(
         issue_number, format_issue_message(adw_id, "ops", "✅ Starting isolated planning phase")
     )
+
+    # CRITICAL: Create worktree FIRST, before any slow operations (docs loading, etc.)
+    # This ensures isolation even if script is canceled during setup
+    valid, error = validate_worktree(adw_id, state)
+    if valid:
+        logger.info(f"Using existing worktree for {adw_id}")
+        worktree_path = state.get("worktree_path")
+        logger.info(f"Worktree path: {worktree_path}")
+    else:
+        logger.info(f"Worktree validation failed or missing: {error}")
+        # Need to create worktree, but first need branch name
+        # Check if we have a cached branch name
+        cached_branch_name = state.get("branch_name")
+        if cached_branch_name:
+            logger.info(f"Using cached branch name: {cached_branch_name}")
+            branch_name = cached_branch_name
+        else:
+            # Generate branch name early
+            logger.info("Generating branch name...")
+            from adw_modules.workflow_ops import classify_issue, generate_branch_name
+
+            # Quick classification for branch naming
+            issue_command, class_error = classify_issue(issue, adw_id, logger)
+            if class_error:
+                logger.error(f"Error classifying issue: {class_error}")
+                issue_command = "/feature"  # Default to feature
+
+            branch_name, gen_error = generate_branch_name(issue, issue_command, adw_id, logger)
+            if gen_error:
+                logger.error(f"Error generating branch name: {gen_error}")
+                sys.exit(1)
+
+            state.update(branch_name=branch_name, issue_class=issue_command)
+            state.save("adw_plan_iso")
+            logger.info(f"Generated branch name: {branch_name}")
+
+        # Now create the worktree
+        logger.info(f"Creating worktree for {adw_id} on branch {branch_name}")
+        worktree_path, wt_error = create_worktree(adw_id, branch_name, logger)
+
+        if wt_error:
+            logger.error(f"Error creating worktree: {wt_error}")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"❌ Error creating worktree: {wt_error}"),
+            )
+            sys.exit(1)
+
+        state.update(worktree_path=worktree_path)
+        state.save("adw_plan_iso")
+        logger.info(f"Created worktree at {worktree_path}")
+
+        # Run setup_worktree.sh
+        logger.info("Setting up isolated environment via bash script")
+        script_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "scripts", "setup_worktree.sh"
+        )
+        result = subprocess.run(
+            ["bash", script_path, worktree_path],
+            capture_output=True,
+            text=True,
+            cwd=worktree_path
+        )
+
+        if result.returncode != 0:
+            logger.error(f"Worktree setup failed: {result.stderr}")
+            make_issue_comment(
+                issue_number,
+                format_issue_message(adw_id, "ops", f"❌ Worktree setup failed: {result.stderr}"),
+            )
+            sys.exit(1)
+
+        logger.info("Worktree setup completed")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, "ops", f"✅ Isolated worktree created: {worktree_path}"),
+        )
 
     # Create context bundle for token optimization (avoid re-sending full issue to each phase)
     from adw_modules.workflow_ops import create_context_bundle, load_context_bundle
@@ -417,78 +489,10 @@ Focus on: state management, worktree isolation, GitHub integration patterns."""
                 format_issue_message(adw_id, "ops", "✅ No ambiguities detected - proceeding with planning"),
             )
 
-    # Generate branch name - skip if already cached in state
-    cached_branch_name = state.get("branch_name")
-    if cached_branch_name:
-        logger.info(f"Using cached branch name from state: {cached_branch_name} (saving tokens)")
-        branch_name = cached_branch_name
-        make_issue_comment(
-            issue_number,
-            format_issue_message(adw_id, "ops", f"♻️ Using cached branch: {branch_name} (token optimization)"),
-        )
-    else:
-        branch_name, error = generate_branch_name(issue, issue_command, adw_id, logger)
-
-        if error:
-            logger.error(f"Error generating branch name: {error}")
-            make_issue_comment(
-                issue_number,
-                format_issue_message(
-                    adw_id, "ops", f"❌ Error generating branch name: {error}"
-                ),
-            )
-            sys.exit(1)
-
-    # Don't create branch here - let worktree create it
-    # The worktree command will create the branch when we specify -b
-    state.update(branch_name=branch_name)
-    state.save("adw_plan_iso")
-    logger.info(f"Will create branch in worktree: {branch_name}")
-
-    # Create worktree if it doesn't exist
-    if not valid:
-        logger.info(f"Creating worktree for {adw_id}")
-        worktree_path, error = create_worktree(adw_id, branch_name, logger)
-        
-        if error:
-            logger.error(f"Error creating worktree: {error}")
-            make_issue_comment(
-                issue_number,
-                format_issue_message(adw_id, "ops", f"❌ Error creating worktree: {error}"),
-            )
-            sys.exit(1)
-        
-        state.update(worktree_path=worktree_path)
-        state.save("adw_plan_iso")
-        logger.info(f"Created worktree at {worktree_path}")
-
-        # Run setup_worktree.sh directly (no API call needed - avoids rate limiting/hanging)
-        logger.info("Setting up isolated environment via bash script")
-        script_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "scripts", "setup_worktree.sh"
-        )
-        result = subprocess.run(
-            ["bash", script_path, worktree_path],
-            capture_output=True,
-            text=True,
-            timeout=120,  # 2 min max for file ops + dependency install
-        )
-        if result.returncode != 0:
-            error_msg = result.stderr.strip() or result.stdout.strip() or "Unknown error"
-            logger.error(f"Error setting up worktree: {error_msg}")
-            make_issue_comment(
-                issue_number,
-                format_issue_message(adw_id, "ops", f"❌ Error setting up worktree: {error_msg}"),
-            )
-            sys.exit(1)
-
-        logger.info(f"Worktree environment setup complete: {result.stdout.strip()}")
-
-    make_issue_comment(
-        issue_number,
-        format_issue_message(adw_id, "ops", f"✅ Working in isolated worktree: {worktree_path}"),
-    )
+    # Worktree is now ready (created earlier)
+    # Get branch_name and issue_command from state (set during worktree creation)
+    branch_name = state.get("branch_name")
+    issue_command = state.get("issue_class")
 
     # Build the implementation plan (now executing in worktree)
     logger.info("Building implementation plan in worktree")
