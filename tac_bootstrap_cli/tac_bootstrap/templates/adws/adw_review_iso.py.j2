@@ -518,6 +518,16 @@ def main():
         issue_number, format_issue_message(adw_id, AGENT_REVIEWER, "✅ Review committed")
     )
 
+    # Update context bundle with review decisions
+    from adw_modules.workflow_ops import update_context_bundle_decisions
+    if review_result:
+        blocker_count = len([i for i in review_result.review_issues if i.issue_severity == "blocker"])
+        review_decisions = f"""- Spec reviewed: {spec_file}
+- Issues found: {len(review_result.review_issues)} total
+- Blockers: {blocker_count}
+- Review status: {'Passed' if review_result.success else 'Failed'}"""
+        update_context_bundle_decisions(adw_id, "Review", review_decisions, logger)
+
     # TAC Optimization: Learning phase moved to document phase (final validation)
     # Individual phases only consult experts, learning happens once at the end
 

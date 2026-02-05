@@ -269,6 +269,13 @@ def main():
         issue_number, format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Implementation committed")
     )
 
+    # Update context bundle with build decisions
+    from adw_modules.workflow_ops import update_context_bundle_decisions
+    build_decisions = f"""- Plan implemented: {plan_file}
+- Implementation approach: {'Parallel build' if use_parallel else 'Sequential'}
+- Files changed: See git diff"""
+    update_context_bundle_decisions(adw_id, "Build", build_decisions, logger)
+
     # TAC Optimization: Learning phase moved to document phase (final validation)
     # Individual phases only consult experts, learning happens once at the end
 
