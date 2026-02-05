@@ -1684,6 +1684,206 @@ def format_file_references_for_context(file_references: dict[str, str]) -> str:
     return "".join(context_parts)
 
 
+# ============================================================================
+# Context Bundles - Token Optimization (TAC)
+# ============================================================================
+
+def get_context_bundle_path(adw_id: str) -> str:
+    """Get path to context bundle directory for an ADW execution.
+
+    Args:
+        adw_id: ADW execution ID
+
+    Returns:
+        Path to context bundle directory
+    """
+    return os.path.join("agents", "context_bundles", adw_id)
+
+
+def create_context_bundle(
+    adw_id: str,
+    issue: GitHubIssue,
+    logger: logging.Logger
+) -> bool:
+    """Create initial context bundle with issue facts.
+
+    Creates a persistent context bundle to avoid re-sending the same
+    issue context to multiple phases. Bundle includes:
+    - issue_facts.md: Minimal issue summary
+    - decisions.md: Placeholder for phase decisions
+    - repo_constraints.md: Project-specific constraints
+
+    Args:
+        adw_id: ADW execution ID
+        issue: GitHub issue object
+        logger: Logger instance
+
+    Returns:
+        True if bundle created successfully
+    """
+    bundle_dir = get_context_bundle_path(adw_id)
+
+    try:
+        os.makedirs(bundle_dir, exist_ok=True)
+
+        # Create issue_facts.md with minimal issue info
+        issue_facts = f"""# Issue Facts (ADW: {adw_id})
+
+**Issue #:** {issue.number}
+**Title:** {issue.title}
+**Type:** {issue.labels if hasattr(issue, 'labels') else 'N/A'}
+
+## Requirements Summary
+{issue.body[:500] if issue.body else 'No description'}...
+
+*Full issue available in GitHub - reference by ID #{issue.number}*
+"""
+
+        facts_path = os.path.join(bundle_dir, "issue_facts.md")
+        with open(facts_path, 'w', encoding='utf-8') as f:
+            f.write(issue_facts)
+
+        # Create decisions.md placeholder
+        decisions = f"""# Phase Decisions (ADW: {adw_id})
+
+## Planning Phase
+- TBD
+
+## Build Phase
+- TBD
+
+## Review Phase
+- TBD
+
+## Document Phase
+- TBD
+"""
+
+        decisions_path = os.path.join(bundle_dir, "decisions.md")
+        with open(decisions_path, 'w', encoding='utf-8') as f:
+            f.write(decisions)
+
+        # Create repo_constraints.md
+        # Read from project root if exists, otherwise create default
+        constraints_content = """# Repository Constraints
+
+## Architecture
+- Follow existing patterns
+- Keep changes minimal
+- Test before committing
+
+## Code Standards
+- Run linter before commit
+- Include tests for new features
+- Update docs when needed
+"""
+
+        constraints_path = os.path.join(bundle_dir, "repo_constraints.md")
+        with open(constraints_path, 'w', encoding='utf-8') as f:
+            f.write(constraints_content)
+
+        logger.info(f"Created context bundle at: {bundle_dir}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to create context bundle: {e}")
+        return False
+
+
+def update_context_bundle_decisions(
+    adw_id: str,
+    phase: str,
+    decisions: str,
+    logger: logging.Logger
+) -> bool:
+    """Update context bundle with phase-specific decisions.
+
+    Args:
+        adw_id: ADW execution ID
+        phase: Phase name (planning, build, review, document)
+        decisions: Decision text to append
+        logger: Logger instance
+
+    Returns:
+        True if updated successfully
+    """
+    bundle_dir = get_context_bundle_path(adw_id)
+    decisions_path = os.path.join(bundle_dir, "decisions.md")
+
+    try:
+        if not os.path.exists(decisions_path):
+            logger.warning(f"Decisions file not found, creating new one")
+            create_context_bundle(adw_id, None, logger)
+
+        # Read current decisions
+        with open(decisions_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Update phase section
+        phase_marker = f"## {phase.title()} Phase"
+        if phase_marker in content:
+            # Replace TBD with actual decisions
+            content = content.replace(
+                f"{phase_marker}\n- TBD",
+                f"{phase_marker}\n{decisions}"
+            )
+        else:
+            # Append new phase
+            content += f"\n\n{phase_marker}\n{decisions}\n"
+
+        # Write back
+        with open(decisions_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+
+        logger.info(f"Updated decisions for {phase} phase")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to update context bundle: {e}")
+        return False
+
+
+def load_context_bundle(
+    adw_id: str,
+    logger: logging.Logger
+) -> Optional[str]:
+    """Load context bundle as formatted string for agent consumption.
+
+    Args:
+        adw_id: ADW execution ID
+        logger: Logger instance
+
+    Returns:
+        Formatted context bundle string or None if not found
+    """
+    bundle_dir = get_context_bundle_path(adw_id)
+
+    if not os.path.exists(bundle_dir):
+        logger.warning(f"Context bundle not found: {bundle_dir}")
+        return None
+
+    try:
+        parts = []
+
+        # Load each bundle file
+        for filename in ["issue_facts.md", "decisions.md", "repo_constraints.md"]:
+            filepath = os.path.join(bundle_dir, filename)
+            if os.path.exists(filepath):
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    parts.append(f.read())
+
+        if not parts:
+            return None
+
+        bundle_content = "\n\n---\n\n".join(parts)
+        logger.info(f"Loaded context bundle ({len(bundle_content)} chars)")
+        return bundle_content
+
+    except Exception as e:
+        logger.error(f"Failed to load context bundle: {e}")
+        return None
+
+
 # Agent name constants for TAC
 AGENT_EXPERT_ADW = "adw_expert"
 AGENT_EXPERT_CLI = "cli_expert"
