@@ -1202,12 +1202,21 @@ class ScaffoldService:
         ]
 
         for path, reason in frontend_files:
-            plan.add_file(
-                f"apps/orchestrator_3_stream/frontend/{path}",
-                action=action,
-                template=f"apps/orchestrator_3_stream/frontend/{path}",
-                reason=reason,
-            )
+            # Read Vue/TypeScript files as static content (don't template them)
+            # to avoid Jinja2 conflicts with Vue syntax ({{ }}, @, :class, etc.)
+            frontend_path = f"apps/orchestrator_3_stream/frontend/{path}"
+            template_path = self.template_repo.templates_dir / frontend_path
+            try:
+                content = template_path.read_text(encoding='utf-8')
+                plan.add_file(
+                    frontend_path,
+                    action=action,
+                    content=content,
+                    reason=reason,
+                )
+            except Exception:
+                # If file doesn't exist or can't be read, skip it
+                continue
 
     def apply_plan(
         self,

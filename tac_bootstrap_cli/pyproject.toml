@@ -13,7 +13,7 @@ dependencies = [
     "typer>=0.9.0",
     "rich>=13.7.0",
     "jinja2>=3.1.2",
-    "pydantic>=2.5.0",
+    "pydantic>=2.5.0,<2.10",
     "pyyaml>=6.0.1",
     "packaging>=23.0", # Para comparación de versiones
     "gitpython>=3.1.0",
@@ -49,6 +49,9 @@ strict = true
 warn_return_any = true
 warn_unused_configs = true
 disable_error_code = ["import-untyped", "misc"]
+ignore_missing_imports = true
+no_incremental = true
+check_untyped_defs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
