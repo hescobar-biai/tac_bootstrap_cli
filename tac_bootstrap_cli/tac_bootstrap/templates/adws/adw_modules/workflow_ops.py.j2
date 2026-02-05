@@ -6,7 +6,8 @@ import logging
 import os
 import subprocess
 import re
-from typing import Tuple, Optional
+import yaml
+from typing import Tuple, Optional, Dict, Any
 from adw_modules.data_types import (
     AgentTemplateRequest,
     GitHubIssue,
@@ -21,10 +22,82 @@ from adw_modules.github import get_repo_url, extract_repo_path, ADW_BOT_IDENTIFI
 from adw_modules.state import ADWState
 from adw_modules.utils import parse_json, get_target_branch
 
-# Token optimization constants
-MAX_ISSUE_BODY_LENGTH = 2000  # Truncate issue body to reduce token usage
-MAX_FILE_REFERENCE_SIZE = 5000  # Max chars per referenced file (Task #13)
-MAX_CLARIFICATION_LENGTH = 1000  # Max chars for clarification responses (Task #13)
+# ============================================================================
+# Configuration Loading
+# ============================================================================
+
+_CONFIG_CACHE: Optional[Dict[str, Any]] = None
+
+
+def load_config() -> Dict[str, Any]:
+    """Load configuration from config.yml file.
+
+    Caches the configuration in memory for performance.
+
+    Returns:
+        Dictionary with configuration values
+    """
+    global _CONFIG_CACHE
+
+    if _CONFIG_CACHE is not None:
+        return _CONFIG_CACHE
+
+    # Find config.yml in project root
+    config_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "config.yml"
+    )
+
+    if not os.path.exists(config_path):
+        # Fallback to defaults if config not found
+        return {
+            "agentic": {
+                "token_optimization": {
+                    "max_issue_body_length": 2000,
+                    "max_file_reference_size": 5000,
+                    "max_clarification_length": 1000,
+                    "max_docs_planning": 2,
+                    "max_summary_tokens_planning": 200,
+                    "max_file_references": 3,
+                    "max_screenshots": 3,
+                }
+            }
+        }
+
+    with open(config_path, 'r', encoding='utf-8') as f:
+        _CONFIG_CACHE = yaml.safe_load(f)
+
+    return _CONFIG_CACHE
+
+
+def get_token_optimization_config() -> Dict[str, int]:
+    """Get token optimization configuration values.
+
+    Returns:
+        Dictionary with token optimization settings
+    """
+    config = load_config()
+    defaults = {
+        "max_issue_body_length": 2000,
+        "max_file_reference_size": 5000,
+        "max_clarification_length": 1000,
+        "max_docs_planning": 2,
+        "max_summary_tokens_planning": 200,
+        "max_file_references": 3,
+        "max_screenshots": 3,
+    }
+
+    token_opt = config.get("agentic", {}).get("token_optimization", {})
+
+    # Merge with defaults
+    return {**defaults, **token_opt}
+
+
+# Token optimization constants - loaded from config.yml
+_token_config = get_token_optimization_config()
+MAX_ISSUE_BODY_LENGTH = _token_config["max_issue_body_length"]
+MAX_FILE_REFERENCE_SIZE = _token_config["max_file_reference_size"]
+MAX_CLARIFICATION_LENGTH = _token_config["max_clarification_length"]
 
 
 # Agent name constants
@@ -1802,11 +1875,11 @@ def extract_file_references_from_issue(
 
     logger.info(f"Total: {len(file_references)} unique file reference(s) from issue body + comments")
 
-    # Token optimization: Limit to 3 files maximum
-    MAX_FILE_REFERENCES = 3
-    if len(file_references) > MAX_FILE_REFERENCES:
-        logger.info(f"Limiting file references from {len(file_references)} to {MAX_FILE_REFERENCES} for token optimization")
-        file_references = set(list(file_references)[:MAX_FILE_REFERENCES])
+    # Token optimization: Limit files (configured in config.yml)
+    max_file_refs = get_token_optimization_config()["max_file_references"]
+    if len(file_references) > max_file_refs:
+        logger.info(f"Limiting file references from {len(file_references)} to {max_file_refs} for token optimization")
+        file_references = set(list(file_references)[:max_file_refs])
 
     # Try to load each file
     for file_ref in file_references:

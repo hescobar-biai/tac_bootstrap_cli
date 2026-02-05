@@ -81,6 +81,14 @@ agentic:
 {% for workflow in config.agentic.workflows.available %}
       - "{{ workflow.value }}"
 {% endfor %}
+  token_optimization:
+    max_issue_body_length: {{ config.agentic.token_optimization.max_issue_body_length | default(2000) }}  # Truncate issue body to reduce token usage
+    max_file_reference_size: {{ config.agentic.token_optimization.max_file_reference_size | default(5000) }}  # Max chars per referenced file
+    max_clarification_length: {{ config.agentic.token_optimization.max_clarification_length | default(1000) }}  # Max chars for clarification responses
+    max_docs_planning: {{ config.agentic.token_optimization.max_docs_planning | default(2) }}  # Max documentation files to load in planning phase
+    max_summary_tokens_planning: {{ config.agentic.token_optimization.max_summary_tokens_planning | default(200) }}  # Max tokens per doc summary in planning
+    max_file_references: {{ config.agentic.token_optimization.max_file_references | default(3) }}  # Max number of files to load from issue references
+    max_screenshots: {{ config.agentic.token_optimization.max_screenshots | default(3) }}  # Max screenshots to upload in review phase
 
 claude:
   settings:
