@@ -188,13 +188,15 @@ def main():
 
             if docs_response.success:
                 # Summarize documentation content for token optimization (TAC-9)
+                # Includes section extraction based on issue context
                 doc_content = docs_response.output
                 summarized_content = summarize_doc_content(
                     doc_content,
                     topic,
                     adw_id,
                     logger,
-                    max_summary_tokens=MAX_SUMMARY_TOKENS_PLANNING
+                    max_summary_tokens=MAX_SUMMARY_TOKENS_PLANNING,
+                    issue=issue  # Enable section extraction
                 )
 
                 all_docs.append(f"# Documentation: {topic}\n\n{summarized_content}")
