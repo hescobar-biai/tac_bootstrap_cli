@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-02-06
+
+### Fixed
+- **Jinja2 template render error in `adw_db_bridge.py.j2`**: Python f-string escaped braces `{{` were interpreted as Jinja2 print statements, causing `expected token 'end of print statement', got ':'` during scaffold/upgrade. Wrapped template in `{% raw %}` block.
+- **Upgrade error reporting**: `perform_upgrade()` now prints individual file failure details before restoring from backup, instead of only showing generic "N error(s) occurred"
+
 ## [0.9.1] - 2026-02-06
 
 ### Fixed
