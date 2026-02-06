@@ -419,6 +419,83 @@ Ver [ai_docs/doc/](ai_docs/doc/) para documentacion completa del curso.
 
 ---
 
+## Orchestrator Test 3
+
+Test 3 validates the complete orchestrator v2 workflow with database persistence, multi-agent coordination, and real-time WebSocket streaming capabilities.
+
+### What Test 3 Validates
+
+- **Database Persistence**: Agent logs, chat history, and orchestrator state are stored in PostgreSQL
+- **Multi-Agent Workflows**: Multiple agents can be created and managed concurrently
+- **WebSocket Streaming**: Real-time message delivery between frontend and backend
+- **Session Management**: Chat sessions maintain continuity across page refreshes
+- **Cost Tracking**: Token usage and USD costs are accumulated correctly
+- **Event Streaming**: Agent events, thinking blocks, and tool usage are captured and broadcast
+
+### Running Test 3
+
+```bash
+# 1. Ensure database migrations are applied
+uv run python apps/orchestrator_db/run_migrations.py
+
+# 2. Start the orchestrator backend
+cd apps/orchestrator_3_stream
+./start_be.sh
+
+# 3. In another terminal, start the frontend
+./start_fe.sh
+
+# 4. Open browser to http://127.0.0.1:5175
+
+# 5. Send messages and verify:
+#    - Chat history loads from database
+#    - Responses stream in real-time via WebSocket
+#    - Messages persist after page refresh
+#    - Typing indicators appear during processing
+#    - Cost information updates correctly
+```
+
+### Verification Steps
+
+1. **Chat Interface Works**: Type a message and see the response appear in real-time
+2. **Database Persistence**: Refresh the page - chat history loads automatically
+3. **WebSocket Streaming**: Response chunks appear immediately (not buffered)
+4. **Multi-Turn Conversation**: Multiple messages maintain context correctly
+5. **Session Continuity**: Resume session with `--session <id>` flag after restart
+
+### Example Conversation
+
+```
+User: Create an agent called "builder"
+Orchestrator: [via Claude SDK] Created agent 'builder'
+
+User: Ask builder to create a Python script
+Orchestrator: [dispatches task to builder, streams response]
+
+User: What tasks are pending?
+Orchestrator: [queries agent database, shows status]
+```
+
+### Architecture Overview
+
+**Backend** (FastAPI + PostgreSQL + asyncpg):
+- `apps/orchestrator_3_stream/backend/main.py` - WebSocket server and REST endpoints
+- `apps/orchestrator_3_stream/backend/modules/orchestrator_service.py` - Claude SDK integration
+- `apps/orchestrator_3_stream/backend/modules/database.py` - PostgreSQL operations
+- Real-time event streaming via WebSocket `/ws` endpoint
+
+**Frontend** (Vue 3 + TypeScript + Pinia):
+- `apps/orchestrator_3_stream/frontend/src/components/OrchestratorChat.vue` - Chat UI
+- `apps/orchestrator_3_stream/frontend/src/stores/orchestratorStore.ts` - State management
+- Auto-scroll during message send and streaming
+- Typing indicators and connection status display
+
+### References
+
+- **Implementation**: `apps/orchestrator_3_stream/README.md` (complete feature documentation)
+- **Database Schema**: `apps/orchestrator_db/README.md`
+- **Test Details**: See full E2E test results in orchestrator_3_stream README
+
 ## Licencia
 
 MIT
