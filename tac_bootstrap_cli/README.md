@@ -108,45 +108,168 @@ project/
 └── config.yml               # TAC configuration
 ```
 
-## Orchestrator (TAC-14)
+## TAC-14: Codebase Singularity & Orchestrator
 
-The `--with-orchestrator` flag adds a real-time agent execution dashboard with:
+TAC-14 elevates tac_bootstrap from **Class 1** (Agentic Layer) to **Class 2** (Outloop Systems) and **Class 3** (Orchestrator Agent), introducing Skills System, Agent SDK, database-backed workflows, WebSockets, and a real-time orchestration web app.
 
-- **Backend**: FastAPI WebSocket server for agent state streaming
-- **Frontend**: Vue 3 + TypeScript swimlane board UI
-- **Tests**: Pytest test suites + Playwright E2E tests
+### Class Architecture
+
+| Class | Grade | Description | Key Features |
+|-------|-------|-------------|--------------|
+| **Class 1** | Grade 7 | Agentic Layer | Skills System, Progressive Disclosure |
+| **Class 2** | - | Outloop Systems | Custom Agents, Orchestrator Commands, Agent SDK |
+| **Class 3** | - | Orchestrator Agent | Database, WebSockets, Real-time UI |
+
+### Component Table
+
+| # | Component | Class | Location | Description |
+|---|-----------|-------|----------|-------------|
+| 1 | Skills System | 1 | `.claude/skills/` | Progressive disclosure skill definitions |
+| 2 | Agent Definitions | 2 | `.claude/agents/` | 7 specialized agent configurations |
+| 3 | Orchestrator Commands | 2 | `.claude/commands/orch_*` | Multi-agent workflow commands |
+| 4 | Agent SDK | 2 | `adws/adw_modules/adw_agent_sdk.py` | Pydantic models for programmatic agents |
+| 5 | Database Schema | 3 | `adws/schema/` | SQLite schema (5 tables) |
+| 6 | Database Models | 3 | `adws/adw_modules/orch_database_models.py` | Pydantic ORM models |
+| 7 | Database Operations | 3 | `adws/adw_modules/adw_database.py` | CRUD + connection pooling |
+| 8 | Database Logging | 3 | `adws/adw_modules/adw_logging.py` | Structured event logging |
+| 9 | Consolidated Workflows | 3 | `adws/adw_workflows/` | Database-backed ADW workflows |
+| 10 | WebSockets | 3 | `adws/adw_modules/adw_websockets.py` | Real-time event streaming |
+| 11 | Orchestrator Backend | 3 | `apps/orchestrator_3_stream/backend/` | FastAPI REST + WebSocket server |
+| 12 | Orchestrator Frontend | 3 | `apps/orchestrator_3_stream/frontend/` | Vue 3 + TypeScript swimlane UI |
+
+### Skills System
+
+Skills provide **progressive disclosure** - users start with simple invocations and graduate to advanced features:
+
+```bash
+# Basic skill invocation
+/meta-skill "create a deployment skill"
+
+# Skills are defined in .claude/skills/{skill-name}/SKILL.md
+```
+
+**Structure:**
+```
+.claude/skills/
+└── meta-skill/
+    ├── SKILL.md              # Skill definition with YAML frontmatter
+    └── docs/                 # Supporting documentation
+        ├── claude_code_agent_skills.md
+        └── blog_equipping_agents_with_skills.md
+```
+
+### Agent Definitions
+
+Custom agents with YAML frontmatter for specialized tasks:
+
+| Agent | Purpose | Tools |
+|-------|---------|-------|
+| `build-agent` | Single-file implementation | Write, Read, Edit, Bash |
+| `planner` | Architecture planning | Glob, Grep, Read |
+| `scout-report-suggest` | Codebase analysis | Read, Glob, Grep |
+| `playwright-validator` | Browser automation testing | Playwright MCP tools |
+| `meta-agent` | Generate new agent configs | Write, WebFetch |
+| `docs-scraper` | Documentation fetching | WebFetch, Write |
+
+### Orchestrator Commands
+
+Multi-agent workflow orchestration:
+
+| Command | Description |
+|---------|-------------|
+| `/orch_plan_w_scouts_build_review` | Full workflow: scout → plan → build → review |
+| `/orch_scout_and_build` | Simplified: scout → build |
+| `/orch_one_shot_agent` | Single specialized agent task |
+| `/build_in_parallel` | Parallel file implementation |
+| `/parallel_subagents` | Launch multiple agents concurrently |
+
+### Database-Backed ADWs
+
+Workflows persist state to database for reliability and observability:
+
+**Database Tables:**
+- `orchestrator_agents` - Agent registry
+- `agents` - Agent instances
+- `prompts` - ADW workflow state (replaces JSON files)
+- `agent_logs` - Step-by-step execution logs
+- `system_logs` - System events
+
+### Orchestrator Web App
+
+Real-time dashboard for monitoring agent execution:
+
+**Backend (FastAPI):**
+- REST endpoints for CRUD operations
+- WebSocket for real-time event streaming
+- Integration with ADW database modules
+
+**Frontend (Vue 3 + TypeScript):**
+- Swimlane visualization of agent tasks
+- Command palette (Cmd+K) for quick navigation
+- Real-time WebSocket updates
+- Keyboard shortcuts
+
+### Usage Examples
+
+**Without Orchestrator (default):**
+```bash
+# Standard agentic layer
+tac-bootstrap init my-app
+
+# File-based ADW workflows
+uv run adws/adw_sdlc_iso.py 123
+```
+
+**With Orchestrator (opt-in):**
+```bash
+# Include orchestrator components
+tac-bootstrap init my-app --with-orchestrator
+
+# Or add to existing project
+tac-bootstrap add-agentic --with-orchestrator
+
+# Database-backed workflows
+uv run adws/adw_workflows/adw_plan_build_review.py --adw-id task-123
+```
 
 ### Additional Structure (when enabled)
 
 ```
 project/
-├── apps/
-│   └── orchestrator_3_stream/
-│       ├── server/              # FastAPI WebSocket backend
-│       │   ├── main.py          # Server entry point
-│       │   ├── websocket.py     # WebSocket handlers
-│       │   └── events.py        # Event types
-│       ├── frontend/            # Vue 3 + TypeScript UI
-│       │   ├── src/
-│       │   │   ├── App.vue
-│       │   │   ├── components/  # Swimlane, CommandPalette, etc.
-│       │   │   └── stores/      # Pinia state management
-│       │   └── package.json
-│       └── playwright-tests/    # E2E tests
-│           ├── app-loads.spec.ts
-│           ├── command-palette.spec.ts
-│           └── websocket-status.spec.ts
-└── adws/
-    └── adw_tests/               # Pytest test suites
-        ├── conftest.py
-        ├── test_database.py
-        ├── test_workflows.py
-        └── test_websockets.py
+├── .claude/
+│   ├── skills/                  # Skills System (Class 1)
+│   │   └── meta-skill/
+│   └── agents/                  # Agent Definitions (Class 2)
+│       ├── build-agent.md
+│       ├── planner.md
+│       └── ...
+├── adws/
+│   ├── adw_modules/
+│   │   ├── adw_agent_sdk.py     # Agent SDK (Class 2)
+│   │   ├── adw_database.py      # Database Operations (Class 3)
+│   │   ├── adw_websockets.py    # WebSockets (Class 3)
+│   │   └── orch_database_models.py
+│   ├── adw_workflows/           # Consolidated Workflows (Class 3)
+│   │   ├── adw_plan_build.py
+│   │   └── adw_plan_build_review.py
+│   ├── adw_tests/               # Test suites
+│   └── schema/                  # Database Schema (Class 3)
+│       ├── schema_orchestrator.sql
+│       └── migrations/
+└── apps/
+    └── orchestrator_3_stream/
+        ├── backend/             # Orchestrator Backend (Class 3)
+        │   ├── main.py
+        │   └── modules/
+        ├── frontend/            # Orchestrator Frontend (Class 3)
+        │   ├── src/
+        │   └── package.json
+        └── playwright-tests/    # E2E Tests
 ```
 
 ### Configuration
 
-The orchestrator is configured in `config.yml`:
+Configure orchestrator in `config.yml`:
 
 ```yaml
 orchestrator:
@@ -159,16 +282,34 @@ orchestrator:
   polling_interval: 5000
 ```
 
+### Database Setup (SQLite)
+
+No external database required. SQLite is the default and creates the database file automatically:
+
+```bash
+# Default: database created at orchestrator.db (no setup needed)
+# The schema is initialized automatically on first run
+
+# To use a custom path:
+# database_url: "sqlite:///path/to/custom.db"
+
+# Initialize schema manually (optional)
+sqlite3 orchestrator.db < adws/schema/schema_orchestrator.sql
+```
+
 ### Running the Orchestrator
 
 ```bash
-# Start backend
-cd apps/orchestrator_3_stream/server
-uvicorn main:app --reload
+# 1. Start backend
+cd apps/orchestrator_3_stream/backend
+uv run uvicorn main:app --reload --port 8000
 
-# Start frontend (separate terminal)
+# 2. Start frontend (separate terminal)
 cd apps/orchestrator_3_stream/frontend
-npm run dev
+npm install && npm run dev
+
+# 3. Open dashboard
+open http://localhost:5173
 
 # Run E2E tests
 cd apps/orchestrator_3_stream
