@@ -269,7 +269,7 @@ project/
 
 ### Configuration
 
-Configure orchestrator in `config.yml`:
+Configure orchestrator in `config.yml` (single source of truth):
 
 ```yaml
 orchestrator:
@@ -278,23 +278,25 @@ orchestrator:
   ws_base_url: "ws://localhost:8000"
   frontend_port: 5173
   websocket_port: 8000
-  database_url: "sqlite:///orchestrator.db"
+  database_url: "sqlite:///data/orchestrator.db"
   polling_interval: 5000
 ```
+
+The backend reads all values from `config.yml` at startup. Environment variables can override any value (priority: env var > config.yml > hardcoded default). The frontend `.env` file is generated from `config.yml` via `make gen-env`.
 
 ### Database Setup (SQLite)
 
 No external database required. SQLite is the default and creates the database file automatically:
 
 ```bash
-# Default: database created at orchestrator.db (no setup needed)
+# Default: database created at data/orchestrator.db (no setup needed)
 # The schema is initialized automatically on first run
 
 # To use a custom path:
 # database_url: "sqlite:///path/to/custom.db"
 
 # Initialize schema manually (optional)
-sqlite3 orchestrator.db < adws/schema/schema_orchestrator.sql
+sqlite3 data/orchestrator.db < adws/schema/schema_orchestrator.sql
 ```
 
 ### Running the Orchestrator
@@ -310,8 +312,11 @@ make install-frontend      # Only frontend (Vue 3, npm)
 # Setup database
 make setup-db              # Initialize SQLite with schema
 
+# Generate frontend .env from config.yml
+make gen-env               # Creates .env with API URLs and ports
+
 # Start development servers
-make dev-backend           # FastAPI backend (port 8000, hot reload)
+make dev-backend           # FastAPI backend (port from config.yml, hot reload)
 make dev-frontend          # Vue 3 frontend (port 5173)
 
 # Utilities
@@ -329,8 +334,9 @@ make clean                 # Clean caches
 | `make install-frontend` | Run `npm install` in frontend directory |
 | `make setup-db` | Initialize SQLite database with schema |
 | `make reset-db` | Delete and recreate database |
+| `make gen-env` | Generate frontend `.env` from `config.yml` |
 | `make dev` | Start backend in development mode (alias for dev-backend) |
-| `make dev-backend` | Start FastAPI backend with hot reload (port 8000) |
+| `make dev-backend` | Start FastAPI backend with hot reload (port from config.yml) |
 | `make dev-frontend` | Start Vue 3 frontend dev server (port 5173) |
 | `make dev-all` | Show instructions for running both servers |
 | `make start` | Start backend in production mode (no reload) |
@@ -374,7 +380,8 @@ cd tac_bootstrap_cli
 make orch-install          # Install backend dependencies
 make orch-install-frontend # Install frontend dependencies
 make orch-setup-db         # Initialize SQLite database
-make orch-dev              # Start backend (port 8000, hot reload)
+make orch-gen-env          # Generate frontend .env from config.yml
+make orch-dev              # Start backend (port from config.yml, hot reload)
 make orch-dev-frontend     # Start frontend (port 5173)
 make orch-health           # Check backend health
 ```
