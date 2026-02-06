@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-02-06
+
+### Fixed
+- **`--with-orchestrator` ignored in interactive mode**: Flag was not passed from CLI to `run_init_wizard()`, causing `config.orchestrator.enabled` to always default to `false` in interactive mode
+- **Wizard missing `OrchestratorConfig`**: `run_init_wizard()` did not accept or propagate orchestrator setting to `TACConfig`
+
+### Added
+- **`tac-bootstrap upgrade --with-orchestrator`**: New flag to add orchestrator to existing projects during upgrade
+  - Enables `config.orchestrator.enabled = true` before re-scaffolding
+  - Shows orchestrator changes in `--dry-run` preview
+  - Allows upgrade even when versions match (treats flag as a reason to upgrade)
+
+### Changed
+- `wizard.py` - Added `with_orchestrator` parameter and `OrchestratorConfig` import
+- `cli.py` - Pass `with_orchestrator` to wizard in interactive mode; added flag to `upgrade` command
+- `upgrade_service.py` - `perform_upgrade()` and `get_changes_preview()` accept `with_orchestrator` parameter
+
 ## [0.9.0] - 2026-02-05
 
 ### Added - TAC-14: Codebase Singularity & Orchestrator

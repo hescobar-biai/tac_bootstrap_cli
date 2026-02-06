@@ -17,7 +17,7 @@ from rich.console import Console
 
 from tac_bootstrap import __version__
 from tac_bootstrap.application.scaffold_service import ScaffoldService
-from tac_bootstrap.domain.models import TACConfig
+from tac_bootstrap.domain.models import OrchestratorConfig, TACConfig
 
 console = Console()
 
@@ -134,8 +134,11 @@ class UpgradeService:
 
         return backup_dir
 
-    def get_changes_preview(self) -> List[str]:
+    def get_changes_preview(self, with_orchestrator: bool = False) -> List[str]:
         """Get list of changes that will be made.
+
+        Args:
+            with_orchestrator: Whether orchestrator will be added/updated
 
         Returns:
             List of change descriptions
@@ -149,15 +152,25 @@ class UpgradeService:
             else:
                 changes.append(f"Create {dir_name}/ directory")
 
+        if with_orchestrator:
+            orch_path = self.project_path / "apps" / "orchestrator_3_stream"
+            if orch_path.exists():
+                changes.append("Update apps/orchestrator_3_stream/ (orchestrator)")
+            else:
+                changes.append("Add apps/orchestrator_3_stream/ (orchestrator)")
+
         changes.append("Update version in config.yml")
 
         return changes
 
-    def perform_upgrade(self, backup: bool = True) -> Tuple[bool, str]:
+    def perform_upgrade(
+        self, backup: bool = True, with_orchestrator: bool = False
+    ) -> Tuple[bool, str]:
         """Perform the upgrade.
 
         Args:
             backup: Whether to create backup before upgrading
+            with_orchestrator: Whether to enable orchestrator in config
 
         Returns:
             Tuple of (success, message)
@@ -166,6 +179,10 @@ class UpgradeService:
         config = self.load_existing_config()
         if config is None:
             return False, "Could not load existing configuration"
+
+        # Enable orchestrator if requested
+        if with_orchestrator:
+            config.orchestrator = OrchestratorConfig(enabled=True)
 
         # Create backup if requested
         backup_path = None

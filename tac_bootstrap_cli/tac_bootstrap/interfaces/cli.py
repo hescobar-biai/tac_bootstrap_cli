@@ -155,6 +155,7 @@ def init(
                 framework=framework,
                 package_manager=package_manager,
                 architecture=architecture,
+                with_orchestrator=with_orchestrator,
             )
         else:
             # Non-interactive mode: build config from CLI arguments
@@ -891,6 +892,11 @@ def upgrade(
         "-f",
         help="Force upgrade even if versions match",
     ),
+    with_orchestrator: bool = typer.Option(
+        False,
+        "--with-orchestrator",
+        help="Enable orchestrator (adds apps/orchestrator_3_stream/)",
+    ),
 ) -> None:
     """Upgrade agentic layer to latest TAC Bootstrap version.
 
@@ -898,10 +904,11 @@ def upgrade(
     to the latest templates while preserving your project configuration.
 
     Examples:
-        tac-bootstrap upgrade                    # Upgrade current directory
-        tac-bootstrap upgrade ./my-project       # Upgrade specific project
-        tac-bootstrap upgrade --dry-run          # Preview changes
-        tac-bootstrap upgrade --no-backup        # Upgrade without backup
+        tac-bootstrap upgrade                          # Upgrade current directory
+        tac-bootstrap upgrade ./my-project             # Upgrade specific project
+        tac-bootstrap upgrade --dry-run                # Preview changes
+        tac-bootstrap upgrade --no-backup              # Upgrade without backup
+        tac-bootstrap upgrade --with-orchestrator      # Add orchestrator to project
     """
     project_path = path.resolve()
 
@@ -920,13 +927,13 @@ def upgrade(
     console.print(f"  Current version: [yellow]{current_ver}[/yellow]")
     console.print(f"  Target version:  [green]{target_ver}[/green]")
 
-    if not needs_upgrade and not force:
+    if not needs_upgrade and not force and not with_orchestrator:
         console.print("\n[green]Project is already up to date![/green]")
         raise typer.Exit(0)
 
     # Show changes preview
     console.print("\n[bold]Changes to be made:[/bold]")
-    for change in service.get_changes_preview():
+    for change in service.get_changes_preview(with_orchestrator=with_orchestrator):
         console.print(f"  • {change}")
 
     if dry_run:
@@ -940,7 +947,9 @@ def upgrade(
 
     # Perform upgrade
     console.print("\n[bold]Upgrading...[/bold]")
-    success, message = service.perform_upgrade(backup=backup)
+    success, message = service.perform_upgrade(
+        backup=backup, with_orchestrator=with_orchestrator
+    )
 
     if success:
         console.print(f"\n[green]✓ {message}[/green]")

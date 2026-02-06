@@ -32,6 +32,7 @@ from tac_bootstrap.domain.models import (
     CommandsSpec,
     Framework,
     Language,
+    OrchestratorConfig,
     PackageManager,
     PathsSpec,
     ProjectMode,
@@ -115,6 +116,7 @@ def run_init_wizard(
     framework: Optional[Framework] = None,
     package_manager: Optional[PackageManager] = None,
     architecture: Optional[Architecture] = None,
+    with_orchestrator: bool = False,
 ) -> TACConfig:
     """Run interactive wizard for project initialization.
 
@@ -242,6 +244,7 @@ def run_init_wizard(
         claude=ClaudeConfig(
             settings=ClaudeSettings(project_name=name),
         ),
+        orchestrator=OrchestratorConfig(enabled=with_orchestrator),
     )
 
     # Show summary and confirm
