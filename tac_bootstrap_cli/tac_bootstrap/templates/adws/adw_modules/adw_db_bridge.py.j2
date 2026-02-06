@@ -1,4 +1,4 @@
-"""Sync SQLite bridge for ADW workflow tracking.
+{% raw %}"""Sync SQLite bridge for ADW workflow tracking.
 
 Provides synchronous database writes to the orchestrator SQLite database
 (data/orchestrator.db) using plain sqlite3. This avoids the async/sync
@@ -332,3 +332,4 @@ def log_event(
         _conn.commit()
     except Exception as e:
         logger.warning(f"[DB Bridge] log_event failed: {e}")
+{% endraw %}

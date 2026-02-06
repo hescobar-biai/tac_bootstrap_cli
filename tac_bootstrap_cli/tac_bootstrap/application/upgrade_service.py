@@ -202,6 +202,8 @@ class UpgradeService:
             result = self.scaffold_service.apply_plan(plan, self.project_path, config)
 
             if not result.success:
+                for err in result.errors:
+                    console.print(f"  [red]• {err}[/red]")
                 raise Exception(result.error or "Scaffold apply failed")
 
             return True, f"Successfully upgraded to v{self.get_target_version()}"
