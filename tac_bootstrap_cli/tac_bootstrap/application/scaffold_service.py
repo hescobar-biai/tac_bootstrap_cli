@@ -856,6 +856,7 @@ class ScaffoldService:
             ("lint.sh", "Linter runner"),
             ("build.sh", "Build script"),
             ("setup_worktree.sh", "Worktree environment setup for ADW workflows"),
+            ("purge_tree.sh", "Worktree cleanup and branch deletion for ADW workflows"),
         ]
 
         for script, reason in scripts:

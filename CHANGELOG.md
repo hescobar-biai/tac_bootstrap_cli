@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.9] - 2026-02-06
+
+### Fixed
+- **`ValueError: Invalid format specifier` in `workflow_ops.py`**: JSON examples inside f-strings had unescaped `{` and `}` braces (in `clarify_issue()` and `resolve_clarifications()` functions). Fixed to `{{` and `}}` in both the base file and the Jinja2 template (`{% raw %}` blocks now output double-braces)
+
 ## [0.9.8] - 2026-02-06
 
 ### Fixed
