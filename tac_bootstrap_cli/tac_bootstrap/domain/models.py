@@ -451,6 +451,10 @@ class OrchestratorConfig(BaseModel):
     for the orchestrator frontend application.
     """
 
+    enabled: bool = Field(
+        default=False,
+        description="Enable orchestrator components (backend + frontend)"
+    )
     api_base_url: str = Field(
         default="http://localhost:8000",
         description="Base URL for orchestrator API"
@@ -464,6 +468,16 @@ class OrchestratorConfig(BaseModel):
         description="Port for frontend development server",
         ge=1024,
         le=65535
+    )
+    websocket_port: int = Field(
+        default=8000,
+        description="Port for WebSocket server",
+        ge=1024,
+        le=65535
+    )
+    database_url: str = Field(
+        default="sqlite:///orchestrator.db",
+        description="Database connection URL for orchestrator"
     )
     polling_interval: int = Field(
         default=5000,

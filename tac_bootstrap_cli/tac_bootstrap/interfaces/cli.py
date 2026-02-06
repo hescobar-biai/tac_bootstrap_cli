@@ -19,6 +19,7 @@ from tac_bootstrap.domain.models import (
     CommandsSpec,
     Framework,
     Language,
+    OrchestratorConfig,
     PackageManager,
     PathsSpec,
     ProjectSpec,
@@ -115,6 +116,9 @@ def init(
     architecture: Optional[Architecture] = typer.Option(
         None, "--architecture", "-a", help="Software architecture pattern (default: simple)"
     ),
+    with_orchestrator: bool = typer.Option(
+        False, "--with-orchestrator", help="Include orchestrator backend and frontend (TAC-14)"
+    ),
     interactive: bool = typer.Option(
         True, "--interactive/--no-interactive", help="Use interactive wizard"
     ),
@@ -191,6 +195,7 @@ def init(
                     build=default_cmds.get("build", ""),
                 ),
                 claude=ClaudeConfig(settings=ClaudeSettings(project_name=name)),
+                orchestrator=OrchestratorConfig(enabled=with_orchestrator),
             )
 
         # Import scaffold service (will fail if not implemented yet)
@@ -259,6 +264,9 @@ def init(
 def add_agentic(
     repo_path: Path = typer.Argument(
         Path("."), help="Repository path (default: current directory)"
+    ),
+    with_orchestrator: bool = typer.Option(
+        False, "--with-orchestrator", help="Include orchestrator backend and frontend (TAC-14)"
     ),
     interactive: bool = typer.Option(
         True, "--interactive/--no-interactive", help="Use interactive wizard"
@@ -343,6 +351,7 @@ def add_agentic(
                         build=default_cmds.get("build", ""),
                     ),
                     claude=ClaudeConfig(settings=ClaudeSettings(project_name=project_name)),
+                    orchestrator=OrchestratorConfig(enabled=with_orchestrator),
                 )
 
             # Build and apply plan

@@ -108,14 +108,16 @@ class ScaffoldService:
         # Add fractal documentation scripts
         self._add_fractal_docs_scripts(plan, config)
 
-        # Add orchestrator web backend
-        self._add_orchestrator_web(plan, config, existing_repo)
+        # Add orchestrator components only if enabled (TAC-14 Task 16)
+        if config.orchestrator.enabled:
+            # Add orchestrator web backend
+            self._add_orchestrator_web(plan, config, existing_repo)
 
-        # Add orchestrator frontend (Vue 3 + TypeScript)
-        self._add_orchestrator_frontend(plan, config, existing_repo)
+            # Add orchestrator frontend (Vue 3 + TypeScript)
+            self._add_orchestrator_frontend(plan, config, existing_repo)
 
-        # Add test suites (TAC-14 Task 15)
-        self._add_test_files(plan, config, existing_repo)
+            # Add test suites (TAC-14 Task 15)
+            self._add_test_files(plan, config, existing_repo)
 
         return plan
 
