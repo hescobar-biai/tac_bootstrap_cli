@@ -1,0 +1,439 @@
+# /// script
+# dependencies = ["pytest>=8.0", "pytest-asyncio>=0.23", "aiosqlite>=0.19.0"]
+# ///
+"""
+Database Module Tests
+
+Tests for adw_modules/adw_database.py - SQLite database manager for orchestrator.
+Covers CRUD operations for all tables: orchestrator_agents, agents, prompts, agent_logs, system_logs.
+"""
+
+import pytest
+import pytest_asyncio
+from datetime import datetime, timedelta
+
+
+# ============================================================================
+# DatabaseManager Lifecycle Tests
+# ============================================================================
+
+class TestDatabaseLifecycle:
+    """Test database connection lifecycle."""
+
+    @pytest.mark.asyncio
+    async def test_connect_creates_database(self, temp_db_path):
+        """Test that connect() creates database file and initializes schema."""
+        import os
+        from adw_modules.adw_database import DatabaseManager
+
+        assert not os.path.exists(temp_db_path)
+
+        db = DatabaseManager(temp_db_path)
+        await db.connect()
+
+        assert os.path.exists(temp_db_path)
+        assert db.conn is not None
+
+        await db.close()
+
+    @pytest.mark.asyncio
+    async def test_context_manager(self, temp_db_path):
+        """Test async context manager pattern."""
+        from adw_modules.adw_database import DatabaseManager
+
+        async with DatabaseManager(temp_db_path) as db:
+            assert db.conn is not None
+            # Verify schema by listing tables
+            agents = await db.list_orchestrator_agents()
+            assert isinstance(agents, list)
+
+        # Connection should be closed after context exit
+        assert db.conn is None
+
+    @pytest.mark.asyncio
+    async def test_wal_mode_enabled(self, db_manager):
+        """Test that WAL mode is enabled for concurrency."""
+        cursor = await db_manager.conn.execute("PRAGMA journal_mode")
+        row = await cursor.fetchone()
+        assert row[0].lower() == "wal"
+
+
+# ============================================================================
+# Orchestrator Agents CRUD Tests
+# ============================================================================
+
+class TestOrchestratorAgentsCRUD:
+    """Test CRUD operations for orchestrator_agents table."""
+
+    @pytest.mark.asyncio
+    async def test_create_orchestrator_agent(self, db_manager):
+        """Test creating an orchestrator agent definition."""
+        agent_id = await db_manager.create_orchestrator_agent(
+            name="scout-report-suggest",
+            description="Scouts codebase and suggests fixes",
+            agent_type="utility",
+            capabilities="codebase_exploration,issue_detection",
+            default_model="claude-sonnet-4-5"
+        )
+
+        assert agent_id is not None
+        assert len(agent_id) == 36  # UUID format
+
+    @pytest.mark.asyncio
+    async def test_get_orchestrator_agent(self, db_manager):
+        """Test retrieving an orchestrator agent by ID."""
+        agent_id = await db_manager.create_orchestrator_agent(
+            name="planner-agent",
+            description="Plans implementation strategy",
+            agent_type="planner"
+        )
+
+        agent = await db_manager.get_orchestrator_agent(agent_id)
+
+        assert agent is not None
+        assert agent["name"] == "planner-agent"
+        assert agent["agent_type"] == "planner"
+
+    @pytest.mark.asyncio
+    async def test_get_nonexistent_agent_returns_none(self, db_manager):
+        """Test that getting a nonexistent agent returns None."""
+        agent = await db_manager.get_orchestrator_agent("nonexistent-id")
+        assert agent is None
+
+    @pytest.mark.asyncio
+    async def test_list_orchestrator_agents(self, db_manager):
+        """Test listing all orchestrator agents."""
+        # Create multiple agents
+        await db_manager.create_orchestrator_agent(
+            name="agent-1", description="First", agent_type="planner"
+        )
+        await db_manager.create_orchestrator_agent(
+            name="agent-2", description="Second", agent_type="builder"
+        )
+
+        agents = await db_manager.list_orchestrator_agents()
+
+        assert len(agents) == 2
+        # Should be ordered by created_at DESC
+        assert agents[0]["name"] == "agent-2"
+
+    @pytest.mark.asyncio
+    async def test_update_orchestrator_agent(self, db_manager):
+        """Test updating orchestrator agent fields."""
+        agent_id = await db_manager.create_orchestrator_agent(
+            name="updatable-agent",
+            description="Original description",
+            agent_type="utility"
+        )
+
+        updated = await db_manager.update_orchestrator_agent(
+            agent_id,
+            description="Updated description",
+            capabilities="new_capability"
+        )
+
+        assert updated is True
+
+        agent = await db_manager.get_orchestrator_agent(agent_id)
+        assert agent["description"] == "Updated description"
+        assert agent["capabilities"] == "new_capability"
+
+    @pytest.mark.asyncio
+    async def test_delete_orchestrator_agent(self, db_manager):
+        """Test deleting an orchestrator agent."""
+        agent_id = await db_manager.create_orchestrator_agent(
+            name="deletable-agent",
+            description="To be deleted",
+            agent_type="utility"
+        )
+
+        deleted = await db_manager.delete_orchestrator_agent(agent_id)
+        assert deleted is True
+
+        agent = await db_manager.get_orchestrator_agent(agent_id)
+        assert agent is None
+
+
+# ============================================================================
+# Runtime Agents CRUD Tests
+# ============================================================================
+
+class TestAgentsCRUD:
+    """Test CRUD operations for agents table (runtime instances)."""
+
+    @pytest.mark.asyncio
+    async def test_create_agent(self, db_with_agent):
+        """Test creating a runtime agent instance."""
+        db_manager, orch_agent_id, agent_id = db_with_agent
+
+        agent = await db_manager.get_agent(agent_id)
+
+        assert agent is not None
+        assert agent["orchestrator_agent_id"] == orch_agent_id
+        assert agent["session_id"] == "test-session-001"
+        assert agent["status"] == "executing"
+
+    @pytest.mark.asyncio
+    async def test_list_agents_by_session(self, db_with_agent):
+        """Test listing agents filtered by session ID."""
+        db_manager, orch_agent_id, _ = db_with_agent
+
+        # Create another agent in a different session
+        await db_manager.create_agent(
+            orchestrator_agent_id=orch_agent_id,
+            session_id="other-session",
+            status="initializing"
+        )
+
+        agents = await db_manager.list_agents(session_id="test-session-001")
+
+        assert len(agents) == 1
+        assert agents[0]["session_id"] == "test-session-001"
+
+    @pytest.mark.asyncio
+    async def test_update_agent_status(self, db_with_agent):
+        """Test updating agent status."""
+        db_manager, _, agent_id = db_with_agent
+
+        updated = await db_manager.update_agent(
+            agent_id,
+            status="completed",
+            completed_at=datetime.utcnow().isoformat()
+        )
+
+        assert updated is True
+
+        agent = await db_manager.get_agent(agent_id)
+        assert agent["status"] == "completed"
+        assert agent["completed_at"] is not None
+
+
+# ============================================================================
+# Prompts CRUD Tests
+# ============================================================================
+
+class TestPromptsCRUD:
+    """Test CRUD operations for prompts table."""
+
+    @pytest.mark.asyncio
+    async def test_create_prompt(self, db_with_agent):
+        """Test creating a prompt record."""
+        db_manager, _, agent_id = db_with_agent
+
+        prompt_id = await db_manager.create_prompt(
+            agent_id=agent_id,
+            prompt_type="adw",
+            prompt_text="Analyze the codebase structure",
+            prompt_name="scout-exploration",
+            model_used="claude-sonnet-4-5"
+        )
+
+        assert prompt_id is not None
+
+        prompt = await db_manager.get_prompt(prompt_id)
+        assert prompt["prompt_type"] == "adw"
+        assert prompt["status"] == "pending"
+
+    @pytest.mark.asyncio
+    async def test_update_prompt_with_response(self, db_with_agent):
+        """Test updating prompt with response data."""
+        db_manager, _, agent_id = db_with_agent
+
+        prompt_id = await db_manager.create_prompt(
+            agent_id=agent_id,
+            prompt_type="command",
+            prompt_text="/scout 'find auth logic'"
+        )
+
+        updated = await db_manager.update_prompt(
+            prompt_id,
+            response_text="Found auth logic in src/auth/",
+            status="completed",
+            tokens_input=500,
+            tokens_output=200,
+            latency_ms=1500
+        )
+
+        assert updated is True
+
+        prompt = await db_manager.get_prompt(prompt_id)
+        assert prompt["status"] == "completed"
+        assert prompt["tokens_input"] == 500
+
+    @pytest.mark.asyncio
+    async def test_list_prompts_for_agent(self, db_with_agent):
+        """Test listing prompts for a specific agent."""
+        db_manager, _, agent_id = db_with_agent
+
+        # Create multiple prompts
+        await db_manager.create_prompt(
+            agent_id=agent_id, prompt_type="adw", prompt_text="First prompt"
+        )
+        await db_manager.create_prompt(
+            agent_id=agent_id, prompt_type="followup", prompt_text="Second prompt"
+        )
+
+        prompts = await db_manager.list_prompts(agent_id)
+
+        assert len(prompts) == 2
+        # Should be ordered by created_at ASC
+        assert prompts[0]["prompt_text"] == "First prompt"
+
+
+# ============================================================================
+# Agent Logs Tests
+# ============================================================================
+
+class TestAgentLogs:
+    """Test agent logging operations."""
+
+    @pytest.mark.asyncio
+    async def test_create_agent_log(self, db_with_agent):
+        """Test creating an agent log entry."""
+        db_manager, _, agent_id = db_with_agent
+
+        log_id = await db_manager.create_agent_log(
+            agent_id=agent_id,
+            log_level="INFO",
+            log_type="milestone",
+            message="Agent completed code analysis",
+            details={"files_analyzed": 42}
+        )
+
+        assert log_id is not None
+        assert isinstance(log_id, int)
+
+    @pytest.mark.asyncio
+    async def test_get_agent_logs(self, db_with_agent):
+        """Test retrieving agent logs."""
+        db_manager, _, agent_id = db_with_agent
+
+        await db_manager.create_agent_log(
+            agent_id=agent_id,
+            log_level="INFO",
+            log_type="state_change",
+            message="State changed to executing"
+        )
+        await db_manager.create_agent_log(
+            agent_id=agent_id,
+            log_level="ERROR",
+            log_type="error",
+            message="Tool execution failed"
+        )
+
+        logs = await db_manager.get_agent_logs(agent_id)
+        assert len(logs) == 2
+
+        # Filter by level
+        error_logs = await db_manager.get_agent_logs(agent_id, log_level="ERROR")
+        assert len(error_logs) == 1
+        assert error_logs[0]["message"] == "Tool execution failed"
+
+    @pytest.mark.asyncio
+    async def test_log_agent_event_graceful_failure(self, db_with_agent):
+        """Test that log_agent_event never raises exceptions."""
+        db_manager, _, agent_id = db_with_agent
+
+        # This should not raise even with a valid agent_id
+        log_id = await db_manager.log_agent_event(
+            agent_id=agent_id,
+            log_type="milestone",
+            message="Test event"
+        )
+
+        assert log_id is not None
+
+    @pytest.mark.asyncio
+    async def test_get_logs_by_type(self, db_with_agent):
+        """Test querying logs by type across all agents."""
+        db_manager, _, agent_id = db_with_agent
+
+        await db_manager.create_agent_log(
+            agent_id=agent_id, log_level="ERROR", log_type="error",
+            message="Error 1"
+        )
+        await db_manager.create_agent_log(
+            agent_id=agent_id, log_level="ERROR", log_type="error",
+            message="Error 2"
+        )
+        await db_manager.create_agent_log(
+            agent_id=agent_id, log_level="INFO", log_type="milestone",
+            message="Milestone"
+        )
+
+        error_logs = await db_manager.get_logs_by_type("error")
+        assert len(error_logs) == 2
+
+    @pytest.mark.asyncio
+    async def test_cleanup_old_logs(self, db_with_agent):
+        """Test cleanup of old logs."""
+        db_manager, _, agent_id = db_with_agent
+
+        # Create a log (will be recent)
+        await db_manager.create_agent_log(
+            agent_id=agent_id, log_level="INFO", log_type="milestone",
+            message="Recent log"
+        )
+
+        # Cleanup logs older than 30 days (should not delete anything)
+        deleted = await db_manager.cleanup_old_logs(days=30)
+        assert deleted == 0
+
+        # Verify log still exists
+        logs = await db_manager.get_agent_logs(agent_id)
+        assert len(logs) == 1
+
+
+# ============================================================================
+# System Logs Tests
+# ============================================================================
+
+class TestSystemLogs:
+    """Test system-wide logging operations."""
+
+    @pytest.mark.asyncio
+    async def test_create_system_log(self, db_manager):
+        """Test creating a system log entry."""
+        log_id = await db_manager.create_system_log(
+            log_level="INFO",
+            component="orchestrator",
+            message="Orchestrator started",
+            details={"version": "0.8.0"}
+        )
+
+        assert log_id is not None
+        assert isinstance(log_id, int)
+
+    @pytest.mark.asyncio
+    async def test_get_system_logs_with_filters(self, db_manager):
+        """Test retrieving system logs with filters."""
+        await db_manager.create_system_log(
+            log_level="INFO", component="orchestrator", message="Info message"
+        )
+        await db_manager.create_system_log(
+            log_level="ERROR", component="database", message="Error message"
+        )
+
+        # Filter by level
+        error_logs = await db_manager.get_system_logs(log_level="ERROR")
+        assert len(error_logs) == 1
+        assert error_logs[0]["component"] == "database"
+
+        # Filter by component
+        db_logs = await db_manager.get_system_logs(component="database")
+        assert len(db_logs) == 1
+
+    @pytest.mark.asyncio
+    async def test_list_recent_system_logs(self, db_manager):
+        """Test listing recent system logs."""
+        for i in range(5):
+            await db_manager.create_system_log(
+                log_level="INFO",
+                component="test",
+                message=f"Log {i}"
+            )
+
+        recent = await db_manager.list_recent_system_logs(limit=3)
+        assert len(recent) == 3
+        # Should be newest first
+        assert recent[0]["message"] == "Log 4"

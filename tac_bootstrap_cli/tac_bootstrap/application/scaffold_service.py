@@ -114,6 +114,9 @@ class ScaffoldService:
         # Add orchestrator frontend (Vue 3 + TypeScript)
         self._add_orchestrator_frontend(plan, config, existing_repo)
 
+        # Add test suites (TAC-14 Task 15)
+        self._add_test_files(plan, config, existing_repo)
+
         return plan
 
     def _add_directories(self, plan: ScaffoldPlan, config: TACConfig) -> None:
@@ -1216,6 +1219,77 @@ class ScaffoldService:
                 )
             except Exception:
                 # If file doesn't exist or can't be read, skip it
+                continue
+
+    def _add_test_files(
+        self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
+    ) -> None:
+        """Add test suites for ADW modules and orchestrator frontend (TAC-14 Task 15).
+
+        Adds:
+        - adws/adw_tests/: Pytest fixtures and tests for database, workflows, agent SDK, websockets
+        - apps/orchestrator_3_stream/playwright-tests/: Playwright E2E tests for frontend
+        - apps/orchestrator_3_stream/playwright.config.ts: Playwright configuration
+        """
+        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
+        adws_dir = config.paths.adws_dir
+
+        # Add test directory structure
+        plan.add_directory(f"{adws_dir}/adw_tests", "ADW pytest test suite")
+        plan.add_directory(
+            "apps/orchestrator_3_stream/playwright-tests", "Playwright E2E tests"
+        )
+
+        # Pytest test files
+        pytest_files = [
+            ("conftest.py", "Pytest fixtures and configuration"),
+            ("pytest.ini", "Pytest settings"),
+            ("test_database.py", "Database module tests"),
+            ("test_workflows.py", "Workflow operations tests"),
+            ("test_agent_sdk.py", "Agent SDK abstraction tests"),
+            ("test_websockets.py", "WebSocket server tests"),
+        ]
+
+        for file, reason in pytest_files:
+            plan.add_file(
+                f"{adws_dir}/adw_tests/{file}",
+                action=action,
+                template=f"adws/adw_tests/{file}.j2",
+                reason=reason,
+            )
+
+        # Playwright configuration
+        plan.add_file(
+            "apps/orchestrator_3_stream/playwright.config.ts",
+            action=action,
+            template="apps/orchestrator_3_stream/playwright.config.ts.j2",
+            reason="Playwright E2E test configuration",
+        )
+
+        # Playwright E2E test files
+        playwright_tests = [
+            ("app-loads.spec.ts", "Application loading tests"),
+            ("command-palette.spec.ts", "Command palette tests"),
+            ("websocket-status.spec.ts", "WebSocket status tests"),
+            ("swimlane-board.spec.ts", "Swimlane board tests"),
+            ("keyboard-navigation.spec.ts", "Keyboard navigation tests"),
+            ("visual-styling.spec.ts", "Visual styling tests"),
+        ]
+
+        for file, reason in playwright_tests:
+            # Read static TypeScript files (no Jinja templating needed)
+            test_path = f"apps/orchestrator_3_stream/playwright-tests/{file}"
+            template_path = self.template_repo.templates_dir / test_path
+            try:
+                content = template_path.read_text(encoding='utf-8')
+                plan.add_file(
+                    test_path,
+                    action=action,
+                    content=content,
+                    reason=reason,
+                )
+            except Exception:
+                # If file doesn't exist, skip it
                 continue
 
     def apply_plan(

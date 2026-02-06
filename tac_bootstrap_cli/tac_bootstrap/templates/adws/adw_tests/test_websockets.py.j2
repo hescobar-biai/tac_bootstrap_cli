@@ -1,0 +1,237 @@
+# /// script
+# dependencies = ["pytest>=8.0", "pytest-asyncio>=0.23", "websockets>=12.0"]
+# ///
+"""
+WebSocket Module Tests
+
+Tests for adw_modules/adw_websockets.py - WebSocket server for real-time event broadcasting.
+Covers connection management, event broadcasting, and server lifecycle.
+"""
+
+import asyncio
+import json
+import sys
+from pathlib import Path
+
+import pytest
+import pytest_asyncio
+import websockets
+
+# Add adws directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+
+# ============================================================================
+# WebSocketEvent Tests
+# ============================================================================
+
+class TestWebSocketEvent:
+    """Test WebSocketEvent dataclass."""
+
+    def test_event_creation(self, sample_websocket_event):
+        """Test WebSocketEvent creation with all fields."""
+        assert sample_websocket_event.event_type == "agent_started"
+        assert sample_websocket_event.agent_id == "550e8400-e29b-41d4-a716-446655440000"
+        assert sample_websocket_event.message == "Scout agent started exploration"
+        assert sample_websocket_event.metadata["model"] == "claude-sonnet-4-5"
+
+    def test_event_auto_timestamp(self):
+        """Test that timestamp is auto-generated if not provided."""
+        from adw_modules.adw_websockets import WebSocketEvent
+
+        event = WebSocketEvent(
+            event_type="test",
+            agent_id="test-agent",
+            message="Test message"
+        )
+
+        assert event.timestamp is not None
+        assert "T" in event.timestamp  # ISO format check
+
+    def test_event_to_json(self, sample_websocket_event):
+        """Test JSON serialization of event."""
+        json_str = sample_websocket_event.to_json()
+        parsed = json.loads(json_str)
+
+        assert parsed["event_type"] == "agent_started"
+        assert parsed["agent_id"] == "550e8400-e29b-41d4-a716-446655440000"
+        assert parsed["metadata"]["files_queued"] == 10
+
+
+# ============================================================================
+# ConnectionManager Tests
+# ============================================================================
+
+class TestConnectionManager:
+    """Test WebSocket connection manager."""
+
+    @pytest.mark.asyncio
+    async def test_manager_initialization(self, ws_manager):
+        """Test ConnectionManager initialization."""
+        assert len(ws_manager.connections) == 0
+        assert len(ws_manager.connection_strikes) == 0
+
+    @pytest.mark.asyncio
+    async def test_broadcast_to_empty_connections(self, ws_manager):
+        """Test broadcast with no connected clients."""
+        from adw_modules.adw_websockets import WebSocketEvent
+
+        event = WebSocketEvent(
+            event_type="test",
+            agent_id="test-agent",
+            message="Test message"
+        )
+
+        # Should not raise
+        await ws_manager.broadcast(event)
+
+
+# ============================================================================
+# Server Lifecycle Tests
+# ============================================================================
+
+class TestServerLifecycle:
+    """Test WebSocket server lifecycle."""
+
+    @pytest.mark.asyncio
+    async def test_server_start_and_stop(self):
+        """Test server can start and stop cleanly."""
+        from adw_modules.adw_websockets import start_server, stop_server
+        import socket
+
+        # Find available port
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(('127.0.0.1', 0))
+            port = s.getsockname()[1]
+
+        server_task, manager = await start_server(host="127.0.0.1", port=port)
+
+        assert server_task is not None
+        assert manager is not None
+        assert not server_task.done()
+
+        await stop_server(server_task)
+
+        # Task should be cancelled
+        assert server_task.done()
+
+    @pytest.mark.asyncio
+    async def test_client_connection(self, ws_server):
+        """Test client can connect to server."""
+        server_task, manager, port = ws_server
+
+        async with websockets.connect(f"ws://127.0.0.1:{port}") as websocket:
+            # Should receive welcome message
+            message = await asyncio.wait_for(websocket.recv(), timeout=5.0)
+            data = json.loads(message)
+
+            assert data["type"] == "connection_established"
+            assert "server_time" in data
+
+    @pytest.mark.asyncio
+    async def test_broadcast_to_connected_clients(self, ws_server):
+        """Test broadcasting events to connected clients."""
+        from adw_modules.adw_websockets import broadcast_agent_event
+
+        server_task, manager, port = ws_server
+
+        async with websockets.connect(f"ws://127.0.0.1:{port}") as websocket:
+            # Consume welcome message
+            await websocket.recv()
+
+            # Broadcast an event
+            await broadcast_agent_event(
+                manager=manager,
+                agent_id="test-agent-001",
+                event_type="agent_started",
+                message="Test agent started",
+                metadata={"test": True}
+            )
+
+            # Receive the broadcast
+            message = await asyncio.wait_for(websocket.recv(), timeout=5.0)
+            data = json.loads(message)
+
+            assert data["event_type"] == "agent_started"
+            assert data["agent_id"] == "test-agent-001"
+            assert data["metadata"]["test"] is True
+
+
+# ============================================================================
+# Log Mapping Tests
+# ============================================================================
+
+class TestLogMapping:
+    """Test log to event mapping."""
+
+    def test_map_log_to_event(self, sample_agent_log):
+        """Test converting database log to WebSocket event."""
+        from adw_modules.adw_websockets import map_log_to_event
+
+        event = map_log_to_event(sample_agent_log)
+
+        assert event.event_type == "milestone"
+        assert event.agent_id == "550e8400-e29b-41d4-a716-446655440000"
+        assert event.message == "Agent completed code analysis"
+        assert event.metadata["files_analyzed"] == 42
+
+    def test_map_log_without_agent_id(self):
+        """Test mapping log without agent_id (system log)."""
+        from adw_modules.adw_websockets import map_log_to_event
+
+        log = {
+            "log_level": "INFO",
+            "message": "System started",
+            "details": {"version": "0.8.0"}
+        }
+
+        event = map_log_to_event(log)
+
+        assert event.agent_id == "system"
+        assert event.event_type == "INFO"
+
+
+# ============================================================================
+# Error Handling Tests
+# ============================================================================
+
+class TestErrorHandling:
+    """Test error handling in WebSocket operations."""
+
+    @pytest.mark.asyncio
+    async def test_broadcast_handles_dead_connections(self, ws_server):
+        """Test that broadcast handles dead connections gracefully."""
+        from adw_modules.adw_websockets import broadcast_agent_event
+
+        server_task, manager, port = ws_server
+
+        # Connect and then close abruptly
+        websocket = await websockets.connect(f"ws://127.0.0.1:{port}")
+        await websocket.recv()  # Consume welcome
+
+        # Close without proper handshake
+        await websocket.close()
+
+        # Give time for cleanup
+        await asyncio.sleep(0.1)
+
+        # Broadcast should not raise
+        await broadcast_agent_event(
+            manager=manager,
+            agent_id="test-agent",
+            event_type="test",
+            message="This should not crash"
+        )
+
+    @pytest.mark.asyncio
+    async def test_broadcast_agent_event_never_raises(self, ws_manager):
+        """Test that broadcast_agent_event never raises exceptions."""
+        from adw_modules.adw_websockets import broadcast_agent_event
+
+        # Even with invalid manager state, should not raise
+        await broadcast_agent_event(
+            manager=ws_manager,
+            agent_id="test",
+            event_type="test",
+            message="test"
+        )

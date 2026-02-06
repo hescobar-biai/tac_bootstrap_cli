@@ -1,0 +1,25 @@
+[pytest]
+testpaths = .
+python_files = test_*.py
+python_classes = Test*
+python_functions = test_*
+asyncio_mode = auto
+asyncio_default_fixture_loop_scope = function
+
+# Markers
+markers =
+    asyncio: mark test as async
+    slow: mark test as slow running
+    integration: mark test as integration test
+
+# Logging
+log_cli = true
+log_cli_level = INFO
+
+# Output
+addopts = -v --tb=short
+
+# Warnings
+filterwarnings =
+    ignore::DeprecationWarning
+    ignore::pytest.PytestUnraisableExceptionWarning
