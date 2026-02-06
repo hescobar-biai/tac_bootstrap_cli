@@ -8,7 +8,7 @@ import aiosqlite
 
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent))
 
 from adw_modules.adw_database import DatabaseManager
 from dependencies import get_db_manager
