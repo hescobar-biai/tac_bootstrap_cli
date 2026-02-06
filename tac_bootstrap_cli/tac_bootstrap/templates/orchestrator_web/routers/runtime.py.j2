@@ -88,17 +88,11 @@ async def get_runtime_agent(
 
 @router.get("/runtime/prompts")
 async def list_prompts(
-    agent_id: str | None = Query(None, description="Filter by agent_id"),
+    agent_id: str = Query(..., description="Filter by agent_id (required)"),
     db: DatabaseManager = Depends(get_db_manager)
 ) -> list[dict[str, Any]]:
-    """List all prompts."""
-    prompts = await db.list_prompts()
-    
-    # Apply filter
-    if agent_id:
-        prompts = [p for p in prompts if p.get("agent_id") == agent_id]
-    
-    return prompts
+    """List prompts for a specific agent."""
+    return await db.list_prompts(agent_id)
 
 
 # Logs Endpoints

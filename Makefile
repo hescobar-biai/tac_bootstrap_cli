@@ -82,9 +82,9 @@ cli-doctor:  ## Example: Run doctor command
 	@echo "Note: Adjust based on actual CLI commands available"
 
 # Orchestrator commands (TAC-14)
-ORCH_BACKEND := ../orchestrator_web
-ORCH_FRONTEND := ../apps/orchestrator_3_stream/frontend
-ORCH_DB_SCRIPT := ../scripts/setup_database.sh
+ORCH_BACKEND := orchestrator_web
+ORCH_FRONTEND := apps/orchestrator_3_stream/frontend
+ORCH_DB_SCRIPT := scripts/setup_database.sh
 
 orch-install:  ## Install orchestrator backend dependencies
 	pip install fastapi uvicorn[standard] aiosqlite pydantic
@@ -94,7 +94,7 @@ orch-install-frontend:  ## Install orchestrator frontend dependencies
 
 orch-setup-db:  ## Initialize SQLite database with schema
 	@chmod +x $(ORCH_DB_SCRIPT)
-	cd .. && ./scripts/setup_database.sh
+	./scripts/setup_database.sh
 
 orch-dev:  ## Start orchestrator backend with hot reload (port 8000)
 	cd $(ORCH_BACKEND) && uvicorn main:app --reload --host 0.0.0.0 --port 8000
