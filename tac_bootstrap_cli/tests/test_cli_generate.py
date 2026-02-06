@@ -45,7 +45,7 @@ def create_test_project(tmpdir: Path) -> Path:
     test-data
     """
     config_dict = {
-        "version": "0.9.4",
+        "version": "0.9.5",
         "schema_version": 1,
         "project": {
             "name": "test-project",
@@ -435,7 +435,7 @@ class TestGenerateCommand:
 
             # Create config with SIMPLE architecture
             config_dict = {
-                "version": "0.9.4",
+                "version": "0.9.5",
                 "schema_version": 1,
                 "project": {
                     "name": "test-project",

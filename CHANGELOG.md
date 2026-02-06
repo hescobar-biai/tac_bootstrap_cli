@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-02-06
+
+### Fixed
+- **Database path mismatch in `setup_database.sh`**: Default `DB_PATH` was `orchestrator.db` (project root) but `adw_db_bridge.py` reads from `data/orchestrator.db`. Fixed default to `data/orchestrator.db`
+- **Missing context bundle functions in `workflow_ops.py.j2`**: Template was missing 4 functions required by ADW workflows: `get_context_bundle_path`, `create_context_bundle`, `update_context_bundle_decisions`, `load_context_bundle`. Caused `ImportError` when running `adw_sdlc_iso.py`
+
 ## [0.9.4] - 2026-02-06
 
 ### Fixed
