@@ -57,12 +57,12 @@ WS_HEARTBEAT_INTERVAL = int(os.getenv("WS_HEARTBEAT_INTERVAL", "30"))
 WS_MAX_CONNECTIONS = int(os.getenv("WS_MAX_CONNECTIONS", "50"))
 POLLING_INTERVAL = int(os.getenv("POLLING_INTERVAL", str(_orch.get("polling_interval", 5000))))
 
-# CORS - auto-generate from frontend port
-_default_cors = (
-    f"http://localhost:{FRONTEND_PORT},"
-    f"http://127.0.0.1:{FRONTEND_PORT},"
-    f"http://localhost:5175,"
-    f"http://127.0.0.1:5175"
+# CORS - auto-generate from frontend port (Vite may auto-increment port)
+_cors_ports = {FRONTEND_PORT, 5173, 5174, 5175, 5176}
+_default_cors = ",".join(
+    f"http://{host}:{port}"
+    for port in sorted(_cors_ports)
+    for host in ("localhost", "127.0.0.1")
 )
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", _default_cors).split(",")
 
