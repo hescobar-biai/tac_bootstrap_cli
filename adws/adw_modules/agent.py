@@ -497,7 +497,7 @@ def prompt_claude_code_with_retry(
         # Quota exhausted - try fallback model or degradation strategies
         if response.retry_code == RetryCode.QUOTA_EXHAUSTED:
             # Log the actual error for debugging false positives
-            logger.warning(f"📋 Error triggering quota detection: {response.output[:300]}")
+            logger.warning(f"📋 Error triggering quota detection (model={current_model}): {response.output[:300]}")
             fallback_model = get_fallback_model(current_model)
 
             # Strategy 1: Try next model in fallback chain
@@ -671,6 +671,9 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
     cmd = [CLAUDE_PATH, "-p", request.prompt]
     cmd.extend(["--model", request.model])
     cmd.extend(["--output-format", "stream-json"])
+
+    # Debug: log the model being used
+    logging.debug(f"🎯 Executing with model: {request.model}")
     cmd.append("--verbose")
     
     # Check for MCP config in working directory
