@@ -120,12 +120,12 @@ class ScaffoldService:
             self._add_test_files(plan, config, existing_repo)
 
             # Add orchestrator utility scripts (TAC-14 Task 19)
-            self._add_orchestrator_scripts(plan, config)
+            self._add_orchestrator_scripts(plan, config, existing_repo)
 
             # Add orchestrator Makefile (TAC-14)
             plan.add_file(
                 "Makefile",
-                action=FileAction.CREATE,
+                action=FileAction.OVERWRITE if existing_repo else FileAction.CREATE,
                 template="Makefile.j2",
                 reason="Orchestrator build and run commands",
             )
@@ -1371,12 +1371,13 @@ class ScaffoldService:
                 # If file doesn't exist, skip it
                 continue
 
-    def _add_orchestrator_scripts(self, plan: ScaffoldPlan, config: TACConfig) -> None:
+    def _add_orchestrator_scripts(self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool = False) -> None:
         """Add orchestrator utility scripts (TAC-14 Task 19)."""
+        action = FileAction.OVERWRITE if existing_repo else FileAction.CREATE
         scripts_dir = config.paths.scripts_dir
         plan.add_file(
             f"{scripts_dir}/setup_database.sh",
-            action=FileAction.CREATE,
+            action=action,
             template="scripts/setup_database.sh.j2",
             reason="SQLite database initialization script",
             executable=True,
