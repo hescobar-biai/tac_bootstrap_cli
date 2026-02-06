@@ -855,6 +855,7 @@ class ScaffoldService:
             ("test.sh", "Test runner"),
             ("lint.sh", "Linter runner"),
             ("build.sh", "Build script"),
+            ("setup_worktree.sh", "Worktree environment setup for ADW workflows"),
         ]
 
         for script, reason in scripts:

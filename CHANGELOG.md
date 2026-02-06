@@ -7,12 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.6] - 2026-02-06
+## [0.9.7] - 2026-02-06
 
 ### Fixed
 - **`adw_plan_iso.py` UnboundLocalError**: `worktree_path` was referenced before assignment when `validate_worktree()` returned invalid. Added `worktree_path = None` initialization
 - **Version references in test templates**: `test_database.py.j2` and `test_websockets.py.j2` had hardcoded `0.9.5` instead of `0.8.0`; `adw_database.py.j2` referenced `v0.9.5+` instead of `v0.9.0+`
 - **Typer dependency version**: `pyproject.toml` had `typer>=0.9.5` (linter artifact) instead of `typer>=0.9.4`
+- **Missing `setup_worktree.sh` in generated projects**: `adw_plan_iso.py` calls `scripts/setup_worktree.sh` but the scaffold service didn't include it. Workflows failed with `No such file or directory`. Added to `_add_script_files()` in `scaffold_service.py`
 
 ### Added
 - **9 missing ADW templates**: Synced base `adws/` files to templates that had no `.j2` counterpart:
