@@ -1180,13 +1180,13 @@ class ScaffoldService:
             reason="Frontend dependencies",
         )
         plan.add_file(
-            "apps/orchestrator_3_stream/frontend/.env.j2",
+            "apps/orchestrator_3_stream/frontend/.env",
             action=action,
             template="apps/orchestrator_3_stream/frontend/.env.j2",
             reason="Templated environment variables",
         )
         plan.add_file(
-            "apps/orchestrator_3_stream/frontend/vite.config.ts.j2",
+            "apps/orchestrator_3_stream/frontend/vite.config.ts",
             action=action,
             template="apps/orchestrator_3_stream/frontend/vite.config.ts.j2",
             reason="Templated Vite configuration",

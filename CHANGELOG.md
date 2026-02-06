@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-02-06
+
+### Fixed
+- **Orchestrator frontend `.j2` files not rendered**: `scaffold_service.py` wrote output files as `.env.j2` and `vite.config.ts.j2` instead of `.env` and `vite.config.ts`. Templates were rendered correctly but output paths kept the `.j2` suffix.
+
 ## [0.9.2] - 2026-02-06
 
 ### Fixed
