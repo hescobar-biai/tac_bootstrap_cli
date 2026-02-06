@@ -119,6 +119,9 @@ class ScaffoldService:
             # Add test suites (TAC-14 Task 15)
             self._add_test_files(plan, config, existing_repo)
 
+            # Add orchestrator utility scripts (TAC-14 Task 19)
+            self._add_orchestrator_scripts(plan, config)
+
         return plan
 
     def _add_directories(self, plan: ScaffoldPlan, config: TACConfig) -> None:
@@ -1293,6 +1296,17 @@ class ScaffoldService:
             except Exception:
                 # If file doesn't exist, skip it
                 continue
+
+    def _add_orchestrator_scripts(self, plan: ScaffoldPlan, config: TACConfig) -> None:
+        """Add orchestrator utility scripts (TAC-14 Task 19)."""
+        scripts_dir = config.paths.scripts_dir
+        plan.add_file(
+            f"{scripts_dir}/setup_database.sh",
+            action=FileAction.CREATE,
+            template="scripts/setup_database.sh.j2",
+            reason="SQLite database initialization script",
+            executable=True,
+        )
 
     def apply_plan(
         self,
