@@ -7,8 +7,11 @@
 
 set -e
 
-DB_PATH="${1:-orchestrator.db}"
+DB_PATH="${1:-data/orchestrator.db}"
 SCHEMA_FILE="adws/schema/schema_orchestrator.sql"
+
+# Ensure data directory exists
+mkdir -p "$(dirname "$DB_PATH")"
 
 echo "Setting up SQLite database..."
 

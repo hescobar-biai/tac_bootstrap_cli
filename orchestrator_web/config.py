@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).parent.parent
 BACKEND_DIR = Path(__file__).parent
 
 # Database (SQLite - zero config)
-DATABASE_PATH = os.getenv("DATABASE_PATH", str(BASE_DIR / "orchestrator.db"))
+DATABASE_PATH = os.getenv("DATABASE_PATH", str(BASE_DIR / "data" / "orchestrator.db"))
 
 # Server
 BACKEND_HOST = os.getenv("BACKEND_HOST", "0.0.0.0")

@@ -10,6 +10,9 @@ set -e
 DB_PATH="${1:-{{ config.orchestrator.database_url | replace('sqlite:///', '') }}}"
 SCHEMA_FILE="{{ config.paths.adws_dir }}/schema/schema_orchestrator.sql"
 
+# Ensure data directory exists
+mkdir -p "$(dirname "$DB_PATH")"
+
 echo "Setting up SQLite database..."
 
 # Check if schema file exists
