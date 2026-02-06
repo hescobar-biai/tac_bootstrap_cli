@@ -1,8 +1,10 @@
-"""Runtime Router - Endpoints for runtime agents, prompts, and logs."""
+"""Runtime Router - Endpoints for runtime agents, prompts, logs, and workflows."""
 
 from typing import Any
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, Field
+
+import aiosqlite
 
 import sys
 from pathlib import Path
@@ -10,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from adw_modules.adw_database import DatabaseManager
 from dependencies import get_db_manager
+from config import DATABASE_PATH
 
 router = APIRouter()
 
@@ -33,13 +36,13 @@ async def list_runtime_agents(
 ) -> list[dict[str, Any]]:
     """List all runtime agent instances."""
     agents = await db.list_agents()
-    
+
     # Apply filters
     if session_id:
         agents = [a for a in agents if a.get("session_id") == session_id]
     if status:
         agents = [a for a in agents if a.get("status") == status]
-    
+
     return agents
 
 
@@ -56,19 +59,19 @@ async def create_runtime_agent(
             status_code=404,
             detail=f"Orchestrator agent {agent.orchestrator_agent_id} not found"
         )
-    
+
     agent_id = await db.create_agent(
         orchestrator_agent_id=agent.orchestrator_agent_id,
         session_id=agent.session_id,
         status=agent.status,
         metadata=agent.metadata
     )
-    
+
     # Return created agent
     created = await db.get_agent(agent_id)
     if not created:
         raise HTTPException(status_code=500, detail="Failed to retrieve created runtime agent")
-    
+
     return created
 
 
@@ -105,11 +108,11 @@ async def get_recent_logs(
 ) -> list[dict[str, Any]]:
     """Get recent logs across all agents."""
     logs = await db.get_recent_logs(limit=limit)
-    
+
     # Apply level filter
     if level:
         logs = [l for l in logs if l.get("log_level") == level.upper()]
-    
+
     return logs
 
 
@@ -125,12 +128,39 @@ async def get_agent_logs(
     agent = await db.get_agent(agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail=f"Runtime agent {agent_id} not found")
-    
+
     if log_type:
         logs = await db.get_agent_logs_by_type(agent_id, log_type, limit=limit)
     else:
         # Get all logs for agent (using recent_logs filtered)
         all_logs = await db.get_recent_logs(limit=1000)
         logs = [l for l in all_logs if l.get("agent_id") == agent_id][:limit]
-    
+
     return logs
+
+
+# Workflows Endpoints
+
+@router.get("/runtime/workflows")
+async def list_workflows(
+    status: str | None = Query(None, description="Filter by status: pending, in_progress, completed, failed"),
+    limit: int = Query(20, ge=1, le=100, description="Max workflows to return"),
+) -> list[dict[str, Any]]:
+    """List ADW workflows from ai_developer_workflows table."""
+    try:
+        async with aiosqlite.connect(DATABASE_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            if status:
+                cursor = await db.execute(
+                    "SELECT * FROM ai_developer_workflows WHERE status = ? ORDER BY created_at DESC LIMIT ?",
+                    (status, limit),
+                )
+            else:
+                cursor = await db.execute(
+                    "SELECT * FROM ai_developer_workflows ORDER BY created_at DESC LIMIT ?",
+                    (limit,),
+                )
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read workflows: {e}")

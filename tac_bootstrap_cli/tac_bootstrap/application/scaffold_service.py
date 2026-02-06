@@ -1131,6 +1131,12 @@ class ScaffoldService:
             reason="WebSocket for real-time updates",
         )
         plan.add_file(
+            "orchestrator_web/routers/compat.py",
+            action=action,
+            template="orchestrator_web/routers/compat.py.j2",
+            reason="TAC-14 compatible endpoints for tac-14 frontend",
+        )
+        plan.add_file(
             "orchestrator_web/config.py",
             action=action,
             template="orchestrator_web/config.py.j2",
@@ -1146,17 +1152,17 @@ class ScaffoldService:
     def _add_orchestrator_frontend(
         self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
     ) -> None:
-        """Add orchestrator_frontend/ Vue 3 + TypeScript frontend files (TAC-14 Task 13).
+        """Add orchestrator frontend Vue 3 + TypeScript files (TAC-14 Task 13).
 
         Adds Vue 3 SPA with Pinia state management and WebSocket integration:
-        - package.json: Vue 3, Pinia, Tailwind, Shadcn/Vue dependencies
+        - package.json: Vue 3, Pinia, Axios dependencies
         - vite.config.ts.j2: Build configuration with template variables
         - src/main.ts: Vue app initialization
-        - src/App.vue: Root component
-        - src/stores/: Pinia stores (agent, ui, ws)
-        - src/services/: WebSocket and REST clients
-        - src/components/: Vue SFC components (Swimlane, TaskCard, etc.)
-        - src/composables/: Vue composition functions (keyboard, command palette)
+        - src/App.vue: Root component with 3-column layout
+        - src/stores/: Pinia orchestrator store
+        - src/services/: Chat, Agent, ADW, Event, Autocomplete services
+        - src/components/: Vue SFC components (AdwSwimlanes, EventStream, etc.)
+        - src/composables/: Vue composition functions (agent pulse, filters, etc.)
         - .env.j2: Templated environment variables
         """
         action = FileAction.CREATE  # CREATE only creates if file doesn't exist
@@ -1166,7 +1172,7 @@ class ScaffoldService:
         plan.add_directory("apps/orchestrator_3_stream", "Orchestrator application")
         plan.add_directory("apps/orchestrator_3_stream/frontend", "Orchestrator web frontend")
 
-        # Add frontend files from template
+        # Add frontend config files from template
         plan.add_file(
             "apps/orchestrator_3_stream/frontend/package.json",
             action=action,
@@ -1197,48 +1203,56 @@ class ScaffoldService:
             template="apps/orchestrator_3_stream/frontend/tsconfig.json",
             reason="TypeScript configuration",
         )
-        plan.add_file(
-            "apps/orchestrator_3_stream/frontend/tsconfig.node.json",
-            action=action,
-            template="apps/orchestrator_3_stream/frontend/tsconfig.node.json",
-            reason="TypeScript Node configuration",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/frontend/tailwind.config.js",
-            action=action,
-            template="apps/orchestrator_3_stream/frontend/tailwind.config.js",
-            reason="Tailwind CSS configuration",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/frontend/postcss.config.js",
-            action=action,
-            template="apps/orchestrator_3_stream/frontend/postcss.config.js",
-            reason="PostCSS configuration",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/frontend/env.d.ts",
-            action=action,
-            template="apps/orchestrator_3_stream/frontend/env.d.ts",
-            reason="TypeScript environment variable types",
-        )
 
-        # Source files
+        # Source files - read as static content to avoid Jinja2/Vue syntax conflicts
         frontend_files = [
-            ("src/style.css", "Tailwind CSS directives"),
+            # Core
             ("src/main.ts", "Vue app entry point"),
-            ("src/App.vue", "Root component"),
-            ("src/types/models.ts", "TypeScript type definitions"),
-            ("src/stores/agent-store.ts", "Pinia agent state"),
-            ("src/stores/ui-store.ts", "Pinia UI state"),
-            ("src/stores/ws-store.ts", "Pinia WebSocket state"),
-            ("src/services/ws-client.ts", "WebSocket client"),
-            ("src/services/api-client.ts", "REST API client"),
-            ("src/components/SwimlaneBoard.vue", "Main swimlane board"),
-            ("src/components/AgentLane.vue", "Agent swimlane"),
-            ("src/components/TaskCard.vue", "Task card component"),
-            ("src/components/CommandPalette.vue", "Command palette overlay"),
-            ("src/composables/use-keyboard.ts", "Keyboard shortcuts hook"),
-            ("src/composables/use-command-palette.ts", "Command palette logic"),
+            ("src/App.vue", "Root component with 3-column layout"),
+            ("src/vite-env.d.ts", "Vite environment type declarations"),
+            ("src/types.d.ts", "TypeScript type definitions"),
+            # Config
+            ("src/config/constants.ts", "Application constants"),
+            # Styles
+            ("src/styles/global.css", "Dark theme CSS with cyan/teal accents"),
+            # Store
+            ("src/stores/orchestratorStore.ts", "Pinia orchestrator state management"),
+            # Services
+            ("src/services/api.ts", "Axios API client"),
+            ("src/services/chatService.ts", "Chat and WebSocket service"),
+            ("src/services/agentService.ts", "Agent management service"),
+            ("src/services/adwService.ts", "ADW workflow service"),
+            ("src/services/eventService.ts", "Event stream service"),
+            ("src/services/autocompleteService.ts", "Autocomplete service"),
+            ("src/services/fileService.ts", "File operations service"),
+            # Composables
+            ("src/composables/useAgentPulse.ts", "Agent pulse animation composable"),
+            ("src/composables/useAgentColors.ts", "Agent color assignment composable"),
+            ("src/composables/useEventStreamFilter.ts", "Event stream filter composable"),
+            ("src/composables/useHeaderBar.ts", "Header bar state composable"),
+            ("src/composables/useKeyboardShortcuts.ts", "Keyboard shortcuts composable"),
+            ("src/composables/useAutocomplete.ts", "Autocomplete composable"),
+            # Utils
+            ("src/utils/markdown.ts", "Markdown rendering utility"),
+            ("src/utils/agentColors.ts", "Agent color utility"),
+            # Components
+            ("src/components/AdwSwimlanes.vue", "ADW swimlane board"),
+            ("src/components/AgentList.vue", "Agent list sidebar"),
+            ("src/components/AppHeader.vue", "Application header bar"),
+            ("src/components/EventStream.vue", "Event log stream"),
+            ("src/components/FilterControls.vue", "Filter UI controls"),
+            ("src/components/GlobalCommandInput.vue", "Command palette overlay"),
+            ("src/components/OrchestratorChat.vue", "Chat interface"),
+            # Chat sub-components
+            ("src/components/chat/ThinkingBubble.vue", "Thinking block bubble"),
+            ("src/components/chat/ToolUseBubble.vue", "Tool use block bubble"),
+            # Event row sub-components
+            ("src/components/event-rows/AgentLogRow.vue", "Agent log event row"),
+            ("src/components/event-rows/AgentToolUseBlockRow.vue", "Agent tool use row"),
+            ("src/components/event-rows/FileChangesDisplay.vue", "File changes display"),
+            ("src/components/event-rows/OrchestratorChatRow.vue", "Orchestrator chat row"),
+            ("src/components/event-rows/SystemLogRow.vue", "System log event row"),
+            ("src/components/event-rows/ToolUseBlockRow.vue", "Tool use block row"),
         ]
 
         for path, reason in frontend_files:

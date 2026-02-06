@@ -1,35 +1,23 @@
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
+import { fileURLToPath, URL } from 'node:url'
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  // Load env file from parent directory (orchestrator_3_stream/)
+  const env = loadEnv(mode, '../', '')
 
   return {
     plugins: [vue()],
     resolve: {
       alias: {
-        '@': resolve(__dirname, 'src'),
-      },
+        '@': fileURLToPath(new URL('./src', import.meta.url))
+      }
     },
     server: {
-      port: parseInt(env.VITE_PORT || '5173'),
-      proxy: {
-        '/api': {
-          target: env.VITE_API_URL || 'http://localhost:8000',
-          changeOrigin: true,
-        },
-        '/ws': {
-          target: env.VITE_WS_URL || 'ws://localhost:8000',
-          ws: true,
-          changeOrigin: true,
-        },
-      },
+      host: env.FRONTEND_HOST || '127.0.0.1',
+      port: parseInt(env.FRONTEND_PORT || '5175'),
+      middlewareMode: false
     },
-    build: {
-      outDir: 'dist',
-      sourcemap: true,
-    },
+    publicDir: 'public'
   }
 })

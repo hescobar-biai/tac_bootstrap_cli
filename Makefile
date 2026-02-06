@@ -96,14 +96,30 @@ orch-setup-db:  ## Initialize SQLite database with schema
 	@chmod +x $(ORCH_DB_SCRIPT)
 	./scripts/setup_database.sh
 
-orch-dev:  ## Start orchestrator backend with hot reload (port 8000)
-	cd $(ORCH_BACKEND) && uvicorn main:app --reload --host 0.0.0.0 --port 8000
+orch-gen-env:  ## Generate frontend .env from config.yml
+	@python3 -c "\
+	import yaml; \
+	c = yaml.safe_load(open('config.yml'))['orchestrator']; \
+	lines = [ \
+	  f\"VITE_API_BASE_URL={c['api_base_url']}\", \
+	  f\"VITE_WEBSOCKET_URL={c['ws_base_url']}/ws\", \
+	  f\"VITE_PORT={c['frontend_port']}\", \
+	  f\"VITE_POLLING_INTERVAL={c['polling_interval']}\", \
+	]; \
+	open('$(ORCH_FRONTEND)/.env', 'w').write('\n'.join(lines) + '\n'); \
+	print('Generated $(ORCH_FRONTEND)/.env from config.yml')"
 
-orch-dev-frontend:  ## Start orchestrator frontend dev server (port 5173)
+orch-dev:  ## Start orchestrator backend with hot reload
+	@PORT=$$(python3 -c "import yaml; print(yaml.safe_load(open('config.yml')).get('orchestrator',{}).get('websocket_port',8000))" 2>/dev/null || echo 8000); \
+	echo "Starting backend on port $$PORT"; \
+	cd $(ORCH_BACKEND) && uvicorn main:app --reload --host 0.0.0.0 --port $$PORT
+
+orch-dev-frontend:  ## Start orchestrator frontend dev server
 	cd $(ORCH_FRONTEND) && npm run dev
 
 orch-health:  ## Check orchestrator backend health
-	@curl -s http://localhost:8000/health | python3 -m json.tool 2>/dev/null || echo "Backend not running. Start with: make orch-dev"
+	@PORT=$$(python3 -c "import yaml; print(yaml.safe_load(open('config.yml')).get('orchestrator',{}).get('websocket_port',8000))" 2>/dev/null || echo 8000); \
+	curl -s http://localhost:$$PORT/health | python3 -m json.tool 2>/dev/null || echo "Backend not running. Start with: make orch-dev"
 
 # Utilities
 help:  ## Show this help message
@@ -140,12 +156,13 @@ help:  ## Show this help message
 	@echo "  make orch-install        - Install backend dependencies"
 	@echo "  make orch-install-frontend - Install frontend dependencies"
 	@echo "  make orch-setup-db       - Initialize SQLite database"
-	@echo "  make orch-dev            - Start backend (port 8000, hot reload)"
-	@echo "  make orch-dev-frontend   - Start frontend (port 5173)"
+	@echo "  make orch-gen-env        - Generate frontend .env from config.yml"
+	@echo "  make orch-dev            - Start backend (port from config.yml)"
+	@echo "  make orch-dev-frontend   - Start frontend dev server"
 	@echo "  make orch-health         - Check backend health endpoint"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make help                - Show this help message"
 
 # Declare all targets as phony (not files)
-.PHONY: install install-dev dev lint lint-fix format typecheck test test-v test-cov test-watch build clean cli-help cli-version cli-init-dry cli-doctor orch-install orch-install-frontend orch-setup-db orch-dev orch-dev-frontend orch-health help
+.PHONY: install install-dev dev lint lint-fix format typecheck test test-v test-cov test-watch build clean cli-help cli-version cli-init-dry cli-doctor orch-install orch-install-frontend orch-setup-db orch-gen-env orch-dev orch-dev-frontend orch-health help

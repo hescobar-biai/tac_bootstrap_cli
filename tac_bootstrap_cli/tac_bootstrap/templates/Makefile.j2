@@ -43,24 +43,41 @@ reset-db:  ## Reset database (delete and recreate)
 # Development
 # ============================================================================
 
+gen-env:  ## Generate frontend .env from config.yml
+	@python3 -c "\
+	import yaml; \
+	c = yaml.safe_load(open('config.yml'))['orchestrator']; \
+	lines = [ \
+	  f\"VITE_API_BASE_URL={c['api_base_url']}\", \
+	  f\"VITE_WEBSOCKET_URL={c['ws_base_url']}/ws\", \
+	  f\"VITE_PORT={c['frontend_port']}\", \
+	  f\"VITE_POLLING_INTERVAL={c['polling_interval']}\", \
+	]; \
+	open('$(FRONTEND_DIR)/.env', 'w').write('\n'.join(lines) + '\n'); \
+	print('Generated $(FRONTEND_DIR)/.env from config.yml')"
+
 dev: dev-backend  ## Start backend in development mode
 
-dev-backend:  ## Start FastAPI backend with hot reload (port {{ config.orchestrator.websocket_port }})
-	cd $(BACKEND_DIR) && $(UVICORN) main:app --reload --host 0.0.0.0 --port {{ config.orchestrator.websocket_port }}
+dev-backend:  ## Start FastAPI backend with hot reload
+	@PORT=$$(python3 -c "import yaml; print(yaml.safe_load(open('config.yml')).get('orchestrator',{}).get('websocket_port',{{ config.orchestrator.websocket_port }}))" 2>/dev/null || echo {{ config.orchestrator.websocket_port }}); \
+	echo "Starting backend on port $$PORT"; \
+	cd $(BACKEND_DIR) && $(UVICORN) main:app --reload --host 0.0.0.0 --port $$PORT
 
-dev-frontend:  ## Start Vue 3 frontend dev server (port 5173)
+dev-frontend:  ## Start Vue 3 frontend dev server
 	cd $(FRONTEND_DIR) && $(NPM) run dev
 
 dev-all:  ## Start both backend and frontend (requires two terminals)
-	@echo "Starting orchestrator..."
-	@echo ""
-	@echo "  Terminal 1: make dev-backend"
-	@echo "  Terminal 2: make dev-frontend"
-	@echo ""
-	@echo "  Backend:  http://localhost:{{ config.orchestrator.websocket_port }}"
-	@echo "  Frontend: http://localhost:5173"
-	@echo "  API Docs: http://localhost:{{ config.orchestrator.websocket_port }}/docs"
-	@echo ""
+	@PORT=$$(python3 -c "import yaml; print(yaml.safe_load(open('config.yml')).get('orchestrator',{}).get('websocket_port',{{ config.orchestrator.websocket_port }}))" 2>/dev/null || echo {{ config.orchestrator.websocket_port }}); \
+	FPORT=$$(python3 -c "import yaml; print(yaml.safe_load(open('config.yml')).get('orchestrator',{}).get('frontend_port',5173))" 2>/dev/null || echo 5173); \
+	echo "Starting orchestrator..."; \
+	echo ""; \
+	echo "  Terminal 1: make dev-backend"; \
+	echo "  Terminal 2: make dev-frontend"; \
+	echo ""; \
+	echo "  Backend:  http://localhost:$$PORT"; \
+	echo "  Frontend: http://localhost:$$FPORT"; \
+	echo "  API Docs: http://localhost:$$PORT/docs"; \
+	echo ""
 
 # ============================================================================
 # Production
@@ -69,7 +86,8 @@ dev-all:  ## Start both backend and frontend (requires two terminals)
 start: start-backend  ## Start backend in production mode
 
 start-backend:  ## Start FastAPI backend (production, no reload)
-	cd $(BACKEND_DIR) && $(UVICORN) main:app --host 0.0.0.0 --port {{ config.orchestrator.websocket_port }}
+	@PORT=$$(python3 -c "import yaml; print(yaml.safe_load(open('config.yml')).get('orchestrator',{}).get('websocket_port',{{ config.orchestrator.websocket_port }}))" 2>/dev/null || echo {{ config.orchestrator.websocket_port }}); \
+	cd $(BACKEND_DIR) && $(UVICORN) main:app --host 0.0.0.0 --port $$PORT
 
 start-frontend:  ## Build and serve frontend
 	cd $(FRONTEND_DIR) && $(NPM) run build && $(NPM) run preview
@@ -91,10 +109,12 @@ test: test-backend  ## Run all tests
 # ============================================================================
 
 health:  ## Check backend health endpoint
-	@curl -s http://localhost:{{ config.orchestrator.websocket_port }}/health | python3 -m json.tool 2>/dev/null || echo "Backend not running. Start with: make dev-backend"
+	@PORT=$$(python3 -c "import yaml; print(yaml.safe_load(open('config.yml')).get('orchestrator',{}).get('websocket_port',{{ config.orchestrator.websocket_port }}))" 2>/dev/null || echo {{ config.orchestrator.websocket_port }}); \
+	curl -s http://localhost:$$PORT/health | python3 -m json.tool 2>/dev/null || echo "Backend not running. Start with: make dev-backend"
 
 logs:  ## View recent orchestrator logs via API
-	@curl -s "http://localhost:{{ config.orchestrator.websocket_port }}/api/runtime/logs?limit=20" | python3 -m json.tool 2>/dev/null || echo "Backend not running."
+	@PORT=$$(python3 -c "import yaml; print(yaml.safe_load(open('config.yml')).get('orchestrator',{}).get('websocket_port',{{ config.orchestrator.websocket_port }}))" 2>/dev/null || echo {{ config.orchestrator.websocket_port }}); \
+	curl -s "http://localhost:$$PORT/api/runtime/logs?limit=20" | python3 -m json.tool 2>/dev/null || echo "Backend not running."
 
 clean:  ## Clean generated files and caches
 	@find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
@@ -119,9 +139,10 @@ help:  ## Show this help message
 	@echo "  make reset-db          - Delete and recreate database"
 	@echo ""
 	@echo "Development:"
+	@echo "  make gen-env           - Generate frontend .env from config.yml"
 	@echo "  make dev               - Start backend dev server (hot reload)"
-	@echo "  make dev-backend       - Start FastAPI backend (port {{ config.orchestrator.websocket_port }})"
-	@echo "  make dev-frontend      - Start Vue 3 frontend (port 5173)"
+	@echo "  make dev-backend       - Start FastAPI backend (port from config.yml)"
+	@echo "  make dev-frontend      - Start Vue 3 frontend dev server"
 	@echo "  make dev-all           - Show instructions for running both"
 	@echo ""
 	@echo "Production:"
@@ -139,4 +160,4 @@ help:  ## Show this help message
 	@echo "  make logs              - View recent logs"
 	@echo "  make clean             - Clean caches"
 
-.PHONY: install install-backend install-frontend setup-db reset-db dev dev-backend dev-frontend dev-all start start-backend start-frontend test test-backend test-frontend health logs clean help
+.PHONY: install install-backend install-frontend setup-db reset-db gen-env dev dev-backend dev-frontend dev-all start start-backend start-frontend test test-backend test-frontend health logs clean help

@@ -1,58 +1,267 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-    <!-- Header -->
-    <header class="border-b border-slate-700 bg-slate-900/50 backdrop-blur">
-      <div class="px-6 py-4">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl font-bold text-white">Orchestrator</h1>
-            <p class="text-sm text-slate-400">Real-time agent execution dashboard</p>
-          </div>
-          <div class="flex items-center gap-4">
-            <div
-              :class="[
-                'px-3 py-1 rounded-full text-sm font-medium',
-                wsStore.isHealthy
-                  ? 'bg-green-500/20 text-green-400'
-                  : 'bg-red-500/20 text-red-400'
-              ]"
-            >
-              {{ wsStore.connectionStatus }}
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
+  <div class="app-container">
+    <AppHeader />
 
-    <!-- Main Content -->
-    <main class="p-6">
-      <SwimlaneBoard />
+    <main class="app-main"
+          :class="{
+            'sidebar-collapsed': isSidebarCollapsed,
+            'chat-md': store.chatWidth === 'md',
+            'chat-lg': store.chatWidth === 'lg'
+          }">
+      <AgentList
+        class="app-sidebar left"
+        :agents="store.agents"
+        :selected-agent-id="store.selectedAgentId"
+        @select-agent="handleSelectAgent"
+        @add-agent="handleAddAgent"
+        @collapse-change="handleSidebarCollapse"
+      />
+
+      <!-- Center Column: EventStream or AdwSwimlanes based on view mode -->
+      <EventStream
+        v-if="store.viewMode === 'logs'"
+        ref="eventStreamRef"
+        class="app-content center"
+        :events="store.filteredEventStream"
+        :current-filter="store.eventStreamFilter"
+        :auto-scroll="true"
+        @set-filter="handleSetFilter"
+      />
+      <AdwSwimlanes
+        v-else
+        class="app-content center"
+      />
+
+      <OrchestratorChat
+        class="app-sidebar right"
+        :messages="store.chatMessages"
+        :is-connected="store.isConnected"
+        :is-typing="store.isTyping"
+        :auto-scroll="store.autoScroll"
+        @send="handleSendMessage"
+      />
     </main>
 
-    <!-- Command Palette -->
-    <CommandPalette />
+    <!-- Global Command Input -->
+    <GlobalCommandInput
+      :visible="store.commandInputVisible"
+      @send="handleSendMessage"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useWsStore } from '@/stores/ws-store'
-import { useAgentStore } from '@/stores/agent-store'
-import { onMounted } from 'vue'
-import SwimlaneBoard from '@/components/SwimlaneBoard.vue'
-import CommandPalette from '@/components/CommandPalette.vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+import AppHeader from './components/AppHeader.vue'
+import AgentList from './components/AgentList.vue'
+import EventStream from './components/EventStream.vue'
+import AdwSwimlanes from './components/AdwSwimlanes.vue'
+import OrchestratorChat from './components/OrchestratorChat.vue'
+import GlobalCommandInput from './components/GlobalCommandInput.vue'
+import { useOrchestratorStore } from './stores/orchestratorStore'
+import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts'
 
-const wsStore = useWsStore()
-const agentStore = useAgentStore()
+// Use Pinia store
+const store = useOrchestratorStore()
 
-// Initialize stores and WebSocket connection
+// Initialize keyboard shortcuts
+useKeyboardShortcuts()
+
+// Component refs
+const eventStreamRef = ref<InstanceType<typeof EventStream> | null>(null)
+
+// Sidebar collapse state
+const isSidebarCollapsed = ref(false)
+
+// Initialize store on mount
 onMounted(() => {
-  // Initialize WebSocket connection (setup in ws-client)
-  console.log('App initialized, stores ready')
+  store.initialize()
 })
+
+// Clean up on unmount to prevent duplicate connections during HMR
+onUnmounted(() => {
+  store.disconnectWebSocket()
+})
+
+// Handlers
+const handleSelectAgent = (id: string) => {
+  store.selectAgent(id)
+
+  // Toggle agent filter in EventStream
+  const agent = store.agents.find(a => a.id === id)
+  if (agent && eventStreamRef.value) {
+    eventStreamRef.value.toggleAgentFilter(agent.name)
+  }
+}
+
+const handleAddAgent = () => {
+  console.log('Add agent clicked')
+  // TODO: Open modal to create new agent
+}
+
+const handleSetFilter = (filter: string) => {
+  store.setEventStreamFilter(filter as any)
+}
+
+const handleSendMessage = (message: string) => {
+  store.sendUserMessage(message)
+}
+
+const handleSidebarCollapse = (isCollapsed: boolean) => {
+  isSidebarCollapsed.value = isCollapsed
+}
 </script>
 
 <style scoped>
-:deep(body) {
-  @apply bg-slate-900 text-white;
+.app-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Main Layout */
+.app-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr 418px;
+  overflow: hidden;
+  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Chat width variations */
+.app-main.chat-md {
+  grid-template-columns: 280px 1fr 518px;
+}
+
+.app-main.chat-lg {
+  grid-template-columns: 280px 1fr 618px;
+}
+
+/* Combined with sidebar collapsed */
+.app-main.sidebar-collapsed {
+  grid-template-columns: 48px 1fr 418px;
+}
+
+.app-main.sidebar-collapsed.chat-md {
+  grid-template-columns: 48px 1fr 518px;
+}
+
+.app-main.sidebar-collapsed.chat-lg {
+  grid-template-columns: 48px 1fr 618px;
+}
+
+.app-sidebar,
+.app-content {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Responsive */
+@media (max-width: 1600px) {
+  /* Limit large size on smaller screens */
+  .app-main.chat-lg {
+    grid-template-columns: 280px 1fr 518px; /* Fall back to medium */
+  }
+
+  .app-main.sidebar-collapsed.chat-lg {
+    grid-template-columns: 48px 1fr 518px;
+  }
+}
+
+@media (max-width: 1400px) {
+  .app-main {
+    grid-template-columns: 260px 1fr 385px;
+  }
+
+  .app-main.chat-md {
+    grid-template-columns: 260px 1fr 450px; /* Reduced increase */
+  }
+
+  .app-main.chat-lg {
+    grid-template-columns: 260px 1fr 450px; /* Cap at medium */
+  }
+
+  .app-main.sidebar-collapsed {
+    grid-template-columns: 48px 1fr 385px;
+  }
+
+  .app-main.sidebar-collapsed.chat-md {
+    grid-template-columns: 48px 1fr 450px;
+  }
+
+  .app-main.sidebar-collapsed.chat-lg {
+    grid-template-columns: 48px 1fr 450px;
+  }
+}
+
+@media (max-width: 1200px) {
+  /* Force small size on narrow screens */
+  .app-main,
+  .app-main.chat-md,
+  .app-main.chat-lg {
+    grid-template-columns: 240px 1fr 352px;
+  }
+
+  .app-main.sidebar-collapsed,
+  .app-main.sidebar-collapsed.chat-md,
+  .app-main.sidebar-collapsed.chat-lg {
+    grid-template-columns: 48px 1fr 352px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .app-main,
+  .app-main.chat-md,
+  .app-main.chat-lg {
+    grid-template-columns: 220px 1fr 330px;
+  }
+
+  .app-main.sidebar-collapsed,
+  .app-main.sidebar-collapsed.chat-md,
+  .app-main.sidebar-collapsed.chat-lg {
+    grid-template-columns: 48px 1fr 330px;
+  }
+}
+
+/* Mobile Responsive Design (< 650px) */
+@media (max-width: 650px) {
+  /* Force 3-column layout with collapsed sidebars */
+  .app-main,
+  .app-main.chat-md,
+  .app-main.chat-lg,
+  .app-main.sidebar-collapsed,
+  .app-main.sidebar-collapsed.chat-md,
+  .app-main.sidebar-collapsed.chat-lg {
+    grid-template-columns: 48px 1fr 280px;
+  }
+
+  /* Force AgentList to always be collapsed on mobile */
+  .app-sidebar.left {
+    width: 48px !important;
+    min-width: 48px !important;
+  }
+
+  /* OrchestratorChat small mode on mobile */
+  .app-sidebar.right {
+    width: 280px !important;
+    min-width: 280px !important;
+  }
+}
+
+/* Very narrow mobile devices - hide chat for more event space */
+@media (max-width: 400px) {
+  .app-main,
+  .app-main.chat-md,
+  .app-main.chat-lg,
+  .app-main.sidebar-collapsed,
+  .app-main.sidebar-collapsed.chat-md,
+  .app-main.sidebar-collapsed.chat-lg {
+    grid-template-columns: 48px 1fr 0;
+  }
+
+  .app-sidebar.right {
+    display: none;
+  }
 }
 </style>

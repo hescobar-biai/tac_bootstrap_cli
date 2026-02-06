@@ -94,6 +94,15 @@ templates:
   bug_template: "prompts/templates/bug.md"
   review_template: "prompts/templates/review.md"
 
+orchestrator:
+  enabled: true
+  api_base_url: "http://localhost:8000"
+  ws_base_url: "ws://localhost:8000"
+  frontend_port: 5173
+  websocket_port: 8000
+  database_url: "sqlite:///data/orchestrator.db"
+  polling_interval: 5000
+
 bootstrap:
   create_git_repo: false
   initial_commit: false

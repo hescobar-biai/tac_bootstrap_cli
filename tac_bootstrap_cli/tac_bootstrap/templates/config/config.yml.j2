@@ -110,6 +110,17 @@ templates:
   bug_template: "{{ config.templates.bug_template }}"
   review_template: "{{ config.templates.review_template }}"
 
+{% if config.orchestrator %}
+orchestrator:
+  enabled: {{ config.orchestrator.enabled | lower }}
+  api_base_url: "{{ config.orchestrator.api_base_url }}"
+  ws_base_url: "{{ config.orchestrator.ws_base_url }}"
+  frontend_port: {{ config.orchestrator.frontend_port }}
+  websocket_port: {{ config.orchestrator.websocket_port }}
+  database_url: "{{ config.orchestrator.database_url }}"
+  polling_interval: {{ config.orchestrator.polling_interval }}
+{% endif %}
+
 bootstrap:
   create_git_repo: {{ config.bootstrap.create_git_repo | lower }}
   initial_commit: {{ config.bootstrap.initial_commit | lower }}
