@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 # Ensure adws directory is in path for adw_modules import
-sys.path.insert(0, str(Path(__file__).parent.parent / "adws"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "adws"))
 
 from adw_modules.adw_database import DatabaseManager
 from config import DATABASE_PATH

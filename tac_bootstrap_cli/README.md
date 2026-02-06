@@ -353,7 +353,7 @@ make clean                 # Clean caches
 
 ```bash
 # 1. Start backend
-cd orchestrator_web
+cd apps/orchestrator_3_stream/backend
 uvicorn main:app --reload --port 8000
 
 # 2. Start frontend (separate terminal)

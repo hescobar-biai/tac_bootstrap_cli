@@ -111,7 +111,7 @@ class ScaffoldService:
         # Add orchestrator components only if enabled (TAC-14 Task 16)
         if config.orchestrator.enabled:
             # Add orchestrator web backend
-            self._add_orchestrator_web(plan, config, existing_repo)
+            self._add_orchestrator_backend(plan, config, existing_repo)
 
             # Add orchestrator frontend (Vue 3 + TypeScript)
             self._add_orchestrator_frontend(plan, config, existing_repo)
@@ -1062,10 +1062,10 @@ class ScaffoldService:
         # Docs directory
         plan.add_directory("docs", "Fractal documentation output")
 
-    def _add_orchestrator_web(
+    def _add_orchestrator_backend(
         self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
     ) -> None:
-        """Add orchestrator_web/ FastAPI backend files (TAC-14 Task 12).
+        """Add apps/orchestrator_3_stream/backend/ FastAPI backend files (TAC-14 Task 12).
 
         Adds FastAPI backend with SQLite persistence:
         - main.py: FastAPI app with DatabaseManager lifespan
@@ -1076,76 +1076,76 @@ class ScaffoldService:
         action = FileAction.CREATE  # CREATE only creates if file doesn't exist
 
         # Add directory structure
-        plan.add_directory("orchestrator_web", "Orchestrator web backend")
-        plan.add_directory("orchestrator_web/routers", "FastAPI routers")
+        plan.add_directory("apps/orchestrator_3_stream/backend", "Orchestrator web backend")
+        plan.add_directory("apps/orchestrator_3_stream/backend/routers", "FastAPI routers")
 
         # Add main files
         plan.add_file(
-            "orchestrator_web/__init__.py",
+            "apps/orchestrator_3_stream/backend/__init__.py",
             action=action,
-            template="orchestrator_web/__init__.py.j2",
+            template="apps/orchestrator_3_stream/backend/__init__.py.j2",
             reason="Orchestrator package init",
         )
         plan.add_file(
-            "orchestrator_web/main.py",
+            "apps/orchestrator_3_stream/backend/main.py",
             action=action,
-            template="orchestrator_web/main.py.j2",
+            template="apps/orchestrator_3_stream/backend/main.py.j2",
             reason="FastAPI app with lifespan manager",
         )
         plan.add_file(
-            "orchestrator_web/dependencies.py",
+            "apps/orchestrator_3_stream/backend/dependencies.py",
             action=action,
-            template="orchestrator_web/dependencies.py.j2",
+            template="apps/orchestrator_3_stream/backend/dependencies.py.j2",
             reason="FastAPI dependency injection",
         )
         plan.add_file(
-            "orchestrator_web/.env.sample",
+            "apps/orchestrator_3_stream/backend/.env.sample",
             action=action,
-            template="orchestrator_web/.env.sample",
+            template="apps/orchestrator_3_stream/backend/.env.sample",
             reason="Environment variables template",
         )
 
         # Add routers
         plan.add_file(
-            "orchestrator_web/routers/__init__.py",
+            "apps/orchestrator_3_stream/backend/routers/__init__.py",
             action=action,
-            template="orchestrator_web/routers/__init__.py.j2",
+            template="apps/orchestrator_3_stream/backend/routers/__init__.py.j2",
             reason="Routers package init",
         )
         plan.add_file(
-            "orchestrator_web/routers/agents.py",
+            "apps/orchestrator_3_stream/backend/routers/agents.py",
             action=action,
-            template="orchestrator_web/routers/agents.py.j2",
+            template="apps/orchestrator_3_stream/backend/routers/agents.py.j2",
             reason="CQRS endpoints for orchestrator agents",
         )
         plan.add_file(
-            "orchestrator_web/routers/runtime.py",
+            "apps/orchestrator_3_stream/backend/routers/runtime.py",
             action=action,
-            template="orchestrator_web/routers/runtime.py.j2",
+            template="apps/orchestrator_3_stream/backend/routers/runtime.py.j2",
             reason="Endpoints for runtime agents and logs",
         )
         plan.add_file(
-            "orchestrator_web/routers/websocket.py",
+            "apps/orchestrator_3_stream/backend/routers/websocket.py",
             action=action,
-            template="orchestrator_web/routers/websocket.py.j2",
+            template="apps/orchestrator_3_stream/backend/routers/websocket.py.j2",
             reason="WebSocket for real-time updates",
         )
         plan.add_file(
-            "orchestrator_web/routers/compat.py",
+            "apps/orchestrator_3_stream/backend/routers/compat.py",
             action=action,
-            template="orchestrator_web/routers/compat.py.j2",
+            template="apps/orchestrator_3_stream/backend/routers/compat.py.j2",
             reason="TAC-14 compatible endpoints for tac-14 frontend",
         )
         plan.add_file(
-            "orchestrator_web/config.py",
+            "apps/orchestrator_3_stream/backend/config.py",
             action=action,
-            template="orchestrator_web/config.py.j2",
+            template="apps/orchestrator_3_stream/backend/config.py.j2",
             reason="Orchestrator configuration management",
         )
         plan.add_file(
-            "orchestrator_web/logger.py",
+            "apps/orchestrator_3_stream/backend/logger.py",
             action=action,
-            template="orchestrator_web/logger.py.j2",
+            template="apps/orchestrator_3_stream/backend/logger.py.j2",
             reason="Orchestrator structured logger",
         )
 

@@ -39,7 +39,7 @@ make orch-dev-frontend     # Frontend (port 5173) - separate terminal
 
 ```bash
 # Backend
-cd orchestrator_web
+cd apps/orchestrator_3_stream/backend
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 # Frontend (separate terminal)
@@ -67,7 +67,7 @@ User Browser (5173) → Vue 3 Frontend → FastAPI Backend (8000) → SQLite DB
 ## Database
 
 - **Type**: SQLite 3.35+ (WAL mode)
-- **Location**: `orchestrator.db` (project root)
+- **Location**: `data/orchestrator.db` (project root)
 - **Tables**: 7 (orchestrator_agents, agents, prompts, agent_logs, system_logs, orchestrator_chat, ai_developer_workflows)
 - **Schema**: `adws/schema/schema_orchestrator.sql`
 

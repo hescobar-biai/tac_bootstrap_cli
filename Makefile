@@ -82,7 +82,7 @@ cli-doctor:  ## Example: Run doctor command
 	@echo "Note: Adjust based on actual CLI commands available"
 
 # Orchestrator commands (TAC-14)
-ORCH_BACKEND := orchestrator_web
+ORCH_BACKEND := apps/orchestrator_3_stream/backend
 ORCH_FRONTEND := apps/orchestrator_3_stream/frontend
 ORCH_DB_SCRIPT := scripts/setup_database.sh
 

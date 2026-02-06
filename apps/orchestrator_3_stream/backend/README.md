@@ -5,7 +5,7 @@ FastAPI backend for TAC Bootstrap agent orchestration with SQLite persistence an
 ## Architecture
 
 ```
-orchestrator_web/
+apps/orchestrator_3_stream/backend/
 ├── main.py            # FastAPI app with lifespan manager
 ├── dependencies.py    # Dependency injection (DatabaseManager)
 ├── .env.sample        # Environment variables template
@@ -25,7 +25,7 @@ pip install fastapi uvicorn[standard] aiosqlite pydantic
 ./scripts/setup_database.sh
 
 # 3. Start server
-cd orchestrator_web
+cd apps/orchestrator_3_stream/backend
 uvicorn main:app --reload --port 8000
 ```
 

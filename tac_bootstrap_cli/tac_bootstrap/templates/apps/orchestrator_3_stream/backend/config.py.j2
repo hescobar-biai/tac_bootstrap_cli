@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 # Paths
-BASE_DIR = Path(__file__).parent.parent
+BASE_DIR = Path(__file__).parent.parent.parent.parent
 BACKEND_DIR = Path(__file__).parent
 
 # ---------------------------------------------------------------------------
