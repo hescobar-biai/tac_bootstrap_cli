@@ -149,6 +149,7 @@ class ScaffoldService:
             (".claude/skills", "Agent skills directory"),
             (".claude/skills/meta-skill", "Meta-skill for creating new skills"),
             (".claude/skills/meta-skill/docs", "Meta-skill documentation resources"),
+            (".claude/skills/start-orchestrator", "Start orchestrator skill"),
             (".claude/hooks", "Execution hooks"),
             (".claude/hooks/utils", "Hook utilities"),
             (".claude/hooks/utils/llm", "LLM provider utilities"),
@@ -562,6 +563,14 @@ class ScaffoldService:
                 reason=reason,
             )
 
+        # Skills - Start orchestrator (TAC-14)
+        plan.add_file(
+            ".claude/skills/start-orchestrator/SKILL.md",
+            action=action,
+            template=".claude/skills/start-orchestrator/SKILL.md",
+            reason="Skill for launching orchestrator services",
+        )
+
         # ============================================================================
         # TAC-13: AGENT EXPERT COMMANDS
         # ============================================================================
@@ -683,6 +692,7 @@ class ScaffoldService:
             ("adw_database.py", "SQLite database operations with aiosqlite (TAC-14)"),
             ("adw_logging.py", "Structured database logging for workflows (TAC-14)"),
             ("adw_websockets.py", "WebSocket server for real-time event broadcasting (TAC-14)"),
+            ("adw_db_bridge.py", "Sync SQLite bridge for workflow tracking (TAC-14)"),
         ]
 
         for module, reason in modules:
@@ -1119,6 +1129,18 @@ class ScaffoldService:
             action=action,
             template="orchestrator_web/routers/websocket.py.j2",
             reason="WebSocket for real-time updates",
+        )
+        plan.add_file(
+            "orchestrator_web/config.py",
+            action=action,
+            template="orchestrator_web/config.py.j2",
+            reason="Orchestrator configuration management",
+        )
+        plan.add_file(
+            "orchestrator_web/logger.py",
+            action=action,
+            template="orchestrator_web/logger.py.j2",
+            reason="Orchestrator structured logger",
         )
 
     def _add_orchestrator_frontend(

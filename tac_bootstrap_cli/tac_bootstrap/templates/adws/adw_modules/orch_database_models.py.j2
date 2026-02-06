@@ -1,7 +1,7 @@
 """
 SQLite Database Models for Orchestrator Persistence (TAC-14 v2)
 
-This module defines 5 pure Pydantic models that map to the SQLite database schema
+This module defines 7 pure Pydantic models that map to the SQLite database schema
 for orchestrator state persistence. These are domain models with NO database operations.
 
 SQLite Type Mappings:
@@ -52,7 +52,7 @@ runtime_agent = Agent(
 Schema Reference:
 -----------------
 See: ai_docs/doc/plan_tasks_Tac_14_v2_SQLITE.md
-Tables: orchestrator_agents, agents, prompts, agent_logs, system_logs
+Tables: orchestrator_agents, agents, prompts, agent_logs, system_logs, orchestrator_chat, ai_developer_workflows
 """
 
 from pydantic import BaseModel, Field, field_validator, ConfigDict
@@ -334,6 +334,182 @@ class SystemLog(BaseModel):
             return v
         except (TypeError, ValueError) as e:
             raise ValueError(f"Metadata must be JSON-serializable: {e}")
+
+    model_config = ConfigDict(
+        json_encoders={
+            datetime: lambda v: v.isoformat(),
+            dict: lambda v: json.dumps(v) if v else None,
+        }
+    )
+
+
+class OrchestratorChat(BaseModel):
+    """
+    Orchestrator Chat Message Model.
+
+    Maps to: orchestrator_chat table (SQLite)
+    Purpose: Tracks 3-way conversation: user <-> orchestrator <-> agents
+
+    Fields:
+        id: UUID stored as TEXT
+        orchestrator_agent_id: Foreign key to orchestrator_agents.id
+        sender_type: Who sent - 'user', 'orchestrator', 'agent'
+        receiver_type: Who receives - 'user', 'orchestrator', 'agent'
+        message: Message text content
+        summary: AI-generated summary (optional)
+        agent_id: Foreign key to agents.id (required when sender/receiver is 'agent')
+        metadata: JSON metadata (stored as TEXT)
+        created_at: ISO 8601 timestamp
+        updated_at: ISO 8601 timestamp
+    """
+
+    id: str = Field(..., description="UUID as string")
+    orchestrator_agent_id: str = Field(..., description="Foreign key to orchestrator_agents.id")
+    sender_type: str = Field(..., description="Sender: user, orchestrator, agent")
+    receiver_type: str = Field(..., description="Receiver: user, orchestrator, agent")
+    message: str = Field(..., description="Message text content")
+    summary: Optional[str] = Field(None, description="AI-generated summary")
+    agent_id: Optional[str] = Field(None, description="Foreign key to agents.id (for agent messages)")
+    metadata: Optional[dict] = Field(default_factory=dict, description="JSON metadata")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
+
+    @field_validator('id', 'orchestrator_agent_id')
+    @classmethod
+    def validate_uuid(cls, v: str) -> str:
+        try:
+            uuid_lib.UUID(v)
+            return v
+        except ValueError:
+            raise ValueError(f"Invalid UUID format: {v}")
+
+    @field_validator('agent_id')
+    @classmethod
+    def validate_optional_uuid(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        try:
+            uuid_lib.UUID(v)
+            return v
+        except ValueError:
+            raise ValueError(f"Invalid UUID format: {v}")
+
+    @field_validator('sender_type', 'receiver_type')
+    @classmethod
+    def validate_participant_type(cls, v: str) -> str:
+        allowed = {'user', 'orchestrator', 'agent'}
+        if v not in allowed:
+            raise ValueError(f"Must be one of {allowed}, got: {v}")
+        return v
+
+    @field_validator('metadata')
+    @classmethod
+    def validate_metadata_json(cls, v: Optional[dict]) -> Optional[dict]:
+        if v is None:
+            return v
+        try:
+            json.dumps(v)
+            return v
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Metadata must be JSON-serializable: {e}")
+
+    model_config = ConfigDict(
+        json_encoders={
+            datetime: lambda v: v.isoformat(),
+            dict: lambda v: json.dumps(v) if v else None,
+        }
+    )
+
+
+class AIDevWorkflow(BaseModel):
+    """
+    AI Developer Workflow Tracking Model.
+
+    Maps to: ai_developer_workflows table (SQLite)
+    Purpose: Tracks ADW executions for metrics and monitoring
+
+    Fields:
+        id: UUID stored as TEXT (serves as adw_id)
+        orchestrator_agent_id: Foreign key to orchestrator_agents.id (optional)
+        adw_name: Unique name of the ADW (e.g., "feature-auth")
+        workflow_type: Type of workflow (e.g., "sdlc", "patch", "ship")
+        description: Detailed description
+        status: pending, in_progress, completed, failed, cancelled
+        current_step: Current step slug
+        total_steps: Total number of steps
+        completed_steps: Number of completed steps
+        started_at: When workflow started
+        completed_at: When workflow completed
+        duration_seconds: Total duration
+        input_data: Initial input (JSON)
+        output_data: Final output (JSON)
+        error_message: Error message if failed
+        error_step: Step where error occurred
+        error_count: Number of errors
+        metadata: Additional metadata (JSON)
+        created_at: Creation timestamp
+        updated_at: Last update timestamp
+    """
+
+    id: str = Field(..., description="UUID as string (adw_id)")
+    orchestrator_agent_id: Optional[str] = Field(None, description="Foreign key to orchestrator_agents.id")
+    adw_name: str = Field(..., description="ADW name (e.g., 'feature-auth')")
+    workflow_type: str = Field(..., description="Workflow type: sdlc, patch, ship, etc.")
+    description: Optional[str] = Field(None, description="Detailed description")
+    status: str = Field(default="pending", description="Status: pending, in_progress, completed, failed, cancelled")
+    current_step: Optional[str] = Field(None, description="Current step slug")
+    total_steps: int = Field(default=0, description="Total steps", ge=0)
+    completed_steps: int = Field(default=0, description="Completed steps", ge=0)
+    started_at: Optional[datetime] = Field(None, description="Start time")
+    completed_at: Optional[datetime] = Field(None, description="Completion time")
+    duration_seconds: Optional[int] = Field(None, description="Duration in seconds", ge=0)
+    input_data: Optional[dict] = Field(default_factory=dict, description="Input parameters (JSON)")
+    output_data: Optional[dict] = Field(default_factory=dict, description="Output artifacts (JSON)")
+    error_message: Optional[str] = Field(None, description="Error message")
+    error_step: Optional[str] = Field(None, description="Step where error occurred")
+    error_count: int = Field(default=0, description="Error count", ge=0)
+    metadata: Optional[dict] = Field(default_factory=dict, description="Additional metadata (JSON)")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
+
+    @field_validator('id')
+    @classmethod
+    def validate_uuid(cls, v: str) -> str:
+        try:
+            uuid_lib.UUID(v)
+            return v
+        except ValueError:
+            raise ValueError(f"Invalid UUID format: {v}")
+
+    @field_validator('orchestrator_agent_id')
+    @classmethod
+    def validate_optional_uuid(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        try:
+            uuid_lib.UUID(v)
+            return v
+        except ValueError:
+            raise ValueError(f"Invalid UUID format: {v}")
+
+    @field_validator('status')
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        allowed = {'pending', 'in_progress', 'completed', 'failed', 'cancelled'}
+        if v not in allowed:
+            raise ValueError(f"Status must be one of {allowed}, got: {v}")
+        return v
+
+    @field_validator('input_data', 'output_data', 'metadata')
+    @classmethod
+    def validate_json_fields(cls, v: Optional[dict]) -> Optional[dict]:
+        if v is None:
+            return v
+        try:
+            json.dumps(v)
+            return v
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"Must be JSON-serializable: {e}")
 
     model_config = ConfigDict(
         json_encoders={

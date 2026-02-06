@@ -44,6 +44,11 @@ from adw_modules.workflow_ops import (
 from adw_modules.github import make_issue_comment, fetch_issue, get_repo_url, extract_repo_path
 from adw_modules.utils import get_target_branch, setup_logger
 from adw_modules.state import ADWState
+from adw_modules.adw_db_bridge import (
+    init_bridge, close_bridge,
+    track_workflow_start, track_phase_update, track_workflow_end,
+    log_event,
+)
 
 
 def main():
@@ -108,6 +113,9 @@ def main():
 
     # Set up logger for detection phase
     logger = setup_logger(adw_id, "adw_sdlc_zte_iso")
+
+    # Initialize DB bridge for orchestrator dashboard tracking
+    init_bridge()
 
     # Load existing state to check which phases are already completed
     state = ADWState(adw_id)
@@ -183,246 +191,283 @@ def main():
     # Get the directory where this script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Run isolated plan with the ADW ID (skip if already completed)
-    if "adw_plan_iso" in completed_phases:
-        print(f"\n=== ISOLATED PLAN PHASE ===")
-        print("✓ Plan phase already completed - skipping")
-        logger.info("Plan phase already completed, skipping execution")
-    else:
-        plan_cmd = [
+    # Track workflow start in orchestrator DB
+    track_workflow_start(adw_id, "sdlc_zte", issue_number, total_steps=6)
+    log_event("adw_sdlc_zte_iso", f"ZTE workflow started for issue #{issue_number}")
+
+    try:
+        # Phase 1: PLAN (skip if already completed)
+        if "adw_plan_iso" in completed_phases:
+            print(f"\n=== ISOLATED PLAN PHASE ===")
+            print("✓ Plan phase already completed - skipping")
+            logger.info("Plan phase already completed, skipping execution")
+        else:
+            track_phase_update(adw_id, "plan", "in_progress", 0)
+            plan_cmd = [
+                "uv",
+                "run",
+                os.path.join(script_dir, "adw_plan_iso.py"),
+                issue_number,
+                adw_id,
+            ]
+
+            # Add documentation loading if detected or manually specified (TAC-9)
+            if docs_to_load:
+                plan_cmd.extend(["--load-docs", docs_to_load])
+                logger.info(f"Passing documentation to planning phase: {docs_to_load}")
+
+            # TAC Optimization: Only consult experts in Plan phase (guidance needed)
+            if use_experts:
+                plan_cmd.append("--use-experts")
+                logger.info("TAC: Expert consultation enabled for plan phase")
+
+            print(f"\n=== ISOLATED PLAN PHASE ===")
+            print(f"Running: {' '.join(plan_cmd)}")
+            plan = subprocess.run(plan_cmd)
+            if plan.returncode == 2:
+                # Exit code 2 = paused for clarifications
+                track_phase_update(adw_id, "plan", "paused", 0)
+                print("⏸️  Plan phase paused - awaiting user clarifications")
+                print("Please answer the clarification questions on the GitHub issue,")
+                print("then re-run this workflow to continue.")
+                try:
+                    make_issue_comment(
+                        issue_number,
+                        f"{adw_id}_ops: ⏸️ **ZTE Paused** - Awaiting clarifications\n\n"
+                        "The planning phase found ambiguities that need user input.\n"
+                        "Please answer the questions above, then re-run the workflow.",
+                    )
+                except:
+                    pass
+                sys.exit(2)  # Propagate paused state
+            elif plan.returncode != 0:
+                track_phase_update(adw_id, "plan", "failed", 0)
+                print("Isolated plan phase failed")
+                sys.exit(1)
+            track_phase_update(adw_id, "plan", "completed", 1)
+
+            # Reload state after plan completes
+            state = ADWState(adw_id)
+            completed_phases = state.get("all_adws", [])
+
+        # Phase 2: BUILD (skip if already completed)
+        if "adw_build_iso" in completed_phases:
+            print(f"\n=== ISOLATED BUILD PHASE ===")
+            print("✓ Build phase already completed - skipping")
+            logger.info("Build phase already completed, skipping execution")
+        else:
+            track_phase_update(adw_id, "build", "in_progress", 1)
+            build_cmd = [
+                "uv",
+                "run",
+                os.path.join(script_dir, "adw_build_iso.py"),
+                issue_number,
+                adw_id,
+            ]
+
+            # TAC Optimization: Build phase doesn't need expert consultation (direct implementation)
+
+            print(f"\n=== ISOLATED BUILD PHASE ===")
+            print(f"Running: {' '.join(build_cmd)}")
+            build = subprocess.run(build_cmd)
+            if build.returncode != 0:
+                track_phase_update(adw_id, "build", "failed", 1)
+                print("Isolated build phase failed")
+                sys.exit(1)
+            track_phase_update(adw_id, "build", "completed", 2)
+
+            # Reload state after build completes
+            state = ADWState(adw_id)
+            completed_phases = state.get("all_adws", [])
+
+        # Phase 3: TEST (skip if already completed)
+        if "adw_test_iso" in completed_phases:
+            print(f"\n=== ISOLATED TEST PHASE ===")
+            print("✓ Test phase already completed - skipping")
+            logger.info("Test phase already completed, skipping execution")
+        else:
+            track_phase_update(adw_id, "test", "in_progress", 2)
+            test_cmd = [
+                "uv",
+                "run",
+                os.path.join(script_dir, "adw_test_iso.py"),
+                issue_number,
+                adw_id,
+                "--skip-e2e",  # Always skip E2E tests in SDLC workflows
+            ]
+
+            print(f"\n=== ISOLATED TEST PHASE ===")
+            print(f"Running: {' '.join(test_cmd)}")
+            test = subprocess.run(test_cmd)
+            if test.returncode != 0:
+                track_phase_update(adw_id, "test", "failed", 2)
+                print("Isolated test phase failed")
+                # For ZTE, we should stop if tests fail
+                try:
+                    make_issue_comment(
+                        issue_number,
+                        f"{adw_id}_ops: ❌ **ZTE Aborted** - Test phase failed\n\n"
+                        "Automatic shipping cancelled due to test failures.\n"
+                        "Please fix the tests and run the workflow again.",
+                    )
+                except:
+                    pass
+                sys.exit(1)
+            track_phase_update(adw_id, "test", "completed", 3)
+
+            # Reload state after test completes
+            state = ADWState(adw_id)
+            completed_phases = state.get("all_adws", [])
+
+        # Phase 4: REVIEW (skip if already completed)
+        if "adw_review_iso" in completed_phases:
+            print(f"\n=== ISOLATED REVIEW PHASE ===")
+            print("✓ Review phase already completed - skipping")
+            logger.info("Review phase already completed, skipping execution")
+        else:
+            track_phase_update(adw_id, "review", "in_progress", 3)
+            review_cmd = [
+                "uv",
+                "run",
+                os.path.join(script_dir, "adw_review_iso.py"),
+                issue_number,
+                adw_id,
+            ]
+            if skip_resolution:
+                review_cmd.append("--skip-resolution")
+
+            # TAC Optimization: Only consult experts in Review phase (validation critical)
+            if use_experts:
+                review_cmd.append("--use-experts")
+
+            print(f"\n=== ISOLATED REVIEW PHASE ===")
+            print(f"Running: {' '.join(review_cmd)}")
+            review = subprocess.run(review_cmd)
+            if review.returncode != 0:
+                track_phase_update(adw_id, "review", "failed", 3)
+                print("Isolated review phase failed")
+                try:
+                    make_issue_comment(
+                        issue_number,
+                        f"{adw_id}_ops: ❌ **ZTE Aborted** - Review phase failed\n\n"
+                        "Automatic shipping cancelled due to review failures.\n"
+                        "Please address the review issues and run the workflow again.",
+                    )
+                except:
+                    pass
+                sys.exit(1)
+            track_phase_update(adw_id, "review", "completed", 4)
+
+            # Reload state after review completes
+            state = ADWState(adw_id)
+            completed_phases = state.get("all_adws", [])
+
+        # Phase 5: DOCUMENT (skip if already completed)
+        if "adw_document_iso" in completed_phases:
+            print(f"\n=== ISOLATED DOCUMENTATION PHASE ===")
+            print("✓ Documentation phase already completed - skipping")
+            logger.info("Documentation phase already completed, skipping execution")
+        else:
+            track_phase_update(adw_id, "document", "in_progress", 4)
+            document_cmd = [
+                "uv",
+                "run",
+                os.path.join(script_dir, "adw_document_iso.py"),
+                issue_number,
+                adw_id,
+            ]
+
+            # TAC Optimization: Document phase only does final learning (full validation)
+            if expert_learn:
+                document_cmd.append("--expert-learn")
+
+            print(f"\n=== ISOLATED DOCUMENTATION PHASE ===")
+            print(f"Running: {' '.join(document_cmd)}")
+            document = subprocess.run(document_cmd)
+            if document.returncode != 0:
+                track_phase_update(adw_id, "document", "failed", 4)
+                print("Isolated documentation phase failed")
+                # Documentation failure shouldn't block shipping
+                print("WARNING: Documentation phase failed but continuing with shipping")
+            else:
+                track_phase_update(adw_id, "document", "completed", 5)
+
+            # Reload state after documentation completes
+            state = ADWState(adw_id)
+            completed_phases = state.get("all_adws", [])
+
+        # Phase 6: SHIP (approve & merge PR)
+        track_phase_update(adw_id, "ship", "in_progress", 5)
+        ship_cmd = [
             "uv",
             "run",
-            os.path.join(script_dir, "adw_plan_iso.py"),
+            os.path.join(script_dir, "adw_ship_iso.py"),
             issue_number,
             adw_id,
         ]
-
-        # Add documentation loading if detected or manually specified (TAC-9)
-        if docs_to_load:
-            plan_cmd.extend(["--load-docs", docs_to_load])
-            logger.info(f"Passing documentation to planning phase: {docs_to_load}")
-
-        # TAC Optimization: Only consult experts in Plan phase (guidance needed)
-        if use_experts:
-            plan_cmd.append("--use-experts")
-            logger.info("TAC: Expert consultation enabled for plan phase")
-
-        print(f"\n=== ISOLATED PLAN PHASE ===")
-        print(f"Running: {' '.join(plan_cmd)}")
-        plan = subprocess.run(plan_cmd)
-        if plan.returncode == 2:
-            # Exit code 2 = paused for clarifications
-            print("⏸️  Plan phase paused - awaiting user clarifications")
-            print("Please answer the clarification questions on the GitHub issue,")
-            print("then re-run this workflow to continue.")
+        print(f"\n=== ISOLATED SHIP PHASE (APPROVE & MERGE) ===")
+        print(f"Running: {' '.join(ship_cmd)}")
+        ship = subprocess.run(ship_cmd)
+        if ship.returncode != 0:
+            track_phase_update(adw_id, "ship", "failed", 5)
+            print("Isolated ship phase failed")
             try:
                 make_issue_comment(
                     issue_number,
-                    f"{adw_id}_ops: ⏸️ **ZTE Paused** - Awaiting clarifications\n\n"
-                    "The planning phase found ambiguities that need user input.\n"
-                    "Please answer the questions above, then re-run the workflow.",
-                )
-            except:
-                pass
-            sys.exit(2)  # Propagate paused state
-        elif plan.returncode != 0:
-            print("Isolated plan phase failed")
-            sys.exit(1)
-
-        # Reload state after plan completes
-        state = ADWState(adw_id)
-        completed_phases = state.get("all_adws", [])
-
-    # Run isolated build with the ADW ID (skip if already completed)
-    if "adw_build_iso" in completed_phases:
-        print(f"\n=== ISOLATED BUILD PHASE ===")
-        print("✓ Build phase already completed - skipping")
-        logger.info("Build phase already completed, skipping execution")
-    else:
-        build_cmd = [
-            "uv",
-            "run",
-            os.path.join(script_dir, "adw_build_iso.py"),
-            issue_number,
-            adw_id,
-        ]
-
-        # TAC Optimization: Build phase doesn't need expert consultation (direct implementation)
-
-        print(f"\n=== ISOLATED BUILD PHASE ===")
-        print(f"Running: {' '.join(build_cmd)}")
-        build = subprocess.run(build_cmd)
-        if build.returncode != 0:
-            print("Isolated build phase failed")
-            sys.exit(1)
-
-        # Reload state after build completes
-        state = ADWState(adw_id)
-        completed_phases = state.get("all_adws", [])
-
-    # Run isolated test with the ADW ID (skip if already completed)
-    if "adw_test_iso" in completed_phases:
-        print(f"\n=== ISOLATED TEST PHASE ===")
-        print("✓ Test phase already completed - skipping")
-        logger.info("Test phase already completed, skipping execution")
-    else:
-        test_cmd = [
-            "uv",
-            "run",
-            os.path.join(script_dir, "adw_test_iso.py"),
-            issue_number,
-            adw_id,
-            "--skip-e2e",  # Always skip E2E tests in SDLC workflows
-        ]
-
-        print(f"\n=== ISOLATED TEST PHASE ===")
-        print(f"Running: {' '.join(test_cmd)}")
-        test = subprocess.run(test_cmd)
-        if test.returncode != 0:
-            print("Isolated test phase failed")
-            # For ZTE, we should stop if tests fail
-            try:
-                make_issue_comment(
-                    issue_number,
-                    f"{adw_id}_ops: ❌ **ZTE Aborted** - Test phase failed\n\n"
-                    "Automatic shipping cancelled due to test failures.\n"
-                    "Please fix the tests and run the workflow again.",
+                    f"{adw_id}_ops: ❌ **ZTE Failed** - Ship phase failed\n\n"
+                    "Could not automatically approve and merge the PR.\n"
+                    "Please check the ship logs and merge manually if needed.",
                 )
             except:
                 pass
             sys.exit(1)
+        track_phase_update(adw_id, "ship", "completed", 6)
 
-        # Reload state after test completes
-        state = ADWState(adw_id)
-        completed_phases = state.get("all_adws", [])
+        # Workflow completed successfully
+        track_workflow_end(adw_id, "completed")
 
-    # Run isolated review with the ADW ID (skip if already completed)
-    if "adw_review_iso" in completed_phases:
-        print(f"\n=== ISOLATED REVIEW PHASE ===")
-        print("✓ Review phase already completed - skipping")
-        logger.info("Review phase already completed, skipping execution")
-    else:
-        review_cmd = [
-            "uv",
-            "run",
-            os.path.join(script_dir, "adw_review_iso.py"),
-            issue_number,
-            adw_id,
-        ]
-        if skip_resolution:
-            review_cmd.append("--skip-resolution")
+        print(f"\n=== 🎉 ZERO TOUCH EXECUTION COMPLETED ===")
+        print(f"ADW ID: {adw_id}")
+        print(f"All phases completed successfully!")
+        print(f"✅ Code has been shipped to production!")
+        print(f"\nWorktree location: trees/{adw_id}/")
+        print(f"To clean up: ./scripts/purge_tree.sh {adw_id}")
 
-        # TAC Optimization: Only consult experts in Review phase (validation critical)
-        if use_experts:
-            review_cmd.append("--use-experts")
+        # Load final state to get token summary
+        token_summary = ""
+        try:
+            state = ADWState.load(adw_id)
+            if state:
+                token_summary = "\n\n" + state.get_token_summary()
+                # Print token summary to console
+                print(f"\n{state.get_token_summary()}")
+        except Exception as e:
+            print(f"Warning: Failed to load token summary: {e}")
 
-        print(f"\n=== ISOLATED REVIEW PHASE ===")
-        print(f"Running: {' '.join(review_cmd)}")
-        review = subprocess.run(review_cmd)
-        if review.returncode != 0:
-            print("Isolated review phase failed")
-            try:
-                make_issue_comment(
-                    issue_number,
-                    f"{adw_id}_ops: ❌ **ZTE Aborted** - Review phase failed\n\n"
-                    "Automatic shipping cancelled due to review failures.\n"
-                    "Please address the review issues and run the workflow again.",
-                )
-            except:
-                pass
-            sys.exit(1)
-
-        # Reload state after review completes
-        state = ADWState(adw_id)
-        completed_phases = state.get("all_adws", [])
-
-    # Run isolated documentation with the ADW ID (skip if already completed)
-    if "adw_document_iso" in completed_phases:
-        print(f"\n=== ISOLATED DOCUMENTATION PHASE ===")
-        print("✓ Documentation phase already completed - skipping")
-        logger.info("Documentation phase already completed, skipping execution")
-    else:
-        document_cmd = [
-            "uv",
-            "run",
-            os.path.join(script_dir, "adw_document_iso.py"),
-            issue_number,
-            adw_id,
-        ]
-
-        # TAC Optimization: Document phase only does final learning (full validation)
-        if expert_learn:
-            document_cmd.append("--expert-learn")
-
-        print(f"\n=== ISOLATED DOCUMENTATION PHASE ===")
-        print(f"Running: {' '.join(document_cmd)}")
-        document = subprocess.run(document_cmd)
-        if document.returncode != 0:
-            print("Isolated documentation phase failed")
-            # Documentation failure shouldn't block shipping
-            print("WARNING: Documentation phase failed but continuing with shipping")
-
-        # Reload state after documentation completes
-        state = ADWState(adw_id)
-        completed_phases = state.get("all_adws", [])
-
-    # Run isolated ship with the ADW ID
-    ship_cmd = [
-        "uv",
-        "run",
-        os.path.join(script_dir, "adw_ship_iso.py"),
-        issue_number,
-        adw_id,
-    ]
-    print(f"\n=== ISOLATED SHIP PHASE (APPROVE & MERGE) ===")
-    print(f"Running: {' '.join(ship_cmd)}")
-    ship = subprocess.run(ship_cmd)
-    if ship.returncode != 0:
-        print("Isolated ship phase failed")
         try:
             make_issue_comment(
                 issue_number,
-                f"{adw_id}_ops: ❌ **ZTE Failed** - Ship phase failed\n\n"
-                "Could not automatically approve and merge the PR.\n"
-                "Please check the ship logs and merge manually if needed.",
+                f"{adw_id}_ops: 🎉 **Zero Touch Execution Complete!**\n\n"
+                "✅ Plan phase completed\n"
+                "✅ Build phase completed\n"
+                "✅ Test phase completed\n"
+                "✅ Review phase completed\n"
+                "✅ Documentation phase completed\n"
+                "✅ Ship phase completed\n\n"
+                "🚢 **Code has been automatically shipped to production!**"
+                f"{token_summary}",
             )
         except:
             pass
-        sys.exit(1)
 
-    print(f"\n=== 🎉 ZERO TOUCH EXECUTION COMPLETED ===")
-    print(f"ADW ID: {adw_id}")
-    print(f"All phases completed successfully!")
-    print(f"✅ Code has been shipped to production!")
-    print(f"\nWorktree location: trees/{adw_id}/")
-    print(f"To clean up: ./scripts/purge_tree.sh {adw_id}")
-
-    # Load final state to get token summary
-    token_summary = ""
-    try:
-        state = ADWState.load(adw_id)
-        if state:
-            token_summary = "\n\n" + state.get_token_summary()
-            # Print token summary to console
-            print(f"\n{state.get_token_summary()}")
+    except SystemExit:
+        raise  # Let sys.exit() propagate
     except Exception as e:
-        print(f"Warning: Failed to load token summary: {e}")
-
-    try:
-        make_issue_comment(
-            issue_number,
-            f"{adw_id}_ops: 🎉 **Zero Touch Execution Complete!**\n\n"
-            "✅ Plan phase completed\n"
-            "✅ Build phase completed\n"
-            "✅ Test phase completed\n"
-            "✅ Review phase completed\n"
-            "✅ Documentation phase completed\n"
-            "✅ Ship phase completed\n\n"
-            "🚢 **Code has been automatically shipped to production!**"
-            f"{token_summary}",
-        )
-    except:
-        pass
+        track_workflow_end(adw_id, "failed", str(e))
+        log_event("adw_sdlc_zte_iso", f"ZTE workflow failed: {e}", level="ERROR")
+        raise
+    finally:
+        close_bridge()
 
 
 if __name__ == "__main__":

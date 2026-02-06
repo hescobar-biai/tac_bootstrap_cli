@@ -14,7 +14,7 @@ from dependencies import get_db_manager
 router = APIRouter()
 
 
-@router.websocket("/agent-status")
+@router.websocket("/orchestrator")
 async def websocket_agent_status(websocket: WebSocket):
     """WebSocket endpoint for real-time agent status updates.
     

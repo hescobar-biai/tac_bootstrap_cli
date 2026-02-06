@@ -137,11 +137,92 @@ CREATE INDEX IF NOT EXISTS idx_agent_logs_agent ON agent_logs(agent_id);
 CREATE INDEX IF NOT EXISTS idx_system_logs_level ON system_logs(log_level);
 
 -- =============================================================================
+-- Table 6: orchestrator_chat
+-- Purpose: Tracks 3-way conversation: user <-> orchestrator <-> agents
+-- Lifecycle: Append-only log for full conversation history
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS orchestrator_chat (
+    id TEXT PRIMARY KEY,
+    orchestrator_agent_id TEXT NOT NULL,
+    sender_type TEXT NOT NULL,
+    receiver_type TEXT NOT NULL,
+    message TEXT NOT NULL,
+    summary TEXT,
+    agent_id TEXT,
+    metadata TEXT DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (orchestrator_agent_id) REFERENCES orchestrator_agents(id) ON DELETE CASCADE,
+    FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE,
+    CHECK (sender_type IN ('user', 'orchestrator', 'agent')),
+    CHECK (receiver_type IN ('user', 'orchestrator', 'agent'))
+);
+
+-- =============================================================================
+-- Table 7: ai_developer_workflows
+-- Purpose: Tracks ADW executions for metrics and monitoring
+-- Lifecycle: Created when ADW starts, updated through execution
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS ai_developer_workflows (
+    id TEXT PRIMARY KEY,
+    orchestrator_agent_id TEXT,
+    adw_name TEXT NOT NULL,
+    workflow_type TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    current_step TEXT,
+    total_steps INTEGER DEFAULT 0,
+    completed_steps INTEGER DEFAULT 0,
+    started_at TEXT,
+    completed_at TEXT,
+    duration_seconds INTEGER,
+    input_data TEXT DEFAULT '{}',
+    output_data TEXT DEFAULT '{}',
+    error_message TEXT,
+    error_step TEXT,
+    error_count INTEGER DEFAULT 0,
+    metadata TEXT DEFAULT '{}',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (orchestrator_agent_id) REFERENCES orchestrator_agents(id) ON DELETE CASCADE,
+    CHECK (status IN ('pending', 'in_progress', 'completed', 'failed', 'cancelled'))
+);
+
+-- =============================================================================
+-- Additional Triggers
+-- =============================================================================
+
+CREATE TRIGGER IF NOT EXISTS update_adw_updated_at
+AFTER UPDATE ON ai_developer_workflows
+FOR EACH ROW
+BEGIN
+    UPDATE ai_developer_workflows
+    SET updated_at = datetime('now')
+    WHERE id = NEW.id;
+END;
+
+-- =============================================================================
+-- Additional Performance Indexes
+-- =============================================================================
+
+-- orchestrator_chat indexes
+CREATE INDEX IF NOT EXISTS idx_chat_orch ON orchestrator_chat(orchestrator_agent_id);
+CREATE INDEX IF NOT EXISTS idx_chat_agent ON orchestrator_chat(agent_id);
+CREATE INDEX IF NOT EXISTS idx_chat_sender ON orchestrator_chat(sender_type);
+CREATE INDEX IF NOT EXISTS idx_chat_orch_created ON orchestrator_chat(orchestrator_agent_id, created_at DESC);
+
+-- ai_developer_workflows indexes
+CREATE INDEX IF NOT EXISTS idx_adw_orch ON ai_developer_workflows(orchestrator_agent_id);
+CREATE INDEX IF NOT EXISTS idx_adw_status ON ai_developer_workflows(status);
+CREATE INDEX IF NOT EXISTS idx_adw_type ON ai_developer_workflows(workflow_type);
+CREATE INDEX IF NOT EXISTS idx_adw_created ON ai_developer_workflows(created_at DESC);
+
+-- =============================================================================
 -- Schema Initialization Complete
 -- =============================================================================
--- Tables created: 5 (orchestrator_agents, agents, prompts, agent_logs, system_logs)
--- Triggers created: 1 (auto-update updated_at)
--- Indexes created: 6 (strategic indexes for common queries)
+-- Tables created: 7 (orchestrator_agents, agents, prompts, agent_logs, system_logs, orchestrator_chat, ai_developer_workflows)
+-- Triggers created: 2 (auto-update updated_at on orchestrator_agents and ai_developer_workflows)
+-- Indexes created: 16 (strategic indexes for common queries)
 --
 -- Next steps:
 -- 1. Create Pydantic models mapping to this schema (Task 7: orch_database_models.py)

@@ -44,6 +44,11 @@ from adw_modules.workflow_ops import format_issue_message
 from adw_modules.utils import setup_logger, check_env_vars
 from adw_modules.worktree_ops import validate_worktree
 from adw_modules.data_types import ADWStateData
+from adw_modules.adw_db_bridge import (
+    init_bridge, close_bridge,
+    track_workflow_start, track_phase_update, track_workflow_end,
+    log_event,
+)
 
 # Agent name constant
 AGENT_SHIPPER = "shipper"
@@ -312,6 +317,11 @@ def main():
 
     logger.info(f"ADW Ship Iso starting - ID: {adw_id}, Issue: {issue_number}")
 
+    # Initialize DB bridge for orchestrator dashboard tracking
+    init_bridge()
+    track_workflow_start(adw_id, "ship", issue_number, total_steps=1)
+    track_phase_update(adw_id, "merge", "in_progress", 0)
+
     # Track that this ADW workflow has run
     state.append_adw_id("adw_ship_iso")
     
@@ -382,6 +392,9 @@ def main():
     
     if not success:
         logger.error(f"Failed to merge: {error}")
+        track_phase_update(adw_id, "merge", "failed", 0)
+        track_workflow_end(adw_id, "failed", error)
+        close_bridge()
         make_issue_comment(
             issue_number,
             format_issue_message(adw_id, AGENT_SHIPPER, f"❌ Failed to merge: {error}")
@@ -419,6 +432,12 @@ def main():
 
     # Save final state before cleanup (for reference)
     state.save("adw_ship_iso")
+
+    # Track successful completion in orchestrator DB
+    track_phase_update(adw_id, "merge", "completed", 1)
+    track_workflow_end(adw_id, "completed")
+    log_event("adw_ship_iso", f"Ship workflow completed for {adw_id}")
+    close_bridge()
 
     # Post final state summary
     make_issue_comment(
