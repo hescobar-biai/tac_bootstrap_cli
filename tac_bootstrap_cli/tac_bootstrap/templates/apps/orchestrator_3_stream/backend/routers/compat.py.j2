@@ -78,6 +78,87 @@ def _get_orchestrator_id() -> str:
     return "sqlite-orchestrator-default"
 
 
+def _transform_agent(row: dict[str, Any]) -> dict[str, Any]:
+    """Transform agents DB row to match frontend Agent interface.
+
+    DB columns: id, orchestrator_agent_id, session_id, parent_agent_id,
+                status, context, config, started_at, completed_at, cost_usd, error_message
+    Frontend expects: id, name, model, status, adw_id, adw_step, total_cost,
+                      input_tokens, output_tokens, metadata, created_at, updated_at, ...
+    """
+    context = row.get("context") or ""
+    # Derive adw_step from context (e.g. "adw_plan_iso" -> "plan")
+    adw_step = ""
+    if context.startswith("adw_") and context.endswith("_iso"):
+        adw_step = context.replace("adw_", "").replace("_iso", "")
+
+    return {
+        "id": row.get("id", ""),
+        "name": context or "unknown",
+        "model": "claude-sonnet-4-5-20250929",
+        "system_prompt": None,
+        "working_dir": None,
+        "git_worktree": None,
+        "status": row.get("status", "initializing"),
+        "session_id": row.get("session_id"),
+        "adw_id": row.get("session_id"),
+        "adw_step": adw_step,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_cost": row.get("cost_usd", 0.0) or 0.0,
+        "archived": False,
+        "metadata": {},
+        "task": adw_step,
+        "created_at": row.get("started_at", ""),
+        "updated_at": row.get("completed_at") or row.get("started_at", ""),
+        "error_message": row.get("error_message"),
+    }
+
+
+# Map DB log_type to frontend event_category
+_LOG_TYPE_TO_CATEGORY = {
+    "state_change": "response",
+    "milestone": "response",
+    "error": "response",
+    "performance": "response",
+    "tool_call": "hook",
+    "cost_update": "response",
+}
+
+
+def _transform_agent_log(row: dict[str, Any]) -> dict[str, Any]:
+    """Transform agent_logs DB row to match frontend AgentLog interface.
+
+    DB columns: id, agent_id, log_level, log_type, message, details, created_at
+    Frontend expects: id, agent_id, agent_name, event_category, event_type,
+                      content, summary, payload, timestamp, ...
+    """
+    log_type = row.get("log_type", "milestone")
+    details_raw = row.get("details")
+    payload = {}
+    if details_raw:
+        try:
+            payload = json.loads(details_raw)
+        except (json.JSONDecodeError, TypeError):
+            payload = {"text": details_raw}
+
+    return {
+        "id": str(row.get("id", "")),
+        "agent_id": row.get("agent_id", ""),
+        "agent_name": None,
+        "session_id": None,
+        "task_slug": None,
+        "entry_index": None,
+        "event_category": _LOG_TYPE_TO_CATEGORY.get(log_type, "response"),
+        "event_type": log_type,
+        "content": row.get("message", ""),
+        "summary": row.get("message", ""),
+        "payload": payload,
+        "timestamp": row.get("created_at", ""),
+        "log_level": row.get("log_level", "INFO"),
+    }
+
+
 # ═══════════════════════════════════════════════════════════
 # ORCHESTRATOR INFO
 # ═══════════════════════════════════════════════════════════
@@ -137,17 +218,20 @@ async def get_headers():
 @router.get("/list_agents")
 async def list_agents():
     """List all agents for sidebar display."""
-    agents = await _query_db(
+    rows = await _query_db(
         "SELECT * FROM agents ORDER BY started_at DESC LIMIT 50"
     )
 
-    # Enrich with log count
-    for agent in agents:
+    agents = []
+    for row in rows:
+        agent = _transform_agent(row)
+        # Enrich with log count
         log_rows = await _query_db(
             "SELECT COUNT(*) as cnt FROM agent_logs WHERE agent_id = ?",
-            (agent["id"],)
+            (row["id"],)
         )
         agent["log_count"] = log_rows[0]["cnt"] if log_rows else 0
+        agents.append(agent)
 
     return {"status": "success", "agents": agents}
 
@@ -175,19 +259,19 @@ async def get_events(
 
     if "agent_logs" in requested_types:
         if agent_id:
-            logs = await _query_db(
+            log_rows = await _query_db(
                 "SELECT * FROM agent_logs WHERE agent_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
                 (agent_id, limit, offset)
             )
         else:
-            logs = await _query_db(
+            log_rows = await _query_db(
                 "SELECT * FROM agent_logs ORDER BY created_at DESC LIMIT ? OFFSET ?",
                 (limit, offset)
             )
-        for log in logs:
-            log["sourceType"] = "agent_log"
-            log["timestamp"] = log.get("created_at")
-            all_events.append(log)
+        for row in log_rows:
+            event = _transform_agent_log(row)
+            event["sourceType"] = "agent_log"
+            all_events.append(event)
 
     if "system_logs" in requested_types:
         sys_logs = await _query_db(

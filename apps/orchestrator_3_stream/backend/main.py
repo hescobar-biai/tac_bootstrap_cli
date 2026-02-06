@@ -25,6 +25,7 @@ from adw_modules.adw_database import DatabaseManager
 import dependencies
 from config import DATABASE_PATH, CORS_ORIGINS, BACKEND_PORT
 from routers import agents, runtime, websocket, compat
+from routers.compat import _transform_agent
 
 
 @asynccontextmanager
@@ -139,7 +140,7 @@ async def _fetch_adw_workflows() -> list[dict]:
 
 
 async def _fetch_agents() -> list[dict]:
-    """Fetch current agents from SQLite."""
+    """Fetch current agents from SQLite, transformed to frontend format."""
     try:
         async with aiosqlite.connect(DATABASE_PATH) as db:
             db.row_factory = aiosqlite.Row
@@ -147,7 +148,7 @@ async def _fetch_agents() -> list[dict]:
                 "SELECT * FROM agents ORDER BY started_at DESC LIMIT 50"
             )
             rows = await cursor.fetchall()
-            return [dict(row) for row in rows]
+            return [_transform_agent(dict(row)) for row in rows]
     except Exception as e:
         print(f"[WS] DB error fetching agents: {e}")
         return []
