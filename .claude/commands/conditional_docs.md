@@ -2093,3 +2093,15 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When understanding zero-configuration database patterns
     - When working with DDD Lite infrastructure layer for TAC-14
     - When integrating database operations into ADW workflows
+
+- app_docs/feature-4848fdf1-orchestrator-tests-docs.md
+  - Conditions:
+    - When testing ADW-to-SQLite bridge functionality
+    - When implementing workflow state tracking in orchestrator
+    - When understanding graceful database failure patterns
+    - When testing isolated ADW workflows with database persistence
+    - When reviewing pytest integration test patterns
+    - When documenting orchestrator workflow lifecycle (plan → build → test → review → document)
+    - When configuring WAL mode for concurrent database access
+    - When querying workflow progress from orchestrator database
+    - When understanding error handling in subprocess-based workflows
