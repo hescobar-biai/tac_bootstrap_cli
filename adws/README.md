@@ -102,6 +102,204 @@ uv run adw_triggers/trigger_cron.py
 uv run adw_triggers/trigger_webhook.py
 ```
 
+## Orchestrator Integration
+
+### Overview
+
+ADW workflows integrate with the SQLite-based orchestrator database to provide persistent state tracking, real-time monitoring, and comprehensive workflow analytics. The ADW-to-SQLite bridge (`adw_modules/adw_db_bridge.py`) enables synchronous database writes from isolated workflows while the orchestrator dashboard reads concurrently using WAL mode.
+
+### Workflow State Tracking
+
+Each ADW workflow's lifecycle is tracked in the `ai_developer_workflows` table:
+
+**Workflow Phases:**
+1. **Plan**: Initial workflow setup and implementation planning
+2. **Build**: Implementation execution in isolated environment
+3. **Test**: Automated test execution with result reporting
+4. **Review**: Code review and validation against requirements
+5. **Document**: Comprehensive documentation generation
+
+**Workflow Lifecycle:**
+```
+START → in_progress → completed/failed
+├─ started_at: Workflow initialization timestamp
+├─ current_step: Active phase name (plan, build, test, review, document)
+├─ completed_steps: Counter of finished phases
+├─ status transitions: pending → in_progress → completed/failed/cancelled
+└─ error tracking: error_message, error_step, error_count
+```
+
+### Database Connection Architecture
+
+**Synchronous Design:**
+- Uses `sqlite3` (sync) not `aiosqlite` (async)
+- Avoids mismatch with subprocess-based ADW workflows
+- All functions wrapped in try/except for graceful failure
+
+**Concurrency Model:**
+- WAL mode (`PRAGMA journal_mode=WAL`) enables concurrent readers/writers
+- Web dashboard reads while ADW workflows write
+- Multiple ADW instances can execute simultaneously
+
+**Connection Management:**
+```python
+from adws.adw_modules.adw_db_bridge import (
+    init_bridge,
+    track_workflow_start,
+    track_phase_update,
+    track_workflow_end,
+)
+
+# Initialize bridge (creates data/orchestrator.db if needed)
+init_bridge()  # Uses DATABASE_PATH env var or default
+
+# Track workflow lifecycle
+track_workflow_start(adw_id="abc12345", workflow_type="sdlc", issue_number="652", total_steps=5)
+track_phase_update(adw_id="abc12345", phase_name="plan", status="completed", completed_steps=1)
+track_workflow_end(adw_id="abc12345", status="completed")
+```
+
+### Graceful Failure Guarantees
+
+All database operations are resilient to failure:
+- **Invalid paths**: No crash if database directory unavailable
+- **Permission errors**: Operations log warnings but continue
+- **Missing tables**: Gracefully skip updates if schema not initialized
+- **Connection loss**: All writes are optional, never blocking
+
+```python
+# These never crash, even if database is unavailable
+track_workflow_start(adw_id, "sdlc")        # No-op if DB unavailable
+track_phase_update(adw_id, "plan", "ok", 1) # No-op if DB unavailable
+track_workflow_end(adw_id, "completed")     # No-op if DB unavailable
+```
+
+### Monitoring Workflow Progress
+
+Access orchestrator data via direct SQLite queries:
+
+```bash
+# Query active workflows
+sqlite3 data/orchestrator.db "
+  SELECT id, workflow_type, status, completed_steps, total_steps
+  FROM ai_developer_workflows
+  WHERE status = 'in_progress'
+  ORDER BY started_at DESC
+"
+
+# Track phases for a specific workflow
+sqlite3 data/orchestrator.db "
+  SELECT current_step, completed_steps, duration_seconds
+  FROM ai_developer_workflows
+  WHERE id = 'abc12345'
+"
+
+# Monitor agent execution
+sqlite3 data/orchestrator.db "
+  SELECT id, status, cost_usd, completed_at
+  FROM agents
+  WHERE session_id = 'abc12345'
+  ORDER BY started_at DESC
+"
+```
+
+### Example: Accessing Orchestrator Data
+
+Python code to query workflow metrics:
+
+```python
+import sqlite3
+from pathlib import Path
+
+# Connect to orchestrator database
+db_path = Path(__file__).parent.parent / "data" / "orchestrator.db"
+conn = sqlite3.connect(str(db_path))
+conn.row_factory = sqlite3.Row
+
+# Get workflow summary
+cursor = conn.cursor()
+cursor.execute("""
+  SELECT
+    COUNT(*) as total_workflows,
+    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as successful,
+    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+    AVG(duration_seconds) as avg_duration
+  FROM ai_developer_workflows
+""")
+summary = cursor.fetchone()
+print(f"Total: {summary['total_workflows']}, "
+      f"Success: {summary['successful']}, "
+      f"Failed: {summary['failed']}, "
+      f"Avg Duration: {summary['avg_duration']}s")
+
+# List recent workflows
+cursor.execute("""
+  SELECT id, workflow_type, status, completed_steps, total_steps
+  FROM ai_developer_workflows
+  ORDER BY created_at DESC
+  LIMIT 10
+""")
+for row in cursor.fetchall():
+    progress = f"{row['completed_steps']}/{row['total_steps']}"
+    print(f"{row['id']}: {row['workflow_type']} ({row['status']}) - {progress}")
+
+conn.close()
+```
+
+### Integration in ADW Workflows
+
+The bridge is integrated into major ADW workflows:
+
+- **adw_sdlc_iso.py**: Tracks complete SDLC execution
+- **adw_sdlc_zte_iso.py**: Tracks zero-touch execution with auto-ship
+- **adw_plan_iso.py**: Tracks planning phase
+- **adw_patch_iso.py**: Tracks patch workflow
+
+Each workflow initializes the bridge and updates state as phases complete.
+
+### Schema Reference
+
+Key columns in `ai_developer_workflows` table:
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `id` | TEXT | ADW ID (primary key) |
+| `adw_name` | TEXT | ADW display name |
+| `workflow_type` | TEXT | Type: sdlc, patch, ship, etc. |
+| `status` | TEXT | pending, in_progress, completed, failed, cancelled |
+| `current_step` | TEXT | Active phase: plan, build, test, review, document |
+| `total_steps` | INTEGER | Total phases in workflow |
+| `completed_steps` | INTEGER | Completed phases counter |
+| `started_at` | TEXT | ISO 8601 start timestamp |
+| `completed_at` | TEXT | ISO 8601 end timestamp |
+| `duration_seconds` | INTEGER | Total execution time |
+| `error_message` | TEXT | Error details if failed |
+| `metadata` | TEXT | JSON metadata (issue number, etc.) |
+
+### Testing Orchestrator Integration
+
+Run the comprehensive test suite:
+
+```bash
+# Test ADW-to-SQLite bridge
+cd adws && python -m pytest tests/test_adw_db_bridge.py -v
+
+# Run all ADW tests
+cd adws && python -m pytest tests/ -v
+
+# Test individual components
+python -m pytest tests/test_adw_db_bridge.py::TestWorkflowLifecycle -v
+python -m pytest tests/test_adw_db_bridge.py::TestDataIntegrity -v
+```
+
+Test coverage includes:
+- Database initialization and connection management
+- Workflow lifecycle tracking (start, phase updates, completion)
+- Error handling and graceful failure modes
+- Schema validation and database pragmas
+- Agent tracking and system logging
+- Data integrity with foreign key constraints
+
 ## ADW Isolated Workflow Scripts
 
 ### Entry Point Workflows (Create Worktrees)
