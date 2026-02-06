@@ -15,8 +15,19 @@ export class WebSocketClient {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null
   private pollingTimer: ReturnType<typeof setInterval> | null = null
-  private wsStore = useWsStore()
-  private agentStore = useAgentStore()
+  private _wsStore: ReturnType<typeof useWsStore> | null = null
+  private _agentStore: ReturnType<typeof useAgentStore> | null = null
+
+  // Lazy getters - stores are only accessed after Pinia is installed
+  private get wsStore() {
+    if (!this._wsStore) this._wsStore = useWsStore()
+    return this._wsStore
+  }
+
+  private get agentStore() {
+    if (!this._agentStore) this._agentStore = useAgentStore()
+    return this._agentStore
+  }
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -59,7 +70,7 @@ export class WebSocketClient {
   private handleMessage(data: string) {
     try {
       const message: WebSocketMessage = JSON.parse(data)
-      this.wsStore.updateLastMessage(new Date())
+      this.wsStore.updateLastMessage()
 
       switch (message.type) {
         case 'agent_update':

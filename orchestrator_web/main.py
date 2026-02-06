@@ -12,8 +12,8 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Add parent directory to path for adw_modules import
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add adws directory to path for adw_modules import
+sys.path.insert(0, str(Path(__file__).parent.parent / "adws"))
 
 from adw_modules.adw_database import DatabaseManager
 import dependencies

@@ -1202,6 +1202,7 @@ class ScaffoldService:
 
         # Source files
         frontend_files = [
+            ("src/style.css", "Tailwind CSS directives"),
             ("src/main.ts", "Vue app entry point"),
             ("src/App.vue", "Root component"),
             ("src/types/models.ts", "TypeScript type definitions"),

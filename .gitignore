@@ -35,6 +35,9 @@ dist/
 
 # Database
 *.db
+*.db-shm
+*.db-wal
+*.db-journal
 *.sqlite
 *.sqlite3
 !app/server/db/backup.db
