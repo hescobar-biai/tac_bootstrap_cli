@@ -2105,3 +2105,10 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When configuring WAL mode for concurrent database access
     - When querying workflow progress from orchestrator database
     - When understanding error handling in subprocess-based workflows
+
+- app_docs/feature-a3540d6b-orchestrator-v2-test-documentation.md
+  - Conditions:
+    - When reviewing orchestrator v2 test suite completion status
+    - When understanding ADW testing coverage documentation
+    - When updating ADW README with test validation results
+    - When documenting orchestrator integration test outcomes
