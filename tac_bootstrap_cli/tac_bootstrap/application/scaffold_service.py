@@ -1203,6 +1203,33 @@ class ScaffoldService:
             template="apps/orchestrator_3_stream/frontend/tsconfig.json",
             reason="TypeScript configuration",
         )
+        plan.add_file(
+            "apps/orchestrator_3_stream/frontend/tsconfig.node.json",
+            action=action,
+            template="apps/orchestrator_3_stream/frontend/tsconfig.node.json",
+            reason="TypeScript node configuration for Vite",
+        )
+
+        # Root-level static files (no Jinja2 rendering needed)
+        frontend_root_files = [
+            ("env.d.ts", "TypeScript environment declarations for Vue/Vite", False),
+            ("start.sh", "Frontend start script", True),
+            ("public/favicon.svg", "Application favicon", False),
+        ]
+        for path, reason, executable in frontend_root_files:
+            frontend_path = f"apps/orchestrator_3_stream/frontend/{path}"
+            template_path = self.template_repo.templates_dir / frontend_path
+            try:
+                content = template_path.read_text(encoding="utf-8")
+                plan.add_file(
+                    frontend_path,
+                    action=action,
+                    content=content,
+                    reason=reason,
+                    executable=executable,
+                )
+            except Exception:
+                continue
 
         # Source files - read as static content to avoid Jinja2/Vue syntax conflicts
         frontend_files = [

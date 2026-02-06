@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-02-06
+
+### Fixed
+- **Missing orchestrator frontend files**: `tsconfig.node.json`, `env.d.ts`, `start.sh`, and `public/favicon.svg` were absent from scaffold templates, causing Vite build errors (`ENOENT: tsconfig.node.json`)
+
+### Added
+- Templates: `tsconfig.node.json`, `env.d.ts`, `start.sh`, `public/favicon.svg` for orchestrator frontend
+- `scaffold_service.py`: New `frontend_root_files` block for static root-level frontend files
+
 ## [0.9.3] - 2026-02-06
 
 ### Fixed
