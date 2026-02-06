@@ -213,6 +213,12 @@ def track_agent_start(
                VALUES (?, ?, ?, 'executing', ?, ?)""",
             (agent_id, orch_id, adw_id, agent_name, now),
         )
+        # Auto-log agent start
+        _conn.execute(
+            """INSERT INTO agent_logs (agent_id, log_level, log_type, message, created_at)
+               VALUES (?, 'INFO', 'state_change', ?, ?)""",
+            (agent_id, f"Agent {agent_name} started (ADW: {adw_id})", now),
+        )
         _conn.commit()
         logger.info(f"[DB Bridge] Agent started: {agent_name} ({agent_id[:8]})")
         return agent_id
@@ -245,10 +251,56 @@ def track_agent_end(
                WHERE id = ?""",
             (status, now, cost_usd, error_message, agent_id),
         )
+        # Auto-log agent end
+        log_type = "error" if status == "failed" else "milestone"
+        log_level = "ERROR" if status == "failed" else "INFO"
+        msg = f"Agent ended: {status}"
+        if cost_usd > 0:
+            msg += f" (cost: ${cost_usd:.4f})"
+        if error_message:
+            msg += f" - {error_message}"
+        _conn.execute(
+            """INSERT INTO agent_logs (agent_id, log_level, log_type, message, created_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (agent_id, log_level, log_type, msg, now),
+        )
         _conn.commit()
         logger.info(f"[DB Bridge] Agent ended: {agent_id[:8]} → {status}")
     except Exception as e:
         logger.warning(f"[DB Bridge] track_agent_end failed: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Agent logging (agent_logs table)
+# ---------------------------------------------------------------------------
+
+def log_agent_event(
+    agent_id: str,
+    message: str,
+    log_type: str = "milestone",
+    level: str = "INFO",
+    details: Optional[str] = None,
+) -> None:
+    """Write an agent log entry.
+
+    Args:
+        agent_id: Agent UUID from track_agent_start.
+        message: Log message.
+        log_type: One of state_change, milestone, error, performance, tool_call, cost_update.
+        level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL).
+        details: Additional JSON details.
+    """
+    if not _conn or not agent_id:
+        return
+    try:
+        _conn.execute(
+            """INSERT INTO agent_logs (agent_id, log_level, log_type, message, details, created_at)
+               VALUES (?, ?, ?, ?, ?, datetime('now'))""",
+            (agent_id, level, log_type, message, details),
+        )
+        _conn.commit()
+    except Exception as e:
+        logger.warning(f"[DB Bridge] log_agent_event failed: {e}")
 
 
 # ---------------------------------------------------------------------------
