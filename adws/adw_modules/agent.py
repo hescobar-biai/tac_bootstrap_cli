@@ -974,8 +974,9 @@ def execute_template(request: AgentTemplateRequest) -> AgentPromptResponse:
     """Execute a Claude Code template with slash command and arguments.
 
     This function automatically selects the appropriate model based on:
-    1. The slash command being executed
-    2. The model_set stored in the ADW state (base or heavy)
+    1. The model explicitly set in the request (takes priority)
+    2. The slash command being executed
+    3. The model_set stored in the ADW state (base or heavy)
 
     Example:
         request = AgentTemplateRequest(
@@ -989,7 +990,11 @@ def execute_template(request: AgentTemplateRequest) -> AgentPromptResponse:
         response = execute_template(request)
     """
     # Get the appropriate model for this request
-    mapped_model = get_model_for_slash_command(request)
+    # IMPORTANT: If model is already explicitly set, respect it
+    if request.model:
+        mapped_model = request.model
+    else:
+        mapped_model = get_model_for_slash_command(request)
     request = request.model_copy(update={"model": mapped_model})
 
     # Construct prompt from slash command and args
