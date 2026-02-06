@@ -1,0 +1,142 @@
+# Makefile - {{ config.project.name }} Orchestrator
+# Commands for running the orchestrator backend + frontend
+
+# Variables
+PYTHON := python3
+PIP := pip
+UVICORN := uvicorn
+NPM := npm
+BACKEND_DIR := orchestrator_web
+FRONTEND_DIR := apps/orchestrator_3_stream/frontend
+DB_SCRIPT := {{ config.paths.scripts_dir }}/setup_database.sh
+SCHEMA_FILE := {{ config.paths.adws_dir }}/schema/schema_orchestrator.sql
+
+# Default
+.DEFAULT_GOAL := help
+
+# ============================================================================
+# Installation
+# ============================================================================
+
+install: install-backend install-frontend  ## Install all dependencies
+
+install-backend:  ## Install backend (FastAPI + aiosqlite) dependencies
+	$(PIP) install fastapi uvicorn[standard] aiosqlite pydantic
+
+install-frontend:  ## Install frontend (Vue 3) dependencies
+	cd $(FRONTEND_DIR) && $(NPM) install
+
+# ============================================================================
+# Database
+# ============================================================================
+
+setup-db:  ## Initialize SQLite database with schema
+	@chmod +x $(DB_SCRIPT)
+	./$(DB_SCRIPT)
+
+reset-db:  ## Reset database (delete and recreate)
+	@rm -f {{ config.orchestrator.database_url | replace('sqlite:///', '') }}
+	@echo "Database deleted."
+	./$(DB_SCRIPT)
+
+# ============================================================================
+# Development
+# ============================================================================
+
+dev: dev-backend  ## Start backend in development mode
+
+dev-backend:  ## Start FastAPI backend with hot reload (port {{ config.orchestrator.websocket_port }})
+	cd $(BACKEND_DIR) && $(UVICORN) main:app --reload --host 0.0.0.0 --port {{ config.orchestrator.websocket_port }}
+
+dev-frontend:  ## Start Vue 3 frontend dev server (port 5173)
+	cd $(FRONTEND_DIR) && $(NPM) run dev
+
+dev-all:  ## Start both backend and frontend (requires two terminals)
+	@echo "Starting orchestrator..."
+	@echo ""
+	@echo "  Terminal 1: make dev-backend"
+	@echo "  Terminal 2: make dev-frontend"
+	@echo ""
+	@echo "  Backend:  http://localhost:{{ config.orchestrator.websocket_port }}"
+	@echo "  Frontend: http://localhost:5173"
+	@echo "  API Docs: http://localhost:{{ config.orchestrator.websocket_port }}/docs"
+	@echo ""
+
+# ============================================================================
+# Production
+# ============================================================================
+
+start: start-backend  ## Start backend in production mode
+
+start-backend:  ## Start FastAPI backend (production, no reload)
+	cd $(BACKEND_DIR) && $(UVICORN) main:app --host 0.0.0.0 --port {{ config.orchestrator.websocket_port }}
+
+start-frontend:  ## Build and serve frontend
+	cd $(FRONTEND_DIR) && $(NPM) run build && $(NPM) run preview
+
+# ============================================================================
+# Testing
+# ============================================================================
+
+test-backend:  ## Run backend ADW module tests
+	uv run pytest {{ config.paths.adws_dir }}/adw_tests/ -v
+
+test-frontend:  ## Run frontend Playwright tests
+	cd apps/orchestrator_3_stream && npx playwright test
+
+test: test-backend  ## Run all tests
+
+# ============================================================================
+# Utilities
+# ============================================================================
+
+health:  ## Check backend health endpoint
+	@curl -s http://localhost:{{ config.orchestrator.websocket_port }}/health | python3 -m json.tool 2>/dev/null || echo "Backend not running. Start with: make dev-backend"
+
+logs:  ## View recent orchestrator logs via API
+	@curl -s "http://localhost:{{ config.orchestrator.websocket_port }}/api/runtime/logs?limit=20" | python3 -m json.tool 2>/dev/null || echo "Backend not running."
+
+clean:  ## Clean generated files and caches
+	@find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
+	@rm -rf $(FRONTEND_DIR)/node_modules/.vite 2>/dev/null || true
+	@echo "Cleaned caches"
+
+# ============================================================================
+# Help
+# ============================================================================
+
+help:  ## Show this help message
+	@echo "{{ config.project.name }} Orchestrator - Available Commands"
+	@echo ""
+	@echo "Installation:"
+	@echo "  make install           - Install all dependencies (backend + frontend)"
+	@echo "  make install-backend   - Install backend dependencies (FastAPI, aiosqlite)"
+	@echo "  make install-frontend  - Install frontend dependencies (Vue 3, npm)"
+	@echo ""
+	@echo "Database:"
+	@echo "  make setup-db          - Initialize SQLite database with schema"
+	@echo "  make reset-db          - Delete and recreate database"
+	@echo ""
+	@echo "Development:"
+	@echo "  make dev               - Start backend dev server (hot reload)"
+	@echo "  make dev-backend       - Start FastAPI backend (port {{ config.orchestrator.websocket_port }})"
+	@echo "  make dev-frontend      - Start Vue 3 frontend (port 5173)"
+	@echo "  make dev-all           - Show instructions for running both"
+	@echo ""
+	@echo "Production:"
+	@echo "  make start             - Start backend in production mode"
+	@echo "  make start-backend     - Start FastAPI (no reload)"
+	@echo "  make start-frontend    - Build and serve frontend"
+	@echo ""
+	@echo "Testing:"
+	@echo "  make test              - Run all tests"
+	@echo "  make test-backend      - Run ADW module tests"
+	@echo "  make test-frontend     - Run Playwright E2E tests"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  make health            - Check backend health"
+	@echo "  make logs              - View recent logs"
+	@echo "  make clean             - Clean caches"
+
+.PHONY: install install-backend install-frontend setup-db reset-db dev dev-backend dev-frontend dev-all start start-backend start-frontend test test-backend test-frontend health logs clean help

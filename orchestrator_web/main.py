@@ -22,17 +22,7 @@ from routers import agents, runtime, websocket
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """FastAPI lifespan manager - connects DatabaseManager on startup.
-    
-    Startup:
-        - Initialize DatabaseManager with DATABASE_PATH env var
-        - Connect to SQLite (auto-creates schema on first run)
-        - Store in global dependencies.db_manager
-    
-    Shutdown:
-        - Close DatabaseManager connection
-        - Cleanup resources
-    """
+    """FastAPI lifespan manager - connects DatabaseManager on startup."""
     # Startup
     db_path = dependencies.get_database_path()
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -54,7 +44,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Orchestrator Web Backend",
     description="FastAPI backend for TAC Bootstrap agent orchestration",
-    version="0.8.0",
+    version="0.9.0",
     lifespan=lifespan,
 )
 
@@ -83,7 +73,7 @@ async def root():
     """Health check endpoint."""
     return {
         "service": "orchestrator-web",
-        "version": "0.8.0",
+        "version": "0.9.0",
         "status": "operational"
     }
 

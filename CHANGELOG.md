@@ -7,8 +7,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-02-05
+
+### Added - TAC-14: Codebase Singularity & Orchestrator
+
+**Database Layer (SQLite Zero-Config):**
+- SQLite orchestrator database schema with 5 tables: `orchestrator_agents`, `agents`, `prompts`, `agent_logs`, `system_logs`
+- Schema with WAL mode, foreign keys, triggers, and 6 performance indexes
+- `adw_database.py` - Async CRUD operations with aiosqlite (DatabaseManager)
+- `orch_database_models.py` - Pydantic models mapping to schema tables
+- `setup_database.sh` - SQLite initialization script with schema verification
+
+**Structured Logging & WebSockets:**
+- `adw_logging.py` - Structured database logging for ADW workflows (init, log_step_start/end, log_agent_event, log_system_event)
+- `adw_websockets.py` - WebSocket server for real-time event broadcasting to frontend
+
+**Orchestrator Web Backend (FastAPI):**
+- `orchestrator_web/main.py` - FastAPI app with lifespan manager, CORS, health endpoints
+- `orchestrator_web/dependencies.py` - Dependency injection for DatabaseManager
+- `orchestrator_web/routers/agents.py` - CQRS endpoints for orchestrator_agents (GET/POST/PUT/DELETE)
+- `orchestrator_web/routers/runtime.py` - Runtime agents, prompts, and logs endpoints
+- `orchestrator_web/routers/websocket.py` - WebSocket endpoint for real-time agent status updates
+- `.env.sample` - Environment variables template
+
+**Orchestrator Frontend (Vue 3 + TypeScript):**
+- `apps/orchestrator_3_stream/frontend/` - Vue 3 SPA with Pinia state management
+- Swimlane board visualization for agent status tracking
+- Command palette overlay with keyboard shortcuts
+- WebSocket client for real-time updates
+- Tailwind CSS styling
+
+**Skills System:**
+- Meta-skill for creating new agent skills following best practices
+- Skills documentation (complete guide, architecture overview, design principles)
+- Progressive disclosure pattern (metadata -> instructions -> resources)
+
+**Orchestrator Commands:**
+- `/orch_plan_w_scouts_build_review` - Complete workflow: scout, plan, build, review
+- `/orch_scout_and_build` - Simplified workflow: scout and direct build
+- `/orch_one_shot_agent` - Single specialized agent execution pattern
+
+**Consolidated Workflows (Database-Backed):**
+- `adw_plan_build.py` - Plan + Build with database logging
+- `adw_plan_build_review.py` - Plan + Build + Review with database logging
+- `adw_plan_build_review_fix.py` - Plan + Build + Review + Fix with self-healing
+
+**Test Suites:**
+- `adws/adw_tests/` - Pytest tests for database, workflows, agent SDK, websockets
+- `apps/orchestrator_3_stream/playwright-tests/` - 6 Playwright E2E tests
+- Playwright configuration for frontend testing
+
+**CLI Enhancements:**
+- `--with-orchestrator` flag for `init` and `add-agentic` commands
+- `OrchestratorConfig` with `enabled`, `websocket_port`, `database_url` fields
+- Conditional orchestrator generation in scaffold service
+
+**Build & Operations:**
+- Root `Makefile` with orchestrator commands (install, setup-db, dev, start, test, health)
+- CLI `Makefile` extended with `orch-*` targets
+- Makefile template for generated projects
+
+**Documentation:**
+- `ai_docs/doc/Tac-14_complete_guide.md` - Complete architecture guide with Mermaid diagrams
+- `ai_docs/doc/Tac-14_skills_guide.md` - Skills system guide with examples
+- TAC-14 section in CLI README with 12-component table
+
 ### Fixed
-- **TAC-13 Validation Error**: Added missing expert system slash commands to `SlashCommand` Literal type in `data_types.py`. This fixes `AgentTemplateRequest` validation errors when using `--use-experts` flag with TAC-13 expert consultation. Expert commands now properly recognized: `/experts:adw:question`, `/experts:adw:self-improve`, `/experts:cli:question`, `/experts:cli:self-improve`, `/experts:commands:question`, `/experts:commands:self-improve`, and hook expert commands.
+- **TAC-13 Validation Error**: Added missing expert system slash commands to `SlashCommand` Literal type in `data_types.py`
+- **Model fallback chain**: Changed haiku->None to haiku->haiku for retry loop continuation
+- **worktree_path bug**: Fixed None passed as working_dir in adw_plan_iso.py
+- **Missing pyyaml**: Added dependency to adw_test_iso.py and adw_ship_iso.py
+
+### Changed
+- Version bump from 0.8.0 to 0.9.0
+- scaffold_service.py extended with conditional orchestrator generation
+- All TAC-14 components include both BASE files and Jinja2 templates
 
 ## [0.8.0] - 2026-02-03
 

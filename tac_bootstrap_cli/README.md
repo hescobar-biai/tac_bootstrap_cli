@@ -299,10 +299,56 @@ sqlite3 orchestrator.db < adws/schema/schema_orchestrator.sql
 
 ### Running the Orchestrator
 
+**Using Makefile (recommended):**
+
+```bash
+# Install dependencies
+make install               # Backend + frontend
+make install-backend       # Only backend (FastAPI, aiosqlite)
+make install-frontend      # Only frontend (Vue 3, npm)
+
+# Setup database
+make setup-db              # Initialize SQLite with schema
+
+# Start development servers
+make dev-backend           # FastAPI backend (port 8000, hot reload)
+make dev-frontend          # Vue 3 frontend (port 5173)
+
+# Utilities
+make health                # Check backend health endpoint
+make logs                  # View recent orchestrator logs via API
+make clean                 # Clean caches
+```
+
+**All Makefile targets:**
+
+| Target | Description |
+|--------|-------------|
+| `make install` | Install all dependencies (backend + frontend) |
+| `make install-backend` | Install FastAPI, uvicorn, aiosqlite, pydantic |
+| `make install-frontend` | Run `npm install` in frontend directory |
+| `make setup-db` | Initialize SQLite database with schema |
+| `make reset-db` | Delete and recreate database |
+| `make dev` | Start backend in development mode (alias for dev-backend) |
+| `make dev-backend` | Start FastAPI backend with hot reload (port 8000) |
+| `make dev-frontend` | Start Vue 3 frontend dev server (port 5173) |
+| `make dev-all` | Show instructions for running both servers |
+| `make start` | Start backend in production mode (no reload) |
+| `make start-backend` | Start FastAPI in production mode |
+| `make start-frontend` | Build and serve frontend for production |
+| `make test` | Run all tests (backend) |
+| `make test-backend` | Run ADW module pytest tests |
+| `make test-frontend` | Run Playwright E2E tests |
+| `make health` | Check backend health endpoint via curl |
+| `make logs` | View recent logs via REST API |
+| `make clean` | Clean __pycache__, .pytest_cache, .vite |
+
+**Manual commands:**
+
 ```bash
 # 1. Start backend
-cd apps/orchestrator_3_stream/backend
-uv run uvicorn main:app --reload --port 8000
+cd orchestrator_web
+uvicorn main:app --reload --port 8000
 
 # 2. Start frontend (separate terminal)
 cd apps/orchestrator_3_stream/frontend
@@ -311,9 +357,26 @@ npm install && npm run dev
 # 3. Open dashboard
 open http://localhost:5173
 
+# API docs
+open http://localhost:8000/docs
+
 # Run E2E tests
 cd apps/orchestrator_3_stream
 npx playwright test
+```
+
+**CLI Makefile (from `tac_bootstrap_cli/`):**
+
+The CLI Makefile also includes orchestrator targets prefixed with `orch-`:
+
+```bash
+cd tac_bootstrap_cli
+make orch-install          # Install backend dependencies
+make orch-install-frontend # Install frontend dependencies
+make orch-setup-db         # Initialize SQLite database
+make orch-dev              # Start backend (port 8000, hot reload)
+make orch-dev-frontend     # Start frontend (port 5173)
+make orch-health           # Check backend health
 ```
 
 ## Commands

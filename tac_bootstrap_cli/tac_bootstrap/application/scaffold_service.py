@@ -122,6 +122,14 @@ class ScaffoldService:
             # Add orchestrator utility scripts (TAC-14 Task 19)
             self._add_orchestrator_scripts(plan, config)
 
+            # Add orchestrator Makefile (TAC-14)
+            plan.add_file(
+                "Makefile",
+                action=FileAction.CREATE,
+                template="Makefile.j2",
+                reason="Orchestrator build and run commands",
+            )
+
         return plan
 
     def _add_directories(self, plan: ScaffoldPlan, config: TACConfig) -> None:
@@ -673,6 +681,7 @@ class ScaffoldService:
             ("tool_sequencer.py", "Tool sequence orchestration"),
             ("orch_database_models.py", "SQLite database models for orchestrator (TAC-14)"),
             ("adw_database.py", "SQLite database operations with aiosqlite (TAC-14)"),
+            ("adw_logging.py", "Structured database logging for workflows (TAC-14)"),
             ("adw_websockets.py", "WebSocket server for real-time event broadcasting (TAC-14)"),
         ]
 
