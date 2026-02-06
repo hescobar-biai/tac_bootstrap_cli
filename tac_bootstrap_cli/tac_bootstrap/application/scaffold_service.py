@@ -545,7 +545,7 @@ class ScaffoldService:
         plan.add_file(
             ".claude/skills/meta-skill/SKILL.md",
             action=action,
-            template=".claude/skills/meta-skill/SKILL.md.j2",
+            template="claude/skills/meta-skill/SKILL.md.j2",
             reason="Meta-skill for creating agent skills",
         )
 
@@ -559,7 +559,7 @@ class ScaffoldService:
             plan.add_file(
                 f".claude/skills/meta-skill/docs/{doc}",
                 action=action,
-                template=f".claude/skills/meta-skill/docs/{doc}",
+                template=f"claude/skills/meta-skill/docs/{doc}.j2",
                 reason=reason,
             )
 
@@ -567,7 +567,7 @@ class ScaffoldService:
         plan.add_file(
             ".claude/skills/start-orchestrator/SKILL.md",
             action=action,
-            template=".claude/skills/start-orchestrator/SKILL.md",
+            template="claude/skills/start-orchestrator/SKILL.md.j2",
             reason="Skill for launching orchestrator services",
         )
 

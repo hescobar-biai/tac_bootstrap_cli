@@ -5,7 +5,7 @@ from tac_bootstrap import __version__
 
 def test_version():
     """Test that version is defined."""
-    assert __version__ == "0.9.5"
+    assert __version__ == "0.9.6"
 
 
 def test_version_format():

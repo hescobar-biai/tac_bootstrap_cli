@@ -144,6 +144,7 @@ def main():
 
     # CRITICAL: Create worktree FIRST, before any slow operations (docs loading, etc.)
     # This ensures isolation even if script is canceled during setup
+    worktree_path = None
     valid, error = validate_worktree(adw_id, state)
     if valid:
         logger.info(f"Using existing worktree for {adw_id}")

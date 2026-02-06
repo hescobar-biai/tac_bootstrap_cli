@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Orchestrator Web Backend",
     description="FastAPI backend for TAC Bootstrap agent orchestration",
-    version="0.9.5",
+    version="0.9.6",
     lifespan=lifespan,
 )
 
@@ -80,7 +80,7 @@ async def root():
     """Health check endpoint."""
     return {
         "service": "orchestrator-web",
-        "version": "0.9.5",
+        "version": "0.9.6",
         "status": "operational"
     }
 

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-02-06
+
+### Fixed
+- **`adw_plan_iso.py` UnboundLocalError**: `worktree_path` was referenced before assignment when `validate_worktree()` returned invalid. Added `worktree_path = None` initialization
+- **Version references in test templates**: `test_database.py.j2` and `test_websockets.py.j2` had hardcoded `0.9.5` instead of `0.8.0`; `adw_database.py.j2` referenced `v0.9.5+` instead of `v0.9.0+`
+- **Typer dependency version**: `pyproject.toml` had `typer>=0.9.5` (linter artifact) instead of `typer>=0.9.4`
+
+### Added
+- **9 missing ADW templates**: Synced base `adws/` files to templates that had no `.j2` counterpart:
+  - `adw_database.py.j2` - Top-level database initialization script
+  - `adw_tests/__init__.py.j2`, `health_check.py.j2`, `sandbox_poc.py.j2` - Test infrastructure
+  - `adw_tests/test_agents.py.j2`, `test_model_selection.py.j2`, `test_r2_uploader.py.j2`, `test_webhook_simplified.py.j2` - Test suites
+  - `schema/migrations/001_initial.sql.j2` - Initial DB migration
+- **5 missing skill templates**: Created `.j2` templates for `meta-skill` and `start-orchestrator` skills
+- **`.claude/hooks/utils/__init__.py`** in base directory
+
+### Changed
+- **`adw_plan_iso.py.j2`**: Major sync with base - early worktree creation before docs loading, cached branch name support, `setup_worktree.sh` integration
+- **`adw_test_iso.py.j2`**: Synced `.ports.env` auto-detection documentation
+- **Skill templates consolidated**: Moved from `templates/.claude/skills/` to `templates/claude/skills/` for consistency; updated `scaffold_service.py` references
+- Deleted 3 residual `.bak` files from `templates/claude/commands/`
+
 ## [0.9.5] - 2026-02-06
 
 ### Fixed
