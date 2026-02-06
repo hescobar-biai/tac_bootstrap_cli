@@ -65,6 +65,9 @@ tac-bootstrap init my-api \
   --language python \
   --framework fastapi \
   --architecture ddd
+
+# With orchestrator backend and frontend (TAC-14)
+tac-bootstrap init my-app --with-orchestrator
 ```
 
 ### Existing Project
@@ -75,6 +78,9 @@ tac-bootstrap add-agentic
 
 # Preview changes
 tac-bootstrap add-agentic --dry-run
+
+# Include orchestrator components (TAC-14)
+tac-bootstrap add-agentic --with-orchestrator
 ```
 
 ## Generated Structure
@@ -102,6 +108,73 @@ project/
 └── config.yml               # TAC configuration
 ```
 
+## Orchestrator (TAC-14)
+
+The `--with-orchestrator` flag adds a real-time agent execution dashboard with:
+
+- **Backend**: FastAPI WebSocket server for agent state streaming
+- **Frontend**: Vue 3 + TypeScript swimlane board UI
+- **Tests**: Pytest test suites + Playwright E2E tests
+
+### Additional Structure (when enabled)
+
+```
+project/
+├── apps/
+│   └── orchestrator_3_stream/
+│       ├── server/              # FastAPI WebSocket backend
+│       │   ├── main.py          # Server entry point
+│       │   ├── websocket.py     # WebSocket handlers
+│       │   └── events.py        # Event types
+│       ├── frontend/            # Vue 3 + TypeScript UI
+│       │   ├── src/
+│       │   │   ├── App.vue
+│       │   │   ├── components/  # Swimlane, CommandPalette, etc.
+│       │   │   └── stores/      # Pinia state management
+│       │   └── package.json
+│       └── playwright-tests/    # E2E tests
+│           ├── app-loads.spec.ts
+│           ├── command-palette.spec.ts
+│           └── websocket-status.spec.ts
+└── adws/
+    └── adw_tests/               # Pytest test suites
+        ├── conftest.py
+        ├── test_database.py
+        ├── test_workflows.py
+        └── test_websockets.py
+```
+
+### Configuration
+
+The orchestrator is configured in `config.yml`:
+
+```yaml
+orchestrator:
+  enabled: true
+  api_base_url: "http://localhost:8000"
+  ws_base_url: "ws://localhost:8000"
+  frontend_port: 5173
+  websocket_port: 8000
+  database_url: "sqlite:///orchestrator.db"
+  polling_interval: 5000
+```
+
+### Running the Orchestrator
+
+```bash
+# Start backend
+cd apps/orchestrator_3_stream/server
+uvicorn main:app --reload
+
+# Start frontend (separate terminal)
+cd apps/orchestrator_3_stream/frontend
+npm run dev
+
+# Run E2E tests
+cd apps/orchestrator_3_stream
+npx playwright test
+```
+
 ## Commands
 
 ### CLI Commands
@@ -109,7 +182,9 @@ project/
 | Command | Description |
 |---------|-------------|
 | `tac-bootstrap init <name>` | Create new project |
+| `tac-bootstrap init <name> --with-orchestrator` | Create project with orchestrator (TAC-14) |
 | `tac-bootstrap add-agentic` | Add to existing project |
+| `tac-bootstrap add-agentic --with-orchestrator` | Add with orchestrator components (TAC-14) |
 | `tac-bootstrap upgrade` | Upgrade templates |
 | `tac-bootstrap doctor` | Validate setup |
 | `tac-bootstrap render` | Regenerate from config |
