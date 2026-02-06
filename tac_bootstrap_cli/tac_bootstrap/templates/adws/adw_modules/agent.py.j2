@@ -500,6 +500,9 @@ def prompt_claude_code_with_retry(
                 )
                 current_model = fallback_model
                 current_request = current_request.model_copy(update={"model": current_model})
+                logger.info(f"🎯 Request model updated to: {current_request.model}")
+                # Small delay to avoid CLI session caching issues
+                time.sleep(2)
                 # Don't increment attempt - model switch is free
                 continue
 
@@ -664,6 +667,15 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
     cmd = [CLAUDE_PATH, "-p", request.prompt]
     cmd.extend(["--model", request.model])
     cmd.extend(["--output-format", "stream-json"])
+    cmd.append("--no-session-persistence")  # Avoid session state issues with model switching
+
+    # Generate unique session ID to avoid any state caching between requests
+    import uuid
+    unique_session_id = str(uuid.uuid4())
+    cmd.extend(["--session-id", unique_session_id])
+
+    # Debug: log the model being used
+    logging.debug(f"🎯 Executing with model: {request.model}")
     cmd.append("--verbose")
     
     # Check for MCP config in working directory
