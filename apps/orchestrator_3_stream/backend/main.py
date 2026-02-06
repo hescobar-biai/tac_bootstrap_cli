@@ -123,19 +123,43 @@ async def _broadcast_to_all(data: dict, exclude: WebSocket | None = None):
             _ws_connections.remove(ws)
 
 
+async def _fetch_adw_workflows() -> list[dict]:
+    """Fetch current ADW workflows from SQLite."""
+    try:
+        async with aiosqlite.connect(DATABASE_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                "SELECT * FROM ai_developer_workflows ORDER BY created_at DESC LIMIT 20"
+            )
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        print(f"[WS] DB error fetching ADWs: {e}")
+        return []
+
+
+async def _send_initial_adws(websocket: WebSocket):
+    """Send all existing ADWs as adw_created events to a newly connected client."""
+    workflows = await _fetch_adw_workflows()
+    for wf in workflows:
+        try:
+            await websocket.send_json({
+                "type": "adw_created",
+                "adw": wf,
+                "timestamp": datetime.now().isoformat(),
+            })
+        except Exception:
+            break
+
+
 async def _poll_adw_changes():
     """Background task that polls SQLite for ADW changes and broadcasts updates."""
+    known_adw_ids: set[str] = set()
     last_snapshot = ""
 
     while True:
         try:
-            async with aiosqlite.connect(DATABASE_PATH) as db:
-                db.row_factory = aiosqlite.Row
-                cursor = await db.execute(
-                    "SELECT * FROM ai_developer_workflows ORDER BY created_at DESC LIMIT 20"
-                )
-                rows = await cursor.fetchall()
-                workflows = [dict(row) for row in rows]
+            workflows = await _fetch_adw_workflows()
 
             # Change detection
             snapshot = json.dumps(
@@ -146,13 +170,22 @@ async def _poll_adw_changes():
             )
 
             if snapshot != last_snapshot and workflows:
-                # Broadcast each workflow as an adw_updated event
                 for wf in workflows:
-                    await _broadcast_to_all({
-                        "type": "adw_updated",
-                        "adw_id": wf.get("id", wf.get("adw_name")),
-                        "adw": wf,
-                    })
+                    adw_id = wf.get("id", wf.get("adw_name"))
+                    if adw_id not in known_adw_ids:
+                        # New ADW - send adw_created so frontend adds it
+                        known_adw_ids.add(adw_id)
+                        await _broadcast_to_all({
+                            "type": "adw_created",
+                            "adw": wf,
+                        })
+                    else:
+                        # Existing ADW - send adw_updated
+                        await _broadcast_to_all({
+                            "type": "adw_updated",
+                            "adw_id": adw_id,
+                            "adw": wf,
+                        })
                 last_snapshot = snapshot
 
         except Exception as e:
@@ -181,6 +214,9 @@ async def websocket_endpoint(websocket: WebSocket):
         "timestamp": datetime.now().isoformat(),
         "message": "Connected to Orchestrator Backend (SQLite mode)",
     })
+
+    # Send existing ADWs so frontend populates store.adws immediately
+    await _send_initial_adws(websocket)
 
     # Start background poller
     poll_task = asyncio.create_task(_poll_adw_changes())
