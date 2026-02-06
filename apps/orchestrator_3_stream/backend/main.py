@@ -138,8 +138,24 @@ async def _fetch_adw_workflows() -> list[dict]:
         return []
 
 
-async def _send_initial_adws(websocket: WebSocket):
-    """Send all existing ADWs as adw_created events to a newly connected client."""
+async def _fetch_agents() -> list[dict]:
+    """Fetch current agents from SQLite."""
+    try:
+        async with aiosqlite.connect(DATABASE_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                "SELECT * FROM agents ORDER BY started_at DESC LIMIT 50"
+            )
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        print(f"[WS] DB error fetching agents: {e}")
+        return []
+
+
+async def _send_initial_state(websocket: WebSocket):
+    """Send all existing ADWs and agents to a newly connected client."""
+    # Send ADWs
     workflows = await _fetch_adw_workflows()
     for wf in workflows:
         try:
@@ -149,44 +165,81 @@ async def _send_initial_adws(websocket: WebSocket):
                 "timestamp": datetime.now().isoformat(),
             })
         except Exception:
-            break
+            return
+
+    # Send agents
+    agents = await _fetch_agents()
+    for agent in agents:
+        try:
+            await websocket.send_json({
+                "type": "agent_created",
+                "agent": agent,
+                "timestamp": datetime.now().isoformat(),
+            })
+        except Exception:
+            return
 
 
-async def _poll_adw_changes():
-    """Background task that polls SQLite for ADW changes and broadcasts updates."""
+async def _poll_changes():
+    """Background task that polls SQLite for ADW and agent changes."""
     known_adw_ids: set[str] = set()
-    last_snapshot = ""
+    known_agent_ids: set[str] = set()
+    last_adw_snapshot = ""
+    last_agent_snapshot = ""
 
     while True:
         try:
+            # --- Poll ADW workflows ---
             workflows = await _fetch_adw_workflows()
-
-            # Change detection
-            snapshot = json.dumps(
+            adw_snapshot = json.dumps(
                 [(w.get("adw_name"), w.get("status"), w.get("current_step"),
                   w.get("completed_steps"), w.get("updated_at"))
                  for w in workflows],
                 default=str,
             )
 
-            if snapshot != last_snapshot and workflows:
+            if adw_snapshot != last_adw_snapshot and workflows:
                 for wf in workflows:
                     adw_id = wf.get("id", wf.get("adw_name"))
                     if adw_id not in known_adw_ids:
-                        # New ADW - send adw_created so frontend adds it
                         known_adw_ids.add(adw_id)
                         await _broadcast_to_all({
                             "type": "adw_created",
                             "adw": wf,
                         })
                     else:
-                        # Existing ADW - send adw_updated
                         await _broadcast_to_all({
                             "type": "adw_updated",
                             "adw_id": adw_id,
                             "adw": wf,
                         })
-                last_snapshot = snapshot
+                last_adw_snapshot = adw_snapshot
+
+            # --- Poll agents ---
+            agents = await _fetch_agents()
+            agent_snapshot = json.dumps(
+                [(a.get("id"), a.get("status"), a.get("completed_at"))
+                 for a in agents],
+                default=str,
+            )
+
+            if agent_snapshot != last_agent_snapshot and agents:
+                for agent in agents:
+                    agent_id = agent.get("id", "")
+                    if agent_id not in known_agent_ids:
+                        known_agent_ids.add(agent_id)
+                        await _broadcast_to_all({
+                            "type": "agent_created",
+                            "agent": agent,
+                        })
+                    else:
+                        await _broadcast_to_all({
+                            "type": "agent_status_changed",
+                            "agent_id": agent_id,
+                            "old_status": "",
+                            "new_status": agent.get("status", ""),
+                        })
+                last_agent_snapshot = agent_snapshot
 
         except Exception as e:
             print(f"[WS Poll] Error: {e}")
@@ -215,11 +268,11 @@ async def websocket_endpoint(websocket: WebSocket):
         "message": "Connected to Orchestrator Backend (SQLite mode)",
     })
 
-    # Send existing ADWs so frontend populates store.adws immediately
-    await _send_initial_adws(websocket)
+    # Send existing ADWs and agents so frontend populates stores immediately
+    await _send_initial_state(websocket)
 
     # Start background poller
-    poll_task = asyncio.create_task(_poll_adw_changes())
+    poll_task = asyncio.create_task(_poll_changes())
 
     try:
         while True:

@@ -47,6 +47,7 @@ from adw_modules.data_types import ADWStateData
 from adw_modules.adw_db_bridge import (
     init_bridge, close_bridge,
     track_workflow_start, track_phase_update, track_workflow_end,
+    track_agent_start, track_agent_end,
     log_event,
 )
 
@@ -388,10 +389,15 @@ def main():
                            "Using manual git operations in main repository")
     )
 
+    agent_id = track_agent_start(adw_id, "adw_ship_iso", model="claude-sonnet-4-5-20250929")
+    log_event("adw_ship_iso", f"Ship merge started for {adw_id}")
+
     success, error = manual_merge_to_target(branch_name, logger)
 
     if not success:
         logger.error(f"Failed to merge: {error}")
+        track_agent_end(agent_id, "failed")
+        log_event("adw_ship_iso", f"Ship merge failed for {adw_id}", level="ERROR")
         track_phase_update(adw_id, "merge", "failed", 0)
         track_workflow_end(adw_id, "failed", error)
         close_bridge()
@@ -436,6 +442,7 @@ def main():
     # Track successful completion in orchestrator DB
     track_phase_update(adw_id, "merge", "completed", 1)
     track_workflow_end(adw_id, "completed")
+    track_agent_end(agent_id, "completed")
     log_event("adw_ship_iso", f"Ship workflow completed for {adw_id}")
     close_bridge()
 

@@ -38,6 +38,7 @@ from adw_modules.state import ADWState
 from adw_modules.adw_db_bridge import (
     init_bridge, close_bridge,
     track_workflow_start, track_phase_update, track_workflow_end,
+    track_agent_start, track_agent_end,
     log_event,
 )
 
@@ -147,6 +148,8 @@ def main():
             logger.info("Plan phase already completed, skipping execution")
         else:
             track_phase_update(adw_id, "plan", "in_progress", 0)
+            agent_id = track_agent_start(adw_id, "adw_plan_iso", model="claude-sonnet-4-5-20250929")
+            log_event("adw_plan_iso", f"Plan phase started for {adw_id}")
             plan_cmd = [
                 "uv",
                 "run",
@@ -171,15 +174,21 @@ def main():
             if plan.returncode == 2:
                 # Exit code 2 = paused for clarifications
                 track_phase_update(adw_id, "plan", "paused", 0)
+                track_agent_end(agent_id, "paused")
+                log_event("adw_plan_iso", f"Plan phase paused for {adw_id}", level="WARNING")
                 print("⏸️  Plan phase paused - awaiting user clarifications")
                 print("Please answer the clarification questions on the GitHub issue,")
                 print("then re-run this workflow to continue.")
                 sys.exit(2)  # Propagate paused state
             elif plan.returncode != 0:
                 track_phase_update(adw_id, "plan", "failed", 0)
+                track_agent_end(agent_id, "failed")
+                log_event("adw_plan_iso", f"Plan phase failed for {adw_id}", level="ERROR")
                 print("Isolated plan phase failed")
                 sys.exit(1)
             track_phase_update(adw_id, "plan", "completed", 1)
+            track_agent_end(agent_id, "completed")
+            log_event("adw_plan_iso", f"Plan phase completed for {adw_id}")
 
             # Reload state after plan completes
             state = ADWState(adw_id)
@@ -192,6 +201,8 @@ def main():
             logger.info("Build phase already completed, skipping execution")
         else:
             track_phase_update(adw_id, "build", "in_progress", 1)
+            agent_id = track_agent_start(adw_id, "adw_build_iso", model="claude-sonnet-4-5-20250929")
+            log_event("adw_build_iso", f"Build phase started for {adw_id}")
             build_cmd = [
                 "uv",
                 "run",
@@ -207,9 +218,13 @@ def main():
             build = subprocess.run(build_cmd)
             if build.returncode != 0:
                 track_phase_update(adw_id, "build", "failed", 1)
+                track_agent_end(agent_id, "failed")
+                log_event("adw_build_iso", f"Build phase failed for {adw_id}", level="ERROR")
                 print("Isolated build phase failed")
                 sys.exit(1)
             track_phase_update(adw_id, "build", "completed", 2)
+            track_agent_end(agent_id, "completed")
+            log_event("adw_build_iso", f"Build phase completed for {adw_id}")
 
             # Reload state after build completes
             state = ADWState(adw_id)
@@ -222,6 +237,8 @@ def main():
             logger.info("Test phase already completed, skipping execution")
         else:
             track_phase_update(adw_id, "test", "in_progress", 2)
+            agent_id = track_agent_start(adw_id, "adw_test_iso", model="claude-sonnet-4-5-20250929")
+            log_event("adw_test_iso", f"Test phase started for {adw_id}")
             test_cmd = [
                 "uv",
                 "run",
@@ -236,11 +253,15 @@ def main():
             test = subprocess.run(test_cmd)
             if test.returncode != 0:
                 track_phase_update(adw_id, "test", "failed", 2)
+                track_agent_end(agent_id, "failed")
+                log_event("adw_test_iso", f"Test phase failed for {adw_id}", level="WARNING")
                 print("Isolated test phase failed")
                 # Note: Continue anyway as some tests might be flaky
                 print("WARNING: Test phase failed but continuing with review")
             else:
                 track_phase_update(adw_id, "test", "completed", 3)
+                track_agent_end(agent_id, "completed")
+                log_event("adw_test_iso", f"Test phase completed for {adw_id}")
 
             # Reload state after test completes
             state = ADWState(adw_id)
@@ -253,6 +274,8 @@ def main():
             logger.info("Review phase already completed, skipping execution")
         else:
             track_phase_update(adw_id, "review", "in_progress", 3)
+            agent_id = track_agent_start(adw_id, "adw_review_iso", model="claude-sonnet-4-5-20250929")
+            log_event("adw_review_iso", f"Review phase started for {adw_id}")
             review_cmd = [
                 "uv",
                 "run",
@@ -272,9 +295,13 @@ def main():
             review = subprocess.run(review_cmd)
             if review.returncode != 0:
                 track_phase_update(adw_id, "review", "failed", 3)
+                track_agent_end(agent_id, "failed")
+                log_event("adw_review_iso", f"Review phase failed for {adw_id}", level="ERROR")
                 print("Isolated review phase failed")
                 sys.exit(1)
             track_phase_update(adw_id, "review", "completed", 4)
+            track_agent_end(agent_id, "completed")
+            log_event("adw_review_iso", f"Review phase completed for {adw_id}")
 
             # Reload state after review completes
             state = ADWState(adw_id)
@@ -287,6 +314,8 @@ def main():
             logger.info("Documentation phase already completed, skipping execution")
         else:
             track_phase_update(adw_id, "document", "in_progress", 4)
+            agent_id = track_agent_start(adw_id, "adw_document_iso", model="claude-sonnet-4-5-20250929")
+            log_event("adw_document_iso", f"Document phase started for {adw_id}")
             document_cmd = [
                 "uv",
                 "run",
@@ -304,9 +333,13 @@ def main():
             document = subprocess.run(document_cmd)
             if document.returncode != 0:
                 track_phase_update(adw_id, "document", "failed", 4)
+                track_agent_end(agent_id, "failed")
+                log_event("adw_document_iso", f"Document phase failed for {adw_id}", level="ERROR")
                 print("Isolated documentation phase failed")
                 sys.exit(1)
             track_phase_update(adw_id, "document", "completed", 5)
+            track_agent_end(agent_id, "completed")
+            log_event("adw_document_iso", f"Document phase completed for {adw_id}")
 
             # Reload state after documentation completes
             state = ADWState(adw_id)
