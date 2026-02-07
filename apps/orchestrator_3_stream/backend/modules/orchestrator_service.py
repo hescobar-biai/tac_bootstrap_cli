@@ -277,6 +277,7 @@ class OrchestratorService:
             "cwd": self.working_dir,
             "resume": resume_session,
             "env": env_vars,  # Ensure API key is available to subprocess
+            "permission_mode": "bypassPermissions",
         }
 
         # Add hooks for event tracking if orchestrator_agent_id provided
