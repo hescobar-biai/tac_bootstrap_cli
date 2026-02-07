@@ -110,6 +110,9 @@ class ScaffoldService:
 
         # Add orchestrator components only if enabled (TAC-14 Task 16)
         if config.orchestrator.enabled:
+            # Add orchestrator database schema and migrations
+            self._add_orchestrator_database(plan, config, existing_repo)
+
             # Add orchestrator web backend
             self._add_orchestrator_backend(plan, config, existing_repo)
 
@@ -1064,92 +1067,142 @@ class ScaffoldService:
         # Docs directory
         plan.add_directory("docs", "Fractal documentation output")
 
+    def _add_orchestrator_database(
+        self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
+    ) -> None:
+        """Add apps/orchestrator_db/ PostgreSQL database schema and utilities.
+
+        Adds centralized database management:
+        - migrations/: Idempotent SQL migration files (0-10)
+        - models.py: Pydantic database models
+        - run_migrations.py: Migration runner
+        - drop_table.py: Safe table drop utility
+        - sync_models.py: Model distribution to apps
+        - git_utils.py: Git analysis utilities
+        """
+        action = FileAction.CREATE
+
+        plan.add_directory("apps/orchestrator_db", "Orchestrator database schema")
+        plan.add_directory("apps/orchestrator_db/migrations", "PostgreSQL migrations")
+
+        db_files = [
+            ("README.md", "Database documentation"),
+            ("models.py", "Pydantic database models"),
+            ("run_migrations.py", "Migration runner"),
+            ("drop_table.py", "Table drop utility"),
+            ("sync_models.py", "Model sync script"),
+            ("git_utils.py", "Git utilities"),
+            ("migrations/README.md", "Migration documentation"),
+            ("migrations/0_orchestrator_agents.sql", "Orchestrator agents table"),
+            ("migrations/1_agents.sql", "Managed agents table"),
+            ("migrations/2_prompts.sql", "Prompt history table"),
+            ("migrations/3_agent_logs.sql", "Agent event logs table"),
+            ("migrations/4_system_logs.sql", "System logs table"),
+            ("migrations/5_indexes.sql", "Performance indexes"),
+            ("migrations/6_functions.sql", "Trigger functions"),
+            ("migrations/7_triggers.sql", "Auto-update triggers"),
+            ("migrations/8_orchestrator_chat.sql", "Conversation log table"),
+            ("migrations/9_ai_developer_workflows.sql", "ADW tracking table"),
+            ("migrations/10_adw_orchestrator_agent.sql", "ADW orchestrator seed data"),
+        ]
+
+        for path, reason in db_files:
+            full_path = f"apps/orchestrator_db/{path}"
+            template_path = self.template_repo.templates_dir / full_path
+            try:
+                content = template_path.read_text(encoding="utf-8")
+                plan.add_file(
+                    full_path,
+                    action=action,
+                    content=content,
+                    reason=reason,
+                )
+            except Exception:
+                continue
+
     def _add_orchestrator_backend(
         self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
     ) -> None:
-        """Add apps/orchestrator_3_stream/backend/ FastAPI backend files (TAC-14 Task 12).
+        """Add apps/orchestrator_3_stream/backend/ FastAPI backend files.
 
-        Adds FastAPI backend with SQLite persistence:
-        - main.py: FastAPI app with DatabaseManager lifespan
-        - routers/: CQRS endpoints for agents, runtime, WebSocket
-        - dependencies.py: Dependency injection
-        - .env.sample: Environment variables template
+        Adds FastAPI backend with PostgreSQL persistence:
+        - main.py: FastAPI app with lifespan manager
+        - modules/: Core backend modules (database, agents, websockets, etc.)
+        - prompts/: System and user prompt templates
+        - tests/: Backend test suite
+        - pyproject.toml: Python project configuration
         """
-        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
+        action = FileAction.CREATE
 
         # Add directory structure
         plan.add_directory("apps/orchestrator_3_stream/backend", "Orchestrator web backend")
-        plan.add_directory("apps/orchestrator_3_stream/backend/routers", "FastAPI routers")
+        plan.add_directory("apps/orchestrator_3_stream/backend/modules", "Backend modules")
+        plan.add_directory("apps/orchestrator_3_stream/backend/prompts", "Prompt templates")
+        plan.add_directory(
+            "apps/orchestrator_3_stream/backend/prompts/experts/orch_autocomplete",
+            "Autocomplete expert prompts",
+        )
+        plan.add_directory("apps/orchestrator_3_stream/backend/tests", "Backend tests")
 
-        # Add main files
-        plan.add_file(
-            "apps/orchestrator_3_stream/backend/__init__.py",
-            action=action,
-            template="apps/orchestrator_3_stream/backend/__init__.py.j2",
-            reason="Orchestrator package init",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/backend/main.py",
-            action=action,
-            template="apps/orchestrator_3_stream/backend/main.py.j2",
-            reason="FastAPI app with lifespan manager",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/backend/dependencies.py",
-            action=action,
-            template="apps/orchestrator_3_stream/backend/dependencies.py.j2",
-            reason="FastAPI dependency injection",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/backend/.env.sample",
-            action=action,
-            template="apps/orchestrator_3_stream/backend/.env.sample",
-            reason="Environment variables template",
-        )
+        # All backend files (read as static content)
+        backend_files = [
+            # Root files
+            ("main.py", "FastAPI app with lifespan manager"),
+            ("pyproject.toml", "Python project configuration"),
+            (".python-version", "Python version specification"),
+            (".env.sample", "Environment variables template"),
+            # Modules
+            ("modules/config.py", "Central configuration"),
+            ("modules/logger.py", "Structured logger with Rich"),
+            ("modules/database.py", "asyncpg database layer"),
+            ("modules/websocket_manager.py", "WebSocket connection manager"),
+            ("modules/agent_manager.py", "Agent lifecycle management"),
+            ("modules/subagent_loader.py", "Subagent template loader"),
+            ("modules/subagent_models.py", "Subagent Pydantic models"),
+            ("modules/orchestrator_service.py", "Orchestrator Claude SDK service"),
+            ("modules/orchestrator_hooks.py", "Orchestrator event hooks"),
+            ("modules/orch_database_models.py", "Pydantic database models"),
+            ("modules/slash_command_parser.py", "Slash command discovery"),
+            ("modules/command_agent_hooks.py", "Command agent event hooks"),
+            ("modules/single_agent_prompt.py", "Single agent system prompt"),
+            ("modules/autocomplete_agent.py", "Autocomplete agent"),
+            ("modules/autocomplete_models.py", "Autocomplete Pydantic models"),
+            ("modules/autocomplete_service.py", "Autocomplete service"),
+            ("modules/event_summarizer.py", "Event summarization"),
+            ("modules/hooks.py", "Claude SDK event hooks"),
+            ("modules/file_tracker.py", "File change tracker"),
+            # Prompts
+            ("prompts/orchestrator_agent_system_prompt.md", "Orchestrator system prompt"),
+            ("prompts/command_level_agent_init_user_prompt.md", "Command agent init prompt"),
+            ("prompts/event_summarizer_system_prompt.md", "Event summarizer system prompt"),
+            ("prompts/event_summarizer_user_prompt.md", "Event summarizer user prompt"),
+            ("prompts/experts/orch_autocomplete/autocomplete_expert_system_prompt.md", "Autocomplete expert system prompt"),
+            ("prompts/experts/orch_autocomplete/autocomplete_expert_user_prompt.md", "Autocomplete expert user prompt"),
+            ("prompts/experts/orch_autocomplete/expertise.yaml", "Autocomplete expertise config"),
+            # Tests
+            ("tests/README.md", "Test documentation"),
+            ("tests/test_database.py", "Database integration tests"),
+            ("tests/test_agent_events.py", "Agent event WebSocket tests"),
+            ("tests/test_autocomplete_agent.py", "Autocomplete agent tests"),
+            ("tests/test_autocomplete_endpoints.py", "Autocomplete endpoint tests"),
+            ("tests/test_display.py", "Rich display tests"),
+            ("tests/test_slash_command_discovery.py", "Slash command discovery tests"),
+            ("tests/test_websocket_raw.py", "Raw WebSocket tests"),
+        ]
 
-        # Add routers
-        plan.add_file(
-            "apps/orchestrator_3_stream/backend/routers/__init__.py",
-            action=action,
-            template="apps/orchestrator_3_stream/backend/routers/__init__.py.j2",
-            reason="Routers package init",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/backend/routers/agents.py",
-            action=action,
-            template="apps/orchestrator_3_stream/backend/routers/agents.py.j2",
-            reason="CQRS endpoints for orchestrator agents",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/backend/routers/runtime.py",
-            action=action,
-            template="apps/orchestrator_3_stream/backend/routers/runtime.py.j2",
-            reason="Endpoints for runtime agents and logs",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/backend/routers/websocket.py",
-            action=action,
-            template="apps/orchestrator_3_stream/backend/routers/websocket.py.j2",
-            reason="WebSocket for real-time updates",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/backend/routers/compat.py",
-            action=action,
-            template="apps/orchestrator_3_stream/backend/routers/compat.py.j2",
-            reason="TAC-14 compatible endpoints for tac-14 frontend",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/backend/config.py",
-            action=action,
-            template="apps/orchestrator_3_stream/backend/config.py.j2",
-            reason="Orchestrator configuration management",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/backend/logger.py",
-            action=action,
-            template="apps/orchestrator_3_stream/backend/logger.py.j2",
-            reason="Orchestrator structured logger",
-        )
+        for path, reason in backend_files:
+            full_path = f"apps/orchestrator_3_stream/backend/{path}"
+            template_path = self.template_repo.templates_dir / full_path
+            try:
+                content = template_path.read_text(encoding="utf-8")
+                plan.add_file(
+                    full_path,
+                    action=action,
+                    content=content,
+                    reason=reason,
+                )
+            except Exception:
+                continue
 
     def _add_orchestrator_frontend(
         self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
@@ -1380,7 +1433,7 @@ class ScaffoldService:
             f"{scripts_dir}/setup_database.sh",
             action=action,
             template="scripts/setup_database.sh.j2",
-            reason="SQLite database initialization script",
+            reason="PostgreSQL database migration script",
             executable=True,
         )
 

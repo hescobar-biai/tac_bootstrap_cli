@@ -1,444 +1,364 @@
 # /// script
-# dependencies = ["aiosqlite>=0.19.0"]
+# requires-python = ">=3.11"
+# dependencies = [
+#   "asyncpg>=0.29.0",
+#   "python-dotenv>=1.0.0",
+#   "websockets>=12.0",
+# ]
 # ///
 """
-ADW Structured Logging Module - Workflow-Oriented Database Logging for Orchestrator
+ADW Logging Module - Step lifecycle and event logging for AI Developer Workflows.
 
-This module provides workflow-oriented logging functions that wrap the low-level
-DatabaseManager methods from adw_database.py. It adds semantic meaning to log
-entries by providing step-level tracking, agent lifecycle events, and system-wide
-event logging with a consistent interface.
+This module provides high-level functions to log ADW step boundaries and events.
+Uses adw_database.py for all database operations.
+Automatically broadcasts events via WebSocket for real-time frontend updates.
 
-Architecture
-------------
-    Orchestrator Workflow --> adw_logging.py --> adw_database.py --> SQLite
-    (step_start/end,         (this module)      (raw CRUD)         (persistence)
-     agent events,
-     system events)
+Usage:
+    from adw_modules.adw_logging import log_step_start, log_step_end, log_adw_event
 
-    adw_logging.py --> adw_websockets.py (event schema alignment)
-    (log schema)       (real-time broadcast)
+    await log_step_start(adw_id="uuid", adw_step="plan-feature")
+    await log_step_end(adw_id="uuid", adw_step="plan-feature", status="success")
 
-The logging functions in this module produce entries that align with the
-adw_websockets.py WebSocketEvent schema, enabling seamless bridging between
-persisted logs and real-time event broadcasting.
-
-Zero-Configuration Philosophy
------------------------------
-- Single function call to initialize logging (creates DatabaseManager + connects)
-- Async context manager for automatic lifecycle management
-- All functions accept a DatabaseManager instance for explicit dependency injection
-- Graceful error handling on high-level event logging (never crashes workflows)
-
-Event Types
------------
-Agent lifecycle events (used by log_agent_event):
-- agent_started: Agent has been initialized and is beginning work
-- agent_completed: Agent has finished successfully
-- agent_failed: Agent encountered an unrecoverable error
-- prompt_sent: A prompt was dispatched to the LLM
-- prompt_received: A response was received from the LLM
-
-Step tracking events (used by log_step_start / log_step_end):
-- step_start: A named workflow step has begun execution
-- step_end: A named workflow step has completed (with success/failure status)
-
-System events (used by log_system_event):
-- Arbitrary component-level logging at DEBUG/INFO/WARNING/ERROR/CRITICAL levels
-
-Integration with adw_websockets.py
-------------------------------------
-The event schema produced by this module matches the WebSocketEvent dataclass:
-- event_type maps to WebSocketEvent.event_type
-- agent_id maps to WebSocketEvent.agent_id
-- message maps to WebSocketEvent.message
-- metadata maps to WebSocketEvent.metadata
-- timestamps are ISO 8601 (same format)
-
-Use adw_websockets.map_log_to_event() to convert database log entries into
-WebSocket events for real-time broadcasting.
-
-Usage Example
--------------
-```python
-import asyncio
-from adw_modules.adw_logging import (
-    logging_session, log_step_start, log_step_end,
-    log_agent_event, log_system_event
-)
-
-async def main():
-    async with logging_session("orchestrator.db") as db:
-        agent_id = "550e8400-e29b-41d4-a716-446655440000"
-
-        # Log agent lifecycle
-        await log_agent_event(db, agent_id, "agent_started",
-                              "Scout agent started codebase exploration",
-                              metadata={"model": "claude-sonnet-3.5"})
-
-        # Track workflow steps
-        await log_step_start(db, agent_id, "code_analysis",
-                             metadata={"files_queued": 42})
-
-        # ... perform analysis ...
-
-        await log_step_end(db, agent_id, "code_analysis", success=True,
-                           metadata={"files_analyzed": 42, "issues_found": 3})
-
-        # Log system events
-        await log_system_event(db, "orchestrator", "All agents completed",
-                               level="INFO", details={"total_agents": 5})
-
-        # Log agent completion
-        await log_agent_event(db, agent_id, "agent_completed",
-                              "Scout agent finished successfully")
-
-asyncio.run(main())
-```
-
-Standalone Initialization
--------------------------
-```python
-from adw_modules.adw_logging import init_logging, close_logging
-
-async def standalone():
-    db = await init_logging("orchestrator.db")
-    try:
-        await log_system_event(db, "startup", "System initialized")
-        # ... workflow operations ...
-    finally:
-        await close_logging(db)
-```
+WebSocket Integration:
+    Events are automatically broadcast to the frontend via WebSocket.
+    Broadcasting is resilient - it fails silently if the server is unavailable.
+    Use init_logging() at workflow start to establish WebSocket connection.
+    Use close_logging() at workflow end to clean up.
 """
 
-import logging
-from contextlib import asynccontextmanager
-from typing import Optional, Dict, Any
+from __future__ import annotations
 
-from adw_database import DatabaseManager
+from typing import Any, Optional
 
-# Configure module-level logger
-logger = logging.getLogger(__name__)
+from .adw_database import (
+    write_agent_log,
+    write_system_log,
+    update_adw_status as db_update_adw_status,
+    close_pool,
+)
+from .adw_websockets import (
+    init_ws_client,
+    close_ws_client,
+    broadcast_adw_event as ws_broadcast_adw_event,
+    broadcast_adw_step_change as ws_broadcast_adw_step_change,
+    broadcast_adw_status as ws_broadcast_adw_status,
+)
+
+# Re-export close_pool for workflows to clean up
+__all__ = [
+    "init_logging",
+    "close_logging",
+    "log_step_start",
+    "log_step_end",
+    "log_adw_event",
+    "log_system_event",
+    "update_adw_status",
+    "close_pool",
+]
 
 
-# ============================================================================
-# Initialization and Lifecycle
-# ============================================================================
+# =============================================================================
+# INITIALIZATION / CLEANUP
+# =============================================================================
 
-async def init_logging(db_path: str = "orchestrator.db") -> DatabaseManager:
+
+async def init_logging(verbose: bool = False):
     """
-    Initialize logging by creating and connecting a DatabaseManager.
+    Initialize logging with WebSocket connection for real-time updates.
 
-    Creates a new DatabaseManager instance pointing at the specified SQLite
-    database file, opens the connection, enables WAL mode, and initializes
-    the schema (idempotent). The returned DatabaseManager is ready for
-    immediate use with all logging functions in this module.
+    Call this at the start of your workflow to establish the WebSocket
+    connection. This is optional - logging will still work without it,
+    but events won't be broadcast in real-time.
 
     Args:
-        db_path: Path to SQLite database file (default: "orchestrator.db").
-                 The file is created automatically if it does not exist.
-
-    Returns:
-        Connected DatabaseManager instance ready for logging operations.
-
-    Raises:
-        aiosqlite.Error: If database connection or schema initialization fails.
-        FileNotFoundError: If schema_orchestrator.sql is not found.
-
-    Example:
-        >>> db = await init_logging("my_project.db")
-        >>> # db is now connected and ready for logging
-        >>> await close_logging(db)
+        verbose: If True, print WebSocket connection status messages
     """
-    db = DatabaseManager(db_path)
-    await db.connect()
-    logger.debug(f"Logging initialized with database: {db_path}")
-    return db
+    await init_ws_client(verbose=verbose)
 
 
-async def close_logging(db: DatabaseManager) -> None:
+async def close_logging():
     """
-    Close the logging database connection.
+    Clean up logging resources (database pool + WebSocket connection).
 
-    Safely closes the DatabaseManager connection. Safe to call multiple
-    times - subsequent calls are no-ops if already closed.
-
-    Args:
-        db: DatabaseManager instance to close.
-
-    Example:
-        >>> db = await init_logging()
-        >>> # ... perform logging ...
-        >>> await close_logging(db)
+    Call this at the end of your workflow to properly close connections.
     """
-    await db.close()
-    logger.debug("Logging connection closed")
+    await close_ws_client()
+    await close_pool()
 
 
-@asynccontextmanager
-async def logging_session(db_path: str = "orchestrator.db"):
-    """
-    Async context manager for a complete logging session lifecycle.
+# =============================================================================
+# STEP LIFECYCLE LOGGING
+# =============================================================================
 
-    Handles DatabaseManager creation, connection, and teardown automatically.
-    The yielded DatabaseManager instance is connected and ready for use with
-    all logging functions in this module.
-
-    Args:
-        db_path: Path to SQLite database file (default: "orchestrator.db").
-
-    Yields:
-        Connected DatabaseManager instance.
-
-    Raises:
-        aiosqlite.Error: If database connection or schema initialization fails.
-        FileNotFoundError: If schema_orchestrator.sql is not found.
-
-    Example:
-        >>> async with logging_session("orchestrator.db") as db:
-        ...     await log_system_event(db, "startup", "System initialized")
-        ...     # Connection is automatically closed on exit
-    """
-    db = await init_logging(db_path)
-    try:
-        yield db
-    finally:
-        await close_logging(db)
-
-
-# ============================================================================
-# Step Tracking Functions
-# ============================================================================
 
 async def log_step_start(
-    db: DatabaseManager,
-    agent_id: str,
-    step_name: str,
-    metadata: Optional[Dict[str, Any]] = None
-) -> int:
+    adw_id: str,
+    adw_step: str,
+    agent_id: Optional[str] = None,
+    payload: Optional[dict[str, Any]] = None,
+    summary: Optional[str] = None,
+) -> str:
     """
-    Log the start of a named workflow step.
+    Log the start of an ADW step.
 
-    Creates an agent_log entry with log_type="step_start" to mark the beginning
-    of a discrete workflow phase. Pair with log_step_end() to track step duration
-    and outcome.
-
-    The step_name is included in both the message text and the metadata dict
-    for easy querying and filtering.
+    Writes to database AND broadcasts via WebSocket for real-time updates.
 
     Args:
-        db: Connected DatabaseManager instance.
-        agent_id: UUID of the agent executing the step (FK to agents.id).
-        step_name: Human-readable step identifier (e.g., "code_analysis",
-                   "test_execution", "review_phase").
-        metadata: Optional additional metadata dict. The step_name is
-                  automatically merged into this dict under the "step" key.
+        adw_id: The ADW ID (UUID as string)
+        adw_step: Step slug (e.g., "plan-feature", "build-feature")
+        agent_id: Optional agent ID driving this step
+        payload: Optional payload with step configuration
+        summary: Optional human-readable summary
 
     Returns:
-        Integer log ID of the created log entry.
-
-    Raises:
-        aiosqlite.Error: If database write fails.
-
-    Example:
-        >>> log_id = await log_step_start(db, agent_id, "code_analysis",
-        ...                                metadata={"files_queued": 42})
-        >>> print(f"Step started with log_id={log_id}")
+        The log entry ID (UUID as string)
     """
-    details = {"step": step_name}
-    if metadata:
-        details.update(metadata)
+    default_summary = f"Step '{adw_step}' started"
 
-    log_id = await db.create_agent_log(
+    log_id = await write_agent_log(
+        adw_id=adw_id,
+        adw_step=adw_step,
+        event_category="adw_step",
+        event_type="StepStart",
+        content=f"StepStart: {adw_step}",
         agent_id=agent_id,
-        log_level="INFO",
-        log_type="step_start",
-        message=f"Step started: {step_name}",
-        details=details
+        payload=payload,
+        summary=summary or default_summary,
     )
 
-    logger.debug(f"Step started: {step_name} (agent={agent_id}, log_id={log_id})")
+    # Broadcast step change via WebSocket (fails silently if unavailable)
+    await ws_broadcast_adw_step_change(
+        adw_id=adw_id,
+        step=adw_step,
+        event_type="StepStart",
+        payload=payload,
+    )
+
     return log_id
 
 
 async def log_step_end(
-    db: DatabaseManager,
-    agent_id: str,
-    step_name: str,
-    success: bool,
-    metadata: Optional[Dict[str, Any]] = None
-) -> int:
+    adw_id: str,
+    adw_step: str,
+    agent_id: Optional[str] = None,
+    payload: Optional[dict[str, Any]] = None,
+    summary: Optional[str] = None,
+    status: str = "success",
+    duration_ms: Optional[int] = None,
+) -> str:
     """
-    Log the end of a named workflow step.
+    Log the end of an ADW step.
 
-    Creates an agent_log entry with log_type="step_end" to mark the completion
-    of a discrete workflow phase. The success/failure status is recorded in both
-    the log level (INFO for success, WARNING for failure) and the metadata.
+    Writes to database AND broadcasts via WebSocket for real-time updates.
 
     Args:
-        db: Connected DatabaseManager instance.
-        agent_id: UUID of the agent that executed the step (FK to agents.id).
-        step_name: Human-readable step identifier matching the corresponding
-                   log_step_start() call.
-        success: True if the step completed successfully, False otherwise.
-        metadata: Optional additional metadata dict. The step_name and success
-                  status are automatically merged into this dict.
+        adw_id: The ADW ID (UUID as string)
+        adw_step: Step slug (e.g., "plan-feature", "build-feature")
+        agent_id: Optional agent ID that drove this step
+        payload: Optional payload with step results
+        summary: Optional human-readable summary
+        status: Step completion status ("success", "failed", "skipped")
+        duration_ms: Optional step duration in milliseconds
 
     Returns:
-        Integer log ID of the created log entry.
-
-    Raises:
-        aiosqlite.Error: If database write fails.
-
-    Example:
-        >>> log_id = await log_step_end(db, agent_id, "code_analysis",
-        ...                              success=True,
-        ...                              metadata={"files_analyzed": 42})
-        >>> print(f"Step ended with log_id={log_id}")
-
-        >>> # Failed step
-        >>> log_id = await log_step_end(db, agent_id, "test_execution",
-        ...                              success=False,
-        ...                              metadata={"error": "3 tests failed"})
+        The log entry ID (UUID as string)
     """
-    log_level = "INFO" if success else "WARNING"
-    status_label = "completed" if success else "failed"
+    default_summary = f"Step '{adw_step}' completed with status: {status}"
 
-    details = {"step": step_name, "success": success}
-    if metadata:
-        details.update(metadata)
+    # Build payload with duration and status
+    step_payload = payload.copy() if payload else {}
+    step_payload["status"] = status
+    if duration_ms is not None:
+        step_payload["duration_ms"] = duration_ms
 
-    log_id = await db.create_agent_log(
+    log_id = await write_agent_log(
+        adw_id=adw_id,
+        adw_step=adw_step,
+        event_category="adw_step",
+        event_type="StepEnd",
+        content=f"StepEnd: {adw_step} ({status})",
         agent_id=agent_id,
-        log_level=log_level,
-        log_type="step_end",
-        message=f"Step {status_label}: {step_name}",
-        details=details
+        payload=step_payload,
+        summary=summary or default_summary,
     )
 
-    logger.debug(
-        f"Step {status_label}: {step_name} (agent={agent_id}, log_id={log_id})"
+    # Broadcast step change via WebSocket (fails silently if unavailable)
+    await ws_broadcast_adw_step_change(
+        adw_id=adw_id,
+        step=adw_step,
+        event_type="StepEnd",
+        payload=step_payload,
     )
+
     return log_id
 
 
-# ============================================================================
-# Agent Event Logging
-# ============================================================================
+# =============================================================================
+# GENERIC EVENT LOGGING
+# =============================================================================
 
-async def log_agent_event(
-    db: DatabaseManager,
-    agent_id: str,
+
+async def log_adw_event(
+    adw_id: str,
+    adw_step: Optional[str],
+    event_category: str,
     event_type: str,
-    message: str,
-    metadata: Optional[Dict[str, Any]] = None
-) -> None:
+    content: str,
+    agent_id: Optional[str] = None,
+    payload: Optional[dict[str, Any]] = None,
+    summary: Optional[str] = None,
+) -> str:
     """
-    High-level agent event logging with graceful error handling.
+    Log a generic ADW event to agent_logs.
 
-    Delegates to DatabaseManager.log_agent_event() which wraps create_agent_log()
-    with try/except to ensure logging failures never crash orchestrator agents.
-    If the database write fails, the error is logged to stderr and None is returned.
-
-    Supported event types:
-        - agent_started: Agent has been initialized and is beginning work
-        - agent_completed: Agent has finished all work successfully
-        - agent_failed: Agent encountered an unrecoverable error
-        - prompt_sent: A prompt was dispatched to the LLM
-        - prompt_received: A response was received from the LLM
-
-    These event types align with the adw_websockets.py WebSocketEvent schema,
-    enabling seamless bridging between persisted logs and real-time broadcasts.
+    Writes to database AND broadcasts via WebSocket for real-time updates.
 
     Args:
-        db: Connected DatabaseManager instance.
-        agent_id: UUID of the agent generating the event (FK to agents.id).
-        event_type: One of: "agent_started", "agent_completed", "agent_failed",
-                    "prompt_sent", "prompt_received".
-        message: Human-readable event message describing what happened.
-        metadata: Optional dict with event-specific data (e.g., model name,
-                  token counts, error details).
+        adw_id: The ADW ID
+        adw_step: Optional step slug (None for workflow-level events)
+        event_category: Category ('hook', 'response', 'adw_step')
+        event_type: Event type (e.g., 'PreToolUse', 'text', 'StepStart')
+        content: Event content/description
+        agent_id: Optional agent ID
+        payload: Optional event payload
+        summary: Optional human-readable summary
 
     Returns:
-        None. This function never raises exceptions - errors are logged to stderr.
-
-    Example:
-        >>> await log_agent_event(db, agent_id, "agent_started",
-        ...                       "Scout agent started codebase exploration",
-        ...                       metadata={"model": "claude-sonnet-3.5"})
-
-        >>> await log_agent_event(db, agent_id, "agent_failed",
-        ...                       "Agent failed due to quota exhaustion",
-        ...                       metadata={"error": "quota_exceeded",
-        ...                                 "retries": 15})
+        The log entry ID
     """
-    await db.log_agent_event(
+    log_id = await write_agent_log(
+        adw_id=adw_id,
+        adw_step=adw_step,
+        event_category=event_category,
+        event_type=event_type,
+        content=content,
         agent_id=agent_id,
-        log_type=event_type,
-        message=message,
-        metadata=metadata
+        payload=payload,
+        summary=summary,
     )
 
-    logger.debug(
-        f"Agent event logged: {event_type} (agent={agent_id}, message={message!r})"
+    # Broadcast event via WebSocket (fails silently if unavailable)
+    await ws_broadcast_adw_event(
+        adw_id=adw_id,
+        event_data={
+            "id": log_id,
+            "adw_id": adw_id,
+            "adw_step": adw_step,
+            "event_category": event_category,
+            "event_type": event_type,
+            "content": content,
+            "agent_id": agent_id,
+            "payload": payload,
+            "summary": summary,
+        },
     )
 
+    return log_id
 
-# ============================================================================
-# System Event Logging
-# ============================================================================
 
 async def log_system_event(
-    db: DatabaseManager,
-    component: str,
+    adw_id: str,
+    adw_step: Optional[str],
+    level: str,
     message: str,
-    level: str = "INFO",
-    details: Optional[Dict[str, Any]] = None
-) -> int:
+    file_path: Optional[str] = None,
+    metadata: Optional[dict[str, Any]] = None,
+) -> str:
     """
-    Log a system-wide event to the system_logs table.
+    Log a system event to both system_logs AND agent_logs (for swimlane display).
 
-    Creates a system_log entry for infrastructure-level events that are not
-    tied to a specific agent. Useful for recording orchestrator lifecycle,
-    server startup/shutdown, configuration changes, and cross-cutting concerns.
+    Writes to both database tables AND broadcasts via WebSocket for real-time updates.
+    The agent_logs entry ensures system events appear as squares in the ADW swimlanes.
 
     Args:
-        db: Connected DatabaseManager instance.
-        component: Component identifier producing the log entry. Examples:
-                   "orchestrator", "database", "websocket", "api", "scheduler".
-        message: Human-readable log message describing the event.
-        level: Log level string. One of: "DEBUG", "INFO", "WARNING", "ERROR",
-               "CRITICAL" (default: "INFO").
-        details: Optional dict with event-specific metadata (serialized to
-                 JSON TEXT in the database).
+        adw_id: The ADW ID
+        adw_step: Optional step slug
+        level: Log level ('DEBUG', 'INFO', 'WARNING', 'ERROR')
+        message: Log message
+        file_path: Optional source file path
+        metadata: Optional additional metadata
 
     Returns:
-        Integer log ID of the created system_log entry.
-
-    Raises:
-        aiosqlite.Error: If database write fails.
-
-    Example:
-        >>> log_id = await log_system_event(db, "orchestrator",
-        ...                                  "All agents completed successfully",
-        ...                                  level="INFO",
-        ...                                  details={"total_agents": 5,
-        ...                                           "duration_ms": 45000})
-
-        >>> # Error-level system event
-        >>> log_id = await log_system_event(db, "database",
-        ...                                  "WAL checkpoint failed",
-        ...                                  level="ERROR",
-        ...                                  details={"error": "disk full"})
+        The log entry ID (from agent_logs)
     """
-    log_id = await db.create_system_log(
-        log_level=level,
-        component=component,
+    # Write to system_logs table ONLY (not agent_logs)
+    # The backend /adws/{adw_id}/events endpoint fetches from both tables
+    log_id = await write_system_log(
+        adw_id=adw_id,
+        adw_step=adw_step,
+        level=level,
         message=message,
-        details=details
+        file_path=file_path,
+        metadata=metadata,
     )
 
-    logger.debug(
-        f"System event logged: [{level}] {component} - {message!r} (log_id={log_id})"
+    # Broadcast system event via WebSocket (fails silently if unavailable)
+    await ws_broadcast_adw_event(
+        adw_id=adw_id,
+        event_data={
+            "id": log_id,
+            "adw_id": adw_id,
+            "adw_step": adw_step,
+            "event_category": "system",
+            "event_type": f"System{level.capitalize()}",
+            "content": message,
+            "summary": f"[{level}] {message[:100]}{'...' if len(message) > 100 else ''}",
+            "payload": {
+                "level": level,
+                "file_path": file_path,
+                **(metadata or {}),
+            },
+        },
     )
+
     return log_id
+
+
+# =============================================================================
+# ADW STATUS UPDATES
+# =============================================================================
+
+
+async def update_adw_status(
+    adw_id: str,
+    status: str,
+    current_step: Optional[str] = None,
+    completed_steps: Optional[int] = None,
+    error_message: Optional[str] = None,
+    error_step: Optional[str] = None,
+) -> bool:
+    """
+    Update the ADW status in ai_developer_workflows table.
+
+    Updates database AND broadcasts via WebSocket for real-time updates.
+
+    Args:
+        adw_id: The ADW ID
+        status: New status ('pending', 'in_progress', 'completed', 'failed', 'cancelled')
+        current_step: Current step slug
+        completed_steps: Number of completed steps
+        error_message: Error message if failed
+        error_step: Step where error occurred
+
+    Returns:
+        True if updated, False if not found
+    """
+    result = await db_update_adw_status(
+        adw_id=adw_id,
+        status=status,
+        current_step=current_step,
+        completed_steps=completed_steps,
+        error_message=error_message,
+        error_step=error_step,
+    )
+
+    # Broadcast status change via WebSocket (fails silently if unavailable)
+    await ws_broadcast_adw_status(
+        adw_id=adw_id,
+        status=status,
+        current_step=current_step,
+        completed_steps=completed_steps,
+        error_message=error_message,
+    )
+
+    return result

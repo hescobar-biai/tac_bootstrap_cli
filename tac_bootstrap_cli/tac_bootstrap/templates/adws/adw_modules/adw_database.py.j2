@@ -1,1287 +1,457 @@
 # /// script
-# dependencies = ["aiosqlite>=0.19.0"]
+# requires-python = ">=3.11"
+# dependencies = [
+#   "asyncpg>=0.29.0",
+#   "python-dotenv>=1.0.0",
+#   "websockets>=12.0",
+# ]
 # ///
 """
-SQLite Database Manager for Orchestrator Persistence (TAC-14 v2)
+ADW Database Module - Database operations for AI Developer Workflows.
 
-Zero-Configuration Philosophy
------------------------------
-This module implements a zero-configuration SQLite database manager for the
-TAC Bootstrap orchestrator system. No external database servers, no connection
-strings, no credentials - just a single .db file that auto-initializes on first use.
+Provides functions to read/write ADW-related tables:
+- ai_developer_workflows
+- agent_logs
+- system_logs
 
-Architecture
-------------
-- Async context manager for automatic connection lifecycle
-- Single connection per instance with WAL mode for concurrent reads
-- Explicit commit() after write operations for transaction control
-- Auto-schema initialization from schema_orchestrator.sql
-- Clean abstraction layer enabling future PostgreSQL migration
-
-SQLite Implementation Details
-----------------------------
-- UUIDs stored as TEXT: "550e8400-e29b-41d4-a716-446655440000"
-- Timestamps as TEXT: "2026-02-04T10:30:00.000000" (ISO 8601)
-- JSON metadata as TEXT: Serialized with json.dumps(), deserialized with json.loads()
-- Placeholders: Use ? (not $1, $2 like PostgreSQL)
-- Last insert ID: Use cursor.lastrowid (not RETURNING id)
-- WAL mode: Enabled for concurrent reads + single writer
-
-Usage Example
--------------
-```python
-import asyncio
-from adw_database import DatabaseManager
-
-async def main():
-    # Auto-initializes schema on first connect()
-    async with DatabaseManager("orchestrator.db") as db:
-        # Create orchestrator agent definition
-        agent_id = await db.create_orchestrator_agent(
-            name="scout-report-suggest",
-            description="Scouts codebase and suggests fixes",
-            agent_type="utility",
-            capabilities="codebase_exploration,issue_detection",
-            default_model="claude-sonnet-3.5"
-        )
-
-        # Create runtime agent instance
-        runtime_id = await db.create_agent(
-            orchestrator_agent_id=agent_id,
-            session_id="550e8400-e29b-41d4-a716-446655440000",
-            status="executing"
-        )
-
-        # Log agent activity
-        await db.create_agent_log(
-            agent_id=runtime_id,
-            log_level="INFO",
-            log_type="state_change",
-            message="Agent started execution",
-            details={"phase": "exploration"}
-        )
-
-        # Query agent state
-        agent = await db.get_agent(runtime_id)
-        print(f"Agent status: {agent['status']}")
-
-asyncio.run(main())
-```
-
-Agent Logging with Error Resilience
------------------------------------
-The log_agent_event() method provides graceful error handling - logging failures
-never crash orchestrator agents. Errors are logged to stderr instead.
-
-```python
-async def agent_workflow(db: DatabaseManager, agent_id: str):
-    # High-level logging - never raises exceptions
-    await db.log_agent_event(
-        agent_id=agent_id,
-        log_type="milestone",
-        message="Starting code analysis",
-        metadata={"files_queued": 42}
-    )
-
-    # ... perform work ...
-
-    # Query logs by type across all agents
-    all_errors = await db.get_logs_by_type("error", limit=50)
-    print(f"System has {len(all_errors)} error logs")
-
-    # Query logs for specific agent
-    agent_errors = await db.get_agent_logs_by_type(
-        agent_id=agent_id,
-        log_type="error",
-        limit=10
-    )
-
-    # Get recent activity across all agents
-    recent = await db.get_recent_logs(limit=100)
-
-    # Manual cleanup of old logs (not auto-executed)
-    deleted = await db.cleanup_old_logs(days=90)
-    print(f"Deleted {deleted} old logs")
-```
-
-Database Lifecycle
-------------------
-1. Instantiate: `db = DatabaseManager("orchestrator.db")`
-2. Connect: `await db.connect()` - Opens connection, enables WAL, initializes schema
-3. Operations: CRUD methods with explicit commit()
-4. Close: `await db.close()` - Safely closes connection
-5. Context Manager: Use `async with` for automatic lifecycle management
-
-Future PostgreSQL Upgrade Path (v0.9.0+)
----------------------------------------
-This DatabaseManager provides the same interface regardless of backend.
-To add PostgreSQL support:
-1. Create PostgresDatabaseManager implementing same methods
-2. Use factory pattern to select backend based on config
-3. Domain layer (repositories) remains unchanged
-4. Pydantic models already handle serialization for both backends
-
-Schema Reference
-----------------
-See: adws/schema/schema_orchestrator.sql
-Tables: orchestrator_agents, agents, prompts, agent_logs, system_logs
-Triggers: auto-update updated_at on orchestrator_agents
-Indexes: 6 strategic indexes for common queries
+Usage:
+    from adw_modules.adw_database import get_adw, write_agent_log, write_system_log
 """
 
-import aiosqlite
+from __future__ import annotations
+
 import json
-import logging
 import os
 import uuid
-from datetime import datetime
-from pathlib import Path
-from typing import Optional, List, Dict, Any
+from contextlib import asynccontextmanager
+from typing import Any, Optional
 
-# Configure logging
-logger = logging.getLogger(__name__)
+import asyncpg
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Import WebSocket broadcast functions (resilient - fails silently)
+from adw_modules.adw_websockets import (
+    broadcast_agent_created,
+    broadcast_agent_status_change,
+    broadcast_agent_updated,
+)
 
 
-class DatabaseManager:
+# =============================================================================
+# CONNECTION POOL
+# =============================================================================
+
+_pool: Optional[asyncpg.Pool] = None
+
+
+async def get_pool() -> asyncpg.Pool:
+    """Get or create the database connection pool."""
+    global _pool
+    if _pool is None:
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            raise RuntimeError("DATABASE_URL environment variable is not set")
+        _pool = await asyncpg.create_pool(database_url, min_size=1, max_size=5)
+    return _pool
+
+
+async def close_pool() -> None:
+    """Close the database connection pool."""
+    global _pool
+    if _pool is not None:
+        await _pool.close()
+        _pool = None
+
+
+@asynccontextmanager
+async def get_connection():
+    """Get a database connection from the pool."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        yield conn
+
+
+# =============================================================================
+# AI_DEVELOPER_WORKFLOWS TABLE
+# =============================================================================
+
+
+async def get_adw(adw_id: str) -> Optional[dict[str, Any]]:
     """
-    Async SQLite database manager for orchestrator persistence.
+    Fetch an ADW record by ID.
 
-    Provides zero-configuration database operations with automatic schema
-    initialization, WAL mode for concurrency, and explicit transaction control.
+    Args:
+        adw_id: UUID string of the ADW
 
-    Attributes:
-        db_path: Path to SQLite database file
-        conn: Active aiosqlite connection (None when not connected)
+    Returns:
+        Dict with ADW record or None if not found
     """
+    async with get_connection() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT id, orchestrator_agent_id, adw_name, workflow_type, description,
+                   status, current_step, total_steps, completed_steps,
+                   started_at, completed_at, duration_seconds,
+                   input_data, output_data, error_message, error_step, error_count,
+                   metadata, created_at, updated_at
+            FROM ai_developer_workflows
+            WHERE id = $1
+            """,
+            uuid.UUID(adw_id),
+        )
+        if row:
+            result = dict(row)
+            # Parse JSONB fields
+            if isinstance(result.get("input_data"), str):
+                result["input_data"] = json.loads(result["input_data"])
+            if isinstance(result.get("output_data"), str):
+                result["output_data"] = json.loads(result["output_data"])
+            if isinstance(result.get("metadata"), str):
+                result["metadata"] = json.loads(result["metadata"])
+            return result
+        return None
 
-    def __init__(self, db_path: str = "orchestrator.db"):
+
+async def update_adw_status(
+    adw_id: str,
+    status: str,
+    current_step: Optional[str] = None,
+    completed_steps: Optional[int] = None,
+    error_message: Optional[str] = None,
+    error_step: Optional[str] = None,
+) -> bool:
+    """
+    Update ADW status in ai_developer_workflows table.
+
+    Args:
+        adw_id: UUID string of the ADW
+        status: New status ('pending', 'in_progress', 'completed', 'failed', 'cancelled')
+        current_step: Current step slug
+        completed_steps: Number of completed steps
+        error_message: Error message if failed
+        error_step: Step where error occurred
+
+    Returns:
+        True if updated, False if not found
+    """
+    async with get_connection() as conn:
+        updates = ["status = $2", "updated_at = NOW()"]
+        params: list[Any] = [uuid.UUID(adw_id), status]
+        param_idx = 3
+
+        if current_step is not None:
+            updates.append(f"current_step = ${param_idx}")
+            params.append(current_step)
+            param_idx += 1
+
+        if completed_steps is not None:
+            updates.append(f"completed_steps = ${param_idx}")
+            params.append(completed_steps)
+            param_idx += 1
+
+        if error_message is not None:
+            updates.append(f"error_message = ${param_idx}")
+            params.append(error_message)
+            param_idx += 1
+
+        if error_step is not None:
+            updates.append(f"error_step = ${param_idx}")
+            params.append(error_step)
+            param_idx += 1
+
+        # Status-specific updates
+        if status == "in_progress":
+            updates.append("started_at = COALESCE(started_at, NOW())")
+        elif status in ("completed", "failed", "cancelled"):
+            updates.append("completed_at = NOW()")
+            updates.append("duration_seconds = EXTRACT(EPOCH FROM (NOW() - started_at))::integer")
+
+        query = f"""
+            UPDATE ai_developer_workflows
+            SET {', '.join(updates)}
+            WHERE id = $1
         """
-        Initialize database manager.
+        result = await conn.execute(query, *params)
+        return result == "UPDATE 1"
 
-        Args:
-            db_path: Path to SQLite database file (default: "orchestrator.db")
-        """
-        self.db_path = db_path
-        self.conn: Optional[aiosqlite.Connection] = None
-        logger.debug(f"DatabaseManager initialized with db_path={db_path}")
 
-    async def connect(self) -> None:
-        """
-        Open database connection and initialize schema.
+# =============================================================================
+# AGENTS TABLE
+# =============================================================================
 
-        - Opens SQLite connection
-        - Sets row_factory for dict-like access
-        - Enables WAL mode for concurrent reads
-        - Auto-initializes schema if tables don't exist
 
-        Raises:
-            aiosqlite.Error: On connection or schema initialization failure
-        """
-        try:
-            self.conn = await aiosqlite.connect(self.db_path)
-            self.conn.row_factory = aiosqlite.Row
+async def create_agent(
+    orchestrator_agent_id: str,
+    name: str,
+    model: str,
+    working_dir: Optional[str] = None,
+    adw_id: Optional[str] = None,
+    adw_step: Optional[str] = None,
+    agent_id: Optional[str] = None,
+) -> str:
+    """
+    Create an agent record in the agents table.
 
-            # Enable WAL mode for better concurrency
-            await self.conn.execute("PRAGMA journal_mode=WAL")
-            await self.conn.commit()
+    Args:
+        orchestrator_agent_id: Parent orchestrator agent UUID
+        name: Agent name (e.g., "plan-agent", "build-agent")
+        model: Model name (e.g., "claude-sonnet-4-5-20250929")
+        working_dir: Working directory for the agent
+        adw_id: Optional ADW ID this agent belongs to
+        adw_step: Optional ADW step this agent is executing
+        agent_id: Optional pre-generated UUID (if None, one is created)
 
-            logger.debug(f"Connected to database: {self.db_path}")
+    Returns:
+        Agent ID (UUID string)
+    """
+    final_agent_id = agent_id or str(uuid.uuid4())
 
-            # Initialize schema
-            await self._init_schema()
-
-        except aiosqlite.Error as e:
-            logger.error(f"Failed to connect to database {self.db_path}: {e}")
-            raise
-
-    async def close(self) -> None:
-        """
-        Close database connection safely.
-
-        Gracefully closes the connection if open. Safe to call multiple times.
-        """
-        if self.conn:
-            await self.conn.close()
-            self.conn = None
-            logger.debug(f"Closed database connection: {self.db_path}")
-
-    async def __aenter__(self):
-        """Async context manager entry - connect to database."""
-        await self.connect()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Async context manager exit - close database connection."""
-        await self.close()
-
-    async def _init_schema(self) -> None:
-        """
-        Initialize database schema from schema_orchestrator.sql.
-
-        Auto-executes schema DDL if tables don't exist. Uses CREATE TABLE IF NOT EXISTS
-        so safe to call multiple times (idempotent).
-
-        Raises:
-            FileNotFoundError: If schema_orchestrator.sql not found
-            aiosqlite.Error: If schema execution fails
-        """
-        # Find schema file relative to this module
-        schema_path = Path(__file__).parent.parent / "schema" / "schema_orchestrator.sql"
-
-        if not schema_path.exists():
-            error_msg = f"Schema file not found: {schema_path}"
-            logger.error(error_msg)
-            raise FileNotFoundError(error_msg)
-
-        try:
-            with open(schema_path, 'r') as f:
-                schema_sql = f.read()
-
-            await self.conn.executescript(schema_sql)
-            await self.conn.commit()
-
-            logger.debug("Database schema initialized successfully")
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to initialize schema from {schema_path}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    # =========================================================================
-    # CRUD Operations: orchestrator_agents table
-    # =========================================================================
-
-    async def create_orchestrator_agent(
-        self,
-        name: str,
-        description: Optional[str],
-        agent_type: str,
-        capabilities: Optional[str] = None,
-        default_model: Optional[str] = None
-    ) -> str:
-        """
-        Create a new orchestrator agent definition.
-
-        Args:
-            name: Unique agent name (e.g., "scout-report-suggest")
-            description: Human-readable description of capabilities
-            agent_type: One of: planner, builder, reviewer, tester, orchestrator, utility
-            capabilities: Comma-separated capabilities (optional)
-            default_model: Default LLM model to use (optional)
-
-        Returns:
-            agent_id: UUID of created agent
-
-        Raises:
-            aiosqlite.Error: On database operation failure
-        """
-        agent_id = str(uuid.uuid4())
-        now = datetime.utcnow().isoformat()
-
-        try:
-            await self.conn.execute(
-                """
-                INSERT INTO orchestrator_agents
-                (id, name, description, agent_type, capabilities, default_model, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (agent_id, name, description, agent_type, capabilities, default_model, now, now)
+    async with get_connection() as conn:
+        await conn.execute(
+            """
+            INSERT INTO agents (
+                id, orchestrator_agent_id, name, model, working_dir,
+                adw_id, adw_step, status, created_at, updated_at
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, 'idle', NOW(), NOW()
             )
-            await self.conn.commit()
+            """,
+            uuid.UUID(final_agent_id),
+            uuid.UUID(orchestrator_agent_id),
+            name,
+            model,
+            working_dir,
+            adw_id,
+            adw_step,
+        )
 
-            logger.debug(f"Created orchestrator_agent: {name} (id={agent_id})")
-            return agent_id
+    # Broadcast agent creation via WebSocket (fails silently if server unavailable)
+    await broadcast_agent_created({
+        "id": final_agent_id,
+        "orchestrator_agent_id": orchestrator_agent_id,
+        "name": name,
+        "model": model,
+        "status": "idle",
+        "working_dir": working_dir,
+        "adw_id": adw_id,
+        "adw_step": adw_step,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_cost": 0.0,
+    })
 
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to create orchestrator_agent '{name}': {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
+    return final_agent_id
 
-    async def get_orchestrator_agent(self, agent_id: str) -> Optional[Dict[str, Any]]:
+
+async def update_agent(
+    agent_id: str,
+    status: Optional[str] = None,
+    session_id: Optional[str] = None,
+    input_tokens: Optional[int] = None,
+    output_tokens: Optional[int] = None,
+    total_cost: Optional[float] = None,
+    old_status: Optional[str] = None,
+) -> bool:
+    """
+    Update an agent record.
+
+    Args:
+        agent_id: Agent UUID string
+        status: New status ('pending', 'running', 'completed', 'failed')
+        session_id: Claude SDK session ID
+        input_tokens: Input token count
+        output_tokens: Output token count
+        total_cost: Total cost in USD
+        old_status: Previous status (for broadcasting status change)
+
+    Returns:
+        True if updated, False if not found
+    """
+    async with get_connection() as conn:
+        updates = ["updated_at = NOW()"]
+        params: list[Any] = [uuid.UUID(agent_id)]
+        param_idx = 2
+
+        if status is not None:
+            updates.append(f"status = ${param_idx}")
+            params.append(status)
+            param_idx += 1
+
+        if session_id is not None:
+            updates.append(f"session_id = ${param_idx}")
+            params.append(session_id)
+            param_idx += 1
+
+        if input_tokens is not None:
+            updates.append(f"input_tokens = ${param_idx}")
+            params.append(input_tokens)
+            param_idx += 1
+
+        if output_tokens is not None:
+            updates.append(f"output_tokens = ${param_idx}")
+            params.append(output_tokens)
+            param_idx += 1
+
+        if total_cost is not None:
+            updates.append(f"total_cost = ${param_idx}")
+            params.append(total_cost)
+            param_idx += 1
+
+        query = f"""
+            UPDATE agents
+            SET {', '.join(updates)}
+            WHERE id = $1
         """
-        Retrieve orchestrator agent by ID.
+        result = await conn.execute(query, *params)
+        updated = result == "UPDATE 1"
 
-        Args:
-            agent_id: UUID of agent to retrieve
+    # Broadcast agent updates via WebSocket (fails silently if server unavailable)
+    if updated:
+        # Broadcast status change if status was updated
+        if status is not None and old_status is not None:
+            await broadcast_agent_status_change(agent_id, old_status, status)
 
-        Returns:
-            Agent data as dict, or None if not found
-        """
-        try:
-            async with self.conn.execute(
-                "SELECT * FROM orchestrator_agents WHERE id = ?",
-                (agent_id,)
-            ) as cursor:
-                row = await cursor.fetchone()
+        # Broadcast cost/token update if any cost fields were updated
+        if input_tokens is not None or output_tokens is not None or total_cost is not None:
+            await broadcast_agent_updated(agent_id, {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_cost": total_cost,
+                "session_id": session_id,
+            })
 
-                if row:
-                    result = dict(row)
-                    logger.debug(f"Retrieved orchestrator_agent: {agent_id}")
-                    return result
+    return updated
 
-                return None
 
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to get orchestrator_agent {agent_id}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
+# =============================================================================
+# AGENT_LOGS TABLE
+# =============================================================================
 
-    async def list_orchestrator_agents(self) -> List[Dict[str, Any]]:
-        """
-        List all orchestrator agent definitions.
 
-        Returns:
-            List of agent dicts ordered by creation date (newest first)
-        """
-        try:
-            async with self.conn.execute(
-                "SELECT * FROM orchestrator_agents ORDER BY created_at DESC"
-            ) as cursor:
-                rows = await cursor.fetchall()
-                results = [dict(row) for row in rows]
+async def write_agent_log(
+    adw_id: str,
+    adw_step: Optional[str],
+    event_category: str,
+    event_type: str,
+    content: str,
+    agent_id: Optional[str] = None,
+    payload: Optional[dict[str, Any]] = None,
+    summary: Optional[str] = None,
+) -> str:
+    """
+    Write an entry to agent_logs table.
 
-                logger.debug(f"Listed {len(results)} orchestrator_agents")
-                return results
+    Args:
+        adw_id: ADW ID (UUID string)
+        adw_step: Step slug (None for workflow-level events)
+        event_category: 'hook', 'response', or 'adw_step'
+        event_type: Event type (e.g., 'StepStart', 'StepEnd', 'PreToolUse')
+        content: Event content/description
+        agent_id: Optional agent ID (UUID string)
+        payload: Optional JSON payload
+        summary: Optional human-readable summary
 
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to list orchestrator_agents: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
+    Returns:
+        Log entry ID (UUID string)
+    """
+    log_id = str(uuid.uuid4())
 
-    async def update_orchestrator_agent(self, agent_id: str, **kwargs) -> bool:
-        """
-        Update orchestrator agent fields.
-
-        Args:
-            agent_id: UUID of agent to update
-            **kwargs: Fields to update (name, description, agent_type, capabilities, default_model)
-
-        Returns:
-            True if agent was updated, False if not found
-        """
-        if not kwargs:
-            return False
-
-        # Build dynamic UPDATE query
-        allowed_fields = {'name', 'description', 'agent_type', 'capabilities', 'default_model'}
-        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
-
-        if not updates:
-            return False
-
-        # Add updated_at timestamp
-        updates['updated_at'] = datetime.utcnow().isoformat()
-
-        set_clause = ", ".join(f"{k} = ?" for k in updates.keys())
-        values = list(updates.values()) + [agent_id]
-
-        try:
-            cursor = await self.conn.execute(
-                f"UPDATE orchestrator_agents SET {set_clause} WHERE id = ?",
-                values
+    async with get_connection() as conn:
+        await conn.execute(
+            """
+            INSERT INTO agent_logs (
+                id, agent_id, session_id, task_slug, adw_id, adw_step,
+                entry_index, event_category, event_type, content, payload, summary, timestamp
+            ) VALUES (
+                $1, $2, NULL, NULL, $3, $4,
+                0, $5, $6, $7, $8, $9, NOW()
             )
-            await self.conn.commit()
-
-            updated = cursor.rowcount > 0
-            if updated:
-                logger.debug(f"Updated orchestrator_agent {agent_id}: {list(updates.keys())}")
-
-            return updated
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to update orchestrator_agent {agent_id}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def delete_orchestrator_agent(self, agent_id: str) -> bool:
-        """
-        Delete orchestrator agent definition.
-
-        Args:
-            agent_id: UUID of agent to delete
-
-        Returns:
-            True if agent was deleted, False if not found
-        """
-        try:
-            cursor = await self.conn.execute(
-                "DELETE FROM orchestrator_agents WHERE id = ?",
-                (agent_id,)
-            )
-            await self.conn.commit()
-
-            deleted = cursor.rowcount > 0
-            if deleted:
-                logger.debug(f"Deleted orchestrator_agent: {agent_id}")
-
-            return deleted
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to delete orchestrator_agent {agent_id}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    # =========================================================================
-    # CRUD Operations: agents table
-    # =========================================================================
-
-    async def create_agent(
-        self,
-        orchestrator_agent_id: str,
-        session_id: str,
-        parent_agent_id: Optional[str] = None,
-        status: str = "initializing",
-        context: Optional[str] = None,
-        config: Optional[str] = None
-    ) -> str:
-        """
-        Create a runtime agent instance.
-
-        Args:
-            orchestrator_agent_id: FK to orchestrator_agents.id
-            session_id: UUID identifying execution session
-            parent_agent_id: FK to parent agent if this is a sub-agent (optional)
-            status: One of: initializing, planning, executing, reviewing, completed, failed, cancelled
-            context: JSON context data (optional)
-            config: JSON config data (optional)
-
-        Returns:
-            agent_id: UUID of created agent instance
-        """
-        agent_id = str(uuid.uuid4())
-        now = datetime.utcnow().isoformat()
-
-        try:
-            await self.conn.execute(
-                """
-                INSERT INTO agents
-                (id, orchestrator_agent_id, session_id, parent_agent_id, status,
-                 context, config, started_at, cost_usd)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.0)
-                """,
-                (agent_id, orchestrator_agent_id, session_id, parent_agent_id,
-                 status, context, config, now)
-            )
-            await self.conn.commit()
-
-            logger.debug(f"Created agent instance: {agent_id} (session={session_id})")
-            return agent_id
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to create agent: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def get_agent(self, agent_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve runtime agent by ID.
-
-        Args:
-            agent_id: UUID of agent instance
-
-        Returns:
-            Agent data as dict, or None if not found
-        """
-        try:
-            async with self.conn.execute(
-                "SELECT * FROM agents WHERE id = ?",
-                (agent_id,)
-            ) as cursor:
-                row = await cursor.fetchone()
-
-                if row:
-                    result = dict(row)
-                    logger.debug(f"Retrieved agent: {agent_id}")
-                    return result
-
-                return None
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to get agent {agent_id}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def list_agents(self, session_id: Optional[str] = None) -> List[Dict[str, Any]]:
-        """
-        List runtime agent instances.
-
-        Args:
-            session_id: Optional filter by session UUID
-
-        Returns:
-            List of agent dicts ordered by start time (newest first)
-        """
-        try:
-            if session_id:
-                query = "SELECT * FROM agents WHERE session_id = ? ORDER BY started_at DESC"
-                params = (session_id,)
-            else:
-                query = "SELECT * FROM agents ORDER BY started_at DESC"
-                params = ()
-
-            async with self.conn.execute(query, params) as cursor:
-                rows = await cursor.fetchall()
-                results = [dict(row) for row in rows]
-
-                logger.debug(f"Listed {len(results)} agents (session_id={session_id})")
-                return results
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to list agents: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def update_agent(self, agent_id: str, **kwargs) -> bool:
-        """
-        Update runtime agent fields.
-
-        Args:
-            agent_id: UUID of agent to update
-            **kwargs: Fields to update (status, completed_at, cost_usd, error_message, context, config)
-
-        Returns:
-            True if agent was updated, False if not found
-        """
-        if not kwargs:
-            return False
-
-        allowed_fields = {'status', 'completed_at', 'cost_usd', 'error_message', 'context', 'config'}
-        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
-
-        if not updates:
-            return False
-
-        set_clause = ", ".join(f"{k} = ?" for k in updates.keys())
-        values = list(updates.values()) + [agent_id]
-
-        try:
-            cursor = await self.conn.execute(
-                f"UPDATE agents SET {set_clause} WHERE id = ?",
-                values
-            )
-            await self.conn.commit()
-
-            updated = cursor.rowcount > 0
-            if updated:
-                logger.debug(f"Updated agent {agent_id}: {list(updates.keys())}")
-
-            return updated
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to update agent {agent_id}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def delete_agent(self, agent_id: str) -> bool:
-        """
-        Delete runtime agent instance.
-
-        Args:
-            agent_id: UUID of agent to delete
-
-        Returns:
-            True if agent was deleted, False if not found
-        """
-        try:
-            cursor = await self.conn.execute(
-                "DELETE FROM agents WHERE id = ?",
-                (agent_id,)
-            )
-            await self.conn.commit()
-
-            deleted = cursor.rowcount > 0
-            if deleted:
-                logger.debug(f"Deleted agent: {agent_id}")
-
-            return deleted
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to delete agent {agent_id}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    # =========================================================================
-    # CRUD Operations: prompts table
-    # =========================================================================
-
-    async def create_prompt(
-        self,
-        agent_id: str,
-        prompt_type: str,
-        prompt_text: str,
-        prompt_name: Optional[str] = None,
-        status: str = "pending",
-        model_used: Optional[str] = None
-    ) -> str:
-        """
-        Create a prompt execution record.
-
-        Args:
-            agent_id: FK to agents.id
-            prompt_type: One of: adw, command, followup, correction, tool_call
-            prompt_text: The prompt content
-            prompt_name: Optional human-readable name
-            status: One of: pending, streaming, completed, failed, cancelled
-            model_used: LLM model identifier (optional)
-
-        Returns:
-            prompt_id: UUID of created prompt
-        """
-        prompt_id = str(uuid.uuid4())
-        now = datetime.utcnow().isoformat()
-
-        try:
-            await self.conn.execute(
-                """
-                INSERT INTO prompts
-                (id, agent_id, prompt_type, prompt_name, prompt_text, status,
-                 model_used, tokens_input, tokens_output, cost_usd, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0.0, ?)
-                """,
-                (prompt_id, agent_id, prompt_type, prompt_name, prompt_text,
-                 status, model_used, now)
-            )
-            await self.conn.commit()
-
-            logger.debug(f"Created prompt: {prompt_id} (agent={agent_id}, type={prompt_type})")
-            return prompt_id
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to create prompt: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def get_prompt(self, prompt_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve prompt by ID.
-
-        Args:
-            prompt_id: UUID of prompt
-
-        Returns:
-            Prompt data as dict, or None if not found
-        """
-        try:
-            async with self.conn.execute(
-                "SELECT * FROM prompts WHERE id = ?",
-                (prompt_id,)
-            ) as cursor:
-                row = await cursor.fetchone()
-
-                if row:
-                    result = dict(row)
-                    logger.debug(f"Retrieved prompt: {prompt_id}")
-                    return result
-
-                return None
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to get prompt {prompt_id}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def list_prompts(self, agent_id: str) -> List[Dict[str, Any]]:
-        """
-        List prompts for a specific agent.
-
-        Args:
-            agent_id: UUID of agent to filter by
-
-        Returns:
-            List of prompt dicts ordered by creation time (oldest first)
-        """
-        try:
-            async with self.conn.execute(
-                "SELECT * FROM prompts WHERE agent_id = ? ORDER BY created_at ASC",
-                (agent_id,)
-            ) as cursor:
-                rows = await cursor.fetchall()
-                results = [dict(row) for row in rows]
-
-                logger.debug(f"Listed {len(results)} prompts for agent {agent_id}")
-                return results
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to list prompts for agent {agent_id}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def update_prompt(self, prompt_id: str, **kwargs) -> bool:
-        """
-        Update prompt fields (typically response data).
-
-        Args:
-            prompt_id: UUID of prompt to update
-            **kwargs: Fields to update (response_text, status, tokens_input, tokens_output,
-                     cost_usd, latency_ms, completed_at, error_message)
-
-        Returns:
-            True if prompt was updated, False if not found
-        """
-        if not kwargs:
-            return False
-
-        allowed_fields = {
-            'response_text', 'status', 'tokens_input', 'tokens_output',
-            'cost_usd', 'latency_ms', 'completed_at', 'error_message'
-        }
-        updates = {k: v for k, v in kwargs.items() if k in allowed_fields}
-
-        if not updates:
-            return False
-
-        set_clause = ", ".join(f"{k} = ?" for k in updates.keys())
-        values = list(updates.values()) + [prompt_id]
-
-        try:
-            cursor = await self.conn.execute(
-                f"UPDATE prompts SET {set_clause} WHERE id = ?",
-                values
-            )
-            await self.conn.commit()
-
-            updated = cursor.rowcount > 0
-            if updated:
-                logger.debug(f"Updated prompt {prompt_id}: {list(updates.keys())}")
-
-            return updated
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to update prompt {prompt_id}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def delete_prompt(self, prompt_id: str) -> bool:
-        """
-        Delete prompt record.
-
-        Args:
-            prompt_id: UUID of prompt to delete
-
-        Returns:
-            True if prompt was deleted, False if not found
-        """
-        try:
-            cursor = await self.conn.execute(
-                "DELETE FROM prompts WHERE id = ?",
-                (prompt_id,)
-            )
-            await self.conn.commit()
-
-            deleted = cursor.rowcount > 0
-            if deleted:
-                logger.debug(f"Deleted prompt: {prompt_id}")
-
-            return deleted
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to delete prompt {prompt_id}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    # =========================================================================
-    # CRUD Operations: agent_logs table (append-only)
-    # =========================================================================
-
-    async def create_agent_log(
-        self,
-        agent_id: str,
-        log_level: str,
-        log_type: str,
-        message: str,
-        details: Optional[Dict[str, Any]] = None
-    ) -> int:
-        """
-        Create an agent log entry (append-only).
-
-        Args:
-            agent_id: FK to agents.id
-            log_level: One of: DEBUG, INFO, WARNING, ERROR, CRITICAL
-            log_type: One of: state_change, milestone, error, performance, tool_call, cost_update
-            message: Log message text
-            details: Optional JSON metadata (serialized to TEXT)
-
-        Returns:
-            log_id: Integer ID of created log entry
-        """
-        now = datetime.utcnow().isoformat()
-        details_json = json.dumps(details) if details else None
-
-        try:
-            cursor = await self.conn.execute(
-                """
-                INSERT INTO agent_logs
-                (agent_id, log_level, log_type, message, details, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (agent_id, log_level, log_type, message, details_json, now)
-            )
-            await self.conn.commit()
-
-            log_id = cursor.lastrowid
-            logger.debug(f"Created agent_log: id={log_id} (agent={agent_id}, level={log_level})")
-            return log_id
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to create agent_log: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def get_agent_logs(
-        self,
-        agent_id: str,
-        log_level: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        """
-        Retrieve agent logs with optional level filter.
-
-        Args:
-            agent_id: UUID of agent to filter by
-            log_level: Optional minimum log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-
-        Returns:
-            List of log dicts ordered by creation time (oldest first)
-        """
-        try:
-            if log_level:
-                query = """
-                    SELECT * FROM agent_logs
-                    WHERE agent_id = ? AND log_level = ?
-                    ORDER BY created_at ASC
-                """
-                params = (agent_id, log_level)
-            else:
-                query = "SELECT * FROM agent_logs WHERE agent_id = ? ORDER BY created_at ASC"
-                params = (agent_id,)
-
-            async with self.conn.execute(query, params) as cursor:
-                rows = await cursor.fetchall()
-                results = []
-
-                for row in rows:
-                    log_dict = dict(row)
-                    # Deserialize JSON details
-                    if log_dict.get('details'):
-                        try:
-                            log_dict['details'] = json.loads(log_dict['details'])
-                        except json.JSONDecodeError:
-                            logger.warning(f"Failed to parse details JSON for log {log_dict['id']}")
-                    results.append(log_dict)
-
-                logger.debug(f"Retrieved {len(results)} agent_logs for agent {agent_id}")
-                return results
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to get agent_logs for {agent_id}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def list_recent_agent_logs(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """
-        List recent agent logs across all agents.
-
-        Args:
-            limit: Maximum number of logs to return (default: 100)
-
-        Returns:
-            List of log dicts ordered by creation time (newest first)
-        """
-        try:
-            async with self.conn.execute(
-                "SELECT * FROM agent_logs ORDER BY created_at DESC LIMIT ?",
-                (limit,)
-            ) as cursor:
-                rows = await cursor.fetchall()
-                results = []
-
-                for row in rows:
-                    log_dict = dict(row)
-                    # Deserialize JSON details
-                    if log_dict.get('details'):
-                        try:
-                            log_dict['details'] = json.loads(log_dict['details'])
-                        except json.JSONDecodeError:
-                            logger.warning(f"Failed to parse details JSON for log {log_dict['id']}")
-                    results.append(log_dict)
-
-                logger.debug(f"Listed {len(results)} recent agent_logs")
-                return results
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to list recent agent_logs: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def log_agent_event(
-        self,
-        agent_id: str,
-        log_type: str,
-        message: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        log_level: str = "INFO"
-    ) -> Optional[int]:
-        """
-        High-level convenience method for logging agent events with graceful error handling.
-
-        This method wraps create_agent_log() with try/except to ensure logging failures
-        never crash orchestrator agents. If database write fails, logs to stderr and
-        returns None.
-
-        Args:
-            agent_id: Foreign key to agents.id
-            log_type: One of: 'state_change', 'milestone', 'error', 'performance',
-                      'tool_call', 'cost_update'
-            message: Log message text
-            metadata: Optional JSON metadata dict (serialized to TEXT)
-            log_level: One of: 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
-                      (default: 'INFO')
-
-        Returns:
-            Integer log ID on success, None on error (never raises exceptions)
-
-        Example:
-            >>> await db.log_agent_event(
-            ...     agent_id="550e8400-e29b-41d4-a716-446655440000",
-            ...     log_type="milestone",
-            ...     message="Completed code analysis",
-            ...     metadata={"files_analyzed": 42, "duration_ms": 1250}
-            ... )
-            123  # Returns log ID
-        """
-        import sys
-
-        try:
-            log_id = await self.create_agent_log(
-                agent_id=agent_id,
-                log_level=log_level,
-                log_type=log_type,
-                message=message,
-                details=metadata
-            )
-            return log_id
-        except aiosqlite.Error as e:
-            # Graceful degradation: log to stderr, never crash agent
-            warning_msg = (
-                f"WARNING: Database logging failed for agent {agent_id}: {e}\n"
-                f"         Message: {message}\n"
-            )
-            sys.stderr.write(warning_msg)
-            return None
-        except Exception as e:
-            # Catch-all for unexpected errors
-            warning_msg = (
-                f"WARNING: Unexpected error during agent logging: {e}\n"
-                f"         Agent: {agent_id}, Message: {message}\n"
-            )
-            sys.stderr.write(warning_msg)
-            return None
-
-    async def get_agent_logs_by_type(
-        self,
-        agent_id: str,
-        log_type: str,
-        limit: int = 100
-    ) -> List[Dict[str, Any]]:
-        """
-        Query agent logs filtered by agent_id and log_type with limit.
-
-        Args:
-            agent_id: UUID of agent to filter by
-            log_type: Log type filter ('state_change', 'milestone', 'error', etc.)
-            limit: Maximum number of logs to return (default: 100)
-
-        Returns:
-            List of log dicts ordered by creation time (newest first)
-
-        Example:
-            >>> error_logs = await db.get_agent_logs_by_type(
-            ...     agent_id="550e8400-e29b-41d4-a716-446655440000",
-            ...     log_type="error",
-            ...     limit=50
-            ... )
-            >>> print(f"Found {len(error_logs)} error logs")
-        """
-        try:
-            async with self.conn.execute(
-                """
-                SELECT * FROM agent_logs
-                WHERE agent_id = ? AND log_type = ?
-                ORDER BY created_at DESC
-                LIMIT ?
-                """,
-                (agent_id, log_type, limit)
-            ) as cursor:
-                rows = await cursor.fetchall()
-                results = []
-
-                for row in rows:
-                    log_dict = dict(row)
-                    # Deserialize JSON details
-                    if log_dict.get('details'):
-                        try:
-                            log_dict['details'] = json.loads(log_dict['details'])
-                        except json.JSONDecodeError:
-                            logger.warning(f"Failed to parse details JSON for log {log_dict['id']}")
-                    results.append(log_dict)
-
-                logger.debug(f"Retrieved {len(results)} logs for agent {agent_id}, type={log_type}")
-                return results
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to get agent_logs by type for {agent_id}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def get_logs_by_type(
-        self,
-        log_type: str,
-        limit: int = 100
-    ) -> List[Dict[str, Any]]:
-        """
-        Query logs by type across all agents.
-
-        Useful for finding all errors, milestones, or performance logs across
-        the entire orchestrator system.
-
-        Args:
-            log_type: Log type filter ('state_change', 'milestone', 'error',
-                      'performance', 'tool_call', 'cost_update')
-            limit: Maximum number of logs to return (default: 100)
-
-        Returns:
-            List of log dicts ordered by creation time (newest first)
-
-        Example:
-            >>> all_errors = await db.get_logs_by_type("error", limit=200)
-            >>> print(f"Found {len(all_errors)} errors across all agents")
-        """
-        try:
-            async with self.conn.execute(
-                """
-                SELECT * FROM agent_logs
-                WHERE log_type = ?
-                ORDER BY created_at DESC
-                LIMIT ?
-                """,
-                (log_type, limit)
-            ) as cursor:
-                rows = await cursor.fetchall()
-                results = []
-
-                for row in rows:
-                    log_dict = dict(row)
-                    # Deserialize JSON details
-                    if log_dict.get('details'):
-                        try:
-                            log_dict['details'] = json.loads(log_dict['details'])
-                        except json.JSONDecodeError:
-                            logger.warning(f"Failed to parse details JSON for log {log_dict['id']}")
-                    results.append(log_dict)
-
-                logger.debug(f"Retrieved {len(results)} logs for type={log_type}")
-                return results
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to get logs by type {log_type}: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def get_recent_logs(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """
-        Query recent logs across all agents (alias for list_recent_agent_logs).
-
-        Useful for dashboard views showing recent activity across the entire
-        orchestrator system.
-
-        Args:
-            limit: Maximum number of logs to return (default: 100)
-
-        Returns:
-            List of log dicts ordered by creation time (newest first)
-
-        Example:
-            >>> recent = await db.get_recent_logs(limit=50)
-            >>> for log in recent[:10]:
-            ...     print(f"{log['created_at']}: {log['message']}")
-        """
-        # Delegate to existing method
-        return await self.list_recent_agent_logs(limit=limit)
-
-    async def cleanup_old_logs(self, days: int = 30) -> int:
-        """
-        Delete agent logs older than specified number of days.
-
-        IMPORTANT: This is a utility method for MANUAL cleanup only.
-        It is NOT auto-executed. Users must call it explicitly or schedule
-        via cron/systemd timer.
-
-        Args:
-            days: Delete logs older than this many days (default: 30)
-
-        Returns:
-            Number of logs deleted
-
-        Example:
-            >>> # Delete logs older than 90 days
-            >>> deleted = await db.cleanup_old_logs(days=90)
-            >>> print(f"Deleted {deleted} old logs")
-
-            >>> # Schedule via cron (example):
-            >>> # 0 2 * * * cd /path/to/project && python -c "import asyncio; from adw_database import DatabaseManager; asyncio.run(DatabaseManager('orchestrator.db').cleanup_old_logs(30))"
-        """
-        from datetime import timedelta
-
-        try:
-            # Calculate cutoff timestamp
-            cutoff = datetime.utcnow() - timedelta(days=days)
-            cutoff_iso = cutoff.isoformat()
-
-            cursor = await self.conn.execute(
-                "DELETE FROM agent_logs WHERE created_at < ?",
-                (cutoff_iso,)
-            )
-            await self.conn.commit()
-
-            deleted_count = cursor.rowcount
-            logger.info(f"Deleted {deleted_count} agent_logs older than {days} days")
-            return deleted_count
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to cleanup old agent_logs: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    # =========================================================================
-    # CRUD Operations: system_logs table (append-only)
-    # =========================================================================
-
-    async def create_system_log(
-        self,
-        log_level: str,
-        component: str,
-        message: str,
-        details: Optional[Dict[str, Any]] = None
-    ) -> int:
-        """
-        Create a system log entry (append-only).
-
-        Args:
-            log_level: One of: DEBUG, INFO, WARNING, ERROR, CRITICAL
-            component: Component identifier (e.g., "orchestrator", "database", "api")
-            message: Log message text
-            details: Optional JSON metadata (serialized to TEXT)
-
-        Returns:
-            log_id: Integer ID of created log entry
-        """
-        now = datetime.utcnow().isoformat()
-        details_json = json.dumps(details) if details else None
-
-        try:
-            cursor = await self.conn.execute(
-                """
-                INSERT INTO system_logs
-                (log_level, component, message, details, created_at)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (log_level, component, message, details_json, now)
-            )
-            await self.conn.commit()
-
-            log_id = cursor.lastrowid
-            logger.debug(f"Created system_log: id={log_id} (component={component}, level={log_level})")
-            return log_id
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to create system_log: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def get_system_logs(
-        self,
-        log_level: Optional[str] = None,
-        component: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        """
-        Retrieve system logs with optional filters.
-
-        Args:
-            log_level: Optional log level filter (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-            component: Optional component filter
-
-        Returns:
-            List of log dicts ordered by creation time (oldest first)
-        """
-        try:
-            # Build query with optional filters
-            conditions = []
-            params = []
-
-            if log_level:
-                conditions.append("log_level = ?")
-                params.append(log_level)
-
-            if component:
-                conditions.append("component = ?")
-                params.append(component)
-
-            where_clause = " AND ".join(conditions) if conditions else "1=1"
-            query = f"SELECT * FROM system_logs WHERE {where_clause} ORDER BY created_at ASC"
-
-            async with self.conn.execute(query, params) as cursor:
-                rows = await cursor.fetchall()
-                results = []
-
-                for row in rows:
-                    log_dict = dict(row)
-                    # Deserialize JSON details
-                    if log_dict.get('details'):
-                        try:
-                            log_dict['details'] = json.loads(log_dict['details'])
-                        except json.JSONDecodeError:
-                            logger.warning(f"Failed to parse details JSON for log {log_dict['id']}")
-                    results.append(log_dict)
-
-                logger.debug(f"Retrieved {len(results)} system_logs")
-                return results
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to get system_logs: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
-
-    async def list_recent_system_logs(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """
-        List recent system logs.
-
-        Args:
-            limit: Maximum number of logs to return (default: 100)
-
-        Returns:
-            List of log dicts ordered by creation time (newest first)
-        """
-        try:
-            async with self.conn.execute(
-                "SELECT * FROM system_logs ORDER BY created_at DESC LIMIT ?",
-                (limit,)
-            ) as cursor:
-                rows = await cursor.fetchall()
-                results = []
-
-                for row in rows:
-                    log_dict = dict(row)
-                    # Deserialize JSON details
-                    if log_dict.get('details'):
-                        try:
-                            log_dict['details'] = json.loads(log_dict['details'])
-                        except json.JSONDecodeError:
-                            logger.warning(f"Failed to parse details JSON for log {log_dict['id']}")
-                    results.append(log_dict)
-
-                logger.debug(f"Listed {len(results)} recent system_logs")
-                return results
-
-        except aiosqlite.Error as e:
-            error_msg = f"Failed to list recent system_logs: {e}"
-            logger.error(error_msg)
-            raise aiosqlite.Error(error_msg) from e
+            """,
+            uuid.UUID(log_id),
+            uuid.UUID(agent_id) if agent_id else None,
+            adw_id,
+            adw_step,
+            event_category,
+            event_type,
+            content,
+            json.dumps(payload or {}),
+            summary,
+        )
+
+    return log_id
+
+
+async def update_log_summary(log_id: str, summary: str) -> bool:
+    """
+    Update the summary field of an agent_logs entry.
+
+    Used by async summarization to update logs after AI summary is generated.
+
+    Args:
+        log_id: Log entry ID (UUID string)
+        summary: AI-generated summary text
+
+    Returns:
+        True if updated, False if not found
+    """
+    async with get_connection() as conn:
+        result = await conn.execute(
+            """
+            UPDATE agent_logs
+            SET summary = $2
+            WHERE id = $1
+            """,
+            uuid.UUID(log_id),
+            summary,
+        )
+        return result == "UPDATE 1"
+
+
+# =============================================================================
+# SYSTEM_LOGS TABLE
+# =============================================================================
+
+
+async def write_system_log(
+    adw_id: str,
+    adw_step: Optional[str],
+    level: str,
+    message: str,
+    file_path: Optional[str] = None,
+    metadata: Optional[dict[str, Any]] = None,
+) -> str:
+    """
+    Write an entry to system_logs table.
+
+    Args:
+        adw_id: ADW ID (UUID string)
+        adw_step: Step slug (None for workflow-level events)
+        level: Log level ('DEBUG', 'INFO', 'WARNING', 'ERROR')
+        message: Log message
+        file_path: Optional source file path
+        metadata: Optional JSON metadata
+
+    Returns:
+        Log entry ID (UUID string)
+    """
+    log_id = str(uuid.uuid4())
+
+    async with get_connection() as conn:
+        await conn.execute(
+            """
+            INSERT INTO system_logs (
+                id, file_path, adw_id, adw_step, level, message, metadata, timestamp
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+            """,
+            uuid.UUID(log_id),
+            file_path,
+            adw_id,
+            adw_step,
+            level,
+            message,
+            json.dumps(metadata or {}),
+        )
+
+    return log_id

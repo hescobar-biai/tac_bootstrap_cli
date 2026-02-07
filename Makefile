@@ -87,14 +87,13 @@ ORCH_FRONTEND := apps/orchestrator_3_stream/frontend
 ORCH_DB_SCRIPT := scripts/setup_database.sh
 
 orch-install:  ## Install orchestrator backend dependencies
-	pip install fastapi uvicorn[standard] aiosqlite pydantic
+	pip install fastapi uvicorn[standard] asyncpg psycopg2-binary pydantic
 
 orch-install-frontend:  ## Install orchestrator frontend dependencies
 	cd $(ORCH_FRONTEND) && npm install
 
-orch-setup-db:  ## Initialize SQLite database with schema
-	@chmod +x $(ORCH_DB_SCRIPT)
-	./scripts/setup_database.sh
+orch-setup-db:  ## Run PostgreSQL migrations
+	uv run apps/orchestrator_db/run_migrations.py
 
 orch-gen-env:  ## Generate frontend .env from config.yml
 	@python3 -c "\

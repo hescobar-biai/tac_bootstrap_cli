@@ -1,519 +1,404 @@
 """
-SQLite Database Models for Orchestrator Persistence (TAC-14 v2)
+Pydantic Database Models for Multi-Agent Orchestration
 
-This module defines 7 pure Pydantic models that map to the SQLite database schema
-for orchestrator state persistence. These are domain models with NO database operations.
+These models map directly to the PostgreSQL tables defined in schema_orchestrator.sql.
+They provide:
+- Automatic UUID handling (converts asyncpg UUID objects to Python UUID)
+- Type safety and validation
+- Automatic JSON serialization/deserialization
+- Field validation and defaults
 
-SQLite Type Mappings:
---------------------
-Python Type      → SQLite Type → Storage Example
--------------------------------------------------
-str (UUID)       → TEXT         → "550e8400-e29b-41d4-a716-446655440000"
-datetime         → TEXT         → "2026-02-04T10:30:00.000000" (ISO 8601)
-dict (JSON)      → TEXT         → '{"key": "value"}'
-int              → INTEGER      → 42
-float            → REAL         → 3.14159
+Usage:
+    from models import Agent, OrchestratorAgent, Prompt, AgentLog, SystemLog
 
-Architecture:
--------------
-- Pure data models (Domain layer in DDD)
-- Validation via Pydantic field_validator
-- Serialization via model_config json_encoders
-- NO database operations (see adw_database.py for CRUD - Task 8)
-
-Usage Example:
---------------
-```python
-from datetime import datetime
-import uuid
-from orch_database_models import OrchestratorAgent, Agent, Prompt
-
-# Create orchestrator agent
-agent = OrchestratorAgent(
-    id=str(uuid.uuid4()),
-    name="scout-report-suggest",
-    description="Scouts codebase and suggests fixes",
-    status="active"
-)
-
-# Serialize to JSON with ISO 8601 timestamps
-json_data = agent.model_dump_json()
-# {"id": "550e8400-...", "created_at": "2026-02-04T10:30:00.000000", ...}
-
-# Create runtime agent instance
-runtime_agent = Agent(
-    id=str(uuid.uuid4()),
-    orchestrator_agent_id=agent.id,
-    session_id=str(uuid.uuid4()),
-    status="running"
-)
-```
-
-Schema Reference:
------------------
-See: ai_docs/doc/plan_tasks_Tac_14_v2_SQLITE.md
-Tables: orchestrator_agents, agents, prompts, agent_logs, system_logs, orchestrator_chat, ai_developer_workflows
+    # Automatically handles UUID conversion from database
+    agent = Agent(**row_dict)
+    print(agent.id)  # Works with both UUID objects and strings
 """
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
-from typing import Optional
 from datetime import datetime
-import uuid as uuid_lib
-import json
+from decimal import Decimal
+from typing import Dict, Any, Optional, Literal
+from uuid import UUID
+from pydantic import BaseModel, Field, field_validator
+
+
+# ═══════════════════════════════════════════════════════════
+# ORCHESTRATOR_AGENT MODEL
+# ═══════════════════════════════════════════════════════════
 
 
 class OrchestratorAgent(BaseModel):
     """
-    Orchestrator Agent Definition Model.
+    Singleton orchestrator agent that manages other agents.
 
-    Maps to: orchestrator_agents table (SQLite)
-    Purpose: Defines available agent types in the orchestrator (e.g., scout, planner, build-agent)
-
-    Fields:
-        id: UUID stored as TEXT in SQLite
-        name: Unique agent type name (e.g., "scout-report-suggest")
-        description: Human-readable description of agent capabilities
-        status: Lifecycle status - 'active', 'inactive', or 'archived'
-        created_at: ISO 8601 timestamp of creation
-        updated_at: ISO 8601 timestamp of last update
+    Maps to: orchestrator_agents table
     """
+    id: UUID
+    session_id: Optional[str] = None
+    system_prompt: Optional[str] = None
+    status: Optional[Literal['idle', 'executing', 'waiting', 'blocked', 'complete']] = None
+    working_dir: Optional[str] = None
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_cost: float = 0.0
+    archived: bool = False
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+    updated_at: datetime
 
-    id: str = Field(..., description="UUID as string (stored as TEXT in SQLite)")
-    name: str = Field(..., description="Unique agent type name")
-    description: Optional[str] = Field(None, description="Agent capabilities description")
-    status: str = Field(default="active", description="Status: active, inactive, archived")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
-    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
-
-    @field_validator('id')
+    @field_validator('id', mode='before')
     @classmethod
-    def validate_uuid(cls, v: str) -> str:
-        """Validate UUID format (stored as TEXT in SQLite)."""
-        try:
-            uuid_lib.UUID(v)
+    def convert_uuid(cls, v):
+        """Convert asyncpg UUID to Python UUID"""
+        if isinstance(v, UUID):
             return v
-        except ValueError:
-            raise ValueError(f"Invalid UUID format: {v}")
+        return UUID(str(v))
 
-    @field_validator('status')
+    @field_validator('total_cost', mode='before')
     @classmethod
-    def validate_status(cls, v: str) -> str:
-        """Validate status is one of allowed values."""
-        allowed = {'active', 'inactive', 'archived'}
-        if v not in allowed:
-            raise ValueError(f"Status must be one of {allowed}, got: {v}")
+    def convert_decimal(cls, v):
+        """Convert Decimal to float"""
+        if isinstance(v, Decimal):
+            return float(v)
         return v
 
-    model_config = ConfigDict(
-        json_encoders={
-            datetime: lambda v: v.isoformat(),
+    @field_validator('metadata', mode='before')
+    @classmethod
+    def parse_metadata(cls, v):
+        """Parse JSON string metadata to dict"""
+        if isinstance(v, str):
+            import json
+            return json.loads(v)
+        return v
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            UUID: str,
+            datetime: lambda v: v.isoformat()
         }
-    )
+
+
+# ═══════════════════════════════════════════════════════════
+# AGENT MODEL
+# ═══════════════════════════════════════════════════════════
 
 
 class Agent(BaseModel):
     """
-    Runtime Agent Instance Model.
+    Agent registry and configuration for managed agents.
 
-    Maps to: agents table (SQLite)
-    Purpose: Tracks runtime instances of orchestrator agents during execution
-
-    Fields:
-        id: UUID stored as TEXT
-        orchestrator_agent_id: Foreign key to orchestrator_agents.id
-        session_id: UUID identifying the execution session
-        status: Execution status - 'pending', 'running', 'completed', 'failed'
-        created_at: ISO 8601 timestamp when instance was created
-        started_at: ISO 8601 timestamp when execution started (optional)
-        completed_at: ISO 8601 timestamp when execution finished (optional)
+    Maps to: agents table
     """
+    id: UUID
+    orchestrator_agent_id: UUID
+    name: str
+    model: str
+    system_prompt: Optional[str] = None
+    working_dir: Optional[str] = None
+    git_worktree: Optional[str] = None
+    status: Optional[Literal['idle', 'executing', 'waiting', 'blocked', 'complete']] = None
+    session_id: Optional[str] = None
+    adw_id: Optional[str] = None
+    adw_step: Optional[str] = None
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_cost: float = 0.0
+    archived: bool = False
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+    updated_at: datetime
 
-    id: str = Field(..., description="UUID as string")
-    orchestrator_agent_id: str = Field(..., description="Foreign key to orchestrator_agents.id")
-    session_id: str = Field(..., description="Session UUID")
-    status: str = Field(default="pending", description="Status: pending, running, completed, failed")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Instance creation time")
-    started_at: Optional[datetime] = Field(None, description="Execution start time")
-    completed_at: Optional[datetime] = Field(None, description="Execution completion time")
-
-    @field_validator('id', 'orchestrator_agent_id', 'session_id')
+    @field_validator('id', 'orchestrator_agent_id', mode='before')
     @classmethod
-    def validate_uuid(cls, v: str) -> str:
-        """Validate UUID format for all UUID fields."""
-        try:
-            uuid_lib.UUID(v)
+    def convert_uuid(cls, v):
+        """Convert asyncpg UUID to Python UUID"""
+        if isinstance(v, UUID):
             return v
-        except ValueError:
-            raise ValueError(f"Invalid UUID format: {v}")
+        return UUID(str(v))
 
-    @field_validator('status')
+    @field_validator('total_cost', mode='before')
     @classmethod
-    def validate_status(cls, v: str) -> str:
-        """Validate status is one of allowed values."""
-        allowed = {'pending', 'running', 'completed', 'failed'}
-        if v not in allowed:
-            raise ValueError(f"Status must be one of {allowed}, got: {v}")
+    def convert_decimal(cls, v):
+        """Convert Decimal to float"""
+        if isinstance(v, Decimal):
+            return float(v)
         return v
 
-    model_config = ConfigDict(
-        json_encoders={
-            datetime: lambda v: v.isoformat(),
+    @field_validator('metadata', mode='before')
+    @classmethod
+    def parse_metadata(cls, v):
+        """Parse JSON string metadata to dict"""
+        if isinstance(v, str):
+            import json
+            return json.loads(v)
+        return v
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            UUID: str,
+            datetime: lambda v: v.isoformat()
         }
-    )
+
+
+# ═══════════════════════════════════════════════════════════
+# PROMPT MODEL
+# ═══════════════════════════════════════════════════════════
 
 
 class Prompt(BaseModel):
     """
-    ADW Execution Record Model.
+    Prompts sent to agents from engineers or orchestrator.
 
-    Maps to: prompts table (SQLite)
-    Purpose: Records each prompt/response interaction in ADW workflows
-
-    Fields:
-        id: UUID stored as TEXT
-        agent_id: Foreign key to agents.id
-        content: The prompt content sent to the agent
-        response: The agent's response (optional until completed)
-        status: Execution status - 'pending', 'running', 'completed', 'failed'
-        tokens_input: Number of input tokens consumed
-        tokens_output: Number of output tokens generated
-        cost_usd: Cost in USD for this prompt execution
-        created_at: ISO 8601 timestamp when prompt was created
-        completed_at: ISO 8601 timestamp when execution finished (optional)
+    Maps to: prompts table
     """
+    id: UUID
+    agent_id: Optional[UUID] = None
+    task_slug: Optional[str] = None
+    author: Literal['engineer', 'orchestrator_agent']
+    prompt_text: str
+    summary: Optional[str] = None
+    timestamp: datetime
+    session_id: Optional[str] = None
 
-    id: str = Field(..., description="UUID as string")
-    agent_id: str = Field(..., description="Foreign key to agents.id")
-    content: str = Field(..., description="Prompt content")
-    response: Optional[str] = Field(None, description="Agent response")
-    status: str = Field(default="pending", description="Status: pending, running, completed, failed")
-    tokens_input: int = Field(default=0, description="Input token count", ge=0)
-    tokens_output: int = Field(default=0, description="Output token count", ge=0)
-    cost_usd: float = Field(default=0.0, description="Cost in USD", ge=0.0)
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Prompt creation time")
-    completed_at: Optional[datetime] = Field(None, description="Execution completion time")
-
-    @field_validator('id', 'agent_id')
+    @field_validator('id', 'agent_id', mode='before')
     @classmethod
-    def validate_uuid(cls, v: str) -> str:
-        """Validate UUID format for UUID fields."""
-        try:
-            uuid_lib.UUID(v)
+    def convert_uuid(cls, v):
+        """Convert asyncpg UUID to Python UUID"""
+        if v is None:
+            return None
+        if isinstance(v, UUID):
             return v
-        except ValueError:
-            raise ValueError(f"Invalid UUID format: {v}")
+        return UUID(str(v))
 
-    @field_validator('status')
-    @classmethod
-    def validate_status(cls, v: str) -> str:
-        """Validate status is one of allowed values."""
-        allowed = {'pending', 'running', 'completed', 'failed'}
-        if v not in allowed:
-            raise ValueError(f"Status must be one of {allowed}, got: {v}")
-        return v
-
-    model_config = ConfigDict(
-        json_encoders={
-            datetime: lambda v: v.isoformat(),
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            UUID: str,
+            datetime: lambda v: v.isoformat()
         }
-    )
+
+
+# ═══════════════════════════════════════════════════════════
+# AGENT_LOG MODEL
+# ═══════════════════════════════════════════════════════════
 
 
 class AgentLog(BaseModel):
     """
-    Agent Event Logging Model.
+    Unified event log for hooks and agent responses during task execution.
 
-    Maps to: agent_logs table (SQLite)
-    Purpose: Records detailed events during agent execution for debugging and monitoring
-
-    Fields:
-        id: UUID stored as TEXT
-        agent_id: Foreign key to agents.id
-        log_type: Event type - 'step_start', 'step_end', 'event', 'error'
-        message: Log message text
-        metadata: Optional JSON metadata (stored as TEXT in SQLite)
-        created_at: ISO 8601 timestamp of log entry
+    Maps to: agent_logs table
     """
+    id: UUID
+    agent_id: UUID
+    session_id: Optional[str] = None
+    task_slug: Optional[str] = None
+    adw_id: Optional[str] = None
+    adw_step: Optional[str] = None
+    entry_index: Optional[int] = None
+    event_category: Literal['hook', 'response', 'adw_step']
+    event_type: str
+    content: Optional[str] = None
+    payload: Dict[str, Any] = Field(default_factory=dict)
+    summary: Optional[str] = None
+    timestamp: datetime
 
-    id: str = Field(..., description="UUID as string")
-    agent_id: str = Field(..., description="Foreign key to agents.id")
-    log_type: str = Field(..., description="Log type: step_start, step_end, event, error")
-    message: str = Field(..., description="Log message")
-    metadata: Optional[dict] = Field(None, description="JSON metadata (stored as TEXT)")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Log timestamp")
-
-    @field_validator('id', 'agent_id')
+    @field_validator('id', 'agent_id', mode='before')
     @classmethod
-    def validate_uuid(cls, v: str) -> str:
-        """Validate UUID format for UUID fields."""
-        try:
-            uuid_lib.UUID(v)
+    def convert_uuid(cls, v):
+        """Convert asyncpg UUID to Python UUID"""
+        if isinstance(v, UUID):
             return v
-        except ValueError:
-            raise ValueError(f"Invalid UUID format: {v}")
+        return UUID(str(v))
 
-    @field_validator('log_type')
+    @field_validator('payload', mode='before')
     @classmethod
-    def validate_log_type(cls, v: str) -> str:
-        """Validate log_type is one of allowed values."""
-        allowed = {'step_start', 'step_end', 'event', 'error'}
-        if v not in allowed:
-            raise ValueError(f"Log type must be one of {allowed}, got: {v}")
+    def parse_payload(cls, v):
+        """Parse JSON string payload to dict"""
+        if isinstance(v, str):
+            import json
+            return json.loads(v)
         return v
 
-    @field_validator('metadata')
-    @classmethod
-    def validate_metadata_json(cls, v: Optional[dict]) -> Optional[dict]:
-        """Validate metadata is JSON-serializable (will be stored as TEXT in SQLite)."""
-        if v is None:
-            return v
-        try:
-            json.dumps(v)
-            return v
-        except (TypeError, ValueError) as e:
-            raise ValueError(f"Metadata must be JSON-serializable: {e}")
-
-    model_config = ConfigDict(
-        json_encoders={
-            datetime: lambda v: v.isoformat(),
-            dict: lambda v: json.dumps(v) if v else None,
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            UUID: str,
+            datetime: lambda v: v.isoformat()
         }
-    )
+
+
+# ═══════════════════════════════════════════════════════════
+# SYSTEM_LOG MODEL
+# ═══════════════════════════════════════════════════════════
 
 
 class SystemLog(BaseModel):
     """
-    System-Wide Logging Model.
+    Application-level system logs (global application events only).
 
-    Maps to: system_logs table (SQLite)
-    Purpose: Records system-level events across all orchestrator operations
+    For agent-related logs, use agent_logs table instead.
 
-    Fields:
-        id: UUID stored as TEXT
-        log_level: Log severity - 'debug', 'info', 'warning', 'error', 'critical'
-        message: Log message text
-        source: Optional source identifier (e.g., 'orchestrator', 'database')
-        metadata: Optional JSON metadata (stored as TEXT in SQLite)
-        created_at: ISO 8601 timestamp of log entry
+    Maps to: system_logs table
     """
+    id: UUID
+    file_path: Optional[str] = None
+    adw_id: Optional[str] = None
+    adw_step: Optional[str] = None
+    level: Literal['DEBUG', 'INFO', 'WARNING', 'ERROR']
+    message: str
+    summary: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    timestamp: datetime
 
-    id: str = Field(..., description="UUID as string")
-    log_level: str = Field(..., description="Log level: debug, info, warning, error, critical")
-    message: str = Field(..., description="Log message")
-    source: Optional[str] = Field(None, description="Log source identifier")
-    metadata: Optional[dict] = Field(None, description="JSON metadata (stored as TEXT)")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Log timestamp")
-
-    @field_validator('id')
+    @field_validator('id', mode='before')
     @classmethod
-    def validate_uuid(cls, v: str) -> str:
-        """Validate UUID format."""
-        try:
-            uuid_lib.UUID(v)
+    def convert_uuid(cls, v):
+        """Convert asyncpg UUID to Python UUID"""
+        if v is None:
+            return None
+        if isinstance(v, UUID):
             return v
-        except ValueError:
-            raise ValueError(f"Invalid UUID format: {v}")
+        return UUID(str(v))
 
-    @field_validator('log_level')
+    @field_validator('metadata', mode='before')
     @classmethod
-    def validate_log_level(cls, v: str) -> str:
-        """Validate log_level is one of allowed values."""
-        allowed = {'debug', 'info', 'warning', 'error', 'critical'}
-        if v not in allowed:
-            raise ValueError(f"Log level must be one of {allowed}, got: {v}")
+    def parse_metadata(cls, v):
+        """Parse JSON string metadata to dict"""
+        if isinstance(v, str):
+            import json
+            return json.loads(v)
         return v
 
-    @field_validator('metadata')
-    @classmethod
-    def validate_metadata_json(cls, v: Optional[dict]) -> Optional[dict]:
-        """Validate metadata is JSON-serializable (will be stored as TEXT in SQLite)."""
-        if v is None:
-            return v
-        try:
-            json.dumps(v)
-            return v
-        except (TypeError, ValueError) as e:
-            raise ValueError(f"Metadata must be JSON-serializable: {e}")
-
-    model_config = ConfigDict(
-        json_encoders={
-            datetime: lambda v: v.isoformat(),
-            dict: lambda v: json.dumps(v) if v else None,
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            UUID: str,
+            datetime: lambda v: v.isoformat()
         }
-    )
+
+
+# ═══════════════════════════════════════════════════════════
+# ORCHESTRATOR_CHAT MODEL
+# ═══════════════════════════════════════════════════════════
 
 
 class OrchestratorChat(BaseModel):
     """
-    Orchestrator Chat Message Model.
+    Append-only conversation log capturing 3-way communication: user ↔ orchestrator ↔ agents.
 
-    Maps to: orchestrator_chat table (SQLite)
-    Purpose: Tracks 3-way conversation: user <-> orchestrator <-> agents
-
-    Fields:
-        id: UUID stored as TEXT
-        orchestrator_agent_id: Foreign key to orchestrator_agents.id
-        sender_type: Who sent - 'user', 'orchestrator', 'agent'
-        receiver_type: Who receives - 'user', 'orchestrator', 'agent'
-        message: Message text content
-        summary: AI-generated summary (optional)
-        agent_id: Foreign key to agents.id (required when sender/receiver is 'agent')
-        metadata: JSON metadata (stored as TEXT)
-        created_at: ISO 8601 timestamp
-        updated_at: ISO 8601 timestamp
+    Maps to: orchestrator_chat table
     """
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+    orchestrator_agent_id: UUID
+    sender_type: Literal['user', 'orchestrator', 'agent']
+    receiver_type: Literal['user', 'orchestrator', 'agent']
+    message: str
+    summary: Optional[str] = None
+    agent_id: Optional[UUID] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    id: str = Field(..., description="UUID as string")
-    orchestrator_agent_id: str = Field(..., description="Foreign key to orchestrator_agents.id")
-    sender_type: str = Field(..., description="Sender: user, orchestrator, agent")
-    receiver_type: str = Field(..., description="Receiver: user, orchestrator, agent")
-    message: str = Field(..., description="Message text content")
-    summary: Optional[str] = Field(None, description="AI-generated summary")
-    agent_id: Optional[str] = Field(None, description="Foreign key to agents.id (for agent messages)")
-    metadata: Optional[dict] = Field(default_factory=dict, description="JSON metadata")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
-    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
-
-    @field_validator('id', 'orchestrator_agent_id')
+    @field_validator('id', 'orchestrator_agent_id', 'agent_id', mode='before')
     @classmethod
-    def validate_uuid(cls, v: str) -> str:
-        try:
-            uuid_lib.UUID(v)
-            return v
-        except ValueError:
-            raise ValueError(f"Invalid UUID format: {v}")
-
-    @field_validator('agent_id')
-    @classmethod
-    def validate_optional_uuid(cls, v: Optional[str]) -> Optional[str]:
+    def convert_uuid(cls, v):
+        """Convert asyncpg UUID to Python UUID"""
         if v is None:
+            return None
+        if isinstance(v, UUID):
             return v
-        try:
-            uuid_lib.UUID(v)
-            return v
-        except ValueError:
-            raise ValueError(f"Invalid UUID format: {v}")
+        return UUID(str(v))
 
-    @field_validator('sender_type', 'receiver_type')
+    @field_validator('metadata', mode='before')
     @classmethod
-    def validate_participant_type(cls, v: str) -> str:
-        allowed = {'user', 'orchestrator', 'agent'}
-        if v not in allowed:
-            raise ValueError(f"Must be one of {allowed}, got: {v}")
+    def parse_metadata(cls, v):
+        """Parse JSON string metadata to dict"""
+        if isinstance(v, str):
+            import json
+            return json.loads(v)
         return v
 
-    @field_validator('metadata')
-    @classmethod
-    def validate_metadata_json(cls, v: Optional[dict]) -> Optional[dict]:
-        if v is None:
-            return v
-        try:
-            json.dumps(v)
-            return v
-        except (TypeError, ValueError) as e:
-            raise ValueError(f"Metadata must be JSON-serializable: {e}")
-
-    model_config = ConfigDict(
-        json_encoders={
-            datetime: lambda v: v.isoformat(),
-            dict: lambda v: json.dumps(v) if v else None,
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            UUID: str,
+            datetime: lambda v: v.isoformat()
         }
-    )
 
 
-class AIDevWorkflow(BaseModel):
+# ═══════════════════════════════════════════════════════════
+# AI_DEVELOPER_WORKFLOW MODEL
+# ═══════════════════════════════════════════════════════════
+
+
+class AiDeveloperWorkflow(BaseModel):
     """
-    AI Developer Workflow Tracking Model.
+    Tracks AI Developer Workflow executions in the system.
 
-    Maps to: ai_developer_workflows table (SQLite)
-    Purpose: Tracks ADW executions for metrics and monitoring
-
-    Fields:
-        id: UUID stored as TEXT (serves as adw_id)
-        orchestrator_agent_id: Foreign key to orchestrator_agents.id (optional)
-        adw_name: Unique name of the ADW (e.g., "feature-auth")
-        workflow_type: Type of workflow (e.g., "sdlc", "patch", "ship")
-        description: Detailed description
-        status: pending, in_progress, completed, failed, cancelled
-        current_step: Current step slug
-        total_steps: Total number of steps
-        completed_steps: Number of completed steps
-        started_at: When workflow started
-        completed_at: When workflow completed
-        duration_seconds: Total duration
-        input_data: Initial input (JSON)
-        output_data: Final output (JSON)
-        error_message: Error message if failed
-        error_step: Step where error occurred
-        error_count: Number of errors
-        metadata: Additional metadata (JSON)
-        created_at: Creation timestamp
-        updated_at: Last update timestamp
+    Maps to: ai_developer_workflows table
     """
+    id: UUID
+    orchestrator_agent_id: Optional[UUID] = None
+    adw_name: str
+    workflow_type: str
+    description: Optional[str] = None
+    status: Literal['pending', 'in_progress', 'completed', 'failed', 'cancelled'] = 'pending'
+    current_step: Optional[str] = None
+    total_steps: int = 0
+    completed_steps: int = 0
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    duration_seconds: Optional[int] = None
+    input_data: Dict[str, Any] = Field(default_factory=dict)
+    output_data: Dict[str, Any] = Field(default_factory=dict)
+    error_message: Optional[str] = None
+    error_step: Optional[str] = None
+    error_count: int = 0
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+    updated_at: datetime
 
-    id: str = Field(..., description="UUID as string (adw_id)")
-    orchestrator_agent_id: Optional[str] = Field(None, description="Foreign key to orchestrator_agents.id")
-    adw_name: str = Field(..., description="ADW name (e.g., 'feature-auth')")
-    workflow_type: str = Field(..., description="Workflow type: sdlc, patch, ship, etc.")
-    description: Optional[str] = Field(None, description="Detailed description")
-    status: str = Field(default="pending", description="Status: pending, in_progress, completed, failed, cancelled")
-    current_step: Optional[str] = Field(None, description="Current step slug")
-    total_steps: int = Field(default=0, description="Total steps", ge=0)
-    completed_steps: int = Field(default=0, description="Completed steps", ge=0)
-    started_at: Optional[datetime] = Field(None, description="Start time")
-    completed_at: Optional[datetime] = Field(None, description="Completion time")
-    duration_seconds: Optional[int] = Field(None, description="Duration in seconds", ge=0)
-    input_data: Optional[dict] = Field(default_factory=dict, description="Input parameters (JSON)")
-    output_data: Optional[dict] = Field(default_factory=dict, description="Output artifacts (JSON)")
-    error_message: Optional[str] = Field(None, description="Error message")
-    error_step: Optional[str] = Field(None, description="Step where error occurred")
-    error_count: int = Field(default=0, description="Error count", ge=0)
-    metadata: Optional[dict] = Field(default_factory=dict, description="Additional metadata (JSON)")
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
-    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
-
-    @field_validator('id')
+    @field_validator('id', 'orchestrator_agent_id', mode='before')
     @classmethod
-    def validate_uuid(cls, v: str) -> str:
-        try:
-            uuid_lib.UUID(v)
-            return v
-        except ValueError:
-            raise ValueError(f"Invalid UUID format: {v}")
-
-    @field_validator('orchestrator_agent_id')
-    @classmethod
-    def validate_optional_uuid(cls, v: Optional[str]) -> Optional[str]:
+    def convert_uuid(cls, v):
+        """Convert asyncpg UUID to Python UUID"""
         if v is None:
+            return None
+        if isinstance(v, UUID):
             return v
-        try:
-            uuid_lib.UUID(v)
-            return v
-        except ValueError:
-            raise ValueError(f"Invalid UUID format: {v}")
+        return UUID(str(v))
 
-    @field_validator('status')
+    @field_validator('input_data', 'output_data', 'metadata', mode='before')
     @classmethod
-    def validate_status(cls, v: str) -> str:
-        allowed = {'pending', 'in_progress', 'completed', 'failed', 'cancelled'}
-        if v not in allowed:
-            raise ValueError(f"Status must be one of {allowed}, got: {v}")
+    def parse_jsonb(cls, v):
+        """Parse JSON string to dict"""
+        if isinstance(v, str):
+            import json
+            return json.loads(v)
         return v
 
-    @field_validator('input_data', 'output_data', 'metadata')
-    @classmethod
-    def validate_json_fields(cls, v: Optional[dict]) -> Optional[dict]:
-        if v is None:
-            return v
-        try:
-            json.dumps(v)
-            return v
-        except (TypeError, ValueError) as e:
-            raise ValueError(f"Must be JSON-serializable: {e}")
-
-    model_config = ConfigDict(
-        json_encoders={
-            datetime: lambda v: v.isoformat(),
-            dict: lambda v: json.dumps(v) if v else None,
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            UUID: str,
+            datetime: lambda v: v.isoformat()
         }
-    )
+
+
+# ═══════════════════════════════════════════════════════════
+# EXPORT PUBLIC API
+# ═══════════════════════════════════════════════════════════
+
+__all__ = [
+    "OrchestratorAgent",
+    "Agent",
+    "Prompt",
+    "AgentLog",
+    "SystemLog",
+    "OrchestratorChat",
+    "AiDeveloperWorkflow",
+]
