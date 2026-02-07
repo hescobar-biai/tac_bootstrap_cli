@@ -424,7 +424,10 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
 
 ### Previous Completion History
 ```yaml
-[]
+- completion_type: none
+  order: 1
+  user_input_on_enter: /plan Agregar la palabra "sammy" al final del archivo README.md
+    del proyecto /Users/hernandoescobar/Documents/Celes/tac_bootstrap/README.md
 
 ```
 
