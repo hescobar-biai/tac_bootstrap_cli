@@ -146,6 +146,8 @@ class ScaffoldService:
             (".claude/commands/experts/cli", "CLI expert: TAC Bootstrap CLI"),
             (".claude/commands/experts/adw", "ADW expert: AI Developer Workflows"),
             (".claude/commands/experts/commands", "Commands expert: .claude/commands structure"),
+            (".claude/commands/experts/database", "Database expert: schema and operations"),
+            (".claude/commands/experts/websocket", "WebSocket expert: real-time communication"),
             (".claude/agents", "Agent definitions"),
             (".claude/output-styles", "Output style presets"),
             (".claude/status_lines", "Claude Code status line definitions"),
@@ -401,6 +403,13 @@ class ScaffoldService:
             "orch_plan_w_scouts_build_review",
             "orch_scout_and_build",
             "orch_one_shot_agent",
+            # Additional utility commands
+            "fix",
+            "ping",
+            "prime_nile",
+            "prime_specific_docs",
+            "question-w-mermaid-diagrams",
+            "start_nile",
         ]
 
         for cmd in commands:
@@ -518,6 +527,17 @@ class ScaffoldService:
             ("concise-tts.md", "TTS-optimized concise output"),
             ("verbose-bullet-points.md", "Verbose bullet-point format"),
             ("verbose-yaml-structured.md", "Verbose YAML-structured output"),
+            ("bullet-points.md", "Bullet-point output format"),
+            ("genui.md", "GenUI output format"),
+            ("html-structured.md", "HTML-structured output format"),
+            ("markdown-focused.md", "Markdown-focused output format"),
+            ("observable-tools-diffs-tts.md", "Observable tools diffs with TTS"),
+            ("observable-tools-diffs.md", "Observable tools diffs output"),
+            ("table-based.md", "Table-based output format"),
+            ("tts-summary-base.md", "TTS summary base format"),
+            ("tts-summary.md", "TTS summary output format"),
+            ("ultra-concise.md", "Ultra-concise output format"),
+            ("yaml-structured.md", "YAML-structured output format"),
         ]
         for style, reason in output_styles:
             plan.add_file(
@@ -615,6 +635,29 @@ class ScaffoldService:
             ("experts/commands/self-improve.md", "Commands expert 7-phase self-improve workflow"),
         ])
 
+        # --- Database Expert: schema, models, and operations ---
+        expert_commands.extend([
+            ("experts/database/question.md", "Database expert question prompt"),
+            ("experts/database/self-improve.md", "Database expert self-improve workflow"),
+        ])
+
+        # --- WebSocket Expert: real-time communication ---
+        expert_commands.extend([
+            ("experts/websocket/question.md", "WebSocket expert question prompt"),
+            ("experts/websocket/self-improve.md", "WebSocket expert self-improve workflow"),
+            ("experts/websocket/plan.md", "WebSocket expert planning command"),
+            (
+                "experts/websocket/plan_build_improve.md",
+                "WebSocket expert plan-build-improve workflow",
+            ),
+        ])
+
+        # --- ADW Expert extended commands ---
+        expert_commands.extend([
+            ("experts/adw/plan.md", "ADW expert planning command"),
+            ("experts/adw/plan_build_improve.md", "ADW expert plan-build-improve workflow"),
+        ])
+
         # Register all expert command .md files
         for cmd, reason in expert_commands:
             plan.add_file(
@@ -629,6 +672,8 @@ class ScaffoldService:
             ("cli", "CLI expert expertise seed file"),
             ("adw", "ADW expert expertise seed file"),
             ("commands", "Commands expert expertise seed file"),
+            ("database", "Database expert expertise seed file"),
+            ("websocket", "WebSocket expert expertise seed file"),
         ]
         for domain, reason in expertise_files:
             plan.add_file(
@@ -696,6 +741,7 @@ class ScaffoldService:
             ("adw_logging.py", "Structured database logging for workflows (TAC-14)"),
             ("adw_websockets.py", "WebSocket server for real-time event broadcasting (TAC-14)"),
             ("adw_db_bridge.py", "Sync SQLite bridge for workflow tracking (TAC-14)"),
+            ("adw_summarizer.py", "Event summarization module (TAC-14)"),
         ]
 
         for module, reason in modules:
@@ -725,6 +771,7 @@ class ScaffoldService:
             ("adw_plan_build_test_review_iso.py", "Plan + Build + Test + Review workflow"),
             ("adw_plan_build_review_iso.py", "Plan + Build + Review workflow"),
             ("adw_plan_build_document_iso.py", "Plan + Build + Document workflow"),
+            ("adw_database.py", "Database operations workflow"),
         ]
 
         for workflow, reason in workflows:
@@ -776,6 +823,20 @@ class ScaffoldService:
             action=action,
             template="adws/adw_triggers/trigger_plan_parallel.py.j2",
             reason="Parallel execution of tasks from plan files",
+            executable=True,
+        )
+        plan.add_file(
+            f"{adws_dir}/adw_triggers/adw_manual_trigger.py",
+            action=action,
+            template="adws/adw_triggers/adw_manual_trigger.py.j2",
+            reason="Manual workflow trigger",
+            executable=True,
+        )
+        plan.add_file(
+            f"{adws_dir}/adw_triggers/adw_scripts.py",
+            action=action,
+            template="adws/adw_triggers/adw_scripts.py.j2",
+            reason="ADW utility scripts trigger",
             executable=True,
         )
 
@@ -840,6 +901,14 @@ class ScaffoldService:
             reason="Database schema documentation",
         )
 
+        # Schema migration file
+        plan.add_file(
+            f"{adws_dir}/schema/migrations/001_initial.sql",
+            action=action,
+            template="adws/schema/migrations/001_initial.sql.j2",
+            reason="Initial database migration",
+        )
+
         # Migrations directory .gitkeep
         plan.add_file(
             f"{adws_dir}/schema/migrations/.gitkeep",
@@ -860,6 +929,21 @@ class ScaffoldService:
             ("build.sh", "Build script"),
             ("setup_worktree.sh", "Worktree environment setup for ADW workflows"),
             ("purge_tree.sh", "Worktree cleanup and branch deletion for ADW workflows"),
+            ("kill_trigger_webhook.sh", "Kill webhook trigger process"),
+            ("aea_server_start.sh", "AEA server start script"),
+            ("aea_server_reset.sh", "AEA server reset script"),
+            ("clear_issue_comments.sh", "Clear GitHub issue comments"),
+            ("copy_dot_env.sh", "Copy .env file to worktrees"),
+            ("check_ports.sh", "Check port availability"),
+            ("copy_claude.py", "Copy Claude configuration"),
+            ("delete_pr.sh", "Delete pull request branch"),
+            ("dev_build.sh", "Development build script"),
+            ("dev_lint.sh", "Development lint script"),
+            ("dev_start.sh", "Development start script"),
+            ("dev_test.sh", "Development test script"),
+            ("expose_webhook.sh", "Expose webhook endpoint"),
+            ("reset_db.sh", "Reset database script"),
+            ("stop_apps.sh", "Stop all application processes"),
         ]
 
         for script, reason in scripts:
@@ -1384,12 +1468,19 @@ class ScaffoldService:
 
         # Pytest test files
         pytest_files = [
+            ("__init__.py", "Test package init"),
             ("conftest.py", "Pytest fixtures and configuration"),
             ("pytest.ini", "Pytest settings"),
             ("test_database.py", "Database module tests"),
             ("test_workflows.py", "Workflow operations tests"),
             ("test_agent_sdk.py", "Agent SDK abstraction tests"),
             ("test_websockets.py", "WebSocket server tests"),
+            ("health_check.py", "Health check test"),
+            ("sandbox_poc.py", "Sandbox proof of concept test"),
+            ("test_agents.py", "Agent integration tests"),
+            ("test_model_selection.py", "Model selection tests"),
+            ("test_r2_uploader.py", "R2 uploader tests"),
+            ("test_webhook_simplified.py", "Simplified webhook tests"),
         ]
 
         for file, reason in pytest_files:
@@ -1399,6 +1490,15 @@ class ScaffoldService:
                 template=f"adws/adw_tests/{file}.j2",
                 reason=reason,
             )
+
+        # ADW test submodule
+        plan.add_directory(f"{adws_dir}/adw_tests/adw_modules", "ADW test modules")
+        plan.add_file(
+            f"{adws_dir}/adw_tests/adw_modules/adw_agent_sdk.py",
+            action=action,
+            template="adws/adw_tests/adw_modules/adw_agent_sdk.py.j2",
+            reason="Agent SDK test module",
+        )
 
         # Playwright configuration
         plan.add_file(

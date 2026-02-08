@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-02-08
+
+### Fixed
+- **53 unregistered templates in `scaffold_service.py`**: Templates existed on disk but were not registered in the scaffold plan, so they were silently excluded from generated projects during `init`, `add-agentic`, and `upgrade`
+
+### Added
+- **ADW Triggers (2)**: `adw_manual_trigger.py`, `adw_scripts.py` registered in `_add_adw_files()`
+- **ADW Root Workflow (1)**: `adw_database.py` added to workflows list
+- **ADW Tests (8 + 1 submodule)**: `__init__.py`, `health_check.py`, `sandbox_poc.py`, `test_agents.py`, `test_model_selection.py`, `test_r2_uploader.py`, `test_webhook_simplified.py`, `adw_tests/adw_modules/adw_agent_sdk.py` registered in `_add_test_files()`
+- **Schema Migration (1)**: `migrations/001_initial.sql` registered in `_add_schema_files()`
+- **Commands (6)**: `/fix`, `/ping`, `/prime_nile`, `/prime_specific_docs`, `/question-w-mermaid-diagrams`, `/start_nile` added to commands list
+- **Expert Commands (10 + 2 expertise files)**: `database/{question,self-improve}`, `websocket/{question,self-improve,plan,plan_build_improve}`, `adw/{plan,plan_build_improve}` commands and `database/expertise.yaml`, `websocket/expertise.yaml` seed files
+- **Expert Directories (2)**: `.claude/commands/experts/database`, `.claude/commands/experts/websocket` added to `_add_directories()`
+- **Output Styles (11)**: `bullet-points`, `genui`, `html-structured`, `markdown-focused`, `observable-tools-diffs-tts`, `observable-tools-diffs`, `table-based`, `tts-summary-base`, `tts-summary`, `ultra-concise`, `yaml-structured`
+- **Scripts (15)**: `kill_trigger_webhook.sh`, `aea_server_start.sh`, `aea_server_reset.sh`, `clear_issue_comments.sh`, `copy_dot_env.sh`, `check_ports.sh`, `copy_claude.py`, `delete_pr.sh`, `dev_build.sh`, `dev_lint.sh`, `dev_start.sh`, `dev_test.sh`, `expose_webhook.sh`, `reset_db.sh`, `stop_apps.sh`
+
+### Changed
+- `scaffold_service.py` - All template categories now have 100% registration coverage matching templates on disk
+
 ## [0.10.1] - 2026-02-08
 
 ### Fixed
