@@ -7,7 +7,7 @@ Invariants: All operations return GitResult, subprocess calls are encapsulated, 
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 
 @dataclass
@@ -30,7 +30,7 @@ class GitAdapter:
     Invariants: All operations return GitResult, commands run in repo_path context
     """
 
-    def __init__(self, repo_path: Path):
+    def __init__(self, repo_path: Path) -> Any:
         """Initialize the GitAdapter.
 
         Args:

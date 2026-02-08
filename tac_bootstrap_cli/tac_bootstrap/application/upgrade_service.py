@@ -9,7 +9,7 @@ from __future__ import annotations
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import yaml
 from packaging import version as pkg_version
@@ -35,7 +35,7 @@ class UpgradeService:
     # Archivos que se actualizan en root
     UPGRADEABLE_FILES = ["config.yml"]
 
-    def __init__(self, project_path: Path):
+    def __init__(self, project_path: Path) -> Any:
         """Initialize upgrade service.
 
         Args:

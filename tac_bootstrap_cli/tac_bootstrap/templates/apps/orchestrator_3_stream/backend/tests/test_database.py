@@ -7,17 +7,18 @@ NO MOCKING - Tests must be ephemeral (setup → execute → teardown).
 Run with: uv run pytest tests/test_database.py -v
 """
 
-import pytest
-import pytest_asyncio
-import asyncio
-import uuid
-import os
-from datetime import datetime
-from dotenv import load_dotenv
 
 # Import database functions
 import sys
+import uuid
 from pathlib import Path
+from typing import Any
+
+import pytest
+import pytest_asyncio
+from dotenv import load_dotenv
+from modules import database
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Load .env file from project root
@@ -28,11 +29,9 @@ if env_path.exists():
 else:
     print(f"⚠️  .env not found at {env_path}")
 
-from modules import database
-
 
 @pytest_asyncio.fixture(scope="function")
-async def db_pool():
+async def db_pool() -> Any:
     """Initialize database pool for testing"""
     await database.init_pool()
     yield
@@ -40,7 +39,7 @@ async def db_pool():
 
 
 @pytest.mark.asyncio
-async def test_database_connection(db_pool):
+async def test_database_connection(db_pool: Any) -> None:
     """Test that we can connect to the database"""
     async with database.get_connection() as conn:
         result = await conn.fetchval("SELECT 1")
@@ -48,7 +47,7 @@ async def test_database_connection(db_pool):
 
 
 @pytest.mark.asyncio
-async def test_get_or_create_orchestrator(db_pool):
+async def test_get_or_create_orchestrator(db_pool: Any) -> None:
     """Test orchestrator creation/retrieval"""
     # Get or create orchestrator (singleton pattern - may already exist)
     orch = await database.get_or_create_orchestrator(
@@ -72,11 +71,11 @@ async def test_get_or_create_orchestrator(db_pool):
     assert str(orch['id']) == str(orch2['id'])
 
     print(f"✅ Orchestrator ID: {orch['id']}")
-    print(f"✅ Singleton pattern verified")
+    print("✅ Singleton pattern verified")
 
 
 @pytest.mark.asyncio
-async def test_insert_and_get_chat_history(db_pool):
+async def test_insert_and_get_chat_history(db_pool: Any) -> None:
     """Test chat message insertion and retrieval"""
     # Get orchestrator
     orch = await database.get_orchestrator()
@@ -131,7 +130,7 @@ async def test_insert_and_get_chat_history(db_pool):
 
 
 @pytest.mark.asyncio
-async def test_update_orchestrator_session(db_pool):
+async def test_update_orchestrator_session(db_pool: Any) -> None:
     """Test updating orchestrator session ID"""
     test_session_id = f"test-session-{uuid.uuid4()}"
 
@@ -151,7 +150,7 @@ async def test_update_orchestrator_session(db_pool):
 
 
 @pytest.mark.asyncio
-async def test_update_orchestrator_costs(db_pool):
+async def test_update_orchestrator_costs(db_pool: Any) -> None:
     """Test updating orchestrator costs"""
     # Get current costs
     orch = await database.get_orchestrator()
@@ -179,7 +178,8 @@ async def test_update_orchestrator_costs(db_pool):
     assert orch['output_tokens'] == initial_output + test_output
     assert abs(float(orch['total_cost']) - (initial_cost + test_cost)) < 0.0001
 
-    print(f"✅ Costs updated: tokens={orch['input_tokens']+orch['output_tokens']}, cost=${orch['total_cost']:.4f}")
+    total_tokens = orch['input_tokens'] + orch['output_tokens']
+    print(f"✅ Costs updated: tokens={total_tokens}, cost=${orch['total_cost']:.4f}")
 
 
 if __name__ == "__main__":

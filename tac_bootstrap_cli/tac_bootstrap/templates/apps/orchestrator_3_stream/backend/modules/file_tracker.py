@@ -6,11 +6,10 @@ Maintains separate registries for modified and read files per agent.
 """
 
 import os
-from datetime import datetime
-from typing import Dict, Any, List, Set, Optional
-from uuid import UUID
 import sys
-import os
+from typing import Any, Dict, List, Optional, Set
+from uuid import UUID
+
 from pydantic import BaseModel
 
 # Add parent directory to path to import git_utils
@@ -41,8 +40,8 @@ class FileRead(BaseModel):
 
 class AgentLogMetadata(BaseModel):
     """Metadata structure stored in agent_log.payload"""
-    file_changes: Optional[List[FileChange]] = None
-    read_files: Optional[List[FileRead]] = None
+    file_changes: Optional[List[Dict[str, Any]]] = None
+    read_files: Optional[List[Dict[str, Any]]] = None
     total_files_modified: Optional[int] = None
     total_files_read: Optional[int] = None
     generated_at: Optional[str] = None
@@ -56,7 +55,7 @@ FILE_READING_TOOLS = ["Read"]
 class FileTracker:
     """Tracks file operations for a single agent."""
 
-    def __init__(self, agent_id: UUID, agent_name: str, working_dir: str):
+    def __init__(self, agent_id: UUID, agent_name: str, working_dir: str) -> Any:
         """
         Initialize file tracker for an agent.
 
@@ -237,9 +236,9 @@ async def generate_file_change_summary(
     try:
         # Import here to avoid circular dependency
         from .single_agent_prompt import (
-            fast_claude_query,
             EVENT_SUMMARIZER_SYSTEM_PROMPT,
-            EVENT_SUMMARIZER_USER_PROMPT
+            EVENT_SUMMARIZER_USER_PROMPT,
+            fast_claude_query,
         )
 
         # If no diff, return simple summary
@@ -270,16 +269,23 @@ Diff (first 2000 chars):
         else:
             # Fallback: simple heuristic-based summary
             lines = diff.split('\n')
-            added_lines = sum(1 for line in lines if line.startswith('+') and not line.startswith('+++'))
-            removed_lines = sum(1 for line in lines if line.startswith('-') and not line.startswith('---'))
+            added_lines = sum(
+                1 for line in lines
+                if line.startswith('+') and not line.startswith('+++')
+            )
+            removed_lines = sum(
+                1 for line in lines
+                if line.startswith('-') and not line.startswith('---')
+            )
+            basename = os.path.basename(file_path)
 
             if added_lines > 0 and removed_lines == 0:
-                return f"Added {added_lines} new lines to {os.path.basename(file_path)}"
+                return f"Added {added_lines} new lines to {basename}"
             elif removed_lines > 0 and added_lines == 0:
-                return f"Removed {removed_lines} lines from {os.path.basename(file_path)}"
+                return f"Removed {removed_lines} lines from {basename}"
             else:
-                return f"Modified {os.path.basename(file_path)} (+{added_lines} -{removed_lines} lines)"
+                return f"Modified {basename} (+{added_lines} -{removed_lines} lines)"
 
-    except Exception as e:
+    except Exception:
         # Fallback on error
         return f"Modified {os.path.basename(file_path)}"

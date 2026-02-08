@@ -98,7 +98,7 @@ def test_upgrade_command_success(tmp_path: Path) -> None:
         assert result.exit_code == 0
         assert "Successfully upgraded to v0.9.9" in result.stdout
         assert "Backup preserved" in result.stdout
-        mock_instance.perform_upgrade.assert_called_once_with(backup=True)
+        mock_instance.perform_upgrade.assert_called_once_with(backup=True, with_orchestrator=False)
 
 
 def test_upgrade_command_no_backup(tmp_path: Path) -> None:
@@ -120,7 +120,7 @@ def test_upgrade_command_no_backup(tmp_path: Path) -> None:
         assert result.exit_code == 0
         assert "Successfully upgraded to v0.9.9" in result.stdout
         assert "Backup preserved" not in result.stdout
-        mock_instance.perform_upgrade.assert_called_once_with(backup=False)
+        mock_instance.perform_upgrade.assert_called_once_with(backup=False, with_orchestrator=False)
 
 
 def test_upgrade_command_force(tmp_path: Path) -> None:

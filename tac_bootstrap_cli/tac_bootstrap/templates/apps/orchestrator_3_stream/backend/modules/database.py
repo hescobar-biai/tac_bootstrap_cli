@@ -12,15 +12,16 @@ Reference:
 - apps/orchestrator_1_term/modules/database/orchestrator_chat_db.py
 """
 
-import asyncpg
-import uuid
 import json
 import os
-from typing import Optional, List, Dict, Any
+import uuid
 from contextlib import asynccontextmanager
+from typing import Any, Dict, List, Optional
 
-from .orch_database_models import Agent, AgentLog
-from .config import DEFAULT_AGENT_LOG_LIMIT, DEFAULT_SYSTEM_LOG_LIMIT, DEFAULT_CHAT_HISTORY_LIMIT
+import asyncpg
+
+from .config import DEFAULT_AGENT_LOG_LIMIT, DEFAULT_SYSTEM_LOG_LIMIT
+from .orch_database_models import Agent
 
 # Global connection pool
 _pool: Optional[asyncpg.Pool] = None
@@ -32,7 +33,7 @@ _pool: Optional[asyncpg.Pool] = None
 
 
 async def init_pool(
-    database_url: str = None, min_size: int = 5, max_size: int = 20
+    database_url: Optional[str] = None, min_size: int = 5, max_size: int = 20
 ) -> asyncpg.Pool:
     """
     Initialize asyncpg connection pool.
@@ -79,7 +80,7 @@ def get_pool() -> asyncpg.Pool:
     return _pool
 
 
-async def close_pool():
+async def close_pool() -> None:
     """
     Close connection pool.
 
@@ -93,7 +94,7 @@ async def close_pool():
 
 
 @asynccontextmanager
-async def get_connection():
+async def get_connection() -> Any:
     """
     Context manager for database connections.
 
@@ -152,7 +153,7 @@ async def get_or_create_orchestrator(
         )
 
         if row:
-            result = dict(row)
+            result = dict[str, Any](row)
             if isinstance(result.get("metadata"), str):
                 result["metadata"] = json.loads(result["metadata"])
             return result
@@ -177,7 +178,7 @@ async def get_or_create_orchestrator(
         row = await conn.fetchrow(
             "SELECT * FROM orchestrator_agents WHERE id = $1", orch_id
         )
-        result = dict(row)
+        result = dict[str, Any](row)
         if isinstance(result.get("metadata"), str):
             result["metadata"] = json.loads(result["metadata"])
         return result
@@ -229,7 +230,7 @@ async def create_new_orchestrator(
         row = await conn.fetchrow(
             "SELECT * FROM orchestrator_agents WHERE id = $1", orch_id
         )
-        result = dict(row)
+        result = dict[str, Any](row)
         if isinstance(result.get("metadata"), str):
             result["metadata"] = json.loads(result["metadata"])
         return result
@@ -255,7 +256,7 @@ async def get_orchestrator() -> Optional[Dict[str, Any]]:
             "SELECT * FROM orchestrator_agents WHERE archived = false LIMIT 1"
         )
         if row:
-            result = dict(row)
+            result = dict[str, Any](row)
             if isinstance(result.get("metadata"), str):
                 result["metadata"] = json.loads(result["metadata"])
             return result
@@ -288,7 +289,7 @@ async def get_orchestrator_by_session(session_id: str) -> Optional[Dict[str, Any
             session_id,
         )
         if row:
-            result = dict(row)
+            result = dict[str, Any](row)
             if isinstance(result.get("metadata"), str):
                 result["metadata"] = json.loads(result["metadata"])
             return result
@@ -319,7 +320,7 @@ async def get_orchestrator_by_id(orchestrator_agent_id: uuid.UUID) -> Optional[D
             orchestrator_agent_id,
         )
         if row:
-            result = dict(row)
+            result = dict[str, Any](row)
             if isinstance(result.get("metadata"), str):
                 result["metadata"] = json.loads(result["metadata"])
             return result
@@ -369,7 +370,7 @@ async def update_orchestrator_session(
         )
 
         if row:
-            result = dict(row)
+            result = dict[str, Any](row)
             if isinstance(result.get("metadata"), str):
                 result["metadata"] = json.loads(result["metadata"])
             return result
@@ -661,7 +662,7 @@ async def get_chat_history(
 
         results = []
         for row in rows:
-            result = dict(row)
+            result = dict[str, Any](row)
             # Parse metadata JSONB if it's a string
             if isinstance(result.get("metadata"), str):
                 result["metadata"] = json.loads(result["metadata"])
@@ -801,7 +802,7 @@ async def get_agent(agent_id: uuid.UUID) -> Optional[Agent]:
         if not row:
             return None
 
-        return Agent(**dict(row))
+        return Agent(**dict[str, Any](row))
 
 
 async def get_agent_by_name(orchestrator_agent_id: uuid.UUID, name: str) -> Optional[Agent]:
@@ -829,7 +830,7 @@ async def get_agent_by_name(orchestrator_agent_id: uuid.UUID, name: str) -> Opti
         if not row:
             return None
 
-        return Agent(**dict(row))
+        return Agent(**dict[str, Any](row))
 
 
 async def list_agents(orchestrator_agent_id: uuid.UUID, archived: bool = False) -> List[Agent]:
@@ -854,7 +855,7 @@ async def list_agents(orchestrator_agent_id: uuid.UUID, archived: bool = False) 
             orchestrator_agent_id,
             archived,
         )
-        return [Agent(**dict(row)) for row in rows]
+        return [Agent(**dict[str, Any](row)) for row in rows]
 
 
 async def update_agent_status(agent_id: uuid.UUID, status: str) -> None:
@@ -980,7 +981,8 @@ async def insert_hook_event(
         agent_id: UUID of the agent generating the event
         task_slug: Task identifier in kebab-case format
         entry_index: Sequential index within task for tail reading (0-based)
-        event_type: Hook event type (PreToolUse, PostToolUse, UserPromptSubmit, Stop, SubagentStop, PreCompact)
+        event_type: Hook event type (PreToolUse, PostToolUse, UserPromptSubmit,
+            Stop, SubagentStop, PreCompact)
         payload: Complete hook data as JSONB
         content: Human-readable description of the event (e.g., "Using tool: Read")
         session_id: Claude SDK session ID (optional)
@@ -1194,7 +1196,7 @@ async def get_agent_logs(
 
         results = []
         for row in rows:
-            result = dict(row)
+            result = dict[str, Any](row)
             # Parse payload JSONB if it's a string
             if isinstance(result.get("payload"), str):
                 result["payload"] = json.loads(result["payload"])
@@ -1234,7 +1236,7 @@ async def get_tail_summaries(
         )
 
     # Return in ascending order (chronological: oldest to newest)
-    return [dict(row) for row in reversed(rows)]
+    return [dict[str, Any](row) for row in reversed(rows)]
 
 
 async def get_tail_raw(
@@ -1270,7 +1272,7 @@ async def get_tail_raw(
     # Return in ascending order (chronological: oldest to newest)
     results = []
     for row in reversed(rows):
-        result = dict(row)
+        result = dict[str, Any](row)
         # Parse payload JSONB if it's a string
         if isinstance(result.get("payload"), str):
             result["payload"] = json.loads(result["payload"])
@@ -1404,7 +1406,11 @@ async def insert_system_log(
 # ═══════════════════════════════════════════════════════════
 
 
-async def list_agent_logs(orchestrator_agent_id: uuid.UUID, limit: int = DEFAULT_AGENT_LOG_LIMIT, offset: int = 0) -> List[Dict[str, Any]]:
+async def list_agent_logs(
+    orchestrator_agent_id: uuid.UUID,
+    limit: int = DEFAULT_AGENT_LOG_LIMIT,
+    offset: int = 0
+) -> List[Dict[str, Any]]:
     """
     Get all agent logs for agents belonging to this orchestrator.
 
@@ -1436,7 +1442,7 @@ async def list_agent_logs(orchestrator_agent_id: uuid.UUID, limit: int = DEFAULT
 
         results = []
         for row in rows:
-            result = dict(row)
+            result = dict[str, Any](row)
             # Parse payload JSONB if it's a string
             if isinstance(result.get("payload"), str):
                 result["payload"] = json.loads(result["payload"])
@@ -1469,7 +1475,7 @@ async def list_system_logs(
             FROM system_logs
             WHERE 1=1
         """
-        params = []
+        params: List[Any] = []
         param_count = 0
 
         # Add message filter if provided (non-empty string)
@@ -1497,7 +1503,7 @@ async def list_system_logs(
 
         results = []
         for row in rows:
-            result = dict(row)
+            result = dict[str, Any](row)
             # Parse metadata JSONB if it's a string
             if isinstance(result.get("metadata"), str):
                 result["metadata"] = json.loads(result["metadata"])
@@ -1538,7 +1544,7 @@ async def get_orchestrator_action_blocks(
 
         results = []
         for row in rows:
-            result = dict(row)
+            result = dict[str, Any](row)
             # Parse metadata JSONB if it's a string
             if isinstance(result.get("metadata"), str):
                 result["metadata"] = json.loads(result["metadata"])
@@ -1592,7 +1598,7 @@ async def list_orchestrator_chat(
 
         results = []
         for row in rows:
-            result = dict(row)
+            result = dict[str, Any](row)
             # Parse metadata JSONB if it's a string
             if isinstance(result.get("metadata"), str):
                 result["metadata"] = json.loads(result["metadata"])
@@ -1656,7 +1662,7 @@ async def create_adw(
             json.dumps(input_data),
             json.dumps(metadata or {}),
         )
-        return dict(row)
+        return dict[str, Any](row)
 
 
 async def get_adw(adw_id: uuid.UUID) -> Optional[Dict[str, Any]]:
@@ -1683,7 +1689,7 @@ async def get_adw(adw_id: uuid.UUID) -> Optional[Dict[str, Any]]:
             adw_id,
         )
         if row:
-            result = dict(row)
+            result = dict[str, Any](row)
             # Parse JSONB fields
             if isinstance(result.get("input_data"), str):
                 result["input_data"] = json.loads(result["input_data"])
@@ -1757,7 +1763,7 @@ async def update_adw_status(
         """
 
         result = await conn.execute(query, *params)
-        return result == "UPDATE 1"
+        return bool(result == "UPDATE 1")
 
 
 async def get_adw_logs(
@@ -1810,7 +1816,7 @@ async def get_adw_logs(
 
         results = []
         for row in rows:
-            result = dict(row)
+            result = dict[str, Any](row)
             # Parse payload if needed
             if isinstance(result.get("payload"), str):
                 result["payload"] = json.loads(result["payload"])
@@ -1855,7 +1861,7 @@ async def get_adw_system_logs(
 
         results = []
         for row in rows:
-            result = dict(row)
+            result = dict[str, Any](row)
             # Parse metadata if needed
             if isinstance(result.get("metadata"), str):
                 result["metadata"] = json.loads(result["metadata"])
@@ -1866,7 +1872,10 @@ async def get_adw_system_logs(
                 "adw_step": result.get("adw_step"),
                 "event_category": "system",  # Mark as system event
                 "event_type": f"System{result['level'].capitalize()}",
-                "summary": f"[{result['level']}] {result['message'][:100]}{'...' if len(result['message']) > 100 else ''}",
+                "summary": (
+                    f"[{result['level']}] {result['message'][:100]}"
+                    f"{'...' if len(result['message']) > 100 else ''}"
+                ),
                 "payload": result["metadata"] if include_metadata else {"level": result["level"]},
                 "timestamp": result["timestamp"],
                 "content": result["message"],
@@ -1927,4 +1936,4 @@ async def list_adws(
                 limit,
             )
 
-        return [dict(row) for row in rows]
+        return [dict[str, Any](row) for row in rows]

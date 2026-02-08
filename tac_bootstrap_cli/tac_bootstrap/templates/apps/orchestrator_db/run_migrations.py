@@ -33,6 +33,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.panel import Panel
@@ -55,7 +56,7 @@ MIGRATIONS = [
     "9_ai_developer_workflows.sql",
 ]
 
-def main():
+def main() -> None:
     console.print(Panel.fit(
         "[bold cyan]Multi-Agent Orchestration Database Migrations[/bold cyan]",
         border_style="cyan"
@@ -77,7 +78,10 @@ def main():
     # Check if DATABASE_URL is set
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
-        console.print("[red]✗ Error:[/red] DATABASE_URL environment variable is required", style="bold")
+        console.print(
+            "[red]✗ Error:[/red] DATABASE_URL environment variable is required",
+            style="bold",
+        )
         console.print(f"Add DATABASE_URL to {env_file}")
         sys.exit(1)
 
@@ -91,12 +95,19 @@ def main():
 
     # Verify migrations directory exists
     if not migrations_dir.exists():
-        console.print(f"[red]✗ Error:[/red] Migrations directory not found at {migrations_dir}", style="bold")
+        console.print(
+            f"[red]✗ Error:[/red] Migrations directory not found at {migrations_dir}",
+            style="bold",
+        )
         sys.exit(1)
 
     console.print(f"\n[dim]Using .env from:[/dim] {env_file}")
     console.print(f"[dim]Migrations directory:[/dim] {migrations_dir}")
-    console.print(f"[dim]Database:[/dim] {database_url.split('@')[1].split('?')[0] if '@' in database_url else 'unknown'}\n")
+    db_display = (
+        database_url.split('@')[1].split('?')[0]
+        if '@' in database_url else 'unknown'
+    )
+    console.print(f"[dim]Database:[/dim] {db_display}\n")
 
     # Run migrations
     failed = []
@@ -111,7 +122,10 @@ def main():
             migration_path = migrations_dir / migration_file
 
             if not migration_path.exists():
-                console.print(f"[yellow]⚠ Warning:[/yellow] Migration file not found: {migration_file}")
+                console.print(
+                    f"[yellow]⚠ Warning:[/yellow] Migration file not found: "
+                    f"{migration_file}"
+                )
                 failed.append((migration_file, "File not found"))
                 continue
 
@@ -180,7 +194,10 @@ def main():
 
         console.print(table)
 
-        console.print("\n[dim]Note: All migrations are idempotent - safe to run multiple times[/dim]")
+        console.print(
+            "\n[dim]Note: All migrations are idempotent - "
+            "safe to run multiple times[/dim]"
+        )
 
 if __name__ == "__main__":
     main()

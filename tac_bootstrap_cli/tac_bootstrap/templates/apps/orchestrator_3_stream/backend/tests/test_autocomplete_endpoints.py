@@ -4,12 +4,11 @@ Integration tests for Autocomplete API Endpoints
 Tests the /autocomplete-generate and /autocomplete-update endpoints
 """
 
-import pytest
 import sys
-from pathlib import Path
-from fastapi.testclient import TestClient
-from unittest.mock import Mock, AsyncMock, patch
 import uuid
+from pathlib import Path
+
+import pytest
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -22,10 +21,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 @pytest.mark.asyncio
-async def test_generate_endpoint_structure():
+async def test_generate_endpoint_structure() -> None:
     """
     Test structure for /autocomplete-generate endpoint
-    
+
     This test would:
     1. Send POST request with user_input and orchestrator_agent_id
     2. Verify response contains autocompletes list
@@ -36,9 +35,9 @@ async def test_generate_endpoint_structure():
         "user_input": "create a new ",
         "orchestrator_agent_id": str(uuid.uuid4())
     }
-    
+
     # Expected response structure
-    expected_response = {
+    {
         "status": "success",
         "autocompletes": [
             {
@@ -50,64 +49,61 @@ async def test_generate_endpoint_structure():
         "orchestrator_agent_id": request_data["orchestrator_agent_id"],
         "timestamp": "2024-01-01T00:00:00"
     }
-    
+
     # Test would make HTTP POST to /autocomplete-generate
     # response = client.post("/autocomplete-generate", json=request_data)
     # assert response.status_code == 200
     # assert response.json()["status"] == "success"
     # assert len(response.json()["autocompletes"]) > 0
-    
+
     assert True  # Placeholder
 
 
 @pytest.mark.asyncio
-async def test_update_endpoint_structure():
+async def test_update_endpoint_structure() -> None:
     """
     Test structure for /autocomplete-update endpoint
-    
+
     This test would:
     1. Send POST request with completion history data
     2. Verify successful status response
     3. Verify expertise.yaml was updated
     """
     # Mock request payload for 'none' type
-    request_data_none = {
+    {
         "orchestrator_agent_id": str(uuid.uuid4()),
         "completion_type": "none",
         "user_input_on_enter": "create a new agent manually"
     }
-    
+
     # Mock request payload for 'autocomplete' type
-    request_data_autocomplete = {
+    {
         "orchestrator_agent_id": str(uuid.uuid4()),
         "completion_type": "autocomplete",
         "user_input_before_completion": "create a new ",
         "autocomplete_item": "agent",
         "reasoning": "Common pattern"
     }
-    
+
     # Test would make HTTP POST to /autocomplete-update
     # response = client.post("/autocomplete-update", json=request_data_none)
     # assert response.status_code == 200
     # assert response.json()["status"] == "success"
-    
+
     assert True  # Placeholder
 
 
-def test_request_validation():
+def test_request_validation() -> None:
     """Test Pydantic request validation"""
-    from modules.autocomplete_models import (
-        AutocompleteGenerateRequest,
-        AutocompleteUpdateRequest
-    )
-    
+    from modules.autocomplete_models import AutocompleteGenerateRequest, AutocompleteUpdateRequest
+
     # Valid generate request
     gen_request = AutocompleteGenerateRequest(
         user_input="test",
         orchestrator_agent_id=str(uuid.uuid4())
     )
     assert gen_request.user_input == "test"
-    
+
     # Valid update request (none type)
     update_none = AutocompleteUpdateRequest(
         orchestrator_agent_id=str(uuid.uuid4()),
@@ -115,7 +111,7 @@ def test_request_validation():
         user_input_on_enter='test message'
     )
     assert update_none.completion_type == 'none'
-    
+
     # Valid update request (autocomplete type)
     update_auto = AutocompleteUpdateRequest(
         orchestrator_agent_id=str(uuid.uuid4()),
@@ -125,7 +121,7 @@ def test_request_validation():
         reasoning='test'
     )
     assert update_auto.completion_type == 'autocomplete'
-    
+
     # Invalid - missing required fields should raise validation error
     with pytest.raises(Exception):
         AutocompleteUpdateRequest(
@@ -135,10 +131,10 @@ def test_request_validation():
         )
 
 
-def test_response_model():
+def test_response_model() -> None:
     """Test AutocompleteResponse model"""
-    from modules.autocomplete_models import AutocompleteResponse, AutocompleteItem
-    
+    from modules.autocomplete_models import AutocompleteItem, AutocompleteResponse
+
     response = AutocompleteResponse(
         status="success",
         autocompletes=[
@@ -148,7 +144,7 @@ def test_response_model():
         total_items=2,
         orchestrator_agent_id=str(uuid.uuid4())
     )
-    
+
     assert response.status == "success"
     assert len(response.autocompletes) == 2
     assert response.total_items == 2
@@ -157,7 +153,7 @@ def test_response_model():
 
 @pytest.mark.slow
 @pytest.mark.asyncio
-async def test_integration_full_flow():
+async def test_integration_full_flow() -> None:
     """
     Full integration test with real Claude API (slow, costs ~$0.02).
 
@@ -173,15 +169,16 @@ async def test_integration_full_flow():
     - Network access to Claude API
     - Costs ~$0.02 per run (Haiku model)
 
-    Run with: pytest -v -m slow backend/tests/test_autocomplete_endpoints.py::test_integration_full_flow
+    Run with:
+        pytest -v -m slow backend/tests/test_autocomplete_endpoints.py::test_integration_full_flow
     """
-    import tempfile
-    import shutil
-    from modules.autocomplete_agent import AutocompleteAgent
-    from modules.logger import get_logger
-
     # Skip if no API key (CI environment)
     import os
+    import shutil
+    import tempfile
+
+    from modules.autocomplete_agent import AutocompleteAgent
+    from modules.logger import get_logger
     if not os.getenv('ANTHROPIC_API_KEY'):
         pytest.skip("ANTHROPIC_API_KEY not set - skipping integration test")
 
@@ -246,7 +243,7 @@ async def test_integration_full_flow():
         # Test 4: Verify expertise.yaml file was created
         assert agent.expertise_yaml_path.exists(), "expertise.yaml should exist"
 
-        print(f"✅ Integration test passed! Cost: ~$0.02")
+        print("✅ Integration test passed! Cost: ~$0.02")
 
     finally:
         # Cleanup temp directory

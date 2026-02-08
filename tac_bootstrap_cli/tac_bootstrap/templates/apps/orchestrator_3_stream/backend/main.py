@@ -4,37 +4,35 @@ Orchestrator 3 Stream Backend
 FastAPI server for managing orchestrator agent workflows with PostgreSQL backend
 """
 
-import asyncio
 import argparse
+import asyncio
+import json
 import os
-import sys
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Any, AsyncIterator, Dict, List, Optional
+
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
-from pathlib import Path
-import json
-import time
-
-from rich.table import Table
-from rich.console import Console
 
 # Import our custom modules
-from modules import config
-from modules.logger import get_logger
-from modules.websocket_manager import get_websocket_manager
-from modules import database
-from modules.orchestrator_service import OrchestratorService, get_orchestrator_tools
+from modules import config, database
 from modules.agent_manager import AgentManager
-from modules.orch_database_models import OrchestratorAgent
-from modules.autocomplete_service import AutocompleteService
 from modules.autocomplete_models import (
     AutocompleteGenerateRequest,
+    AutocompleteResponse,
     AutocompleteUpdateRequest,
-    AutocompleteResponse
 )
+from modules.autocomplete_service import AutocompleteService
+from modules.logger import get_logger
+from modules.orch_database_models import OrchestratorAgent
+from modules.orchestrator_service import OrchestratorService, get_orchestrator_tools
+from modules.slash_command_parser import discover_slash_commands
+from modules.websocket_manager import get_websocket_manager
+from pydantic import BaseModel
+from rich.console import Console
+from rich.table import Table
 
 logger = get_logger()
 ws_manager = get_websocket_manager()
@@ -64,7 +62,7 @@ else:
 
 # Lifespan context manager for startup/shutdown
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Handle startup and shutdown events"""
     # Startup
     logger.startup(
@@ -96,7 +94,7 @@ async def lifespan(app: FastAPI):
             # Try to find any orchestrator for debugging
             all_orchestrators = await database.get_orchestrator()
             if all_orchestrators:
-                logger.info(f"Found orchestrator in database:")
+                logger.info("Found orchestrator in database:")
                 logger.info(f"  ID: {all_orchestrators.get('id')}")
                 logger.info(f"  Session ID: {all_orchestrators.get('session_id')}")
                 logger.info(f"\nTo resume, use: --session {all_orchestrators.get('session_id')}")
@@ -132,7 +130,10 @@ async def lifespan(app: FastAPI):
         # Parse to Pydantic model
         orchestrator = OrchestratorAgent(**orchestrator_data)
         logger.success(f"✅ New orchestrator created: {orchestrator.id}")
-        logger.info(f"  Session ID: {orchestrator.session_id or 'Not set yet (will be set after first interaction)'}")
+        session_id_str = (
+            orchestrator.session_id or "Not set yet (will be set after first interaction)"
+        )
+        logger.info(f"  Session ID: {session_id_str}")
         logger.info(f"  Status: {orchestrator.status}")
 
     # Initialize agent manager (scoped to this orchestrator)
@@ -218,7 +219,7 @@ class SendChatRequest(BaseModel):
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> Dict[str, Any]:
     """Health check endpoint"""
     logger.http_request("GET", "/health", 200)
     return {
@@ -229,7 +230,7 @@ async def health_check():
 
 
 @app.get("/get_orchestrator")
-async def get_orchestrator_info():
+async def get_orchestrator_info() -> Any:
     """
     Get orchestrator agent information including system metadata.
 
@@ -301,7 +302,7 @@ async def get_orchestrator_info():
 
 
 @app.get("/get_headers")
-async def get_headers():
+async def get_headers() -> Any:
     """
     Get header information for the frontend.
 
@@ -324,15 +325,11 @@ async def get_headers():
 # SLASH COMMAND DISCOVERY
 # ═══════════════════════════════════════════════════════════
 
-# Import slash command discovery from parser module
-from modules.slash_command_parser import discover_slash_commands
-
-
 # ═══════════════════════════════════════════════════════════
 # ADW WORKFLOW DISCOVERY
 # ═══════════════════════════════════════════════════════════
 
-def discover_adw_workflows(working_dir: str) -> List[dict]:
+def discover_adw_workflows(working_dir: str) -> List[dict[str, Any]]:
     """
     Discover available ADW workflow types from adws/adw_workflows/*.py files.
 
@@ -384,7 +381,7 @@ class OpenFileRequest(BaseModel):
 
 
 @app.post("/api/open-file")
-async def open_file_in_ide(request: OpenFileRequest):
+async def open_file_in_ide(request: OpenFileRequest) -> Any:
     """
     Open a file in the configured IDE (Cursor or VS Code).
 
@@ -445,9 +442,13 @@ async def open_file_in_ide(request: OpenFileRequest):
     except FileNotFoundError:
         logger.error(f"IDE command not found: {config.IDE_COMMAND}")
         logger.http_request("POST", "/api/open-file", 500)
+        error_msg = (
+            f"IDE command not found: {config.IDE_COMMAND}. "
+            "Please ensure it's installed and in PATH."
+        )
         return {
             "status": "error",
-            "message": f"IDE command not found: {config.IDE_COMMAND}. Please ensure it's installed and in PATH."
+            "message": error_msg
         }
     except Exception as e:
         logger.error(f"Failed to open file in IDE: {e}")
@@ -456,12 +457,12 @@ async def open_file_in_ide(request: OpenFileRequest):
 
 
 @app.post("/load_chat")
-async def load_chat(request: LoadChatRequest):
+async def load_chat(request: LoadChatRequest) -> Any:
     """
     Load chat history for orchestrator agent.
 
     Returns:
-        - messages: List of chat messages
+        - messages: List[Any] of chat messages
         - turn_count: Total number of messages
     """
     try:
@@ -485,7 +486,7 @@ async def load_chat(request: LoadChatRequest):
 
 
 @app.post("/send_chat")
-async def send_chat(request: SendChatRequest):
+async def send_chat(request: SendChatRequest) -> Any:
     """
     Send message to orchestrator agent.
 
@@ -527,7 +528,7 @@ async def get_events_endpoint(
     event_types: str = "all",
     limit: int = 50,
     offset: int = 0,
-):
+) -> Any:
     """
     Get events from all sources for EventStream component.
 
@@ -540,7 +541,7 @@ async def get_events_endpoint(
 
     Returns:
         - status: success/error
-        - events: List of unified events with sourceType field
+        - events: List[Any] of unified events with sourceType field
         - count: Total event count
     """
     try:
@@ -620,13 +621,13 @@ async def get_events_endpoint(
 
 
 @app.get("/list_agents")
-async def list_agents_endpoint():
+async def list_agents_endpoint() -> Any:
     """
     List all active agents for sidebar display.
 
     Returns:
         - status: success/error
-        - agents: List of agent objects enriched with log_count from agent_logs table
+        - agents: List[Any] of agent objects enriched with log_count from agent_logs table
     """
     try:
         logger.http_request("GET", "/list_agents")
@@ -684,7 +685,7 @@ async def autocomplete_generate(request: AutocompleteGenerateRequest) -> Autocom
 
 
 @app.post("/autocomplete-update")
-async def autocomplete_update(request: AutocompleteUpdateRequest):
+async def autocomplete_update(request: AutocompleteUpdateRequest) -> Any:
     """
     Update autocomplete completion history.
 
@@ -716,7 +717,7 @@ async def autocomplete_update(request: AutocompleteUpdateRequest):
 
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket) -> Any:
     """WebSocket endpoint for real-time updates and chat messages"""
 
     await ws_manager.connect(websocket)
@@ -843,7 +844,7 @@ class GetAdwEventsRequest(BaseModel):
 
 
 @app.post("/adws")
-async def list_adws(request: ListAdwsRequest):
+async def list_adws(request: ListAdwsRequest) -> Any:
     """
     List AI Developer Workflows for an orchestrator.
 
@@ -877,7 +878,7 @@ async def list_adws(request: ListAdwsRequest):
 
 
 @app.get("/adws/{adw_id}")
-async def get_adw(adw_id: str):
+async def get_adw(adw_id: str) -> Any:
     """
     Get a single ADW by ID with full status details.
 
@@ -913,7 +914,7 @@ async def get_adw(adw_id: str):
 
 
 @app.post("/adws/{adw_id}/events")
-async def get_adw_events(adw_id: str, request: GetAdwEventsRequest):
+async def get_adw_events(adw_id: str, request: GetAdwEventsRequest) -> Any:
     """
     Get events for an ADW (swimlane squares) from BOTH agent_logs AND system_logs.
 
@@ -959,7 +960,7 @@ async def get_adw_events(adw_id: str, request: GetAdwEventsRequest):
         events.sort(key=lambda e: e.get("timestamp", ""))
 
         # Group events by adw_step for swimlane rendering
-        steps: Dict[str, List[Dict]] = {}
+        steps: Dict[str, List[Dict[str, Any]]] = {}
         for event in events:
             step = event.get("adw_step") or "_workflow"
             if step not in steps:
@@ -981,7 +982,7 @@ async def get_adw_events(adw_id: str, request: GetAdwEventsRequest):
 
 
 @app.get("/adws/{adw_id}/summary")
-async def get_adw_summary(adw_id: str):
+async def get_adw_summary(adw_id: str) -> Any:
     """
     Get a summary of an ADW including status and step breakdown.
 
@@ -1006,7 +1007,7 @@ async def get_adw_summary(adw_id: str):
         )
 
         # Build step summary
-        step_summary: Dict[str, Dict] = {}
+        step_summary: Dict[str, Dict[str, Any]] = {}
         for event in events:
             step = event.get("adw_step") or "_workflow"
             if step not in step_summary:
@@ -1046,7 +1047,7 @@ async def get_adw_summary(adw_id: str):
         return {
             "status": "success",
             "adw": adw,
-            "steps": list(step_summary.values()),
+            "steps": list[Any](step_summary.values()),
             "total_events": len(events),
         }
 

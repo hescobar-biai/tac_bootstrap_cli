@@ -5,68 +5,68 @@ Centralize agent lifecycle management, tool registration, and background executi
 Implements 8 management tools for the orchestrator agent.
 """
 
-import threading
 import asyncio
-import uuid
 import os
-from typing import Dict, Any, List, Optional
+import re
+import threading
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-import re
+from typing import Any, Dict, List, Optional
 
 from claude_agent_sdk import (
-    ClaudeSDKClient,
-    ClaudeAgentOptions,
     AssistantMessage,
+    ClaudeAgentOptions,
+    ClaudeSDKClient,
+    HookMatcher,
+    ResultMessage,
     SystemMessage,
     TextBlock,
     ThinkingBlock,
     ToolUseBlock,
-    ResultMessage,
     tool,
-    create_sdk_mcp_server,
-    HookMatcher,
 )
 
-from .database import (
-    create_agent,
-    get_agent,
-    get_agent_by_name,
-    list_agents,
-    update_agent_session,
-    update_agent_status,
-    update_agent_costs,
-    delete_agent,
-    get_tail_summaries,
-    get_tail_raw,
-    get_latest_task_slug,
-    insert_prompt,
-    insert_message_block,
-    update_prompt_summary,
-    update_log_summary,
-    # ADW operations
-    create_adw,
-    get_adw,
-    get_adw_logs,
-)
-from .single_agent_prompt import summarize_event
+from . import config
 from .command_agent_hooks import (
-    create_pre_tool_hook,
+    create_post_tool_file_tracking_hook,
     create_post_tool_hook,
-    create_user_prompt_hook,
+    create_pre_compact_hook,
+    create_pre_tool_hook,
     create_stop_hook,
     create_subagent_stop_hook,
-    create_pre_compact_hook,
-    create_post_tool_file_tracking_hook,
+    create_user_prompt_hook,
 )
-from .websocket_manager import WebSocketManager
-from .logger import OrchestratorLogger
-from . import config
+from .database import (
+    # ADW operations
+    create_adw,
+    create_agent,
+    delete_agent,
+    get_adw,
+    get_adw_logs,
+    get_agent,
+    get_agent_by_name,
+    get_latest_task_slug,
+    get_tail_raw,
+    get_tail_summaries,
+    insert_message_block,
+    insert_prompt,
+    list_agents,
+    update_agent_costs,
+    update_agent_session,
+    update_agent_status,
+    update_log_summary,
+    update_prompt_summary,
+)
 from .file_tracker import FileTracker
+from .logger import OrchestratorLogger
+from .single_agent_prompt import summarize_event
 from .subagent_loader import SubagentRegistry
+from .websocket_manager import WebSocketManager
+
 
 # ADW runner - import at runtime to avoid circular imports
-def _get_adw_runner():
+def _get_adw_runner() -> Any:
     """Lazy import of ADW runner to avoid import issues at module load."""
     import sys
     from pathlib import Path
@@ -115,7 +115,10 @@ class AgentManager:
         if template_count > 0:
             self.logger.info(f"Subagent registry initialized with {template_count} template(s)")
         else:
-            self.logger.warning("⚠️  No subagent templates available. Agents must be created manually.")
+            self.logger.warning(
+                "⚠️  No subagent templates available. "
+                "Agents must be created manually."
+            )
 
         self.logger.info(
             f"AgentManager initialized for orchestrator {orchestrator_agent_id}"
@@ -142,7 +145,7 @@ class AgentManager:
 
         return sorted(types)
 
-    def create_management_tools(self) -> List:
+    def create_management_tools(self) -> List[Any]:
         """
         Create 10 management tools for orchestrator.
 
@@ -160,7 +163,13 @@ class AgentManager:
 
         @tool(
             "create_agent",
-            "Create a new agent. REQUIRED: name. OPTIONAL: system_prompt (can be empty if using template), model, subagent_template. Use 'fast' for haiku model. If subagent_template is provided, the template's system prompt, tools, and model will be applied automatically.",
+            (
+                "Create a new agent. REQUIRED: name. OPTIONAL: system_prompt "
+                "(can be empty if using template), model, subagent_template. "
+                "Use 'fast' for haiku model. If subagent_template is provided, "
+                "the template's system prompt, tools, and model will be applied "
+                "automatically."
+            ),
             {"name": str, "system_prompt": str, "model": str, "subagent_template": str},
         )
         async def create_agent_tool(args: Dict[str, Any]) -> Dict[str, Any]:
@@ -204,7 +213,10 @@ class AgentManager:
                         "content": [
                             {
                                 "type": "text",
-                                "text": "❌ Error: Either 'system_prompt' or 'subagent_template' must be provided",
+                                "text": (
+                                    "❌ Error: Either 'system_prompt' or "
+                                    "'subagent_template' must be provided"
+                                ),
                             }
                         ],
                         "is_error": True,
@@ -618,7 +630,8 @@ class AgentManager:
                 # Add warning if approaching context limit
                 if context_percentage >= 80:
                     lines.append(
-                        f"\n⚠️  Warning: Context usage at {context_percentage:.1f}% - consider compacting soon\n"
+                        f"\n⚠️  Warning: Context usage at {context_percentage:.1f}% "
+                        f"- consider compacting soon\n"
                     )
 
                 return {"content": [{"type": "text", "text": "".join(lines)}]}
@@ -636,7 +649,12 @@ class AgentManager:
 
         @tool(
             "start_adw",
-            "Start an AI Developer Workflow. REQUIRED: name_of_adw, workflow_type, prompt. OPTIONAL: description. The workflow runs asynchronously - use check_adw to monitor progress. Returns adw_id for tracking.",
+            (
+                "Start an AI Developer Workflow. REQUIRED: name_of_adw, "
+                "workflow_type, prompt. OPTIONAL: description. The workflow "
+                "runs asynchronously - use check_adw to monitor progress. "
+                "Returns adw_id for tracking."
+            ),
             {"name_of_adw": str, "workflow_type": str, "prompt": str, "description": str},
         )
         async def start_adw_tool(args: Dict[str, Any]) -> Dict[str, Any]:
@@ -650,12 +668,16 @@ class AgentManager:
                 # Validate required fields
                 if not name_of_adw:
                     return {
-                        "content": [{"type": "text", "text": "❌ Error: 'name_of_adw' is required"}],
+                        "content": [
+                            {"type": "text", "text": "❌ Error: 'name_of_adw' is required"}
+                        ],
                         "is_error": True,
                     }
                 if not workflow_type:
                     return {
-                        "content": [{"type": "text", "text": "❌ Error: 'workflow_type' is required"}],
+                        "content": [
+                            {"type": "text", "text": "❌ Error: 'workflow_type' is required"}
+                        ],
                         "is_error": True,
                     }
                 if not prompt:
@@ -665,16 +687,23 @@ class AgentManager:
                     }
 
                 # Validate workflow_type exists
-                workflow_file = Path(self.working_dir) / "adws" / "adw_workflows" / f"adw_{workflow_type}.py"
+                workflow_file = (
+                    Path(self.working_dir) / "adws" / "adw_workflows" /
+                    f"adw_{workflow_type}.py"
+                )
                 if not workflow_file.exists():
                     available = self._get_available_workflow_types()
                     return {
                         "content": [
                             {
                                 "type": "text",
-                                "text": f"❌ Error: Workflow type '{workflow_type}' not found.\n"
-                                        f"Available types: {', '.join(available) if available else 'None'}\n"
-                                        f"Expected file: adws/adw_workflows/adw_{workflow_type}.py",
+                                "text": (
+                                    f"❌ Error: Workflow type '{workflow_type}' "
+                                    f"not found.\nAvailable types: "
+                                    f"{', '.join(available) if available else 'None'}\n"
+                                    f"Expected file: adws/adw_workflows/"
+                                    f"adw_{workflow_type}.py"
+                                ),
                             }
                         ],
                         "is_error": True,
@@ -693,7 +722,10 @@ class AgentManager:
                 adw_id = str(adw_record["id"])
 
                 # Log and broadcast
-                self.logger.info(f"🚀 Started ADW '{name_of_adw}' (type: {workflow_type}) with ID: {adw_id}")
+                self.logger.info(
+                    f"🚀 Started ADW '{name_of_adw}' (type: {workflow_type}) "
+                    f"with ID: {adw_id}"
+                )
                 await self.ws_manager.broadcast({
                     "type": "adw_started",
                     "data": {
@@ -715,7 +747,12 @@ class AgentManager:
                 if runner_result.get("status") == "error":
                     self.logger.error(f"ADW runner error: {runner_result.get('error')}")
                     return {
-                        "content": [{"type": "text", "text": f"❌ Failed to start workflow: {runner_result.get('error')}"}],
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": f"❌ Failed to start workflow: {runner_result.get('error')}"
+                            }
+                        ],
                         "is_error": True,
                     }
 
@@ -723,13 +760,13 @@ class AgentManager:
                 self.logger.info(f"ADW workflow started with PID: {pid}")
 
                 lines = [
-                    f"✅ Started AI Developer Workflow\n\n",
+                    "✅ Started AI Developer Workflow\n\n",
                     f"ADW ID: {adw_id}\n",
                     f"Name: {name_of_adw}\n",
                     f"Type: {workflow_type}\n",
                     f"Status: running (PID: {pid})\n\n",
                     f"Use check_adw(adw_id=\"{adw_id}\") to monitor progress.\n",
-                    f"⚠️  Note: Do NOT interfere with the ADW unless explicitly asked.",
+                    "⚠️  Note: Do NOT interfere with the ADW unless explicitly asked.",
                 ]
 
                 return {"content": [{"type": "text", "text": "".join(lines)}]}
@@ -743,7 +780,11 @@ class AgentManager:
 
         @tool(
             "check_adw",
-            "Check ADW status and recent activity. REQUIRED: adw_id. OPTIONAL: tail_count (default 10), event_type (filter by StepStart/StepEnd/etc), include_step_details (default false).",
+            (
+                "Check ADW status and recent activity. REQUIRED: adw_id. "
+                "OPTIONAL: tail_count (default 10), event_type (filter by "
+                "StepStart/StepEnd/etc), include_step_details (default false)."
+            ),
             {"adw_id": str, "tail_count": int, "event_type": str, "include_step_details": bool},
         )
         async def check_adw_tool(args: Dict[str, Any]) -> Dict[str, Any]:
@@ -756,7 +797,9 @@ class AgentManager:
 
                 if not adw_id_str:
                     return {
-                        "content": [{"type": "text", "text": "❌ Error: 'adw_id' is required"}],
+                        "content": [
+                            {"type": "text", "text": "❌ Error: 'adw_id' is required"}
+                        ],
                         "is_error": True,
                     }
 
@@ -765,7 +808,12 @@ class AgentManager:
                     adw_id = uuid.UUID(adw_id_str)
                 except ValueError:
                     return {
-                        "content": [{"type": "text", "text": f"❌ Error: Invalid adw_id format: {adw_id_str}"}],
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": f"❌ Error: Invalid adw_id format: {adw_id_str}"
+                            }
+                        ],
                         "is_error": True,
                     }
 
@@ -773,7 +821,9 @@ class AgentManager:
                 adw = await get_adw(adw_id)
                 if not adw:
                     return {
-                        "content": [{"type": "text", "text": f"❌ ADW '{adw_id_str}' not found"}],
+                        "content": [
+                            {"type": "text", "text": f"❌ ADW '{adw_id_str}' not found"}
+                        ],
                         "is_error": True,
                     }
 
@@ -851,7 +901,11 @@ class AgentManager:
         ]
 
     async def create_agent(
-        self, name: str, system_prompt: str, model: Optional[str] = None, subagent_template: Optional[str] = None
+        self,
+        name: str,
+        system_prompt: str,
+        model: Optional[str] = None,
+        subagent_template: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Create a new agent.
@@ -868,7 +922,6 @@ class AgentManager:
         try:
             # Handle template-based creation
             metadata = {}
-            allowed_tools = None  # Will use defaults if not specified
 
             if subagent_template:
                 self.logger.info(f"Creating agent '{name}' using template '{subagent_template}'")
@@ -879,20 +932,28 @@ class AgentManager:
                 if not template:
                     # Template not found - provide helpful error
                     available = self.subagent_registry.get_available_names()
-                    available_str = ', '.join(available) if available else 'None - create templates in .claude/agents/'
+                    available_str = (
+                        ', '.join(available) if available
+                        else 'None - create templates in .claude/agents/'
+                    )
                     self.logger.error(f"❌ Template '{subagent_template}' not found")
                     self.logger.info(f"Available templates: {available_str}")
                     return {
                         "ok": False,
-                        "error": f"Template '{subagent_template}' not found. Available: {available_str}",
-                        "suggestion": "Create templates in .claude/agents/ directory or use manual agent creation"
+                        "error": (
+                            f"Template '{subagent_template}' not found. "
+                            f"Available: {available_str}"
+                        ),
+                        "suggestion": (
+                            "Create templates in .claude/agents/ directory "
+                            "or use manual agent creation"
+                        )
                     }
 
                 # Apply template configuration
                 system_prompt = template.prompt_body
                 if template.frontmatter.model:
                     model = template.frontmatter.model
-                allowed_tools = template.frontmatter.tools
 
                 # Add template metadata
                 metadata = {
@@ -903,9 +964,15 @@ class AgentManager:
                 # Log template application
                 if template.frontmatter.tools:
                     tool_count = len(template.frontmatter.tools)
-                    self.logger.info(f"Applying template '{template.frontmatter.name}': {tool_count} tools, model={model or 'default'}")
+                    self.logger.info(
+                        f"Applying template '{template.frontmatter.name}': "
+                        f"{tool_count} tools, model={model or 'default'}"
+                    )
                 else:
-                    self.logger.info(f"Applying template '{template.frontmatter.name}': all default tools, model={model or 'default'}")
+                    self.logger.info(
+                        f"Applying template '{template.frontmatter.name}': "
+                        f"all default tools, model={model or 'default'}"
+                    )
 
             # Check if agent name already exists (scoped to this orchestrator)
             existing = await get_agent_by_name(self.orchestrator_agent_id, name)
@@ -913,7 +980,10 @@ class AgentManager:
                 self.logger.warning(f"Attempted to create agent with duplicate name: {name}")
                 return {
                     "ok": False,
-                    "error": f"❌ Agent name '{name}' is already in use. Please choose a different name."
+                    "error": (
+                        f"❌ Agent name '{name}' is already in use. "
+                        "Please choose a different name."
+                    )
                 }
 
             # Create agent in database (scoped to this orchestrator)
@@ -939,9 +1009,9 @@ class AgentManager:
                 agent_id, name, task_slug, entry_counter
             )
 
-            # For agent creation, disallow all tools - agent only needs to acknowledge initialization
-            # Tools will be enabled later during command_agent calls when actual work is performed
-            tools_to_use = []  # No tools during initialization
+            # For agent creation, disallow all tools - agent only needs to
+            # acknowledge initialization. Tools enabled during command_agent.
+            tools_to_use: List[str] = []  # No tools during initialization
 
             # Pass ANTHROPIC_API_KEY explicitly to ensure subprocess has access
             env_vars = {}
@@ -961,7 +1031,10 @@ class AgentManager:
 
             async with ClaudeSDKClient(options=options) as client:
                 # Load initialization prompt from file
-                init_prompt_path = Path(config.BACKEND_DIR) / "prompts" / "command_level_agent_init_user_prompt.md"
+                init_prompt_path = (
+                    Path(config.BACKEND_DIR) / "prompts" /
+                    "command_level_agent_init_user_prompt.md"
+                )
                 init_prompt = init_prompt_path.read_text().strip()
 
                 await client.query(init_prompt)
@@ -1270,7 +1343,10 @@ class AgentManager:
         tool_use_block_count = 0
 
         try:
-            self.logger.debug(f"[AgentManager] Starting message processing for agent={agent_name} task={task_slug}")
+            self.logger.debug(
+                f"[AgentManager] Starting message processing for "
+                f"agent={agent_name} task={task_slug}"
+            )
             async for message in client.receive_response():
                 self.logger.debug(f"[AgentManager] Received message type: {type(message).__name__}")
 
@@ -1281,20 +1357,26 @@ class AgentManager:
                     data = getattr(message, 'data', {})
 
                     self.logger.warning(
-                        f"[AgentManager] SystemMessage received for agent={agent_name} task={task_slug}:\n"
-                        f"  Subtype: {subtype}\n"
-                        f"  Data: {data}\n"
+                        f"[AgentManager] SystemMessage received for "
+                        f"agent={agent_name} task={task_slug}:\n"
+                        f"  Subtype: {subtype}\n  Data: {data}\n"
                     )
 
                     # SystemMessages are informational - log but don't process as agent output
                     continue
 
                 if isinstance(message, AssistantMessage):
-                    self.logger.debug(f"[AgentManager] AssistantMessage has {len(message.content)} blocks")
+                    self.logger.debug(
+                        f"[AgentManager] AssistantMessage has "
+                        f"{len(message.content)} blocks"
+                    )
                     for block in message.content:
                         entry_index = entry_counter["count"]
                         entry_counter["count"] += 1
-                        self.logger.debug(f"[AgentManager] Processing block type: {type(block).__name__}")
+                        self.logger.debug(
+                            f"[AgentManager] Processing block type: "
+                            f"{type(block).__name__}"
+                        )
 
                         if isinstance(block, TextBlock):
                             text_block_count += 1
@@ -1448,8 +1530,9 @@ class AgentManager:
                             # Only broadcast if there are file operations
                             if modified_files_summary or read_files_summary:
                                 # Import Pydantic model for type safety
-                                from .file_tracker import AgentLogMetadata
                                 import uuid
+
+                                from .file_tracker import AgentLogMetadata
 
                                 # Build metadata using Pydantic model
                                 file_metadata = AgentLogMetadata(
@@ -1460,26 +1543,34 @@ class AgentManager:
                                     generated_at=datetime.now(timezone.utc).isoformat(),
                                 )
 
-                                # IMPORTANT: Update the TextBlock in database with file tracking data
-                                # This ensures file changes persist and show up on page refresh
+                                # IMPORTANT: Update TextBlock in DB with file tracking
+                                # This ensures changes persist and show on page refresh
                                 from .database import update_log_payload
                                 await update_log_payload(
                                     last_text_block_id,
                                     file_metadata.model_dump()
                                 )
 
-                                # Broadcast as separate FileTrackingBlock event for real-time WebSocket updates
+                                # Broadcast FileTrackingBlock for real-time updates
+                                modified_count = len(modified_files_summary)
+                                read_count = len(read_files_summary)
                                 await self.ws_manager.broadcast_agent_log(
                                     {
-                                        "id": str(uuid.uuid4()),  # New unique ID for this event
-                                        "parent_log_id": str(last_text_block_id),  # Link to parent TextBlock
+                                        "id": str(uuid.uuid4()),
+                                        "parent_log_id": str(last_text_block_id),
                                         "agent_id": str(agent_id),
                                         "agent_name": agent_name,
                                         "task_slug": task_slug,
                                         "event_category": "file_tracking",
                                         "event_type": "FileTrackingBlock",
-                                        "content": f"📂 {len(modified_files_summary)} modified, {len(read_files_summary)} read",
-                                        "summary": f"File tracking: {len(modified_files_summary)} modified, {len(read_files_summary)} read",
+                                        "content": (
+                                            f"📂 {modified_count} modified, "
+                                            f"{read_count} read"
+                                        ),
+                                        "summary": (
+                                            f"File tracking: {modified_count} "
+                                            f"modified, {read_count} read"
+                                        ),
                                         "payload": file_metadata.model_dump(),
                                         "timestamp": datetime.now(
                                             timezone.utc
@@ -1488,7 +1579,9 @@ class AgentManager:
                                 )
 
                                 self.logger.info(
-                                    f"[FileTracker] Agent={agent_name} Modified={len(modified_files_summary)} Read={len(read_files_summary)} | Stored in DB"
+                                    f"[FileTracker] Agent={agent_name} "
+                                    f"Modified={len(modified_files_summary)} "
+                                    f"Read={len(read_files_summary)} | Stored in DB"
                                 )
                         except Exception as e:
                             self.logger.error(
@@ -1579,7 +1672,8 @@ class AgentManager:
             if summary and summary.strip():
                 await update_prompt_summary(prompt_id, summary)
                 self.logger.debug(
-                    f"[AgentManager:Summary] Generated summary for prompt_id={prompt_id}: {summary}"
+                    f"[AgentManager:Summary] Generated summary for "
+                    f"prompt_id={prompt_id}: {summary}"
                 )
             else:
                 self.logger.warning(
@@ -1615,7 +1709,8 @@ class AgentManager:
             if summary and summary.strip():
                 await update_log_summary(block_id, summary)
                 self.logger.debug(
-                    f"[AgentManager:Summary] Generated summary for block_id={block_id}: {summary}"
+                    f"[AgentManager:Summary] Generated summary for "
+                    f"block_id={block_id}: {summary}"
                 )
 
                 # Broadcast the latest summary for this agent to frontend

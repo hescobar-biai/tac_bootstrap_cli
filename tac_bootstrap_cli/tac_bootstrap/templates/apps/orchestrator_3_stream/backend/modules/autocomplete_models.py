@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field, model_validator
-from typing import Literal, Optional, List, Union
 from datetime import datetime
+from typing import Any, List, Literal, Optional, Union
+
+from pydantic import BaseModel, Field, model_validator
 
 # ═══════════════════════════════════════════════════════════
 # API REQUEST/RESPONSE MODELS
@@ -34,7 +35,7 @@ class AutocompleteUpdateRequest(BaseModel):
     reasoning: Optional[str] = None
 
     @model_validator(mode='after')
-    def validate_fields(self):
+    def validate_fields(self) -> Any:
         if self.completion_type == 'none' and not self.user_input_on_enter:
             raise ValueError("user_input_on_enter required for type 'none'")
         if self.completion_type == 'autocomplete':
@@ -66,7 +67,9 @@ class PreviousCompletionAutocomplete(BaseModel):
     Maps to expertise.yaml structure when completion_type='autocomplete'
     """
     completion_type: Literal['autocomplete']
-    user_input_before_completion: str = Field(..., description="User input before autocomplete was applied")
+    user_input_before_completion: str = Field(
+        ..., description="User input before autocomplete was applied"
+    )
     autocomplete_item: str = Field(..., description="The autocomplete text that was accepted")
     reasoning: str = Field(..., description="Why this autocomplete was suggested")
     order: int = Field(..., description="Sequential order of this completion event")
@@ -87,7 +90,7 @@ class AutocompleteExpertiseData(BaseModel):
     Fields:
         orchestrator_agent_id: Current orchestrator UUID (triggers reset if changed)
         completion_agent_id: Claude Agent SDK session_id (None until first interaction)
-        previous_completions: List of completion events (union type)
+        previous_completions: List[Any] of completion events (union type)
     """
     orchestrator_agent_id: str = Field(..., description="Current orchestrator UUID")
     completion_agent_id: Optional[str] = Field(
@@ -102,11 +105,11 @@ class AutocompleteExpertiseData(BaseModel):
     class Config:
         frozen = False  # Allow mutations during runtime
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dict for YAML serialization"""
         return self.model_dump(mode='python', exclude_none=False)
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'AutocompleteExpertiseData':
-        """Load from dict (YAML data) with validation"""
+    def from_dict(cls, data: dict[str, Any]) -> 'AutocompleteExpertiseData':
+        """Load from dict[str, Any](YAML data) with validation"""
         return cls(**data)

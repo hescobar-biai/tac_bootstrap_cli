@@ -1,24 +1,30 @@
-from pathlib import Path
-from typing import List, Optional
-import yaml
 import json
 import time
 import uuid
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+
+if TYPE_CHECKING:
+    from .logger import OrchestratorLogger
+    from .websocket_manager import WebSocketManager
+
+import yaml
 from claude_agent_sdk import (
-    ClaudeSDKClient,
-    ClaudeAgentOptions,
     AssistantMessage,
+    ClaudeAgentOptions,
+    ClaudeSDKClient,
+    ResultMessage,
     SystemMessage,
     TextBlock,
-    ResultMessage,
 )
-from .autocomplete_models import (
-    AutocompleteItem,
-    AutocompleteExpertiseData,
-    PreviousCompletionNone,
-    PreviousCompletionAutocomplete,
-)
+
 from . import database
+from .autocomplete_models import (
+    AutocompleteExpertiseData,
+    AutocompleteItem,
+    PreviousCompletionAutocomplete,
+    PreviousCompletionNone,
+)
 
 # Maximum number of codebase files to include in autocomplete context
 # Captures all files from git but only sends first N to keep prompt size manageable
@@ -35,7 +41,13 @@ class AutocompleteAgent:
     - All expertise_data access is type-checked via AutocompleteExpertiseData
     """
 
-    def __init__(self, orchestrator_agent_id, logger, working_dir, ws_manager=None):
+    def __init__(
+        self,
+        orchestrator_agent_id: str,
+        logger: "OrchestratorLogger",
+        working_dir: str,
+        ws_manager: Optional["WebSocketManager"] = None,
+    ) -> None:
         self.orchestrator_agent_id = str(orchestrator_agent_id)
         self.logger = logger
         self.working_dir = working_dir
@@ -71,12 +83,12 @@ class AutocompleteAgent:
         self.is_executing: bool = False
 
         # Cache for active agents (5-second TTL to avoid repeated DB queries)
-        self._cached_agents: List[dict] = []
+        self._cached_agents: List[dict[str, Any]] = []
         self._cache_timestamp: float = 0
         self._cache_ttl: int = 5  # seconds
 
         # Cache for codebase structure (initialized once)
-        self._codebase_structure: Optional[list] = None
+        self._codebase_structure: Optional[list[Any]] = None
 
         # Load expertise FIRST, then check if we need to reset
         self.expertise_data = self._load_or_init_expertise()
@@ -134,7 +146,8 @@ class AutocompleteAgent:
         # STEP 2: Check orchestrator_agent_id match
         if expertise.orchestrator_agent_id != self.orchestrator_agent_id:
             self.logger.info(
-                f"Orchestrator changed: {expertise.orchestrator_agent_id} → {self.orchestrator_agent_id}"
+                f"Orchestrator changed: {expertise.orchestrator_agent_id} "
+                f"→ {self.orchestrator_agent_id}"
             )
             self.logger.info("Resetting expertise.yaml (clearing history)")
 
@@ -153,7 +166,7 @@ class AutocompleteAgent:
         )
         return expertise
 
-    def _init_claude_agent(self):
+    def _init_claude_agent(self) -> None:
         """
         Initialize Claude Agent SDK client with session resume if available.
 
@@ -205,7 +218,7 @@ class AutocompleteAgent:
         self.client = ClaudeSDKClient(ClaudeAgentOptions(**options_dict))
         self.logger.success("Claude Agent SDK client initialized successfully")
 
-    def _save_expertise(self):
+    def _save_expertise(self) -> None:
         """
         Save expertise data to YAML file with type safety.
 
@@ -213,12 +226,12 @@ class AutocompleteAgent:
         """
         self._save_expertise_data(self.expertise_data)
 
-    def _save_expertise_data(self, data: AutocompleteExpertiseData):
+    def _save_expertise_data(self, data: AutocompleteExpertiseData) -> None:
         """Helper to save expertise data"""
         with open(self.expertise_yaml_path, "w") as f:
             yaml.dump(data.to_dict(), f, default_flow_style=False, sort_keys=False)
 
-    async def _fetch_active_agents(self) -> List[dict]:
+    async def _fetch_active_agents(self) -> List[Dict[str, str]]:
         """
         Fetch active agents from database with time-based caching.
 
@@ -270,7 +283,7 @@ class AutocompleteAgent:
 
         return self._cached_agents
 
-    def _get_codebase_structure(self) -> list:
+    def _get_codebase_structure(self) -> List[str]:
         """
         Get codebase structure as flat list of file paths using git ls-files with caching.
 
@@ -279,7 +292,7 @@ class AutocompleteAgent:
         Returns a simple list of file paths.
 
         Returns:
-            List of file path strings (max 300), e.g. ["backend/main.py", "frontend/src/App.vue", ...]
+            List of file paths (max 300), e.g. ["backend/main.py", ...]
 
         Fallback: If git is not available or not in a repo, uses directory scanning.
         """
@@ -340,7 +353,7 @@ class AutocompleteAgent:
             all_files = []
 
             # Recursively scan directories for ALL files
-            def scan_directory(path: Path, base: Path):
+            def scan_directory(path: Path, base: Path) -> Any:
                 for item in path.iterdir():
                     # Skip hidden files and directories
                     if item.name.startswith("."):
@@ -377,7 +390,7 @@ class AutocompleteAgent:
 
         return self._codebase_structure
 
-    def _get_variable_values(self, user_input: str) -> dict[str, str]:
+    def _get_variable_values(self, user_input: str) -> Dict[str, str]:
         """
         Get all 7 variables for prompt replacement.
 
@@ -496,6 +509,11 @@ class AutocompleteAgent:
             # Fetch active agents from database (with caching)
             await self._fetch_active_agents()
 
+            # Ensure client is initialized
+            if self.client is None:
+                self.logger.error("Claude Agent SDK client not initialized")
+                return []
+
             # Update system prompt with current user input context
             self.logger.info("Building system prompt with current context...")
             system_prompt = self._load_system_prompt_with_variables(user_input)
@@ -530,7 +548,7 @@ class AutocompleteAgent:
             self.logger.debug(user_prompt)
             self.logger.debug("=" * 80)
 
-            self.logger.info(f"Sending query to Claude Agent SDK...")
+            self.logger.info("Sending query to Claude Agent SDK...")
 
             # Send query to Claude Agent SDK with async context manager
             self.logger.debug("Entering async context manager for Claude SDK client...")
@@ -546,18 +564,22 @@ class AutocompleteAgent:
                 self.logger.debug("Receiving response from Claude Agent SDK...")
                 async for message in self.client.receive_response():
                     message_count += 1
-                    message_type = type(message).__name__
+                    type(message).__name__
 
                     if isinstance(message, SystemMessage):
                         # SystemMessage contains metadata in data dictionary
                         data = getattr(message, "data", {})
                         subtype = getattr(message, "subtype", "unknown")
-                        # Extract session_id from data dict (not as direct attribute)
-                        extracted_session = data.get("session_id") if isinstance(data, dict) else None
+                        # Extract session_id from data dict[str, Any](not direct attribute)
+                        extracted_session = (
+                            data.get("session_id") if isinstance(data, dict) else None
+                        )
                         if extracted_session:
                             session_id = extracted_session
+                        session_preview = session_id[:20] if session_id else 'None'
                         self.logger.debug(
-                            f"[Message {message_count}] SystemMessage received (subtype: {subtype}, session_id: {session_id[:20] if session_id else 'None'}...)"
+                            f"[Message {message_count}] SystemMessage received "
+                            f"(subtype: {subtype}, session_id: {session_preview}...)"
                         )
                         continue
 
@@ -565,7 +587,8 @@ class AutocompleteAgent:
                         # Extract text from all TextBlock items in the response
                         block_count = len(message.content)
                         self.logger.debug(
-                            f"[Message {message_count}] AssistantMessage received ({block_count} blocks)"
+                            f"[Message {message_count}] AssistantMessage "
+                            f"received ({block_count} blocks)"
                         )
                         for idx, block in enumerate(message.content, 1):
                             if isinstance(block, TextBlock):
@@ -577,11 +600,13 @@ class AutocompleteAgent:
                             else:
                                 self.logger.debug(f"  Block {idx}: {type(block).__name__}")
 
-                    # Capture session_id from ResultMessage (final message with session info)
+                    # Capture session_id from ResultMessage (final message)
                     elif isinstance(message, ResultMessage):
                         session_id = message.session_id
+                        session_preview = session_id[:20] if session_id else 'None'
                         self.logger.debug(
-                            f"[Message {message_count}] ResultMessage received (session_id: {session_id[:20] if session_id else 'None'}...)"
+                            f"[Message {message_count}] ResultMessage received "
+                            f"(session_id: {session_preview}...)"
                         )
 
                 self.logger.info(f"Received {message_count} messages from Claude Agent SDK")
@@ -594,9 +619,10 @@ class AutocompleteAgent:
                     self.logger.info(
                         f"Captured autocomplete session_id: {session_id[:20]}..."
                     )
-                elif session_id:
+                elif session_id and self.expertise_data.completion_agent_id:
+                    existing_id = self.expertise_data.completion_agent_id[:20]
                     self.logger.debug(
-                        f"Session_id already captured: {self.expertise_data.completion_agent_id[:20]}..."
+                        f"Session_id already captured: {existing_id}..."
                     )
 
             self.logger.debug("Exited async context manager")
@@ -658,7 +684,7 @@ class AutocompleteAgent:
         user_input_before_completion: Optional[str] = None,
         autocomplete_item: Optional[str] = None,
         reasoning: Optional[str] = None,
-    ):
+    ) -> None:
         """
         Add a completion event to expertise.yaml with type safety.
 
@@ -678,32 +704,34 @@ class AutocompleteAgent:
         self.logger.debug(f"Event order number: {order}")
 
         # Create typed event based on completion_type
+        event: Union[PreviousCompletionNone, PreviousCompletionAutocomplete]
         if completion_type == "none":
             self.logger.debug(
-                f"Creating 'none' completion event (user pressed enter without accepting)"
+                "Creating 'none' completion event (user pressed enter without accepting)"
             )
             event = PreviousCompletionNone(
                 completion_type="none",
-                user_input_on_enter=user_input_on_enter,
+                user_input_on_enter=user_input_on_enter or "",
                 order=order,
             )
-            self.logger.debug(
-                f"  user_input_on_enter: {user_input_on_enter[:50] if user_input_on_enter else 'None'}..."
-            )
+            input_preview = user_input_on_enter[:50] if user_input_on_enter else 'None'
+            self.logger.debug(f"  user_input_on_enter: {input_preview}...")
         else:  # autocomplete
             self.logger.debug(
-                f"Creating 'autocomplete' completion event (user accepted suggestion)"
+                "Creating 'autocomplete' completion event (user accepted suggestion)"
             )
             event = PreviousCompletionAutocomplete(
                 completion_type="autocomplete",
-                user_input_before_completion=user_input_before_completion,
-                autocomplete_item=autocomplete_item,
-                reasoning=reasoning,
+                user_input_before_completion=user_input_before_completion or "",
+                autocomplete_item=autocomplete_item or "",
+                reasoning=reasoning or "",
                 order=order,
             )
-            self.logger.debug(
-                f"  user_input_before: {user_input_before_completion[:50] if user_input_before_completion else 'None'}..."
+            before_preview = (
+                user_input_before_completion[:50]
+                if user_input_before_completion else 'None'
             )
+            self.logger.debug(f"  user_input_before: {before_preview}...")
             self.logger.debug(
                 f"  autocomplete_item: {autocomplete_item[:50] if autocomplete_item else 'None'}..."
             )
@@ -713,10 +741,9 @@ class AutocompleteAgent:
 
         # Append typed event to list (type-safe)
         self.expertise_data.previous_completions.append(event)
-        self.logger.debug(
-            f"Event appended to history (total: {len(self.expertise_data.previous_completions)} events)"
-        )
+        event_count = len(self.expertise_data.previous_completions)
+        self.logger.debug(f"Event appended to history (total: {event_count} events)")
 
         # Save with type safety
         self._save_expertise()
-        self.logger.info(f"✓ Completion event saved to expertise.yaml")
+        self.logger.info("✓ Completion event saved to expertise.yaml")

@@ -11,58 +11,60 @@ Implements three-phase logging pattern:
 Reference: apps/orchestrator_1_term/modules/orchestrator_agent.py
 """
 
-import uuid
 import asyncio
 import os
+import uuid
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, List
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+# Claude SDK imports
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ClaudeSDKClient,
+    ResultMessage,
+    SystemMessage,
+    TextBlock,
+    ThinkingBlock,
+    ToolUseBlock,
+)
+
+from . import config
 
 # Configuration
 from .config import DEFAULT_CHAT_HISTORY_LIMIT
 
 # Database operations
 from .database import (
-    get_orchestrator,
+    get_chat_history,
+    get_orchestrator_action_blocks,
+    get_turn_count,
     insert_chat_message,
     insert_system_log,
-    update_orchestrator_session,
-    update_orchestrator_costs,
-    get_chat_history,
-    get_turn_count,
-    get_orchestrator_action_blocks,
     update_chat_summary,
-    update_prompt_summary,
+    update_orchestrator_costs,
+    update_orchestrator_session,
     update_system_log_summary,
+)
+from .logger import OrchestratorLogger
+
+# Hook imports for orchestrator agent event tracking
+from .orchestrator_hooks import (
+    create_orchestrator_post_tool_hook,
+    create_orchestrator_pre_tool_hook,
+    create_orchestrator_stop_hook,
 )
 
 # AI summarization
 from .single_agent_prompt import summarize_event
+from .subagent_loader import SubagentRegistry
 
 # WebSocket and logging
 from .websocket_manager import WebSocketManager
-from .logger import OrchestratorLogger
-from . import config
-from .subagent_loader import SubagentRegistry
 
-# Hook imports for orchestrator agent event tracking
-from .orchestrator_hooks import (
-    create_orchestrator_pre_tool_hook,
-    create_orchestrator_post_tool_hook,
-    create_orchestrator_stop_hook,
-)
-
-# Claude SDK imports
-from claude_agent_sdk import (
-    ClaudeSDKClient,
-    ClaudeAgentOptions,
-    AssistantMessage,
-    SystemMessage,
-    TextBlock,
-    ThinkingBlock,
-    ToolUseBlock,
-    ResultMessage,
-)
+if TYPE_CHECKING:
+    from .agent_manager import AgentManager
 
 
 def get_orchestrator_tools() -> List[str]:
@@ -79,17 +81,32 @@ def get_orchestrator_tools() -> List[str]:
     """
     return [
         # Agent Management Tools
-        "create_agent(name: string, system_prompt?: string, model?: string, subagent_template?: string)",
+        (
+            "create_agent(name: string, system_prompt?: string, model?: string, "
+            "subagent_template?: string)"
+        ),
         "list_agents()",
         "command_agent(agent_name: string, command: string)",
-        "check_agent_status(agent_name: string, tail_count = 10, offset = 0, verbose_logs = false)",
+        (
+            "check_agent_status(agent_name: string, tail_count = 10, offset = 0, "
+            "verbose_logs = false)"
+        ),
         "delete_agent(agent_name: string)",
         "interrupt_agent(agent_name: string)",
-        "read_system_logs(offset = 0, limit = 50, message_contains?: string, level?: string)",
+        (
+            "read_system_logs(offset = 0, limit = 50, message_contains?: string, "
+            "level?: string)"
+        ),
         "report_cost()",
         # AI Developer Workflow Tools
-        "start_adw(name_of_adw: string, workflow_type: string, prompt: string, description?: string)",
-        "check_adw(adw_id: string, tail_count = 10, event_type?: string, include_step_details = false)",
+        (
+            "start_adw(name_of_adw: string, workflow_type: string, prompt: string, "
+            "description?: string)"
+        ),
+        (
+            "check_adw(adw_id: string, tail_count = 10, event_type?: string, "
+            "include_step_details = false)"
+        ),
     ]
 
 
@@ -145,7 +162,7 @@ class OrchestratorService:
                 f"Registered {len(self.management_tools)} management tools"
             )
 
-        self.logger.info(f"OrchestratorService initialized")
+        self.logger.info("OrchestratorService initialized")
         if session_id:
             self.logger.info(f"Resuming session: {session_id}")
         self.logger.info(f"Working directory: {self.working_dir}")
@@ -201,7 +218,10 @@ class OrchestratorService:
                 )
             else:
                 # No templates available - provide helpful message
-                template_map = "No subagent templates available. Create templates in `.claude/agents/` directory to enable specialized agents."
+                template_map = (
+                    "No subagent templates available. Create templates in "
+                    "`.claude/agents/` directory to enable specialized agents."
+                )
                 self.logger.warning(
                     "⚠️  No templates available for SUBAGENT_MAP - using fallback message"
                 )
@@ -227,10 +247,18 @@ class OrchestratorService:
 
             if workflow_types:
                 # Format as bullet list
-                adw_type_list = "\n".join([f"- `{wt}` → `adws/adw_workflows/adw_{wt}.py`" for wt in workflow_types])
-                self.logger.info(f"Discovered {len(workflow_types)} ADW workflow type(s)")
+                adw_type_list = "\n".join([
+                    f"- `{wt}` → `adws/adw_workflows/adw_{wt}.py`"
+                    for wt in workflow_types
+                ])
+                self.logger.info(
+                    f"Discovered {len(workflow_types)} ADW workflow type(s)"
+                )
             else:
-                adw_type_list = "No workflow types available. Create workflow files in `adws/adw_workflows/adw_*.py` to enable ADWs."
+                adw_type_list = (
+                    "No workflow types available. Create workflow files in "
+                    "`adws/adw_workflows/adw_*.py` to enable ADWs."
+                )
                 self.logger.warning("⚠️  No ADW workflow types found")
 
             prompt_text = prompt_text.replace("{{AVAILABLE_ADW_TYPES}}", adw_type_list)
@@ -271,7 +299,7 @@ class OrchestratorService:
         if "ANTHROPIC_API_KEY" in os.environ:
             env_vars["ANTHROPIC_API_KEY"] = os.environ["ANTHROPIC_API_KEY"]
 
-        options_dict = {
+        options_dict: Dict[str, Any] = {
             "system_prompt": self._load_system_prompt(),
             "model": config.ORCHESTRATOR_MODEL,
             "cwd": self.working_dir,
@@ -345,7 +373,6 @@ class OrchestratorService:
         Returns:
             Hooks dict for ClaudeAgentOptions
         """
-        agent_name = "orchestrator"  # Orchestrator's name for logging
 
         return {
             "PreToolUse": [
@@ -554,7 +581,10 @@ class OrchestratorService:
                             "type": "system_log",
                             "data": {
                                 "level": "WARNING",
-                                "message": "Previous orchestrator task interrupted - refocusing on new message",
+                                "message": (
+                                    "Previous orchestrator task interrupted - "
+                                    "refocusing on new message"
+                                ),
                                 "timestamp": datetime.now().isoformat(),
                             },
                         }
@@ -624,7 +654,8 @@ class OrchestratorService:
                                     "slash_commands": slash_commands,  # Store slash commands
                                 }
 
-                                # Store in metadata - IMPORTANT: Pass orchestrator_agent_id to update only THIS agent
+                                # Store in metadata (pass orchestrator_agent_id
+                                # to update only THIS agent)
                                 await update_orchestrator_metadata(
                                     orchestrator_agent_id=orch_uuid,
                                     metadata_updates={"system_message_info": system_message_info}
@@ -634,7 +665,8 @@ class OrchestratorService:
                                 self._system_message_captured = True
 
                                 self.logger.info(
-                                    f"✅ Stored SystemMessage data in orchestrator metadata (including {len(slash_commands)} slash commands)"
+                                    f"✅ Stored SystemMessage data in orchestrator "
+                                    f"metadata (including {len(slash_commands)} slash commands)"
                                 )
                             except Exception as e:
                                 raise e
@@ -873,7 +905,7 @@ class OrchestratorService:
                     self.logger.error(f"Failed to update session: {e}")
             else:
                 self.logger.debug(
-                    f"Skipping session_id database update (resumed session)"
+                    "Skipping session_id database update (resumed session)"
                 )
 
         # Update costs in database
@@ -910,7 +942,7 @@ class OrchestratorService:
 
         try:
             # Call database update and get detailed response
-            # IMPORTANT: Pass orchestrator_agent_id to ensure we only update THIS agent, not all agents
+            # IMPORTANT: Pass orchestrator_agent_id to update only THIS agent
             update_result = await update_orchestrator_costs(
                 orchestrator_agent_id=orch_uuid,
                 input_tokens=input_tokens or 0,
@@ -920,11 +952,13 @@ class OrchestratorService:
 
             # Log detailed results
             if update_result.get("success"):
+                in_tokens = update_result.get('input_tokens', 0)
+                out_tokens = update_result.get('output_tokens', 0)
                 self.logger.info(
                     f"✅ Updated orchestrator costs successfully:\n"
                     f"  Rows Updated: {update_result.get('rows_updated', 0)}\n"
                     f"  Orchestrator ID: {update_result.get('id', 'N/A')}\n"
-                    f"  New Total Tokens: {update_result.get('input_tokens', 0) + update_result.get('output_tokens', 0)}\n"
+                    f"  New Total Tokens: {in_tokens + out_tokens}\n"
                     f"  New Total Cost: ${update_result.get('total_cost', 0.0):.6f}\n"
                     f"  Updated At: {update_result.get('updated_at', 'N/A')}"
                 )
@@ -993,7 +1027,8 @@ class OrchestratorService:
             if summary and summary.strip():
                 await update_chat_summary(chat_id, summary)
                 self.logger.debug(
-                    f"[OrchestratorService:Summary] Generated summary for chat_id={chat_id}: {summary}"
+                    f"[OrchestratorService:Summary] Generated summary for "
+                    f"chat_id={chat_id}: {summary}"
                 )
             else:
                 self.logger.warning(
@@ -1036,7 +1071,8 @@ class OrchestratorService:
             if summary and summary.strip():
                 await update_system_log_summary(log_id, summary)
                 self.logger.debug(
-                    f"[OrchestratorService:Summary] Generated summary for system_log_id={log_id}: {summary}"
+                    f"[OrchestratorService:Summary] Generated summary for "
+                    f"system_log_id={log_id}: {summary}"
                 )
             else:
                 self.logger.warning(

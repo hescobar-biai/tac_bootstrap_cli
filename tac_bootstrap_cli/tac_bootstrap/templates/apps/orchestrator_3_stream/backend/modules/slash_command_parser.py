@@ -8,8 +8,9 @@ Reference: https://docs.anthropic.com/en/docs/claude-code/slash-commands
 """
 
 import re
+from typing import Any, List, Optional
+
 import yaml
-from typing import Optional, List, Union
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -29,7 +30,10 @@ class SlashCommandFrontmatter(BaseModel):
     argument_hint: Optional[str] = Field(
         default=None,
         alias="argument-hint",
-        description="Arguments expected for slash command. Example: 'add [tagId] | remove [tagId] | list'",
+        description=(
+            "Arguments expected for slash command. "
+            "Example: 'add [tagId] | remove [tagId] | list'"
+        ),
     )
 
     description: Optional[str] = Field(
@@ -52,7 +56,7 @@ class SlashCommandFrontmatter(BaseModel):
 
     @field_validator('allowed_tools', mode='before')
     @classmethod
-    def parse_allowed_tools(cls, v):
+    def parse_allowed_tools(cls, v: Any) -> Any:
         """
         Parse allowed_tools field to handle both formats:
         - YAML list: ['Read', 'Write', 'Bash']
@@ -72,7 +76,7 @@ class SlashCommandFrontmatter(BaseModel):
 
     @field_validator('argument_hint', mode='before')
     @classmethod
-    def parse_argument_hint(cls, v):
+    def parse_argument_hint(cls, v: Any) -> Any:
         """
         Parse argument_hint field to ensure it's always a string.
 
@@ -128,7 +132,7 @@ def parse_slash_command_frontmatter(
         # Convert to Pydantic model
         return SlashCommandFrontmatter(**data)
 
-    except (yaml.YAMLError, ValueError) as e:
+    except (yaml.YAMLError, ValueError):
         # If parsing fails, return None (caller should handle)
         return None
 
@@ -229,7 +233,7 @@ def parse_slash_command_file(file_content: str) -> Optional[SlashCommandFrontmat
     return parse_slash_command_frontmatter(frontmatter_text)
 
 
-def discover_slash_commands(working_dir: str) -> List[dict]:
+def discover_slash_commands(working_dir: str) -> List[dict[str, Any]]:
     """
     Discover slash commands from .claude/commands/ directory.
 
@@ -261,11 +265,12 @@ def discover_slash_commands(working_dir: str) -> List[dict]:
             "model": "sonnet"
         }
     """
-    from pathlib import Path
     import logging
+    from pathlib import Path
+    from typing import Any, Dict, List
 
     logger = logging.getLogger(__name__)
-    commands = []
+    commands: List[Dict[str, Any]] = []
     commands_dir = Path(working_dir) / ".claude" / "commands"
 
     if not commands_dir.exists():

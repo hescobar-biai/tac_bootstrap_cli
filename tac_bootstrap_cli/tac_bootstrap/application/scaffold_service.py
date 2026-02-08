@@ -1176,8 +1176,14 @@ class ScaffoldService:
             ("prompts/command_level_agent_init_user_prompt.md", "Command agent init prompt"),
             ("prompts/event_summarizer_system_prompt.md", "Event summarizer system prompt"),
             ("prompts/event_summarizer_user_prompt.md", "Event summarizer user prompt"),
-            ("prompts/experts/orch_autocomplete/autocomplete_expert_system_prompt.md", "Autocomplete expert system prompt"),
-            ("prompts/experts/orch_autocomplete/autocomplete_expert_user_prompt.md", "Autocomplete expert user prompt"),
+            (
+                "prompts/experts/orch_autocomplete/autocomplete_expert_system_prompt.md",
+                "Autocomplete expert system prompt",
+            ),
+            (
+                "prompts/experts/orch_autocomplete/autocomplete_expert_user_prompt.md",
+                "Autocomplete expert user prompt",
+            ),
             ("prompts/experts/orch_autocomplete/expertise.yaml", "Autocomplete expertise config"),
             # Tests
             ("tests/README.md", "Test documentation"),
@@ -1425,7 +1431,12 @@ class ScaffoldService:
                 # If file doesn't exist, skip it
                 continue
 
-    def _add_orchestrator_scripts(self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool = False) -> None:
+    def _add_orchestrator_scripts(
+        self,
+        plan: ScaffoldPlan,
+        config: TACConfig,
+        existing_repo: bool = False,
+    ) -> None:
         """Add orchestrator utility scripts (TAC-14 Task 19)."""
         action = FileAction.OVERWRITE if existing_repo else FileAction.CREATE
         scripts_dir = config.paths.scripts_dir
