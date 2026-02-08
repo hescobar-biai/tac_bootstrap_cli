@@ -1080,7 +1080,7 @@ class ScaffoldService:
         - sync_models.py: Model distribution to apps
         - git_utils.py: Git analysis utilities
         """
-        action = FileAction.CREATE
+        action = FileAction.OVERWRITE if existing_repo else FileAction.CREATE
 
         plan.add_directory("apps/orchestrator_db", "Orchestrator database schema")
         plan.add_directory("apps/orchestrator_db/migrations", "PostgreSQL migrations")
@@ -1117,7 +1117,8 @@ class ScaffoldService:
                     content=content,
                     reason=reason,
                 )
-            except Exception:
+            except FileNotFoundError:
+                print(f"  [warn] Template not found: {template_path}")
                 continue
 
     def _add_orchestrator_backend(
@@ -1132,7 +1133,7 @@ class ScaffoldService:
         - tests/: Backend test suite
         - pyproject.toml: Python project configuration
         """
-        action = FileAction.CREATE
+        action = FileAction.OVERWRITE if existing_repo else FileAction.CREATE
 
         # Add directory structure
         plan.add_directory("apps/orchestrator_3_stream/backend", "Orchestrator web backend")
@@ -1207,7 +1208,8 @@ class ScaffoldService:
                     content=content,
                     reason=reason,
                 )
-            except Exception:
+            except FileNotFoundError:
+                print(f"  [warn] Template not found: {template_path}")
                 continue
 
     def _add_orchestrator_frontend(
@@ -1289,7 +1291,8 @@ class ScaffoldService:
                     reason=reason,
                     executable=executable,
                 )
-            except Exception:
+            except FileNotFoundError:
+                print(f"  [warn] Template not found: {template_path}")
                 continue
 
         # Source files - read as static content to avoid Jinja2/Vue syntax conflicts
@@ -1356,8 +1359,8 @@ class ScaffoldService:
                     content=content,
                     reason=reason,
                 )
-            except Exception:
-                # If file doesn't exist or can't be read, skip it
+            except FileNotFoundError:
+                print(f"  [warn] Template not found: {template_path}")
                 continue
 
     def _add_test_files(
@@ -1427,8 +1430,8 @@ class ScaffoldService:
                     content=content,
                     reason=reason,
                 )
-            except Exception:
-                # If file doesn't exist, skip it
+            except FileNotFoundError:
+                print(f"  [warn] Template not found: {template_path}")
                 continue
 
     def _add_orchestrator_scripts(

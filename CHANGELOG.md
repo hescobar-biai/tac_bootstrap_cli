@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-02-08
+
+### Fixed
+- **`apps/orchestrator_db/` not copied on `upgrade --with-orchestrator`**: `_add_orchestrator_database()` and `_add_orchestrator_backend()` used `FileAction.CREATE` (skip if exists) even during upgrades. Changed to `FileAction.OVERWRITE` when `existing_repo=True` so files are properly created/updated
+- **`add-agentic --with-orchestrator` ignored in interactive mode**: `run_add_agentic_wizard()` did not accept `with_orchestrator` parameter, so orchestrator was never enabled when using the interactive wizard. Added parameter and propagated to `OrchestratorConfig`
+- **`cli.py` did not pass `with_orchestrator` to wizard**: `add_agentic` command in interactive mode called `run_add_agentic_wizard(repo_path, detected)` without the flag
+- **Upgrade preview missing `orchestrator_db`**: `get_changes_preview()` only showed `apps/orchestrator_3_stream/` but not `apps/orchestrator_db/`. Now shows both directories
+- **Silent error swallowing in orchestrator scaffolding**: All 5 orchestrator template-reading loops used `except Exception: continue` which hid file-not-found errors. Changed to `except FileNotFoundError` with warning output
+
+### Changed
+- `scaffold_service.py` - `_add_orchestrator_database()` and `_add_orchestrator_backend()` use `OVERWRITE` for existing repos
+- `wizard.py` - `run_add_agentic_wizard()` accepts `with_orchestrator: bool` parameter
+- `cli.py` - `add_agentic()` passes `with_orchestrator` to wizard; updated `--with-orchestrator` help text to mention `orchestrator_db`
+- `upgrade_service.py` - `get_changes_preview()` includes `orchestrator_db` directory status
+
 ## [0.10.0] - 2026-02-08
 
 ### Added - PostgreSQL Migration & Orchestrator Production-Ready

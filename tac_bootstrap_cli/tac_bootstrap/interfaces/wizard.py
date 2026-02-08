@@ -261,6 +261,7 @@ def run_init_wizard(
 def run_add_agentic_wizard(
     repo_path: Path,
     detected: Any,  # DetectedProject type not implemented yet (FASE 6)
+    with_orchestrator: bool = False,
 ) -> TACConfig:
     """Run wizard for adding agentic layer to existing project.
 
@@ -271,6 +272,7 @@ def run_add_agentic_wizard(
     Args:
         repo_path: Path to existing repository
         detected: Auto-detected project settings (from DetectService)
+        with_orchestrator: Whether to include orchestrator components
 
     Returns:
         Configured TACConfig for the existing project
@@ -382,6 +384,7 @@ def run_add_agentic_wizard(
         claude=ClaudeConfig(
             settings=ClaudeSettings(project_name=repo_path.name),
         ),
+        orchestrator=OrchestratorConfig(enabled=with_orchestrator),
     )
 
     # Show summary and confirm

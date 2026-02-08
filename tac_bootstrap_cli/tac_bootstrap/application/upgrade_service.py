@@ -159,6 +159,12 @@ class UpgradeService:
             else:
                 changes.append("Add apps/orchestrator_3_stream/ (orchestrator)")
 
+            db_path = self.project_path / "apps" / "orchestrator_db"
+            if db_path.exists():
+                changes.append("Update apps/orchestrator_db/ (PostgreSQL migrations)")
+            else:
+                changes.append("Add apps/orchestrator_db/ (PostgreSQL migrations)")
+
         changes.append("Update version in config.yml")
 
         return changes

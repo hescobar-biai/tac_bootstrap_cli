@@ -329,7 +329,9 @@ def add_agentic(
             if interactive:
                 from tac_bootstrap.interfaces.wizard import run_add_agentic_wizard
 
-                config = run_add_agentic_wizard(repo_path, detected)
+                config = run_add_agentic_wizard(
+                    repo_path, detected, with_orchestrator=with_orchestrator
+                )
             else:
                 # Non-interactive mode: build config from detected settings
                 # Use repo directory name as project name
@@ -895,7 +897,7 @@ def upgrade(
     with_orchestrator: bool = typer.Option(
         False,
         "--with-orchestrator",
-        help="Enable orchestrator (adds apps/orchestrator_3_stream/)",
+        help="Enable orchestrator (adds apps/orchestrator_3_stream/ and apps/orchestrator_db/)",
     ),
 ) -> None:
     """Upgrade agentic layer to latest TAC Bootstrap version.
