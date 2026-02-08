@@ -7,6 +7,150 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-02-08
+
+### Added - PostgreSQL Migration & Orchestrator Production-Ready
+
+**PostgreSQL Database Layer (`apps/orchestrator_db/`):**
+- Migrated orchestrator from SQLite to PostgreSQL for production-grade concurrency and scalability
+- 11 SQL migration files with incremental schema evolution (0-10):
+  - `0_orchestrator_agents.sql` - Core orchestrator agents table
+  - `1_agents.sql` - Runtime agents with status tracking
+  - `2_prompts.sql` - Prompt versioning and storage
+  - `3_agent_logs.sql` - Structured agent execution logs
+  - `4_system_logs.sql` - System-level event logging
+  - `5_indexes.sql` - Performance indexes for all tables
+  - `6_functions.sql` - PostgreSQL functions (updated_at triggers)
+  - `7_triggers.sql` - Automatic timestamp triggers
+  - `8_orchestrator_chat.sql` - Chat/conversation persistence
+  - `9_ai_developer_workflows.sql` - ADW workflow state tracking
+  - `10_adw_orchestrator_agent.sql` - ADW-orchestrator agent linking
+- `run_migrations.py` - Migration runner with version tracking and rollback support
+- `models.py` - Pydantic models for all PostgreSQL tables
+- `sync_models.py` - Model-to-schema synchronization utility
+- `drop_table.py` - Safe table drop with dependency awareness
+- `git_utils.py` - Git integration utilities for DB operations
+
+**Orchestrator Backend Modularization (`apps/orchestrator_3_stream/backend/modules/`):**
+- `database.py` - PostgreSQL async database manager (replaces SQLite aiosqlite)
+- `agent_manager.py` - Agent lifecycle management with state machine
+- `autocomplete_agent.py` - AI-powered autocomplete with expert system prompts
+- `autocomplete_models.py` - Pydantic models for autocomplete sessions
+- `autocomplete_service.py` - Autocomplete session orchestration
+- `command_agent_hooks.py` - Hook system for command-level agent execution
+- `config.py` - Centralized configuration with PostgreSQL connection settings
+- `event_summarizer.py` - AI event summarization for log reduction
+- `file_tracker.py` - File change tracking and visualization
+- `hooks.py` - Orchestrator hook management system
+- `logger.py` - Structured logging with PostgreSQL persistence
+- `orch_database_models.py` - Database models for orchestrator tables
+- `orchestrator_hooks.py` - Orchestrator-specific lifecycle hooks
+- `orchestrator_service.py` - Core orchestrator business logic
+- `single_agent_prompt.py` - Single agent prompt execution
+- `slash_command_parser.py` - Slash command discovery and parsing
+- `subagent_loader.py` - Dynamic subagent loading from command definitions
+- `subagent_models.py` - Pydantic models for subagent configurations
+- `websocket_manager.py` - WebSocket connection manager for real-time updates
+
+**Backend Tests (`apps/orchestrator_3_stream/backend/tests/`):**
+- `test_database.py` - PostgreSQL connection and CRUD tests
+- `test_agent_events.py` - Agent event lifecycle tests
+- `test_autocomplete_agent.py` - Autocomplete AI agent tests
+- `test_autocomplete_endpoints.py` - Autocomplete API endpoint tests
+- `test_display.py` - Display rendering tests
+- `test_slash_command_discovery.py` - Slash command parsing tests
+- `test_websocket_raw.py` - WebSocket raw connection tests
+
+**New Agent Experts:**
+- Database Expert (`experts/database/`) - expertise.yaml, question, self-improve commands
+- WebSocket Expert (`experts/websocket/`) - expertise.yaml, plan, plan_build_improve, question, self-improve commands
+- ADW Expert enhancements - plan and plan_build_improve commands
+
+**New Commands:**
+- `/fix` - Fix issues identified in code review reports
+- `/ping` - Simple connectivity check
+- `/prime_nile` - Prime agents with Nile adaptive shopping app context
+- `/prime_specific_docs` - Load specific documentation from ai_docs
+- `/question-w-mermaid-diagrams` - Q&A with Mermaid diagram visualization
+- `/start_nile` - Start Nile backend (port 8000) and frontend (port 5173)
+
+**New Output Styles (11 presets):**
+- `bullet-points.md` - Bullet point format
+- `genui.md` - Generative UI format
+- `html-structured.md` - HTML structured output
+- `markdown-focused.md` - Markdown-first format
+- `observable-tools-diffs.md` - Tool diffs with observability
+- `observable-tools-diffs-tts.md` - Tool diffs with TTS support
+- `table-based.md` - Table-based output
+- `tts-summary-base.md` - TTS summary base format
+- `tts-summary.md` - TTS summary with details
+- `ultra-concise.md` - Ultra concise format
+- `yaml-structured.md` - YAML structured output
+
+**New Scripts:**
+- `scripts/copy_claude.py` - Copy `.claude/` configuration between projects
+- Templates for: `check_ports.sh`, `delete_pr.sh`, `dev_build.sh`, `dev_lint.sh`, `dev_start.sh`, `dev_test.sh`, `expose_webhook.sh`, `reset_db.sh`, `stop_apps.sh`
+
+**New ADW Components:**
+- `adw_summarizer.py` - AI-powered event and log summarization module
+- `adw_manual_trigger.py` - Manual trigger for ADW workflows
+- `adw_scripts.py` - ADW utility scripts
+- `adw_tests/adw_modules/adw_agent_sdk.py` - Agent SDK test suite
+
+**Orchestrator App Documentation (`app_docs/`):**
+- 30+ documentation files covering backend architecture, frontend structure, autocomplete system, responsive UI, and database schema
+- Backend quick start guide and module reference
+- Swimlane and scout reports for architecture analysis
+
+**Orchestrator App Specs:**
+- Agent file tracking visualization spec
+- Global command input bar spec
+- Responsive UI plan
+- Orchestrator chat width toggle spec
+
+### Changed
+
+**PostgreSQL Migration (SQLite → PostgreSQL):**
+- `adw_database.py` - Rewritten for PostgreSQL with asyncpg/psycopg2 support
+- `adw_db_bridge.py` - Updated database bridge for PostgreSQL connections
+- `adw_logging.py` - Structured logging now persists to PostgreSQL
+- `adw_websockets.py` - WebSocket manager updated for PostgreSQL event sourcing
+- `orch_database_models.py` - Models updated for PostgreSQL data types (UUID, JSONB, TIMESTAMPTZ)
+- `backend/main.py` - Consolidated FastAPI app with PostgreSQL lifespan management
+- `backend/.env.sample` - Updated with PostgreSQL connection variables
+
+**Backend Architecture Refactor:**
+- Removed legacy router-based architecture (`routers/agents.py`, `routers/runtime.py`, `routers/websocket.py`, `routers/compat.py`)
+- Replaced with modular service architecture (19 modules in `backend/modules/`)
+- Removed legacy `backend/config.py`, `backend/dependencies.py`, `backend/logger.py`, `backend/__init__.py`
+
+**Consolidated ADW Workflows (Database-Backed):**
+- `adw_plan_build.py` - Major rewrite with PostgreSQL logging integration
+- `adw_plan_build_review.py` - Enhanced with PostgreSQL-backed review tracking
+- `adw_plan_build_review_fix.py` - Self-healing workflow with PostgreSQL state persistence
+
+**Template Synchronization:**
+- All base files synced to Jinja2 templates (100% coverage maintained)
+- New `apps/orchestrator_3_stream/` template with full `.claude/` configuration
+- New `apps/orchestrator_db/` template with migration system
+- Removed obsolete `schema/schema_orchestrator.sql` (replaced by migration system)
+- Removed legacy Playwright tests and config (replaced by backend test suite)
+- Removed `frontend/package-lock.json`, `frontend/.env.example`, `frontend/env.d.ts`, `frontend/tsconfig.json`
+
+**Scaffold Service:**
+- Extended to generate PostgreSQL orchestrator database structure
+- Updated app templates for new modular backend architecture
+
+**Makefile:**
+- Updated orchestrator targets for PostgreSQL (connection string, migrations)
+
+### Removed
+- `schema/schema_orchestrator.sql` - Replaced by incremental migration system in `apps/orchestrator_db/migrations/`
+- Legacy router files (`routers/__init__.py`, `routers/agents.py`, `routers/compat.py`, `routers/runtime.py`, `routers/websocket.py`)
+- Legacy backend config files (`backend/config.py`, `backend/dependencies.py`, `backend/logger.py`, `backend/__init__.py`, `backend/README.md`)
+- Playwright test suite and config (replaced by pytest backend tests)
+- Frontend build artifacts (`package-lock.json`, `env.d.ts`, `tsconfig.json`, `.env.example`)
+
 ## [0.9.9] - 2026-02-06
 
 ### Fixed
