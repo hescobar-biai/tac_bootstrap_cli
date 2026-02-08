@@ -2105,3 +2105,20 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When configuring WAL mode for concurrent database access
     - When querying workflow progress from orchestrator database
     - When understanding error handling in subprocess-based workflows
+
+- app_docs/feature-d433af11-orchestrator-database-schema-refactor.md
+  - Conditions:
+    - When working with SQLite orchestrator database schema
+    - When modifying orch_database_models.py Pydantic models
+    - When implementing database migrations or schema updates
+    - When setting up orchestrator components with --with-orchestrator flag
+    - When understanding UUID/string conversion in database models
+    - When configuring WAL mode for concurrent database access
+    - When refactoring database operations from PostgreSQL to SQLite
+    - When synchronizing models between adws/ and CLI template directories
+    - When working with foreign key constraints in orchestrator tables
+    - When implementing agent logging and prompt persistence
+    - When understanding the 5-table schema (orchestrator_agents, agents, prompts, agent_logs, system_logs)
+    - When integrating aiosqlite async database operations
+    - When validating database models with proper type hints
+    - When configuring orchestrator in generated projects
