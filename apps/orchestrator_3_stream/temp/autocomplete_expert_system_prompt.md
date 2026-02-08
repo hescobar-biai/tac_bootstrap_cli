@@ -22,7 +22,9 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
 
 ### Available Active Agents
 ```json
-[]
+[
+  "config-copier"
+]
 ```
 
 ### Available Slash Commands
@@ -50,6 +52,8 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   "e2e:test_sql_injection",
   "expert-orchestrate",
   "expert-parallel",
+  "experts:adw:plan",
+  "experts:adw:plan_build_improve",
   "experts:adw:question",
   "experts:adw:self-improve",
   "experts:cc_hook_expert:cc_hook_expert_build",
@@ -59,8 +63,15 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   "experts:cli:self-improve",
   "experts:commands:question",
   "experts:commands:self-improve",
+  "experts:database:question",
+  "experts:database:self-improve",
+  "experts:websocket:plan",
+  "experts:websocket:plan_build_improve",
+  "experts:websocket:question",
+  "experts:websocket:self-improve",
   "feature",
   "find_and_summarize",
+  "fix",
   "generate_branch_name",
   "generate_fractal_docs",
   "github_check",
@@ -79,6 +90,7 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   "orch_scout_and_build",
   "parallel_subagents",
   "patch",
+  "ping",
   "plan",
   "plan_w_docs",
   "plan_w_scouters",
@@ -86,8 +98,11 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   "prime",
   "prime_3",
   "prime_cc",
+  "prime_nile",
+  "prime_specific_docs",
   "pull_request",
   "question",
+  "question-w-mermaid-diagrams",
   "quick-plan",
   "resolve_failed_e2e_test",
   "resolve_failed_test",
@@ -95,6 +110,7 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   "scout",
   "scout_plan_build",
   "start",
+  "start_nile",
   "t_metaprompt_workflow",
   "test",
   "test_e2e",
@@ -151,6 +167,8 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   ".claude/commands/expert-parallel.md",
   ".claude/commands/experts/adw/.gitkeep",
   ".claude/commands/experts/adw/expertise.yaml",
+  ".claude/commands/experts/adw/plan.md",
+  ".claude/commands/experts/adw/plan_build_improve.md",
   ".claude/commands/experts/adw/question.md",
   ".claude/commands/experts/adw/self-improve.md",
   ".claude/commands/experts/cc_hook_expert/cc_hook_expert_build.md",
@@ -164,8 +182,17 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   ".claude/commands/experts/commands/expertise.yaml",
   ".claude/commands/experts/commands/question.md",
   ".claude/commands/experts/commands/self-improve.md",
+  ".claude/commands/experts/database/expertise.yaml",
+  ".claude/commands/experts/database/question.md",
+  ".claude/commands/experts/database/self-improve.md",
+  ".claude/commands/experts/websocket/expertise.yaml",
+  ".claude/commands/experts/websocket/plan.md",
+  ".claude/commands/experts/websocket/plan_build_improve.md",
+  ".claude/commands/experts/websocket/question.md",
+  ".claude/commands/experts/websocket/self-improve.md",
   ".claude/commands/feature.md",
   ".claude/commands/find_and_summarize.md",
+  ".claude/commands/fix.md",
   ".claude/commands/generate_branch_name.md",
   ".claude/commands/generate_fractal_docs.md",
   ".claude/commands/github_check.md",
@@ -184,6 +211,7 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   ".claude/commands/orch_scout_and_build.md",
   ".claude/commands/parallel_subagents.md",
   ".claude/commands/patch.md",
+  ".claude/commands/ping.md",
   ".claude/commands/plan.md",
   ".claude/commands/plan_w_docs.md",
   ".claude/commands/plan_w_scouters.md",
@@ -191,7 +219,10 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   ".claude/commands/prime.md",
   ".claude/commands/prime_3.md",
   ".claude/commands/prime_cc.md",
+  ".claude/commands/prime_nile.md",
+  ".claude/commands/prime_specific_docs.md",
   ".claude/commands/pull_request.md",
+  ".claude/commands/question-w-mermaid-diagrams.md",
   ".claude/commands/question.md",
   ".claude/commands/quick-plan.md",
   ".claude/commands/resolve_failed_e2e_test.md",
@@ -200,6 +231,7 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   ".claude/commands/scout.md",
   ".claude/commands/scout_plan_build.md",
   ".claude/commands/start.md",
+  ".claude/commands/start_nile.md",
   ".claude/commands/t_metaprompt_workflow.md",
   ".claude/commands/test.md",
   ".claude/commands/test_e2e.md",
@@ -231,11 +263,22 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   ".claude/hooks/utils/tts/elevenlabs_tts.py",
   ".claude/hooks/utils/tts/openai_tts.py",
   ".claude/hooks/utils/tts/pyttsx3_tts.py",
+  ".claude/output-styles/bullet-points.md",
   ".claude/output-styles/concise-done.md",
   ".claude/output-styles/concise-tts.md",
   ".claude/output-styles/concise-ultra.md",
+  ".claude/output-styles/genui.md",
+  ".claude/output-styles/html-structured.md",
+  ".claude/output-styles/markdown-focused.md",
+  ".claude/output-styles/observable-tools-diffs-tts.md",
+  ".claude/output-styles/observable-tools-diffs.md",
+  ".claude/output-styles/table-based.md",
+  ".claude/output-styles/tts-summary-base.md",
+  ".claude/output-styles/tts-summary.md",
+  ".claude/output-styles/ultra-concise.md",
   ".claude/output-styles/verbose-bullet-points.md",
   ".claude/output-styles/verbose-yaml-structured.md",
+  ".claude/output-styles/yaml-structured.md",
   ".claude/session_context.json",
   ".claude/settings.json",
   ".claude/skills/meta-skill/SKILL.md",
@@ -286,6 +329,7 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   "adws/adw_ship_iso.py",
   "adws/adw_test_iso.py",
   "adws/adw_tests/__init__.py",
+  "adws/adw_tests/adw_modules/adw_agent_sdk.py",
   "adws/adw_tests/conftest.py",
   "adws/adw_tests/health_check.py",
   "adws/adw_tests/pytest.ini",
@@ -299,6 +343,8 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   "adws/adw_tests/test_websockets.py",
   "adws/adw_tests/test_workflows.py",
   "adws/adw_triggers/__init__.py",
+  "adws/adw_triggers/adw_manual_trigger.py",
+  "adws/adw_triggers/adw_scripts.py",
   "adws/adw_triggers/trigger_cron.py",
   "adws/adw_triggers/trigger_issue_chain.py",
   "adws/adw_triggers/trigger_issue_parallel.py",
@@ -388,43 +434,17 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
   "ai_docs/doc/create-crud-entity/templates/domain_entity.py.md",
   "ai_docs/doc/create-crud-entity/templates/domain_events.py.md",
   "ai_docs/doc/create-crud-entity/templates/orm_model.py.md",
-  "ai_docs/doc/create-crud-entity/templates/repository.py.md",
-  "ai_docs/doc/create-crud-entity/templates/repository_authorized.py.md",
-  "ai_docs/doc/create-crud-entity/templates/routes.py.md",
-  "ai_docs/doc/create-crud-entity/templates/routes_authorized.py.md",
-  "ai_docs/doc/create-crud-entity/templates/schemas.py.md",
-  "ai_docs/doc/create-crud-entity/templates/service.py.md",
-  "ai_docs/doc/create-crud-entity/templates/service_authorized.py.md",
-  "ai_docs/doc/create-crud-entity/templates/tests.py.md",
-  "ai_docs/doc/create-crud-entity/templates/value_objects.py.md",
-  "ai_docs/doc/expertise-file-structure.md",
-  "ai_docs/doc/idea/tac-bootstrap-spec.md",
-  "ai_docs/doc/meta-skill-pattern.md",
-  "ai_docs/doc/plan-configurable-target-branch.md",
-  "ai_docs/doc/plan-fix-add-agentic-templates.md",
-  "ai_docs/doc/plan-spec-kit-adoption.md",
-  "ai_docs/doc/plan_tasks_0.4.1.md",
-  "ai_docs/doc/plan_tasks_Tac_10.md",
-  "ai_docs/doc/plan_tasks_Tac_11.md",
-  "ai_docs/doc/plan_tasks_Tac_12.md",
-  "ai_docs/doc/plan_tasks_Tac_12_v2_UPDATED.md",
-  "ai_docs/doc/plan_tasks_Tac_12_v3_FINAL.md",
-  "ai_docs/doc/plan_tasks_Tac_14.md",
-  "ai_docs/doc/plan_tasks_Tac_14_v2_SQLITE.md",
-  "ai_docs/doc/plan_tasks_Tac_9.md",
-  "ai_docs/doc/plan_tasks_opencode.md",
-  "ai_docs/doc/plan_tasks_sdk.md",
-  "ai_docs/doc/plan_tasks_tac_13.md",
-  "ai_docs/doc/tac12_code_analysis.md",
-  "ai_docs/e2b.md",
-  "ai_docs/fractal_docs.md",
-  "ai_docs/mcp-python-sdk.md"
+  "ai_docs/doc/create-crud-entity/templates/repository.py.md"
 ]
 ```
 
 ### Previous Completion History
 ```yaml
-[]
+- completion_type: none
+  order: 1
+  user_input_on_enter: start_adw workflow_type=plan-build-review-fix crea una copai
+    del config.yml y agrega toda su configuracion se debe llamar config_v2.yml copia
+    todosu condiguracion
 
 ```
 

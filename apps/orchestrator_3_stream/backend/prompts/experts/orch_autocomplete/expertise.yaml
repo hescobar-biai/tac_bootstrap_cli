@@ -1,6 +1,8 @@
-orchestrator_agent_id: 62865acf-22d2-4bb4-8be4-ff81d5836426
-completion_agent_id: ee7537de-6e72-4c06-ad52-e25056346e15
+orchestrator_agent_id: 87f08530-b36a-4825-aeb0-a2759604ce00
+completion_agent_id: 06861f42-d44c-4a08-a92d-047c4f276cc1
 previous_completions:
 - completion_type: none
-  user_input_on_enter: puedes decirme que modulo falta
+  user_input_on_enter: start_adw workflow_type=plan-build-review-fix crea una copai
+    del config.yml y agrega toda su configuracion se debe llamar config_v2.yml copia
+    todosu condiguracion
   order: 1
