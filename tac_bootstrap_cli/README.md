@@ -128,9 +128,9 @@ TAC-14 elevates tac_bootstrap from **Class 1** (Agentic Layer) to **Class 2** (O
 | 2 | Agent Definitions | 2 | `.claude/agents/` | 7 specialized agent configurations |
 | 3 | Orchestrator Commands | 2 | `.claude/commands/orch_*` | Multi-agent workflow commands |
 | 4 | Agent SDK | 2 | `adws/adw_modules/adw_agent_sdk.py` | Pydantic models for programmatic agents |
-| 5 | Database Schema | 3 | `adws/schema/` | SQLite schema (5 tables) |
-| 6 | Database Models | 3 | `adws/adw_modules/orch_database_models.py` | Pydantic ORM models |
-| 7 | Database Operations | 3 | `adws/adw_modules/adw_database.py` | CRUD + connection pooling |
+| 5 | Database Schema | 3 | `apps/orchestrator_db/` | PostgreSQL schema (5+ tables, migrations) |
+| 6 | Database Models | 3 | `apps/orchestrator_db/models.py` | Pydantic ORM models (source of truth) |
+| 7 | Database Operations | 3 | `adws/adw_modules/adw_database.py` | CRUD + asyncpg connection pooling |
 | 8 | Database Logging | 3 | `adws/adw_modules/adw_logging.py` | Structured event logging |
 | 9 | Consolidated Workflows | 3 | `adws/adw_workflows/` | Database-backed ADW workflows |
 | 10 | WebSockets | 3 | `adws/adw_modules/adw_websockets.py` | Real-time event streaming |
@@ -187,20 +187,25 @@ Multi-agent workflow orchestration:
 
 Workflows persist state to database for reliability and observability:
 
-**Database Tables:**
-- `orchestrator_agents` - Agent registry
-- `agents` - Agent instances
+**Database (PostgreSQL):**
+- `orchestrator_agents` - Singleton orchestrator agent
+- `agents` - Managed agent registry with status/usage tracking
 - `prompts` - ADW workflow state (replaces JSON files)
 - `agent_logs` - Step-by-step execution logs
-- `system_logs` - System events
+- `system_logs` - Application-level system logs
+- `orchestrator_chat` - Chat history
+- `ai_developer_workflows` - ADW workflow tracking
+
+Schema managed via idempotent migrations in `apps/orchestrator_db/migrations/`.
 
 ### Orchestrator Web App
 
 Real-time dashboard for monitoring agent execution:
 
-**Backend (FastAPI):**
+**Backend (FastAPI + PostgreSQL):**
 - REST endpoints for CRUD operations
 - WebSocket for real-time event streaming
+- PostgreSQL via asyncpg with connection pooling
 - Integration with ADW database modules
 
 **Frontend (Vue 3 + TypeScript):**
@@ -252,19 +257,21 @@ project/
 │   ├── adw_workflows/           # Consolidated Workflows (Class 3)
 │   │   ├── adw_plan_build.py
 │   │   └── adw_plan_build_review.py
-│   ├── adw_tests/               # Test suites
-│   └── schema/                  # Database Schema (Class 3)
-│       ├── schema_orchestrator.sql
-│       └── migrations/
+│   └── adw_tests/               # Test suites
 └── apps/
+    ├── orchestrator_db/         # Database Schema (Class 3)
+    │   ├── migrations/          # Idempotent PostgreSQL migrations (0-9)
+    │   ├── models.py            # Pydantic models (source of truth)
+    │   ├── run_migrations.py    # Migration runner
+    │   ├── sync_models.py       # Model sync to apps
+    │   └── drop_table.py        # Table drop utility
     └── orchestrator_3_stream/
         ├── backend/             # Orchestrator Backend (Class 3)
         │   ├── main.py
         │   └── modules/
-        ├── frontend/            # Orchestrator Frontend (Class 3)
-        │   ├── src/
-        │   └── package.json
-        └── playwright-tests/    # E2E Tests
+        └── frontend/            # Orchestrator Frontend (Class 3)
+            ├── src/
+            └── package.json
 ```
 
 ### Configuration
@@ -278,26 +285,29 @@ orchestrator:
   ws_base_url: "ws://localhost:8000"
   frontend_port: 5173
   websocket_port: 8000
-  database_url: "sqlite:///data/orchestrator.db"
+  database_url: "postgresql://user:pass@localhost:5432/orchestrator"
   polling_interval: 5000
 ```
 
 The backend reads all values from `config.yml` at startup. Environment variables can override any value (priority: env var > config.yml > hardcoded default). The frontend `.env` file is generated from `config.yml` via `make gen-env`.
 
-### Database Setup (SQLite)
+### Database Setup (PostgreSQL)
 
-No external database required. SQLite is the default and creates the database file automatically:
+The orchestrator uses PostgreSQL with idempotent migrations managed from `apps/orchestrator_db/`:
 
 ```bash
-# Default: database created at data/orchestrator.db (no setup needed)
-# The schema is initialized automatically on first run
+# 1. Set DATABASE_URL in .env
+# DATABASE_URL=postgresql://user:pass@localhost:5432/orchestrator
 
-# To use a custom path:
-# database_url: "sqlite:///path/to/custom.db"
+# 2. Run migrations (creates tables, indexes, triggers)
+uv run apps/orchestrator_db/run_migrations.py
 
-# Initialize schema manually (optional)
-sqlite3 data/orchestrator.db < adws/schema/schema_orchestrator.sql
+# 3. Sync Pydantic models to orchestrator apps
+python apps/orchestrator_db/sync_models.py
 ```
+
+Migrations are ordered (0-9), idempotent (`CREATE IF NOT EXISTS`), and never drop data.
+See `apps/orchestrator_db/README.md` for detailed schema documentation.
 
 ### Running the Orchestrator
 
@@ -310,7 +320,7 @@ make install-backend       # Only backend (FastAPI, aiosqlite)
 make install-frontend      # Only frontend (Vue 3, npm)
 
 # Setup database
-make setup-db              # Initialize SQLite with schema
+make setup-db              # Run PostgreSQL migrations
 
 # Generate frontend .env from config.yml
 make gen-env               # Creates .env with API URLs and ports
@@ -330,10 +340,10 @@ make clean                 # Clean caches
 | Target | Description |
 |--------|-------------|
 | `make install` | Install all dependencies (backend + frontend) |
-| `make install-backend` | Install FastAPI, uvicorn, aiosqlite, pydantic |
+| `make install-backend` | Install FastAPI, uvicorn, asyncpg, pydantic |
 | `make install-frontend` | Run `npm install` in frontend directory |
-| `make setup-db` | Initialize SQLite database with schema |
-| `make reset-db` | Delete and recreate database |
+| `make setup-db` | Run PostgreSQL migrations |
+| `make reset-db` | Drop and recreate PostgreSQL schema |
 | `make gen-env` | Generate frontend `.env` from `config.yml` |
 | `make dev` | Start backend in development mode (alias for dev-backend) |
 | `make dev-backend` | Start FastAPI backend with hot reload (port from config.yml) |
@@ -379,7 +389,7 @@ The CLI Makefile also includes orchestrator targets prefixed with `orch-`:
 cd tac_bootstrap_cli
 make orch-install          # Install backend dependencies
 make orch-install-frontend # Install frontend dependencies
-make orch-setup-db         # Initialize SQLite database
+make orch-setup-db         # Run PostgreSQL migrations
 make orch-gen-env          # Generate frontend .env from config.yml
 make orch-dev              # Start backend (port from config.yml, hot reload)
 make orch-dev-frontend     # Start frontend (port 5173)
@@ -1068,3 +1078,5 @@ make typecheck     # Type checking
 ## License
 
 MIT
+
+smmy es la mejor

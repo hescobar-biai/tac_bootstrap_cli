@@ -1,7 +1,6 @@
-orchestrator_agent_id: 803f87ec-16e6-4daa-b211-c23840e0e838
-completion_agent_id: b20cb204-ca6c-4d2c-8258-673f407ef93b
+orchestrator_agent_id: 62865acf-22d2-4bb4-8be4-ff81d5836426
+completion_agent_id: ee7537de-6e72-4c06-ad52-e25056346e15
 previous_completions:
 - completion_type: none
-  user_input_on_enter: /plan Agregar la palabra "sammy" al final del archivo README.md
-    del proyecto /Users/hernandoescobar/Documents/Celes/tac_bootstrap/README.md
+  user_input_on_enter: puedes decirme que modulo falta
   order: 1

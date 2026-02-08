@@ -954,7 +954,7 @@ class AgentManager:
                 cwd=self.working_dir,
                 hooks=hooks_dict,
                 allowed_tools=tools_to_use,  # Empty list = no tools during init
-                permission_mode="acceptEdits",
+                permission_mode="bypassPermissions",
                 env=env_vars,  # Ensure API key is available to subprocess
                 setting_sources=["project"],  # Load CLAUDE.md and slash commands
             )
@@ -1077,7 +1077,7 @@ class AgentManager:
                 max_turns=config.MAX_AGENT_TURNS,
                 allowed_tools=default_allowed,
                 disallowed_tools=default_disallowed,
-                permission_mode="acceptEdits",
+                permission_mode="bypassPermissions",
                 env=env_vars,  # Ensure API key is available to subprocess
                 setting_sources=["project"],  # Load CLAUDE.md and slash commands
             )
