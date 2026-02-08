@@ -95,7 +95,7 @@ class GitUtils:
                 return result.stdout
 
             return None
-        except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError) as e:
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
             # Git command failed, return None
             return None
 
@@ -212,7 +212,7 @@ class GitUtils:
             # Default to modified for any other tracked file status
             return 'modified'
 
-        except (subprocess.TimeoutExpired, subprocess.SubprocessError) as e:
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError):
             # Default to modified if we can't determine status
             return 'modified'
 
@@ -277,6 +277,6 @@ class GitUtils:
             with open(abs_path, 'r', encoding='utf-8', errors='ignore') as f:
                 return sum(1 for _ in f)
 
-        except Exception as e:
+        except Exception:
             # Return 0 on any error
             return 0

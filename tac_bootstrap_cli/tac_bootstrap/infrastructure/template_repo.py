@@ -25,7 +25,7 @@ from jinja2 import (
 class TemplateNotFoundError(Exception):
     """Raised when a template file cannot be found."""
 
-    def __init__(self, template_name: str, search_paths: List[str]):
+    def __init__(self, template_name: str, search_paths: List[str]) -> Any:
         self.template_name = template_name
         self.search_paths = search_paths
         paths_str = "\n  ".join(search_paths)
@@ -35,7 +35,7 @@ class TemplateNotFoundError(Exception):
 class TemplateRenderError(Exception):
     """Raised when template rendering fails."""
 
-    def __init__(self, template_name: str, original_error: Exception):
+    def __init__(self, template_name: str, original_error: Exception) -> Any:
         self.template_name = template_name
         self.original_error = original_error
         super().__init__(f"Failed to render template '{template_name}': {str(original_error)}")
@@ -139,7 +139,7 @@ class TemplateRepository:
     Invariants: Templates dir exists, filters registered at init, rendering immutable
     """
 
-    def __init__(self, templates_dir: Optional[Path] = None):
+    def __init__(self, templates_dir: Optional[Path] = None) -> Any:
         """
         Initialize the template repository.
 

@@ -4,10 +4,11 @@ WebSocket Manager Module
 Handles WebSocket connections and event broadcasting for real-time updates
 """
 
-from typing import List, Dict, Any
-from fastapi import WebSocket, WebSocketDisconnect
-import json
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from fastapi import WebSocket
+
 from .logger import get_logger
 
 logger = get_logger()
@@ -18,11 +19,11 @@ class WebSocketManager:
     Manages WebSocket connections and broadcasts events to all connected clients
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.active_connections: List[WebSocket] = []
         self.connection_metadata: Dict[WebSocket, Dict[str, Any]] = {}
 
-    async def connect(self, websocket: WebSocket, client_id: str = None):
+    async def connect(self, websocket: WebSocket, client_id: Optional[str] = None) -> None:
         """
         Accept a new WebSocket connection and register it
         """
@@ -52,7 +53,7 @@ class WebSocketManager:
             },
         )
 
-    def disconnect(self, websocket: WebSocket):
+    def disconnect(self, websocket: WebSocket) -> None:
         """
         Remove a WebSocket connection from the active list
         """
@@ -68,7 +69,7 @@ class WebSocketManager:
                 f"Total connections: {len(self.active_connections)}"
             )
 
-    async def send_to_client(self, websocket: WebSocket, data: dict):
+    async def send_to_client(self, websocket: WebSocket, data: Dict[str, Any]) -> None:
         """
         Send JSON data to a specific client
         """
@@ -79,7 +80,7 @@ class WebSocketManager:
             logger.error(f"Failed to send to client: {e}")
             self.disconnect(websocket)
 
-    async def broadcast(self, data: dict, exclude: WebSocket = None):
+    async def broadcast(self, data: Dict[str, Any], exclude: Optional[WebSocket] = None) -> None:
         """
         Broadcast JSON data to all connected clients (except optionally one)
         """
@@ -114,31 +115,30 @@ class WebSocketManager:
         for ws in disconnected:
             self.disconnect(ws)
 
-        logger.debug(
-            f"📡 Broadcast complete: {event_type} → {len(self.active_connections) - len(disconnected)} clients"
-        )
+        active_count = len(self.active_connections) - len(disconnected)
+        logger.debug(f"📡 Broadcast complete: {event_type} → {active_count} clients")
 
     # ========================================================================
     # Event Broadcasting Methods
     # ========================================================================
 
-    async def broadcast_agent_created(self, agent_data: dict):
+    async def broadcast_agent_created(self, agent_data: Dict[str, Any]) -> None:
         """Broadcast agent creation event"""
         await self.broadcast({"type": "agent_created", "agent": agent_data})
 
-    async def broadcast_agent_updated(self, agent_id: str, agent_data: dict):
+    async def broadcast_agent_updated(self, agent_id: str, agent_data: Dict[str, Any]) -> None:
         """Broadcast agent update event"""
         await self.broadcast(
             {"type": "agent_updated", "agent_id": agent_id, "agent": agent_data}
         )
 
-    async def broadcast_agent_deleted(self, agent_id: str):
+    async def broadcast_agent_deleted(self, agent_id: str) -> None:
         """Broadcast agent deletion event"""
         await self.broadcast({"type": "agent_deleted", "agent_id": agent_id})
 
     async def broadcast_agent_status_change(
         self, agent_id: str, old_status: str, new_status: str
-    ):
+    ) -> None:
         """Broadcast agent status change"""
         await self.broadcast(
             {
@@ -149,35 +149,37 @@ class WebSocketManager:
             }
         )
 
-    async def broadcast_agent_log(self, log_data: dict):
+    async def broadcast_agent_log(self, log_data: Dict[str, Any]) -> None:
         """Broadcast agent log entry"""
         await self.broadcast({"type": "agent_log", "log": log_data})
 
-    async def broadcast_agent_summary_update(self, agent_id: str, summary: str):
+    async def broadcast_agent_summary_update(self, agent_id: str, summary: str) -> None:
         """Broadcast agent summary update (latest log summary for an agent)"""
         await self.broadcast(
             {"type": "agent_summary_update", "agent_id": agent_id, "summary": summary}
         )
 
-    async def broadcast_orchestrator_updated(self, orchestrator_data: dict):
+    async def broadcast_orchestrator_updated(self, orchestrator_data: Dict[str, Any]) -> None:
         """Broadcast orchestrator update (cost, tokens, status, etc.)"""
         await self.broadcast(
             {"type": "orchestrator_updated", "orchestrator": orchestrator_data}
         )
 
-    async def broadcast_system_log(self, log_data: dict):
+    async def broadcast_system_log(self, log_data: Dict[str, Any]) -> None:
         """Broadcast system log entry"""
         await self.broadcast({"type": "system_log", "log": log_data})
 
-    async def broadcast_chat_message(self, message_data: dict):
+    async def broadcast_chat_message(self, message_data: Dict[str, Any]) -> None:
         """Broadcast chat message"""
         await self.broadcast({"type": "chat_message", "message": message_data})
 
-    async def broadcast_orchestrator_chat(self, chat_data: dict):
+    async def broadcast_orchestrator_chat(self, chat_data: Dict[str, Any]) -> None:
         """Broadcast orchestrator chat message"""
         await self.broadcast({"type": "orchestrator_chat", "chat": chat_data})
 
-    async def broadcast_error(self, error_message: str, details: dict = None):
+    async def broadcast_error(
+        self, error_message: str, details: Optional[Dict[str, Any]] = None
+    ) -> None:
         """Broadcast error event"""
         await self.broadcast(
             {
@@ -189,7 +191,7 @@ class WebSocketManager:
 
     async def broadcast_chat_stream(
         self, orchestrator_agent_id: str, chunk: str, is_complete: bool = False
-    ):
+    ) -> None:
         """
         Broadcast chat response chunk for real-time streaming.
 
@@ -208,7 +210,7 @@ class WebSocketManager:
             }
         )
 
-    async def set_typing_indicator(self, orchestrator_agent_id: str, is_typing: bool):
+    async def set_typing_indicator(self, orchestrator_agent_id: str, is_typing: bool) -> None:
         """
         Broadcast typing indicator state.
 
@@ -229,25 +231,25 @@ class WebSocketManager:
     # ADW (AI Developer Workflow) Broadcasting
     # ========================================================================
 
-    async def broadcast_adw_created(self, adw_data: dict):
+    async def broadcast_adw_created(self, adw_data: Dict[str, Any]) -> None:
         """Broadcast ADW creation event"""
         await self.broadcast({"type": "adw_created", "adw": adw_data})
 
-    async def broadcast_adw_updated(self, adw_id: str, adw_data: dict):
+    async def broadcast_adw_updated(self, adw_id: str, adw_data: Dict[str, Any]) -> None:
         """Broadcast ADW update event (status change, step progress)"""
         await self.broadcast(
             {"type": "adw_updated", "adw_id": adw_id, "adw": adw_data}
         )
 
-    async def broadcast_adw_event(self, adw_id: str, event_data: dict):
+    async def broadcast_adw_event(self, adw_id: str, event_data: Dict[str, Any]) -> None:
         """Broadcast ADW event (agent_log entry for swimlane square)"""
         await self.broadcast(
             {"type": "adw_event", "adw_id": adw_id, "event": event_data}
         )
 
     async def broadcast_adw_step_change(
-        self, adw_id: str, step: str, event_type: str, payload: dict = None
-    ):
+        self, adw_id: str, step: str, event_type: str, payload: Optional[Dict[str, Any]] = None
+    ) -> None:
         """Broadcast ADW step lifecycle event (StepStart/StepEnd)"""
         await self.broadcast(
             {
@@ -262,7 +264,7 @@ class WebSocketManager:
 
     async def broadcast_adw_event_summary_update(
         self, adw_id: str, event_id: str, summary: str
-    ):
+    ) -> None:
         """Broadcast ADW event summary update (when AI summary is generated)"""
         await self.broadcast(
             {
@@ -288,7 +290,7 @@ class WebSocketManager:
             for metadata in self.connection_metadata.values()
         ]
 
-    async def send_heartbeat(self):
+    async def send_heartbeat(self) -> None:
         """Send heartbeat to all connected clients"""
         await self.broadcast(
             {

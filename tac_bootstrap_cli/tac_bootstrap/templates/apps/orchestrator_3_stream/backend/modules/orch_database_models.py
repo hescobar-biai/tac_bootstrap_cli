@@ -18,10 +18,10 @@ Usage:
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, Any, Optional, Literal
+from typing import Any, Dict, Literal, Optional
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator
 
+from pydantic import BaseModel, Field, field_validator
 
 # ═══════════════════════════════════════════════════════════
 # ORCHESTRATOR_AGENT MODEL
@@ -49,7 +49,7 @@ class OrchestratorAgent(BaseModel):
 
     @field_validator('id', mode='before')
     @classmethod
-    def convert_uuid(cls, v):
+    def convert_uuid(cls, v: Any) -> Any:
         """Convert asyncpg UUID to Python UUID"""
         if isinstance(v, UUID):
             return v
@@ -57,7 +57,7 @@ class OrchestratorAgent(BaseModel):
 
     @field_validator('total_cost', mode='before')
     @classmethod
-    def convert_decimal(cls, v):
+    def convert_decimal(cls, v: Any) -> Any:
         """Convert Decimal to float"""
         if isinstance(v, Decimal):
             return float(v)
@@ -65,7 +65,7 @@ class OrchestratorAgent(BaseModel):
 
     @field_validator('metadata', mode='before')
     @classmethod
-    def parse_metadata(cls, v):
+    def parse_metadata(cls, v: Any) -> Any:
         """Parse JSON string metadata to dict"""
         if isinstance(v, str):
             import json
@@ -112,7 +112,7 @@ class Agent(BaseModel):
 
     @field_validator('id', 'orchestrator_agent_id', mode='before')
     @classmethod
-    def convert_uuid(cls, v):
+    def convert_uuid(cls, v: Any) -> Any:
         """Convert asyncpg UUID to Python UUID"""
         if isinstance(v, UUID):
             return v
@@ -120,7 +120,7 @@ class Agent(BaseModel):
 
     @field_validator('total_cost', mode='before')
     @classmethod
-    def convert_decimal(cls, v):
+    def convert_decimal(cls, v: Any) -> Any:
         """Convert Decimal to float"""
         if isinstance(v, Decimal):
             return float(v)
@@ -128,7 +128,7 @@ class Agent(BaseModel):
 
     @field_validator('metadata', mode='before')
     @classmethod
-    def parse_metadata(cls, v):
+    def parse_metadata(cls, v: Any) -> Any:
         """Parse JSON string metadata to dict"""
         if isinstance(v, str):
             import json
@@ -165,7 +165,7 @@ class Prompt(BaseModel):
 
     @field_validator('id', 'agent_id', mode='before')
     @classmethod
-    def convert_uuid(cls, v):
+    def convert_uuid(cls, v: Any) -> Any:
         """Convert asyncpg UUID to Python UUID"""
         if v is None:
             return None
@@ -208,7 +208,7 @@ class AgentLog(BaseModel):
 
     @field_validator('id', 'agent_id', mode='before')
     @classmethod
-    def convert_uuid(cls, v):
+    def convert_uuid(cls, v: Any) -> Any:
         """Convert asyncpg UUID to Python UUID"""
         if isinstance(v, UUID):
             return v
@@ -216,7 +216,7 @@ class AgentLog(BaseModel):
 
     @field_validator('payload', mode='before')
     @classmethod
-    def parse_payload(cls, v):
+    def parse_payload(cls, v: Any) -> Any:
         """Parse JSON string payload to dict"""
         if isinstance(v, str):
             import json
@@ -256,7 +256,7 @@ class SystemLog(BaseModel):
 
     @field_validator('id', mode='before')
     @classmethod
-    def convert_uuid(cls, v):
+    def convert_uuid(cls, v: Any) -> Any:
         """Convert asyncpg UUID to Python UUID"""
         if v is None:
             return None
@@ -266,7 +266,7 @@ class SystemLog(BaseModel):
 
     @field_validator('metadata', mode='before')
     @classmethod
-    def parse_metadata(cls, v):
+    def parse_metadata(cls, v: Any) -> Any:
         """Parse JSON string metadata to dict"""
         if isinstance(v, str):
             import json
@@ -305,7 +305,7 @@ class OrchestratorChat(BaseModel):
 
     @field_validator('id', 'orchestrator_agent_id', 'agent_id', mode='before')
     @classmethod
-    def convert_uuid(cls, v):
+    def convert_uuid(cls, v: Any) -> Any:
         """Convert asyncpg UUID to Python UUID"""
         if v is None:
             return None
@@ -315,7 +315,7 @@ class OrchestratorChat(BaseModel):
 
     @field_validator('metadata', mode='before')
     @classmethod
-    def parse_metadata(cls, v):
+    def parse_metadata(cls, v: Any) -> Any:
         """Parse JSON string metadata to dict"""
         if isinstance(v, str):
             import json
@@ -364,7 +364,7 @@ class AiDeveloperWorkflow(BaseModel):
 
     @field_validator('id', 'orchestrator_agent_id', mode='before')
     @classmethod
-    def convert_uuid(cls, v):
+    def convert_uuid(cls, v: Any) -> Any:
         """Convert asyncpg UUID to Python UUID"""
         if v is None:
             return None
@@ -374,7 +374,7 @@ class AiDeveloperWorkflow(BaseModel):
 
     @field_validator('input_data', 'output_data', 'metadata', mode='before')
     @classmethod
-    def parse_jsonb(cls, v):
+    def parse_jsonb(cls, v: Any) -> Any:
         """Parse JSON string to dict"""
         if isinstance(v, str):
             import json

@@ -694,7 +694,7 @@ class EntitySpec(BaseModel):
     Attributes:
         name: Entity name in PascalCase (e.g., "Product")
         capability: Capability grouping in kebab-case (e.g., "catalog")
-        fields: List of field specifications
+        fields: List[Any] of field specifications
 
     Properties:
         snake_name: Entity name in snake_case (e.g., "product")

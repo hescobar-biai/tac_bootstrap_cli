@@ -5,10 +5,12 @@ Raw WebSocket test to see exactly what's being broadcast
 
 import asyncio
 import json
-import websockets
 from datetime import datetime
 
-async def log_all_messages():
+import websockets
+
+
+async def log_all_messages() -> None:
     """Log all WebSocket messages to see what's being sent"""
     uri = "ws://127.0.0.1:9403/ws"
 

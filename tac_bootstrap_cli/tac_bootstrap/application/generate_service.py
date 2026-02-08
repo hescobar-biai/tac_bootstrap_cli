@@ -6,7 +6,7 @@ Invariants: Validates before writing, all-or-nothing file creation, no rollback
 
 import re
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -71,7 +71,7 @@ class GenerateService:
     Invariants: Fails fast on validation errors, no rollback logic, all-or-nothing file creation
     """
 
-    def __init__(self, template_repo: TemplateRepository, fs: FileSystem):
+    def __init__(self, template_repo: TemplateRepository, fs: FileSystem) -> Any:
         """
         Initialize GenerateService with dependencies.
 

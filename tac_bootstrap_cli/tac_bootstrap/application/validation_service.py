@@ -149,7 +149,7 @@ class ValidationService:
         Framework.NONE: {Architecture.SIMPLE},
     }
 
-    def __init__(self, template_repo: TemplateRepository):
+    def __init__(self, template_repo: TemplateRepository) -> None:
         """
         Initialize the ValidationService.
 

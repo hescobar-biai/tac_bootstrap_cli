@@ -58,7 +58,7 @@ class ValidationIssue(BaseModel):
         field_name: Name of the field that has the invalid value
             (e.g., "framework", "package_manager")
         invalid_value: The actual value that failed validation
-        suggestions: List of valid alternatives the user can choose from
+        suggestions: List[Any] of valid alternatives the user can choose from
 
     Example:
         issue = ValidationIssue(

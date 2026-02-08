@@ -5,13 +5,14 @@ Logs to both console and hourly rotating log files for e2e debugging
 """
 
 import logging
-from pathlib import Path
-from datetime import datetime
-from rich.console import Console
-from rich.panel import Panel
-from rich.logging import RichHandler
-from rich.text import Text
 import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional, TextIO
+
+from rich.console import Console
+from rich.logging import RichHandler
+from rich.panel import Panel
 
 # Create logs directory
 LOGS_DIR = Path(__file__).parent.parent / "logs"
@@ -24,13 +25,13 @@ console = Console()
 class HourlyRotatingFileHandler(logging.Handler):
     """Custom handler that rotates log files every hour"""
 
-    def __init__(self, logs_dir: Path):
+    def __init__(self, logs_dir: Path) -> None:
         super().__init__()
         self.logs_dir = logs_dir
-        self.current_file = None
-        self.current_hour = None
+        self.current_file: Optional[TextIO] = None
+        self.current_hour: Optional[str] = None
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         """Emit a record to the appropriate hourly log file"""
         try:
             # Get current hour timestamp
@@ -53,15 +54,16 @@ class HourlyRotatingFileHandler(logging.Handler):
                 )
                 self.current_file.write(f"{'='*80}\n\n")
 
-            # Write log message
+            # Write log message (current_file is guaranteed to be set above)
             log_entry = self.format(record)
-            self.current_file.write(log_entry + "\n")
-            self.current_file.flush()
+            if self.current_file is not None:
+                self.current_file.write(log_entry + "\n")
+                self.current_file.flush()
 
         except Exception as e:
             print(f"Error writing to log file: {e}", file=sys.stderr)
 
-    def close(self):
+    def close(self) -> None:
         """Close current log file"""
         if self.current_file:
             self.current_file.close()
@@ -74,7 +76,7 @@ class OrchestratorLogger:
     Logs to both console (with Rich formatting) and hourly rotating files
     """
 
-    def __init__(self, name: str = "orchestrator"):
+    def __init__(self, name: str = "orchestrator") -> Any:
         self.name = name
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
@@ -105,31 +107,37 @@ class OrchestratorLogger:
         file_handler.setFormatter(file_formatter)
         self.logger.addHandler(file_handler)
 
-    def debug(self, message: str, **kwargs):
+    def debug(self, message: str, **kwargs: Any) -> None:
         """Log debug message"""
         self.logger.debug(message, **kwargs)
 
-    def info(self, message: str, **kwargs):
+    def info(self, message: str, **kwargs: Any) -> None:
         """Log info message"""
         self.logger.info(f"[cyan]{message}[/cyan]", **kwargs)
 
-    def success(self, message: str, **kwargs):
+    def success(self, message: str, **kwargs: Any) -> None:
         """Log success message"""
         self.logger.info(f"[green]✅ {message}[/green]", **kwargs)
 
-    def warning(self, message: str, **kwargs):
+    def warning(self, message: str, **kwargs: Any) -> None:
         """Log warning message"""
         self.logger.warning(f"[yellow]⚠️  {message}[/yellow]", **kwargs)
 
-    def error(self, message: str, **kwargs):
+    def error(self, message: str, **kwargs: Any) -> None:
         """Log error message"""
         self.logger.error(f"[red]❌ {message}[/red]", **kwargs)
 
-    def critical(self, message: str, **kwargs):
+    def critical(self, message: str, **kwargs: Any) -> None:
         """Log critical message"""
         self.logger.critical(f"[bold red]🔥 {message}[/bold red]", **kwargs)
 
-    def panel(self, message: str, title: str = "", style: str = "cyan", expand: bool = True):
+    def panel(
+        self,
+        message: str,
+        title: str = "",
+        style: str = "cyan",
+        expand: bool = True,
+    ) -> None:
         """Log a Rich panel (console only, file gets plain text)"""
         # Log to console with Rich panel
         console.print(Panel(message, title=title, border_style=style, expand=expand))
@@ -138,37 +146,37 @@ class OrchestratorLogger:
         plain_message = f"{title}: {message}" if title else message
         self.logger.info(f"[PANEL] {plain_message}", extra={"markup": False})
 
-    def section(self, title: str, style: str = "bold cyan"):
+    def section(self, title: str, style: str = "bold cyan") -> None:
         """Log a section header"""
         separator = "=" * 80
         self.panel(f"[{style}]{title}[/{style}]", title="", style=style.split()[-1])
         self.logger.info(f"\n{separator}\n{title}\n{separator}", extra={"markup": False})
 
-    def websocket_event(self, event_type: str, data: dict):
+    def websocket_event(self, event_type: str, data: Dict[str, Any]) -> None:
         """Log WebSocket events"""
         self.info(f"📡 WebSocket Event: {event_type} | Data: {data}")
 
-    def agent_event(self, agent_id: str, event_type: str, message: str):
+    def agent_event(self, agent_id: str, event_type: str, message: str) -> None:
         """Log agent-specific events"""
         self.info(f"🤖 Agent-{agent_id} | {event_type}: {message}")
 
-    def chat_event(self, orchestrator_id: str, message: str, sender: str = "orchestrator"):
+    def chat_event(self, orchestrator_id: str, message: str, sender: str = "orchestrator") -> None:
         """Log chat interaction events"""
         truncated_msg = message[:100] + "..." if len(message) > 100 else message
         self.info(f"💬 Chat [{orchestrator_id}] {sender.upper()}: {truncated_msg}")
 
-    def http_request(self, method: str, path: str, status: int = None):
+    def http_request(self, method: str, path: str, status: Optional[int] = None) -> None:
         """Log HTTP requests"""
         status_text = f"[{status}]" if status else ""
         self.info(f"🌐 {method} {path} {status_text}")
 
-    def startup(self, config: dict):
+    def startup(self, config: Dict[str, Any]) -> None:
         """Log startup information"""
         self.section("🚀 ORCHESTRATOR BACKEND STARTING", "bold cyan")
         for key, value in config.items():
             self.info(f"  {key}: {value}")
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Log shutdown"""
         self.section("👋 ORCHESTRATOR BACKEND SHUTTING DOWN", "bold yellow")
 

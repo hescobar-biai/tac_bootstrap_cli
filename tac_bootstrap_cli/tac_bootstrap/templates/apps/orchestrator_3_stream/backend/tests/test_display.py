@@ -6,14 +6,15 @@ Test script to verify agent names and tool info are displayed correctly
 import asyncio
 import json
 from datetime import datetime
-from rich.console import Console
-from rich.table import Table
-from rich.live import Live
+
 import websockets
+from rich.console import Console
+from rich.live import Live
+from rich.table import Table
 
 console = Console()
 
-async def monitor_agent_events():
+async def monitor_agent_events() -> None:
     """Monitor WebSocket for agent events with name and tool display"""
     uri = "ws://127.0.0.1:9403/ws"
 
@@ -40,7 +41,8 @@ async def monitor_agent_events():
 
                             # Extract fields
                             timestamp = datetime.now().strftime("%H:%M:%S")
-                            agent_name = log.get("agent_name", f"ID:{log.get('agent_id', 'unknown')[-4:]}")
+                            agent_id_suffix = log.get('agent_id', 'unknown')[-4:]
+                            agent_name = log.get("agent_name", f"ID:{agent_id_suffix}")
                             event_type = log.get("event_type", "unknown")
 
                             # Extract content based on event type

@@ -16,18 +16,13 @@ Used by: agent_manager.py when creating/commanding agents
 
 import asyncio
 import uuid
-from typing import Any, Dict, Optional, Callable, Awaitable
 from datetime import datetime, timezone
+from typing import Any, Awaitable, Callable, Dict, Optional
 
-from .database import (
-    insert_hook_event,
-    update_log_summary,
-    reset_agent_tokens
-)
+from .database import insert_hook_event, reset_agent_tokens, update_log_summary
 from .event_summarizer import summarize_event
-from .websocket_manager import WebSocketManager
 from .logger import OrchestratorLogger
-
+from .websocket_manager import WebSocketManager
 
 # Type alias for hook callbacks
 HookCallback = Callable[[Dict[str, Any], Optional[str], Any], Awaitable[Dict[str, Any]]]

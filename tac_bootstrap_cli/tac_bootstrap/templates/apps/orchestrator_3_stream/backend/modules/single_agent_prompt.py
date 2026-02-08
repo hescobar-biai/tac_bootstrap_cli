@@ -21,12 +21,11 @@ Reference: Copied from apps/orchestrator_1_term/modules/single_agent_prompt.py
 import json
 import os
 from pathlib import Path
-from typing import Any, Optional, Dict
+from typing import Any, Optional
 
-from claude_agent_sdk import query, ClaudeAgentOptions, AssistantMessage, TextBlock
+from claude_agent_sdk import AssistantMessage, ClaudeAgentOptions, TextBlock, query
 
 from .logger import OrchestratorLogger
-
 
 # Configure module logger
 logger = OrchestratorLogger()

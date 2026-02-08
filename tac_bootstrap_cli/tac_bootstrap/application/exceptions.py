@@ -24,7 +24,7 @@ class ScaffoldValidationError(ApplicationError):
     Invariants: Contains ValidationResult, formats all errors with suggestions
     """
 
-    def __init__(self, validation_result: ValidationResult):
+    def __init__(self, validation_result: ValidationResult) -> None:
         """
         Initialize ScaffoldValidationError with validation result.
 

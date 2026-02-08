@@ -209,7 +209,7 @@ class EntitySpec(BaseModel):
     Attributes:
         name: Entity name in PascalCase (e.g., "Product", "UserProfile")
         capability: Capability grouping in kebab-case (e.g., "catalog", "user-management")
-        fields: List of field specifications (must not be empty)
+        fields: List[Any] of field specifications (must not be empty)
         authorized: Generate with authentication templates
         async_mode: Use async repository pattern
         with_events: Generate domain event support
@@ -316,7 +316,7 @@ class EntitySpec(BaseModel):
         - No field names can match RESERVED_FIELD_NAMES
 
         Args:
-            v: List of field specifications
+            v: List[Any] of field specifications
 
         Returns:
             Validated field list

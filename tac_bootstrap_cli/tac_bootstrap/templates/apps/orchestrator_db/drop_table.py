@@ -39,16 +39,17 @@ IMPORTANT: Never use DROP TABLE in migration files!
 """
 
 import os
+import subprocess
 import sys
 from pathlib import Path
-from typing import List
+from typing import Any, List
+
 import click
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.panel import Panel
-from rich.table import Table
 from rich.prompt import Confirm
-import subprocess
+from rich.table import Table
 
 console = Console()
 
@@ -100,7 +101,7 @@ def load_database_url() -> str:
     return database_url
 
 
-def check_psql_installed():
+def check_psql_installed() -> None:
     """Verify psql command is available"""
     try:
         subprocess.run(["psql", "--version"], capture_output=True, check=True)
@@ -112,7 +113,7 @@ def check_psql_installed():
         sys.exit(1)
 
 
-def list_tables():
+def list_tables() -> None:
     """Display available tables"""
     console.print(
         Panel.fit(
@@ -136,7 +137,7 @@ def list_tables():
     )
 
 
-def drop_tables(tables: List[str], database_url: str, skip_confirmation: bool = False):
+def drop_tables(tables: List[str], database_url: str, skip_confirmation: bool = False) -> None:
     """Drop specified tables from database"""
     # Validate table names
     invalid_tables = [t for t in tables if t not in AVAILABLE_TABLES]
@@ -267,7 +268,7 @@ def drop_tables(tables: List[str], database_url: str, skip_confirmation: bool = 
     is_flag=True,
     help="Skip confirmation prompt (DANGEROUS!)",
 )
-def main(table: tuple, show_list: bool, yes: bool):
+def main(table: tuple[Any, ...], show_list: bool, yes: bool) -> None:
     """
     Drop database tables with explicit table flags.
 

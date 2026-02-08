@@ -4,12 +4,13 @@ Test script to verify agent events are broadcast via WebSocket in real-time
 """
 
 import asyncio
-import websockets
 import json
 from datetime import datetime
 
+import websockets
 
-async def listen_for_agent_events():
+
+async def listen_for_agent_events() -> None:
     """
     Connect to WebSocket and listen for agent_log events
     """
@@ -41,7 +42,7 @@ async def listen_for_agent_events():
                         if log.get('event_type') == 'TextBlock':
                             print(f"   📝 Agent Response: {log.get('content', '')[:200]}")
                         elif log.get('event_type') == 'ThinkingBlock':
-                            print(f"   🤔 Agent Thinking...")
+                            print("   🤔 Agent Thinking...")
                         elif log.get('event_type') == 'ToolUseBlock':
                             payload = log.get('payload', {})
                             print(f"   🔧 Tool Use: {payload.get('tool_name', 'unknown')}")
@@ -50,7 +51,9 @@ async def listen_for_agent_events():
                             print(f"   🛠️ Hook: {payload.get('tool_name', 'unknown')}")
 
                     elif data.get("type") == "agent_status_changed":
-                        print(f"\n📊 Agent Status Changed: {data.get('old_status')} → {data.get('new_status')}")
+                        old_status = data.get('old_status')
+                        new_status = data.get('new_status')
+                        print(f"\n📊 Agent Status Changed: {old_status} → {new_status}")
 
                     elif data.get("type") == "agent_created":
                         agent = data.get('agent', {})

@@ -20,7 +20,7 @@ import shutil
 from pathlib import Path
 
 
-def sync_models():
+def sync_models() -> bool:
     """Copy models.py to both orchestrator apps"""
 
     # Define paths
@@ -64,7 +64,7 @@ def sync_models():
         # Copy the file
         try:
             shutil.copy2(source, target)
-            print(f"✅ Successfully copied models:")
+            print("✅ Successfully copied models:")
             print(f"   From: {source.relative_to(project_root)}")
             print(f"   To:   {target.relative_to(project_root)}")
 

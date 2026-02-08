@@ -6,7 +6,8 @@ Templates are markdown files with YAML frontmatter that define specialized agent
 """
 
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -20,13 +21,16 @@ class SubagentFrontmatter(BaseModel):
     Attributes:
         name: Unique identifier for the template
         description: Human-readable description of the agent's purpose
-        tools: Optional list/string of allowed Claude SDK tools (defaults to all tools if not specified)
+        tools: Optional list/string of allowed Claude SDK tools
+               (defaults to all tools if not specified)
         model: Optional model override (sonnet, haiku, opus)
         color: Optional color for UI theming
     """
     name: str = Field(..., description="Unique template identifier")
     description: str = Field(..., description="Template description for orchestrator")
-    tools: Optional[List[str]] = Field(None, description="List of allowed tool names (optional, defaults to all tools)")
+    tools: Optional[List[str]] = Field(
+        None, description="List of allowed tool names (optional, defaults to all tools)"
+    )
     model: Optional[str] = Field(None, description="Model override (sonnet, haiku, opus)")
     color: Optional[str] = Field(None, description="UI theme color")
 

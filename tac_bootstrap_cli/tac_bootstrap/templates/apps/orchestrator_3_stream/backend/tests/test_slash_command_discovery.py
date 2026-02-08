@@ -9,18 +9,20 @@ Tests the discover_slash_commands() function to ensure it properly:
 - Handles edge cases like empty directories and deep nesting
 """
 
-import pytest
-from pathlib import Path
-import sys
 import os
+import sys
+
+import pytest
 
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+from pathlib import Path
+
 from modules.slash_command_parser import discover_slash_commands
 
 
-def test_discover_root_level_commands(tmp_path):
+def test_discover_root_level_commands(tmp_path: Path) -> None:
     """Test that root-level commands are discovered with simple names"""
 
     # Create test directory structure
@@ -50,7 +52,7 @@ model: sonnet
     assert commands[0]["model"] == "sonnet"
 
 
-def test_discover_nested_commands(tmp_path):
+def test_discover_nested_commands(tmp_path: Path) -> None:
     """Test that nested slash commands are discovered with namespaced names"""
 
     # Create test directory structure
@@ -96,7 +98,7 @@ model: haiku
     assert nested["model"] == "haiku"
 
 
-def test_discover_multiple_nesting_levels(tmp_path):
+def test_discover_multiple_nesting_levels(tmp_path: Path) -> None:
     """Test commands at different nesting levels"""
 
     commands_dir = tmp_path / ".claude" / "commands"
@@ -136,13 +138,20 @@ def test_discover_multiple_nesting_levels(tmp_path):
     assert "level1:level2:level3:cmd3" in names
 
     # Verify descriptions are preserved
-    assert next(c for c in commands if c["name"] == "root")["description"] == "Root"
-    assert next(c for c in commands if c["name"] == "level1:cmd1")["description"] == "Level 1"
-    assert next(c for c in commands if c["name"] == "level1:level2:cmd2")["description"] == "Level 2"
-    assert next(c for c in commands if c["name"] == "level1:level2:level3:cmd3")["description"] == "Level 3"
+    root_cmd = next(c for c in commands if c["name"] == "root")
+    assert root_cmd["description"] == "Root"
+
+    lvl1_cmd = next(c for c in commands if c["name"] == "level1:cmd1")
+    assert lvl1_cmd["description"] == "Level 1"
+
+    lvl2_cmd = next(c for c in commands if c["name"] == "level1:level2:cmd2")
+    assert lvl2_cmd["description"] == "Level 2"
+
+    lvl3_cmd = next(c for c in commands if c["name"] == "level1:level2:level3:cmd3")
+    assert lvl3_cmd["description"] == "Level 3"
 
 
-def test_empty_commands_directory(tmp_path):
+def test_empty_commands_directory(tmp_path: Path) -> None:
     """Test with no commands"""
     commands_dir = tmp_path / ".claude" / "commands"
     commands_dir.mkdir(parents=True)
@@ -151,13 +160,13 @@ def test_empty_commands_directory(tmp_path):
     assert len(commands) == 0
 
 
-def test_missing_commands_directory(tmp_path):
+def test_missing_commands_directory(tmp_path: Path) -> None:
     """Test with missing .claude/commands directory"""
     commands = discover_slash_commands(str(tmp_path))
     assert len(commands) == 0
 
 
-def test_commands_without_frontmatter(tmp_path):
+def test_commands_without_frontmatter(tmp_path: Path) -> None:
     """Test that commands without frontmatter still get discovered"""
 
     commands_dir = tmp_path / ".claude" / "commands"
@@ -178,7 +187,7 @@ def test_commands_without_frontmatter(tmp_path):
     assert commands[0]["model"] == ""
 
 
-def test_nested_commands_without_frontmatter(tmp_path):
+def test_nested_commands_without_frontmatter(tmp_path: Path) -> None:
     """Test that nested commands without frontmatter get proper names"""
 
     commands_dir = tmp_path / ".claude" / "commands"
@@ -199,7 +208,7 @@ def test_nested_commands_without_frontmatter(tmp_path):
     assert commands[0]["description"] == ""
 
 
-def test_sorting_of_commands(tmp_path):
+def test_sorting_of_commands(tmp_path: Path) -> None:
     """Test that commands are sorted alphabetically by name"""
 
     commands_dir = tmp_path / ".claude" / "commands"
@@ -223,7 +232,7 @@ def test_sorting_of_commands(tmp_path):
     assert names == ["alpha", "beta", "nested:gamma", "zebra"]
 
 
-def test_special_characters_in_arguments(tmp_path):
+def test_special_characters_in_arguments(tmp_path: Path) -> None:
     """Test that special characters in argument-hint are preserved"""
 
     commands_dir = tmp_path / ".claude" / "commands"
@@ -246,7 +255,7 @@ argument-hint: add [tagId] | remove [tagId] | list
     assert commands[0]["arguments"] == "add [tagId] | remove [tagId] | list"
 
 
-def test_all_frontmatter_fields(tmp_path):
+def test_all_frontmatter_fields(tmp_path: Path) -> None:
     """Test that all frontmatter fields are properly extracted"""
 
     commands_dir = tmp_path / ".claude" / "commands"
@@ -280,7 +289,7 @@ disable-model-invocation: true
     assert commands[0]["disable_model_invocation"] is True
 
 
-def test_command_name_collision_avoidance(tmp_path):
+def test_command_name_collision_avoidance(tmp_path: Path) -> None:
     """Test that nested structure avoids collisions"""
 
     commands_dir = tmp_path / ".claude" / "commands"
@@ -312,7 +321,7 @@ def test_command_name_collision_avoidance(tmp_path):
     assert nested_plan["description"] == "Nested plan"
 
 
-def test_deeply_nested_command(tmp_path):
+def test_deeply_nested_command(tmp_path: Path) -> None:
     """Test command with very deep nesting"""
 
     commands_dir = tmp_path / ".claude" / "commands"
@@ -332,7 +341,7 @@ def test_deeply_nested_command(tmp_path):
     assert commands[0]["description"] == "Very deep"
 
 
-def test_multiple_commands_in_same_nested_directory(tmp_path):
+def test_multiple_commands_in_same_nested_directory(tmp_path: Path) -> None:
     """Test multiple commands in the same nested directory"""
 
     commands_dir = tmp_path / ".claude" / "commands"
@@ -358,7 +367,7 @@ def test_multiple_commands_in_same_nested_directory(tmp_path):
     assert "experts:websocket:question" in names
 
 
-def test_mixed_root_and_nested_commands(tmp_path):
+def test_mixed_root_and_nested_commands(tmp_path: Path) -> None:
     """Test mix of root and nested commands together"""
 
     commands_dir = tmp_path / ".claude" / "commands"
@@ -390,7 +399,7 @@ def test_mixed_root_and_nested_commands(tmp_path):
     assert "experts:api:analyze" in names
 
 
-def test_comma_separated_allowed_tools(tmp_path):
+def test_comma_separated_allowed_tools(tmp_path: Path) -> None:
     """Test that comma-separated allowed-tools are parsed correctly"""
 
     commands_dir = tmp_path / ".claude" / "commands"
@@ -416,7 +425,7 @@ argument-hint: [input]
     assert commands[0]["description"] == "Command with comma-separated tools"
 
 
-def test_yaml_list_allowed_tools(tmp_path):
+def test_yaml_list_allowed_tools(tmp_path: Path) -> None:
     """Test that YAML list format for allowed-tools works"""
 
     commands_dir = tmp_path / ".claude" / "commands"

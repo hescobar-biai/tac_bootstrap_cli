@@ -5,10 +5,10 @@ Central location for application-wide settings and constants
 Uses classic Python logging (not Rich) for configuration loading
 """
 
-from pathlib import Path
-import os
 import logging
-from typing import List
+import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Set up classic Python logging for config loading
@@ -92,7 +92,11 @@ DEFAULT_MODEL = "claude-opus-4-5-20251101"
 FAST_MODEL = "claude-haiku-4-5-20251001"
 
 # Available models
-AVAILABLE_MODELS = ["claude-opus-4-5-20251101", "claude-sonnet-4-5-20250929", "claude-haiku-4-5-20251001"]
+AVAILABLE_MODELS = [
+    "claude-opus-4-5-20251101",
+    "claude-sonnet-4-5-20250929",
+    "claude-haiku-4-5-20251001",
+]
 
 # ============================================================================
 # ORCHESTRATOR CONFIGURATION

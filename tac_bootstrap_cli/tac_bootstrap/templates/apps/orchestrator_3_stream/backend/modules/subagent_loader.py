@@ -5,13 +5,14 @@ Discovers, parses, and caches subagent template files from .claude/agents/ direc
 Templates are markdown files with YAML frontmatter that define specialized agent configurations.
 """
 
-import yaml
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
+import yaml
 from pydantic import ValidationError
 
-from .subagent_models import SubagentTemplate, SubagentFrontmatter
 from .logger import OrchestratorLogger
+from .subagent_models import SubagentFrontmatter, SubagentTemplate
 
 
 def parse_subagent_file(file_path: Path, logger: OrchestratorLogger) -> Optional[SubagentTemplate]:
@@ -48,12 +49,18 @@ def parse_subagent_file(file_path: Path, logger: OrchestratorLogger) -> Optional
 
     # Split frontmatter and body
     if not content.startswith('---'):
-        logger.error(f"Template {file_path.name} missing frontmatter delimiter (should start with '---')")
+        logger.error(
+            f"Template {file_path.name} missing frontmatter delimiter "
+            "(should start with '---')"
+        )
         return None
 
     parts = content.split('---', 2)
     if len(parts) < 3:
-        logger.error(f"Template {file_path.name} has incomplete frontmatter (needs two '---' delimiters)")
+        logger.error(
+            f"Template {file_path.name} has incomplete frontmatter "
+            "(needs two '---' delimiters)"
+        )
         return None
 
     frontmatter_text = parts[1].strip()
@@ -63,7 +70,10 @@ def parse_subagent_file(file_path: Path, logger: OrchestratorLogger) -> Optional
     try:
         frontmatter_data = yaml.safe_load(frontmatter_text)
         if not isinstance(frontmatter_data, dict):
-            logger.error(f"Invalid YAML frontmatter in {file_path.name}: expected dictionary, got {type(frontmatter_data)}")
+            logger.error(
+                f"Invalid YAML frontmatter in {file_path.name}: "
+                f"expected dictionary, got {type(frontmatter_data)}"
+            )
             return None
     except yaml.YAMLError as e:
         logger.error(f"Invalid YAML frontmatter in {file_path.name}: {e}")
@@ -103,7 +113,7 @@ class SubagentRegistry:
     and provides lookup by name.
     """
 
-    def __init__(self, working_dir: str | Path, logger: OrchestratorLogger):
+    def __init__(self, working_dir: str | Path, logger: OrchestratorLogger) -> Any:
         """
         Initialize the subagent registry.
 
@@ -138,8 +148,14 @@ class SubagentRegistry:
 
         # Check if directory exists
         if not self.templates_dir.exists():
-            self.logger.warning(f"⚠️  Subagent templates directory not found: {self.templates_dir}")
-            self.logger.warning("💡 Create .claude/agents/ directory and add *.md template files to enable specialized agents")
+            self.logger.warning(
+                f"⚠️  Subagent templates directory not found: "
+                f"{self.templates_dir}"
+            )
+            self.logger.warning(
+                "💡 Create .claude/agents/ directory and add *.md template "
+                "files to enable specialized agents"
+            )
             self.logger.info(f"Run: mkdir -p {self.templates_dir}")
             return templates
 
@@ -162,9 +178,12 @@ class SubagentRegistry:
             if template:
                 templates[template.frontmatter.name] = template
                 valid_count += 1
-                tool_count = len(template.frontmatter.tools)
+                tool_count = len(template.frontmatter.tools) if template.frontmatter.tools else 0
                 model = template.frontmatter.model or "default"
-                self.logger.info(f"✓ Loaded template: {template.frontmatter.name} (tools: {tool_count}, model: {model})")
+                self.logger.info(
+                    f"✓ Loaded template: {template.frontmatter.name} "
+                    f"(tools: {tool_count}, model: {model})"
+                )
             else:
                 self.logger.warning(f"✗ Skipping invalid template {file_path.name}")
 
