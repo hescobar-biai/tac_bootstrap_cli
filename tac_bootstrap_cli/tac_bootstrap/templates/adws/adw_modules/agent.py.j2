@@ -7,6 +7,7 @@ import json
 import re
 import logging
 import time
+import asyncio
 from typing import Optional, List, Dict, Any, Tuple, Final
 from dotenv import load_dotenv
 from .data_types import (
@@ -22,6 +23,39 @@ from .data_types import (
 
 # Load environment variables
 load_dotenv()
+
+
+def _get_use_sdk_from_config() -> bool:
+    """Load USE_SDK setting from config.yml.
+
+    Reads agentic.use_sdk from config.yml file.
+    Falls back to False if config not found or field missing.
+
+    Returns:
+        True if SDK mode is enabled, False otherwise
+    """
+    import yaml
+
+    # Find config.yml in project root (parent of adws/adw_modules/)
+    project_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+    config_path = os.path.join(project_root, "config.yml")
+
+    if not os.path.exists(config_path):
+        return False
+
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        return config.get("agentic", {}).get("use_sdk", False)
+    except Exception:
+        return False
+
+
+# SDK Feature Flag - enables direct SDK execution instead of subprocess
+# Loaded from config.yml agentic.use_sdk (TAC-15)
+USE_SDK = _get_use_sdk_from_config()
 
 # Get Claude Code CLI path from environment
 CLAUDE_PATH = os.getenv("CLAUDE_CODE_PATH", "claude")
@@ -414,6 +448,193 @@ def is_quota_exhausted_error(error_msg: str) -> bool:
     return False
 
 
+# =============================================================================
+# SDK BRIDGE FUNCTIONS
+# =============================================================================
+
+
+def _classify_sdk_error(error_msg: str) -> RetryCode:
+    """Classify an SDK error message to determine retry behavior.
+
+    Reuses existing error classification functions to maintain consistency
+    between subprocess and SDK execution paths.
+
+    Args:
+        error_msg: The error message from SDK execution
+
+    Returns:
+        Appropriate RetryCode for the error type
+    """
+    if is_quota_exhausted_error(error_msg):
+        return RetryCode.QUOTA_EXHAUSTED
+    elif is_rate_limited_error(error_msg):
+        return RetryCode.RATE_LIMITED
+    elif is_connection_error(error_msg):
+        return RetryCode.CONNECTION_ERROR
+    elif "api" in error_msg.lower() and "error" in error_msg.lower():
+        return RetryCode.API_ERROR
+    elif "timeout" in error_msg.lower():
+        return RetryCode.TIMEOUT_ERROR
+    else:
+        return RetryCode.EXECUTION_ERROR
+
+
+def _convert_sdk_token_usage(sdk_usage: Any, duration_seconds: float) -> TokenUsage:
+    """Convert SDK TokenUsage to our data_types.TokenUsage format.
+
+    Args:
+        sdk_usage: TokenUsage from adw_agent_sdk (Pydantic model)
+        duration_seconds: Duration of the query in seconds
+
+    Returns:
+        Our TokenUsage dataclass with mapped fields
+    """
+    if sdk_usage is None:
+        return TokenUsage(
+            input_tokens=0,
+            output_tokens=0,
+            cache_creation_input_tokens=0,
+            cache_read_input_tokens=0,
+            total_cost_usd=0.0,
+            duration_ms=int(duration_seconds * 1000),
+            model_usage={},
+        )
+
+    return TokenUsage(
+        input_tokens=getattr(sdk_usage, "input_tokens", 0),
+        output_tokens=getattr(sdk_usage, "output_tokens", 0),
+        cache_creation_input_tokens=getattr(sdk_usage, "cache_creation_input_tokens", 0),
+        cache_read_input_tokens=getattr(sdk_usage, "cache_read_input_tokens", 0),
+        total_cost_usd=getattr(sdk_usage, "total_cost_usd", 0.0) or 0.0,
+        duration_ms=int(duration_seconds * 1000),
+        model_usage={},  # SDK doesn't provide per-model breakdown
+    )
+
+
+def _prompt_claude_code_sdk(request: AgentPromptRequest) -> AgentPromptResponse:
+    """Execute Claude Code via SDK instead of subprocess.
+
+    This function provides an alternative execution path using the
+    adw_agent_sdk module for direct SDK integration. It produces
+    exactly the same AgentPromptResponse type as the subprocess path.
+
+    Args:
+        request: The prompt request configuration
+
+    Returns:
+        AgentPromptResponse with output or error, matching subprocess behavior
+    """
+    # Lazy import to avoid loading SDK when not needed
+    from .adw_agent_sdk import (
+        QueryInput,
+        QueryOptions,
+        ModelName,
+        SettingSource,
+        query_to_completion,
+    )
+
+    # Map model string to ModelName enum
+    model_map = {
+        "opus": ModelName.OPUS,
+        "sonnet": ModelName.SONNET,
+        "haiku": ModelName.HAIKU,
+    }
+    sdk_model = model_map.get(request.model.lower(), ModelName.SONNET)
+
+    # Build QueryOptions matching subprocess behavior
+    # Include resume session ID if provided for context persistence
+    options = QueryOptions(
+        model=sdk_model,
+        cwd=request.working_dir,
+        bypass_permissions=request.dangerously_skip_permissions,
+        setting_sources=[SettingSource.PROJECT],
+        resume=request.resume_session_id if request.resume_session_id else None,
+    )
+
+    # Create QueryInput
+    query_input = QueryInput(
+        prompt=request.prompt,
+        options=options,
+    )
+
+    try:
+        # Execute via SDK with timeout
+        result = asyncio.run(
+            asyncio.wait_for(
+                query_to_completion(query_input),
+                timeout=request.timeout_seconds
+            )
+        )
+
+        # Convert SDK result to AgentPromptResponse
+        duration_seconds = result.duration_seconds or 0.0
+        token_usage = _convert_sdk_token_usage(result.usage, duration_seconds)
+
+        # TAC-15: Save SDK transcript to agents/{adw_id}/{agent_name}/sdk_transcript.json
+        if result.messages:
+            try:
+                # __file__ is in adws/adw_modules/, go up 3 levels to project root
+                project_root = os.path.dirname(
+                    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                )
+                transcript_dir = os.path.join(
+                    project_root, "agents", request.adw_id, request.agent_name
+                )
+                os.makedirs(transcript_dir, exist_ok=True)
+                transcript_path = os.path.join(transcript_dir, "sdk_transcript.json")
+
+                # Convert messages to JSON-serializable format
+                messages_data = [
+                    msg.model_dump() if hasattr(msg, "model_dump") else str(msg)
+                    for msg in result.messages
+                ]
+                with open(transcript_path, "w") as f:
+                    json.dump(messages_data, f, indent=2, default=str)
+            except Exception:
+                # Transcript saving is optional - don't fail the request
+                pass
+
+        if result.success:
+            return AgentPromptResponse(
+                output=result.result or "",
+                success=True,
+                session_id=result.session_id,
+                retry_code=RetryCode.NONE,
+                token_usage=token_usage,
+            )
+        else:
+            # Classify the error for retry logic
+            error_msg = result.error or "Unknown SDK error"
+            retry_code = _classify_sdk_error(error_msg)
+
+            return AgentPromptResponse(
+                output=truncate_output(error_msg, max_length=800),
+                success=False,
+                session_id=result.session_id,
+                retry_code=retry_code,
+                token_usage=token_usage,
+            )
+
+    except asyncio.TimeoutError:
+        timeout_mins = request.timeout_seconds // 60
+        error_msg = f"Error: SDK query timed out after {timeout_mins} minutes ({request.timeout_seconds}s)"
+        return AgentPromptResponse(
+            output=error_msg,
+            success=False,
+            session_id=None,
+            retry_code=RetryCode.TIMEOUT_ERROR,
+        )
+    except Exception as e:
+        error_msg = f"SDK execution error: {e}"
+        retry_code = _classify_sdk_error(str(e))
+        return AgentPromptResponse(
+            output=truncate_output(error_msg, max_length=800),
+            success=False,
+            session_id=None,
+            retry_code=retry_code,
+        )
+
+
 # Model fallback chain: opus -> sonnet -> haiku -> retry_with_degradation
 # When all models exhausted, implements intelligent degradation strategies:
 # 1. Exponential backoff (30s, 60s, 120s, 300s)
@@ -590,6 +811,19 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
 
     # Save prompt before execution
     save_prompt(request.prompt, request.adw_id, request.agent_name)
+
+    # SDK dispatch: use SDK execution path if feature flag is enabled
+    if USE_SDK:
+        return _prompt_claude_code_sdk(request)
+
+    # TAC-15: Subprocess path requires output_file for JSONL output
+    if request.output_file is None:
+        return AgentPromptResponse(
+            output="Error: output_file is required when USE_SDK=False (subprocess path)",
+            success=False,
+            session_id=None,
+            retry_code=RetryCode.NONE,
+        )
 
     # Create output directory if needed
     output_dir = os.path.dirname(request.output_file)
@@ -821,6 +1055,8 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
             # Check for quota exhausted (user hit their usage limit)
             if is_quota_exhausted_error(error_msg):
                 retry_code = RetryCode.QUOTA_EXHAUSTED
+                # Debug: log error message for quota detection verification
+                logging.debug(f"Quota exhausted detected from error: {error_msg[:200]}")
             # Check for rate limiting (temporary, can retry)
             elif is_rate_limited_error(error_msg):
                 retry_code = RetryCode.RATE_LIMITED
@@ -897,10 +1133,11 @@ def execute_prompt(
     if logger:
         logger.debug(f"Executing prompt for {request.agent_name}")
 
-    # Create output directory if needed
-    output_dir = os.path.dirname(request.output_file)
-    if output_dir:
-        os.makedirs(output_dir, exist_ok=True)
+    # TAC-15: Create output directory only if output_file is provided
+    if request.output_file:
+        output_dir = os.path.dirname(request.output_file)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
 
     # Execute with retry logic
     return prompt_claude_code_with_retry(request)
@@ -910,8 +1147,9 @@ def execute_template(request: AgentTemplateRequest) -> AgentPromptResponse:
     """Execute a Claude Code template with slash command and arguments.
 
     This function automatically selects the appropriate model based on:
-    1. The slash command being executed
-    2. The model_set stored in the ADW state (base or heavy)
+    1. The model explicitly set in the request (takes priority)
+    2. The slash command being executed
+    3. The model_set stored in the ADW state (base or heavy)
 
     Example:
         request = AgentTemplateRequest(
@@ -980,18 +1218,23 @@ This is a safety feature to isolate development work. All your changes will be r
 """
         prompt = prompt + worktree_reminder
 
-    # Create output directory with adw_id at project root
-    # __file__ is in adws/adw_modules/, so we need to go up 3 levels to get to project root
-    project_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    )
-    output_dir = os.path.join(
-        project_root, "agents", request.adw_id, request.agent_name
-    )
-    os.makedirs(output_dir, exist_ok=True)
+    # TAC-15: Conditionally set output_file based on USE_SDK
+    if USE_SDK:
+        # SDK path: no JSONL output file needed
+        output_file = None
+    else:
+        # Subprocess path: create output directory with adw_id at project root
+        # __file__ is in adws/adw_modules/, so we need to go up 3 levels to get to project root
+        project_root = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        )
+        output_dir = os.path.join(
+            project_root, "agents", request.adw_id, request.agent_name
+        )
+        os.makedirs(output_dir, exist_ok=True)
 
-    # Build output file path
-    output_file = os.path.join(output_dir, "raw_output.jsonl")
+        # Build output file path
+        output_file = os.path.join(output_dir, "raw_output.jsonl")
 
     # Create prompt request with specific parameters
     prompt_request = AgentPromptRequest(
@@ -1002,6 +1245,7 @@ This is a safety feature to isolate development work. All your changes will be r
         dangerously_skip_permissions=True,
         output_file=output_file,
         working_dir=request.working_dir,  # Pass through working_dir
+        resume_session_id=request.resume_session_id,  # TAC-15: SDK session persistence
     )
 
     # Execute with retry logic and return response (prompt_claude_code now handles all parsing)

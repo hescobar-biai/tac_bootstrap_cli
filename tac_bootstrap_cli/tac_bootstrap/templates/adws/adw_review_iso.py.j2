@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run
 # /// script
-# dependencies = ["python-dotenv", "pydantic", "boto3>=1.26.0", "pyyaml"]
+# dependencies = ["python-dotenv", "pydantic", "boto3>=1.26.0", "pyyaml", "claude-agent-sdk>=0.1.18"]
 # ///
 
 """

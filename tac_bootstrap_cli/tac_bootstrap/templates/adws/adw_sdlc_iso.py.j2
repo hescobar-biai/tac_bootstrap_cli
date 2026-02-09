@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run
 # /// script
-# dependencies = ["python-dotenv", "pydantic", "pyyaml", "psycopg2-binary"]
+# dependencies = ["python-dotenv", "pydantic", "pyyaml", "psycopg2-binary", "claude-agent-sdk>=0.1.18"]
 # ///
 
 """

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S uv run
 # /// script
-# dependencies = ["python-dotenv", "pydantic", "pyyaml"]
+# dependencies = ["python-dotenv", "pydantic", "pyyaml", "claude-agent-sdk>=0.1.18"]
 # ///
 
 """
@@ -115,7 +115,7 @@ def main():
     # Ensure state has the adw_id field
     if not state.get("adw_id"):
         state.update(adw_id=adw_id)
-
+    
     # Track that this ADW workflow has run
     state.append_adw_id("adw_plan_iso")
 
@@ -578,7 +578,7 @@ Focus on: state management, worktree isolation, GitHub integration patterns."""
     # Get the plan file path directly from response
     logger.info("Getting plan file path")
     plan_file_path = plan_response.output.strip()
-
+    
     # Validate the path exists (within worktree)
     if not plan_file_path:
         error = "No plan file path returned from planning agent"
@@ -588,7 +588,7 @@ Focus on: state management, worktree isolation, GitHub integration patterns."""
             format_issue_message(adw_id, "ops", f"❌ {error}"),
         )
         sys.exit(1)
-
+    
     # Check if file exists in worktree
     worktree_plan_path = os.path.join(worktree_path, plan_file_path)
     if not os.path.exists(worktree_plan_path):
