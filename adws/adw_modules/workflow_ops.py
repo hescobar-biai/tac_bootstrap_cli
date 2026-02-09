@@ -22,6 +22,72 @@ from adw_modules.github import get_repo_url, extract_repo_path, ADW_BOT_IDENTIFI
 from adw_modules.state import ADWState
 from adw_modules.utils import parse_json, get_target_branch
 
+
+# =============================================================================
+# TAC-15: SDK Session Persistence Helpers
+# =============================================================================
+
+
+def _load_session_id(adw_id: str) -> Optional[str]:
+    """Load SDK session ID from ADW state for context persistence.
+
+    Args:
+        adw_id: The ADW identifier
+
+    Returns:
+        Session ID if available, None otherwise
+    """
+    try:
+        state = ADWState(adw_id)
+        return state.get("sdk_session_id")
+    except Exception:
+        return None
+
+
+def _save_session_id(adw_id: str, response: AgentPromptResponse) -> None:
+    """Save SDK session ID to ADW state after successful execution.
+
+    Args:
+        adw_id: The ADW identifier
+        response: The agent response containing session_id
+    """
+    if response.success and response.session_id:
+        try:
+            state = ADWState(adw_id)
+            state.update(sdk_session_id=response.session_id)
+        except Exception:
+            pass  # Don't fail on session save errors
+
+
+def execute_template_with_session(
+    request: AgentTemplateRequest,
+) -> AgentPromptResponse:
+    """Execute template with automatic SDK session persistence.
+
+    This wrapper:
+    1. Loads existing session_id from ADW state before execution
+    2. Passes it to the request for context reuse
+    3. Saves the new session_id after successful execution
+
+    Args:
+        request: The template execution request
+
+    Returns:
+        AgentPromptResponse from execute_template
+    """
+    # TAC-15: Load session ID for context persistence
+    session_id = _load_session_id(request.adw_id)
+    if session_id and not request.resume_session_id:
+        request = request.model_copy(update={"resume_session_id": session_id})
+
+    # Execute the template
+    response = execute_template(request)
+
+    # TAC-15: Save session ID for future phases
+    _save_session_id(request.adw_id, response)
+
+    return response
+
 # ============================================================================
 # Configuration Loading
 # ============================================================================
@@ -518,7 +584,8 @@ def build_plan(
         f"issue_plan_template_request: {issue_plan_template_request.model_dump_json(indent=2, by_alias=True)}"
     )
 
-    issue_plan_response = execute_template(issue_plan_template_request)
+    # TAC-15: Use session-aware execution for context persistence
+    issue_plan_response = execute_template_with_session(issue_plan_template_request)
 
     logger.debug(
         f"issue_plan_response: {issue_plan_response.model_dump_json(indent=2, by_alias=True)}"
@@ -552,7 +619,8 @@ def implement_plan(
         f"implement_template_request: {implement_template_request.model_dump_json(indent=2, by_alias=True)}"
     )
 
-    implement_response = execute_template(implement_template_request)
+    # TAC-15: Use session-aware execution for context persistence
+    implement_response = execute_template_with_session(implement_template_request)
 
     logger.debug(
         f"implement_response: {implement_response.model_dump_json(indent=2, by_alias=True)}"
@@ -592,7 +660,8 @@ def implement_plan_with_report(
         f"implement_with_report_request: {implement_template_request.model_dump_json(indent=2, by_alias=True)}"
     )
 
-    implement_response = execute_template(implement_template_request)
+    # TAC-15: Use session-aware execution for context persistence
+    implement_response = execute_template_with_session(implement_template_request)
 
     logger.debug(
         f"implement_with_report_response: {implement_response.model_dump_json(indent=2, by_alias=True)}"
@@ -631,7 +700,8 @@ def load_ai_docs(
 
     logger.debug(f"Loading AI docs for topic: {topic}")
 
-    response = execute_template(request)
+    # TAC-15: Use session-aware execution for context persistence
+    response = execute_template_with_session(request)
 
     logger.debug(f"load_ai_docs response: {response.output[:200] if response.output else 'empty'}")
 
@@ -1154,7 +1224,8 @@ def scout_codebase(
 
     logger.debug(f"Scouting codebase with query: {query}, scale: {scale}")
 
-    response = execute_template(request)
+    # TAC-15: Use session-aware execution for context persistence
+    response = execute_template_with_session(request)
 
     logger.debug(f"scout_codebase response: {response.output[:200] if response.output else 'empty'}")
 
@@ -1194,7 +1265,8 @@ def plan_with_scouts(
 
     logger.debug(f"Planning with scouts for: {description}")
 
-    response = execute_template(request)
+    # TAC-15: Use session-aware execution for context persistence
+    response = execute_template_with_session(request)
 
     logger.debug(f"plan_with_scouts response: {response.output[:200] if response.output else 'empty'}")
 
@@ -1233,7 +1305,8 @@ def build_in_parallel(
 
     logger.debug(f"Building in parallel from plan: {plan_file}")
 
-    response = execute_template(request)
+    # TAC-15: Use session-aware execution for context persistence
+    response = execute_template_with_session(request)
 
     logger.debug(f"build_in_parallel response: {response.output[:200] if response.output else 'empty'}")
 
@@ -1783,7 +1856,8 @@ def create_and_implement_patch(
         f"Patch plan request: {request.model_dump_json(indent=2, by_alias=True)}"
     )
 
-    response = execute_template(request)
+    # TAC-15: Use session-aware execution for context persistence
+    response = execute_template_with_session(request)
 
     logger.debug(
         f"Patch plan response: {response.model_dump_json(indent=2, by_alias=True)}"

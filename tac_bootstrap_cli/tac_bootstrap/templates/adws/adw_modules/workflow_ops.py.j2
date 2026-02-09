@@ -22,6 +22,72 @@ from adw_modules.github import get_repo_url, extract_repo_path, ADW_BOT_IDENTIFI
 from adw_modules.state import ADWState
 from adw_modules.utils import parse_json, get_target_branch
 
+
+# =============================================================================
+# TAC-15: SDK Session Persistence Helpers
+# =============================================================================
+
+
+def _load_session_id(adw_id: str) -> Optional[str]:
+    """Load SDK session ID from ADW state for context persistence.
+
+    Args:
+        adw_id: The ADW identifier
+
+    Returns:
+        Session ID if available, None otherwise
+    """
+    try:
+        state = ADWState(adw_id)
+        return state.get("sdk_session_id")
+    except Exception:
+        return None
+
+
+def _save_session_id(adw_id: str, response: AgentPromptResponse) -> None:
+    """Save SDK session ID to ADW state after successful execution.
+
+    Args:
+        adw_id: The ADW identifier
+        response: The agent response containing session_id
+    """
+    if response.success and response.session_id:
+        try:
+            state = ADWState(adw_id)
+            state.update(sdk_session_id=response.session_id)
+        except Exception:
+            pass  # Don't fail on session save errors
+
+
+def execute_template_with_session(
+    request: AgentTemplateRequest,
+) -> AgentPromptResponse:
+    """Execute template with automatic SDK session persistence.
+
+    This wrapper:
+    1. Loads existing session_id from ADW state before execution
+    2. Passes it to the request for context reuse
+    3. Saves the new session_id after successful execution
+
+    Args:
+        request: The template execution request
+
+    Returns:
+        AgentPromptResponse from execute_template
+    """
+    # TAC-15: Load session ID for context persistence
+    session_id = _load_session_id(request.adw_id)
+    if session_id and not request.resume_session_id:
+        request = request.model_copy(update={"resume_session_id": session_id})
+
+    # Execute the template
+    response = execute_template(request)
+
+    # TAC-15: Save session ID for future phases
+    _save_session_id(request.adw_id, response)
+
+    return response
+
 # ============================================================================
 # Configuration Loading
 # ============================================================================
@@ -293,14 +359,14 @@ Rate severity as: "critical", "important", or "nice_to_have"
 If NO ambiguities are found, explain why the issue is sufficiently clear.
 
 Return your analysis as JSON:
-{% raw %}{{
+{{
   "has_ambiguities": boolean,
   "questions": [
     {{"question": "...", "category": "...", "severity": "..."}}
   ],
   "assumptions": ["assumption if continuing without answer"],
   "analysis": "brief explanation"
-}}{% endraw %}
+}}
 
 IMPORTANT: Return ONLY the JSON object, no markdown formatting or code blocks."""
 
@@ -429,10 +495,10 @@ For EACH question: make a clear decision with brief rationale.
 Choose the simplest reasonable approach that aligns with the documentation (if provided).
 
 Return JSON:
-{% raw %}{{
+{{
   "decisions": [{{"question": "...", "decision": "...", "rationale": "..."}}],
   "summary": "brief overall approach"
-}}{% endraw %}"""
+}}"""
 
     from adw_modules.agent import execute_prompt
     from adw_modules.data_types import AgentPromptRequest
@@ -518,7 +584,8 @@ def build_plan(
         f"issue_plan_template_request: {issue_plan_template_request.model_dump_json(indent=2, by_alias=True)}"
     )
 
-    issue_plan_response = execute_template(issue_plan_template_request)
+    # TAC-15: Use session-aware execution for context persistence
+    issue_plan_response = execute_template_with_session(issue_plan_template_request)
 
     logger.debug(
         f"issue_plan_response: {issue_plan_response.model_dump_json(indent=2, by_alias=True)}"
@@ -552,7 +619,8 @@ def implement_plan(
         f"implement_template_request: {implement_template_request.model_dump_json(indent=2, by_alias=True)}"
     )
 
-    implement_response = execute_template(implement_template_request)
+    # TAC-15: Use session-aware execution for context persistence
+    implement_response = execute_template_with_session(implement_template_request)
 
     logger.debug(
         f"implement_response: {implement_response.model_dump_json(indent=2, by_alias=True)}"
@@ -592,7 +660,8 @@ def implement_plan_with_report(
         f"implement_with_report_request: {implement_template_request.model_dump_json(indent=2, by_alias=True)}"
     )
 
-    implement_response = execute_template(implement_template_request)
+    # TAC-15: Use session-aware execution for context persistence
+    implement_response = execute_template_with_session(implement_template_request)
 
     logger.debug(
         f"implement_with_report_response: {implement_response.model_dump_json(indent=2, by_alias=True)}"
@@ -631,7 +700,8 @@ def load_ai_docs(
 
     logger.debug(f"Loading AI docs for topic: {topic}")
 
-    response = execute_template(request)
+    # TAC-15: Use session-aware execution for context persistence
+    response = execute_template_with_session(request)
 
     logger.debug(f"load_ai_docs response: {response.output[:200] if response.output else 'empty'}")
 
@@ -1154,7 +1224,8 @@ def scout_codebase(
 
     logger.debug(f"Scouting codebase with query: {query}, scale: {scale}")
 
-    response = execute_template(request)
+    # TAC-15: Use session-aware execution for context persistence
+    response = execute_template_with_session(request)
 
     logger.debug(f"scout_codebase response: {response.output[:200] if response.output else 'empty'}")
 
@@ -1194,7 +1265,8 @@ def plan_with_scouts(
 
     logger.debug(f"Planning with scouts for: {description}")
 
-    response = execute_template(request)
+    # TAC-15: Use session-aware execution for context persistence
+    response = execute_template_with_session(request)
 
     logger.debug(f"plan_with_scouts response: {response.output[:200] if response.output else 'empty'}")
 
@@ -1233,7 +1305,8 @@ def build_in_parallel(
 
     logger.debug(f"Building in parallel from plan: {plan_file}")
 
-    response = execute_template(request)
+    # TAC-15: Use session-aware execution for context persistence
+    response = execute_template_with_session(request)
 
     logger.debug(f"build_in_parallel response: {response.output[:200] if response.output else 'empty'}")
 
@@ -1783,7 +1856,8 @@ def create_and_implement_patch(
         f"Patch plan request: {request.model_dump_json(indent=2, by_alias=True)}"
     )
 
-    response = execute_template(request)
+    # TAC-15: Use session-aware execution for context persistence
+    response = execute_template_with_session(request)
 
     logger.debug(
         f"Patch plan response: {response.model_dump_json(indent=2, by_alias=True)}"
@@ -2061,7 +2135,14 @@ def format_file_references_for_context(file_references: dict[str, str]) -> str:
 # ============================================================================
 
 def get_context_bundle_path(adw_id: str) -> str:
-    """Get path to context bundle directory for an ADW execution."""
+    """Get path to context bundle directory for an ADW execution.
+
+    Args:
+        adw_id: ADW execution ID
+
+    Returns:
+        Path to context bundle directory
+    """
     return os.path.join("agents", "context_bundles", adw_id)
 
 
@@ -2070,12 +2151,28 @@ def create_context_bundle(
     issue: GitHubIssue,
     logger: logging.Logger
 ) -> bool:
-    """Create initial context bundle with issue facts."""
+    """Create initial context bundle with issue facts.
+
+    Creates a persistent context bundle to avoid re-sending the same
+    issue context to multiple phases. Bundle includes:
+    - issue_facts.md: Minimal issue summary
+    - decisions.md: Placeholder for phase decisions
+    - repo_constraints.md: Project-specific constraints
+
+    Args:
+        adw_id: ADW execution ID
+        issue: GitHub issue object
+        logger: Logger instance
+
+    Returns:
+        True if bundle created successfully
+    """
     bundle_dir = get_context_bundle_path(adw_id)
 
     try:
         os.makedirs(bundle_dir, exist_ok=True)
 
+        # Create issue_facts.md with minimal issue info
         issue_facts = f"""# Issue Facts (ADW: {adw_id})
 
 **Issue #:** {issue.number}
@@ -2087,9 +2184,12 @@ def create_context_bundle(
 
 *Full issue available in GitHub - reference by ID #{issue.number}*
 """
-        with open(os.path.join(bundle_dir, "issue_facts.md"), 'w', encoding='utf-8') as f:
+
+        facts_path = os.path.join(bundle_dir, "issue_facts.md")
+        with open(facts_path, 'w', encoding='utf-8') as f:
             f.write(issue_facts)
 
+        # Create decisions.md placeholder
         decisions = f"""# Phase Decisions (ADW: {adw_id})
 
 ## Planning Phase
@@ -2104,9 +2204,13 @@ def create_context_bundle(
 ## Document Phase
 - TBD
 """
-        with open(os.path.join(bundle_dir, "decisions.md"), 'w', encoding='utf-8') as f:
+
+        decisions_path = os.path.join(bundle_dir, "decisions.md")
+        with open(decisions_path, 'w', encoding='utf-8') as f:
             f.write(decisions)
 
+        # Create repo_constraints.md
+        # Read from project root if exists, otherwise create default
         constraints_content = """# Repository Constraints
 
 ## Architecture
@@ -2119,7 +2223,9 @@ def create_context_bundle(
 - Include tests for new features
 - Update docs when needed
 """
-        with open(os.path.join(bundle_dir, "repo_constraints.md"), 'w', encoding='utf-8') as f:
+
+        constraints_path = os.path.join(bundle_dir, "repo_constraints.md")
+        with open(constraints_path, 'w', encoding='utf-8') as f:
             f.write(constraints_content)
 
         logger.info(f"Created context bundle at: {bundle_dir}")
@@ -2136,27 +2242,42 @@ def update_context_bundle_decisions(
     decisions: str,
     logger: logging.Logger
 ) -> bool:
-    """Update context bundle with phase-specific decisions."""
+    """Update context bundle with phase-specific decisions.
+
+    Args:
+        adw_id: ADW execution ID
+        phase: Phase name (planning, build, review, document)
+        decisions: Decision text to append
+        logger: Logger instance
+
+    Returns:
+        True if updated successfully
+    """
     bundle_dir = get_context_bundle_path(adw_id)
     decisions_path = os.path.join(bundle_dir, "decisions.md")
 
     try:
         if not os.path.exists(decisions_path):
-            logger.warning("Decisions file not found, creating new one")
+            logger.warning(f"Decisions file not found, creating new one")
             create_context_bundle(adw_id, None, logger)
 
+        # Read current decisions
         with open(decisions_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
+        # Update phase section
         phase_marker = f"## {phase.title()} Phase"
         if phase_marker in content:
+            # Replace TBD with actual decisions
             content = content.replace(
                 f"{phase_marker}\n- TBD",
                 f"{phase_marker}\n{decisions}"
             )
         else:
+            # Append new phase
             content += f"\n\n{phase_marker}\n{decisions}\n"
 
+        # Write back
         with open(decisions_path, 'w', encoding='utf-8') as f:
             f.write(content)
 
@@ -2172,7 +2293,15 @@ def load_context_bundle(
     adw_id: str,
     logger: logging.Logger
 ) -> Optional[str]:
-    """Load context bundle as formatted string for agent consumption."""
+    """Load context bundle as formatted string for agent consumption.
+
+    Args:
+        adw_id: ADW execution ID
+        logger: Logger instance
+
+    Returns:
+        Formatted context bundle string or None if not found
+    """
     bundle_dir = get_context_bundle_path(adw_id)
 
     if not os.path.exists(bundle_dir):
@@ -2181,6 +2310,8 @@ def load_context_bundle(
 
     try:
         parts = []
+
+        # Load each bundle file
         for filename in ["issue_facts.md", "decisions.md", "repo_constraints.md"]:
             filepath = os.path.join(bundle_dir, filename)
             if os.path.exists(filepath):
