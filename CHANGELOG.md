@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.4] - 2026-02-09
+
+### Fixed
+- **Complete scaffolding overhaul for `upgrade --with-orchestrator`**: Consolidated fixes from 0.10.1-0.10.3 and verified end-to-end upgrade succeeds
+- **`apps/` bulk directory copy**: `_add_orchestrator_apps()` now walks `templates/apps/` recursively with `os.walk()`, copying all ~207 source files instead of listing ~60 individually
+- **53 previously unregistered templates**: All triggers, workflows, tests, commands, experts, output styles, and scripts now registered in scaffold plan
+- **`FileAction.CREATE` during upgrades**: Orchestrator files use `OVERWRITE` when `existing_repo=True`
+- **`add-agentic --with-orchestrator` wizard**: Parameter now propagated through wizard to `OrchestratorConfig`
+- **Removed non-existent template references**: `frontend/.env.j2`, `frontend/tsconfig.json`, `playwright.config.ts.j2` and 7 other phantom files that caused upgrade rollback
+
+### Changed
+- `scaffold_service.py` - Replaced `_add_orchestrator_database()`, `_add_orchestrator_backend()`, `_add_orchestrator_frontend()` with single `_add_orchestrator_apps()` using `os.walk()`
+- `scaffold_service.py` - 100% template registration coverage across all categories
+- `wizard.py` - `run_add_agentic_wizard()` accepts `with_orchestrator: bool`
+- `cli.py` - `add_agentic()` passes `with_orchestrator` to wizard
+- `upgrade_service.py` - Preview includes both `orchestrator_3_stream` and `orchestrator_db`
+- Excludes build artifacts: `.venv`, `node_modules`, `__pycache__`, `.mypy_cache`, `.pytest_cache`, `logs`
+
 ## [0.10.3] - 2026-02-09
 
 ### Fixed
