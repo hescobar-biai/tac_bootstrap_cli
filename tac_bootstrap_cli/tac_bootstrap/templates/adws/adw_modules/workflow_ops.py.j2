@@ -359,14 +359,14 @@ Rate severity as: "critical", "important", or "nice_to_have"
 If NO ambiguities are found, explain why the issue is sufficiently clear.
 
 Return your analysis as JSON:
-{{
+{% raw %}{{
   "has_ambiguities": boolean,
   "questions": [
     {{"question": "...", "category": "...", "severity": "..."}}
   ],
   "assumptions": ["assumption if continuing without answer"],
   "analysis": "brief explanation"
-}}
+}}{% endraw %}
 
 IMPORTANT: Return ONLY the JSON object, no markdown formatting or code blocks."""
 
@@ -495,10 +495,10 @@ For EACH question: make a clear decision with brief rationale.
 Choose the simplest reasonable approach that aligns with the documentation (if provided).
 
 Return JSON:
-{{
+{% raw %}{{
   "decisions": [{{"question": "...", "decision": "...", "rationale": "..."}}],
   "summary": "brief overall approach"
-}}"""
+}}{% endraw %}"""
 
     from adw_modules.agent import execute_prompt
     from adw_modules.data_types import AgentPromptRequest
