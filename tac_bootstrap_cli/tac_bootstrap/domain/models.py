@@ -350,6 +350,10 @@ class AgenticSpec(BaseModel):
         default="main",
         description="Target branch for merge/push operations (main, master, develop, etc.)",
     )
+    use_sdk: bool = Field(
+        default=False,
+        description="TAC-15: Use Claude Agent SDK instead of subprocess CLI (experimental)",
+    )
     cron_interval: int = Field(
         default=20,
         description="Polling interval in seconds for cron trigger (default: 20)",
