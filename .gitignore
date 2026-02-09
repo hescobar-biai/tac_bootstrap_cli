@@ -171,3 +171,19 @@ coverage.xml
 *.db
 *.sqlite
 *.sqlite3
+
+apps/
+orchestrator_3_stream/
+orchestrator_db/
+# Project local files
+.claude/
+.mcp.json
+adws/
+ai_docs/
+app_docs/
+canonical_idk.yml
+config.yml
+playwright-mcp-config.json
+scripts/
+specs/
+src/
