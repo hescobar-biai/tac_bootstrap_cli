@@ -23,7 +23,7 @@ Example usage:
 
     # SemanticVersion - parses and compares versions
     v1 = SemanticVersion("1.2.3")
-    v2 = SemanticVersion("0.11.0")
+    v2 = SemanticVersion("0.11.1")
     assert v1 > v2  # True
     assert v1.tuple == (1, 2, 3)  # True
 """
@@ -195,8 +195,8 @@ class SemanticVersion(str):
     - PATCH: Bug fixes (backwards compatible)
 
     Comparison follows semantic versioning rules:
-    - 1.0.0 > 0.11.0
-    - 0.11.0 > 0.2.0
+    - 1.0.0 > 0.11.1
+    - 0.11.1 > 0.2.0
     - 1.2.3 == 1.2.3
 
     Use cases:
@@ -208,7 +208,7 @@ class SemanticVersion(str):
         >>> v1 = SemanticVersion("1.2.3")
         >>> v1.tuple
         (1, 2, 3)
-        >>> v2 = SemanticVersion("0.11.0")
+        >>> v2 = SemanticVersion("0.11.1")
         >>> v1 > v2
         True
         >>> SemanticVersion("1.2")

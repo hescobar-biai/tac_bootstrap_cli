@@ -524,8 +524,8 @@ Search string not found: "/supportedTSExtensions = .*(?=;)/"
 
 3. **Downgrade Node.js**
    ```bash
-   nvm install 20.11.0
-   nvm use 20.11.0
+   nvm install 20.11.1
+   nvm use 20.11.1
    ```
    - Rationale: Use LTS version with better tooling support
    - Estimated time: 15 minutes

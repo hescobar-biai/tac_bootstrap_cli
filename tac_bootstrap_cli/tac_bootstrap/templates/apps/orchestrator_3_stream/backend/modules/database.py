@@ -837,6 +837,10 @@ async def list_agents(orchestrator_agent_id: uuid.UUID, archived: bool = False) 
     """
     List all agents for this orchestrator.
 
+    Includes agents from both the given orchestrator and the well-known
+    CLI ADW orchestrator (00000000-0000-0000-0000-ad0000000000) so that
+    agents created by CLI workflows are also visible in the frontend.
+
     Args:
         orchestrator_agent_id: UUID of the orchestrator agent
         archived: If True, return archived agents. If False, return active agents.
@@ -844,15 +848,19 @@ async def list_agents(orchestrator_agent_id: uuid.UUID, archived: bool = False) 
     Returns:
         List of Agent Pydantic models, ordered by creation date (newest first)
     """
+    # Well-known CLI ADW orchestrator ID (matches adw_db_bridge.py)
+    cli_orchestrator_id = uuid.UUID("00000000-0000-0000-0000-ad0000000000")
+
     async with get_connection() as conn:
         rows = await conn.fetch(
             """
             SELECT * FROM agents
-            WHERE orchestrator_agent_id = $1
-              AND archived = $2
+            WHERE orchestrator_agent_id IN ($1, $2)
+              AND archived = $3
             ORDER BY created_at DESC
             """,
             orchestrator_agent_id,
+            cli_orchestrator_id,
             archived,
         )
         return [Agent(**dict[str, Any](row)) for row in rows]
@@ -1414,6 +1422,9 @@ async def list_agent_logs(
     """
     Get all agent logs for agents belonging to this orchestrator.
 
+    Includes logs from both the given orchestrator and the well-known
+    CLI ADW orchestrator so CLI workflow logs are visible in the frontend.
+
     Args:
         orchestrator_agent_id: UUID of the orchestrator agent
         limit: Maximum number of logs to return
@@ -1422,6 +1433,9 @@ async def list_agent_logs(
     Returns:
         List of log dicts with agent_name from JOIN, ordered by timestamp DESC
     """
+    # Well-known CLI ADW orchestrator ID (matches adw_db_bridge.py)
+    cli_orchestrator_id = uuid.UUID("00000000-0000-0000-0000-ad0000000000")
+
     async with get_connection() as conn:
         rows = await conn.fetch(
             """
@@ -1431,11 +1445,12 @@ async def list_agent_logs(
                    a.name as agent_name
             FROM agent_logs al
             LEFT JOIN agents a ON al.agent_id = a.id
-            WHERE a.orchestrator_agent_id = $1
+            WHERE a.orchestrator_agent_id IN ($1, $2)
             ORDER BY al.timestamp DESC
-            LIMIT $2 OFFSET $3
+            LIMIT $3 OFFSET $4
         """,
             orchestrator_agent_id,
+            cli_orchestrator_id,
             limit,
             offset,
         )
@@ -1895,6 +1910,10 @@ async def list_adws(
     """
     List AI Developer Workflows for an orchestrator.
 
+    Includes ADWs from both the given orchestrator and the well-known
+    CLI ADW orchestrator (00000000-0000-0000-0000-ad0000000000) so that
+    workflows started from CLI are also visible in the frontend.
+
     Args:
         orchestrator_agent_id: UUID of the orchestrator
         status: Optional filter by status
@@ -1903,6 +1922,9 @@ async def list_adws(
     Returns:
         List of ADW records
     """
+    # Well-known CLI ADW orchestrator ID (matches adw_db_bridge.py)
+    cli_orchestrator_id = uuid.UUID("00000000-0000-0000-0000-ad0000000000")
+
     async with get_connection() as conn:
         if status:
             rows = await conn.fetch(
@@ -1912,11 +1934,12 @@ async def list_adws(
                        started_at, completed_at, duration_seconds,
                        error_message, created_at, updated_at
                 FROM ai_developer_workflows
-                WHERE orchestrator_agent_id = $1 AND status = $2
+                WHERE orchestrator_agent_id IN ($1, $2) AND status = $3
                 ORDER BY created_at DESC
-                LIMIT $3
+                LIMIT $4
                 """,
                 orchestrator_agent_id,
+                cli_orchestrator_id,
                 status,
                 limit,
             )
@@ -1928,11 +1951,12 @@ async def list_adws(
                        started_at, completed_at, duration_seconds,
                        error_message, created_at, updated_at
                 FROM ai_developer_workflows
-                WHERE orchestrator_agent_id = $1
+                WHERE orchestrator_agent_id IN ($1, $2)
                 ORDER BY created_at DESC
-                LIMIT $2
+                LIMIT $3
                 """,
                 orchestrator_agent_id,
+                cli_orchestrator_id,
                 limit,
             )
 

@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-02-09
+
+### Added - ADW CLI to Orchestrator Frontend Real-time Bridge
+
+**Bridge HTTP Notifications (`adw_db_bridge.py`):**
+- `_notify_backend()` fire-and-forget HTTP POST after every DB commit (7 functions)
+- Uses `urllib.request` (stdlib) - zero new dependencies
+- `ORCHESTRATOR_BACKEND_URL` env var support (default: `http://127.0.0.1:9403`)
+- Graceful degradation: CLI workflows never blocked if backend is unreachable
+
+**Backend Notification Endpoint (`main.py`):**
+- `POST /api/adw-bridge/notify` receives CLI bridge events and broadcasts via WebSocket
+- `_serialize()` helper for JSON serialization of DB records (UUID, datetime, Decimal)
+- Shared `_ADW_UUID_NAMESPACE` for consistent ADW ID to UUID conversion
+- Handles: `workflow_started`, `phase_updated`, `workflow_ended`, `agent_started`, `agent_ended`, `agent_log`, `system_log`
+
+**CLI ADW Visibility in Frontend (`database.py`):**
+- `list_adws()` now includes ADWs from CLI orchestrator (`00000000-0000-0000-0000-ad0000000000`)
+- `list_agents()` now includes agents created by CLI workflows
+- `list_agent_logs()` now includes logs from CLI workflow agents
+- All queries use `WHERE orchestrator_agent_id IN ($1, $2)` pattern
+
+**Templates Synced:**
+- `adw_db_bridge.py.j2` - bridge notifications
+- `main.py` (backend template) - notification endpoint
+- `database.py` (backend template) - CLI orchestrator visibility
+
 ## [0.11.0] - 2026-02-09
 
 ### Added - TAC-15: Claude Agent SDK Integration

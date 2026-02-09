@@ -4,7 +4,10 @@ Provides synchronous database writes to the orchestrator PostgreSQL database
 using psycopg2. This avoids the async/sync mismatch since ADW workflows
 use subprocess.run() (sync) while the web backend uses asyncpg (async).
 
-All functions are wrapped in try/except - DB failures log to stderr
+After each DB write, sends a lightweight HTTP notification to the orchestrator
+backend so it can broadcast WebSocket events to the frontend in real-time.
+
+All functions are wrapped in try/except - DB/HTTP failures log to stderr
 and never crash workflows.
 
 Requires DATABASE_URL environment variable (PostgreSQL connection string).
@@ -14,6 +17,7 @@ import json
 import os
 import uuid
 import logging
+import urllib.request
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -31,6 +35,9 @@ ADW_ORCHESTRATOR_ID = "00000000-0000-0000-0000-ad0000000000"
 
 # Namespace for deterministic UUID generation from ADW ID strings
 _ADW_UUID_NAMESPACE = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+
+# Backend URL for WebSocket broadcast notifications
+_BACKEND_URL = os.getenv("ORCHESTRATOR_BACKEND_URL", "http://127.0.0.1:9403")
 
 
 def _adw_id_to_uuid(adw_id: str) -> str:
@@ -53,6 +60,28 @@ def _map_agent_status(status: str) -> str:
         "idle": "idle",
     }
     return mapping.get(status, "complete")
+
+
+def _notify_backend(event_type: str, **kwargs) -> None:
+    """Fire-and-forget HTTP POST to backend for WebSocket broadcast.
+
+    Sends a lightweight notification so the backend can read fresh data
+    from DB and broadcast via WebSocket to connected frontends.
+
+    Non-blocking: failures are silently ignored so CLI workflows
+    continue even when the backend is not running.
+    """
+    try:
+        payload = json.dumps({"event_type": event_type, **kwargs}).encode("utf-8")
+        req = urllib.request.Request(
+            f"{_BACKEND_URL}/api/adw-bridge/notify",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        urllib.request.urlopen(req, timeout=2)
+        logger.info(f"[DB Bridge] Notified backend: {event_type}")
+    except Exception as e:
+        logger.debug(f"[DB Bridge] Backend notification skipped ({event_type}): {e}")
 
 
 def init_bridge(database_url: Optional[str] = None) -> None:
@@ -136,6 +165,7 @@ def track_workflow_start(
         )
         _conn.commit()
         logger.info(f"[DB Bridge] Workflow started: {adw_id} ({workflow_type})")
+        _notify_backend("workflow_started", adw_id=adw_id)
     except Exception as e:
         _conn.rollback()
         logger.warning(f"[DB Bridge] track_workflow_start failed: {e}")
@@ -169,6 +199,7 @@ def track_phase_update(
         )
         _conn.commit()
         logger.info(f"[DB Bridge] Phase update: {adw_id} -> {phase_name} ({status})")
+        _notify_backend("phase_updated", adw_id=adw_id, step=phase_name, step_status=status)
     except Exception as e:
         _conn.rollback()
         logger.warning(f"[DB Bridge] track_phase_update failed: {e}")
@@ -201,6 +232,7 @@ def track_workflow_end(
         )
         _conn.commit()
         logger.info(f"[DB Bridge] Workflow ended: {adw_id} -> {status}")
+        _notify_backend("workflow_ended", adw_id=adw_id)
     except Exception as e:
         _conn.rollback()
         logger.warning(f"[DB Bridge] track_workflow_end failed: {e}")
@@ -258,6 +290,7 @@ def track_agent_start(
         )
         _conn.commit()
         logger.info(f"[DB Bridge] Agent started: {agent_name} ({agent_id[:8]})")
+        _notify_backend("agent_started", adw_id=adw_id, agent_id=agent_id)
         return agent_id
     except Exception as e:
         _conn.rollback()
@@ -311,6 +344,7 @@ def track_agent_end(
         )
         _conn.commit()
         logger.info(f"[DB Bridge] Agent ended: {agent_id[:8]} -> {status}")
+        _notify_backend("agent_ended", agent_id=agent_id)
     except Exception as e:
         _conn.rollback()
         logger.warning(f"[DB Bridge] track_agent_end failed: {e}")
@@ -339,15 +373,21 @@ def log_agent_event(
     if not _conn or not agent_id:
         return
     try:
+        log_id = str(uuid.uuid4())
         payload = json.dumps({"level": level, "details": details}) if details else "{}"
         cur = _conn.cursor()
         cur.execute(
             """INSERT INTO agent_logs
                (id, agent_id, event_category, event_type, content, payload, timestamp)
                VALUES (%s, %s, 'adw_step', %s, %s, %s, NOW())""",
-            (str(uuid.uuid4()), agent_id, log_type, message, payload),
+            (log_id, agent_id, log_type, message, payload),
         )
         _conn.commit()
+        _notify_backend("agent_log", log_data={
+            "id": log_id, "agent_id": agent_id,
+            "event_category": "adw_step", "event_type": log_type,
+            "content": message, "level": level,
+        })
     except Exception as e:
         _conn.rollback()
         logger.warning(f"[DB Bridge] log_agent_event failed: {e}")
@@ -374,15 +414,20 @@ def log_event(
     if not _conn:
         return
     try:
+        log_id = str(uuid.uuid4())
         metadata = json.dumps({"component": component, "details": details}) if details else json.dumps({"component": component})
         cur = _conn.cursor()
         cur.execute(
             """INSERT INTO system_logs
                (id, level, message, metadata, timestamp)
                VALUES (%s, %s, %s, %s, NOW())""",
-            (str(uuid.uuid4()), level, message, metadata),
+            (log_id, level, message, metadata),
         )
         _conn.commit()
+        _notify_backend("system_log", log_data={
+            "id": log_id, "level": level, "message": message,
+            "component": component,
+        })
     except Exception as e:
         _conn.rollback()
         logger.warning(f"[DB Bridge] log_event failed: {e}")

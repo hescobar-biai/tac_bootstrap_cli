@@ -10,7 +10,9 @@ import os
 import sys
 import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from datetime import datetime
+from decimal import Decimal
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -1055,6 +1057,101 @@ async def get_adw_summary(adw_id: str):
     except Exception as e:
         logger.error(f"Failed to get ADW summary for {adw_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# ADW DB Bridge Notification Endpoint
+# ════════════════════════════════════════════════════════════════════════════════
+
+# Same UUID namespace as adw_db_bridge.py for consistent ID conversion
+_ADW_UUID_NAMESPACE = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+
+
+def _serialize(record: dict) -> dict:
+    """Serialize DB record for JSON/WebSocket (handle UUID, datetime, Decimal)."""
+    result = {}
+    for k, v in record.items():
+        if isinstance(v, uuid.UUID):
+            result[k] = str(v)
+        elif isinstance(v, datetime):
+            result[k] = v.isoformat()
+        elif isinstance(v, Decimal):
+            result[k] = float(v)
+        else:
+            result[k] = v
+    return result
+
+
+@app.post("/api/adw-bridge/notify")
+async def adw_bridge_notify(request: Request):
+    """
+    Receive notifications from CLI adw_db_bridge and broadcast via WebSocket.
+
+    The CLI writes to PostgreSQL directly (psycopg2), then POSTs here so the
+    backend can read fresh data from DB and broadcast to connected frontends.
+    This enables real-time visibility of CLI-executed ADW workflows.
+    """
+    try:
+        body = await request.json()
+        event_type = body.get("event_type")
+        adw_id_str = body.get("adw_id")
+        agent_id = body.get("agent_id")
+        log_data = body.get("log_data")
+
+        logger.debug(f"ADW bridge notification: {event_type} (adw={adw_id_str})")
+
+        if event_type == "workflow_started" and adw_id_str:
+            adw_uuid = uuid.uuid5(_ADW_UUID_NAMESPACE, adw_id_str)
+            adw = await database.get_adw(adw_uuid)
+            if adw:
+                await ws_manager.broadcast_adw_created(_serialize(adw))
+
+        elif event_type == "phase_updated" and adw_id_str:
+            adw_uuid = uuid.uuid5(_ADW_UUID_NAMESPACE, adw_id_str)
+            adw = await database.get_adw(adw_uuid)
+            if adw:
+                await ws_manager.broadcast_adw_updated(str(adw["id"]), _serialize(adw))
+                step = body.get("step")
+                step_status = body.get("step_status")
+                if step:
+                    await ws_manager.broadcast_adw_step_change(
+                        str(adw["id"]),
+                        step,
+                        "StepStart" if step_status == "in_progress" else "StepEnd",
+                    )
+
+        elif event_type == "workflow_ended" and adw_id_str:
+            adw_uuid = uuid.uuid5(_ADW_UUID_NAMESPACE, adw_id_str)
+            adw = await database.get_adw(adw_uuid)
+            if adw:
+                await ws_manager.broadcast_adw_updated(str(adw["id"]), _serialize(adw))
+
+        elif event_type == "agent_started" and agent_id:
+            agent = await database.get_agent(uuid.UUID(agent_id))
+            if agent:
+                await ws_manager.broadcast_agent_created(agent.model_dump(mode="json"))
+
+        elif event_type == "agent_ended" and agent_id:
+            agent = await database.get_agent(uuid.UUID(agent_id))
+            if agent:
+                await ws_manager.broadcast_agent_updated(
+                    agent_id, agent.model_dump(mode="json")
+                )
+
+        elif event_type == "agent_log" and log_data:
+            await ws_manager.broadcast_agent_log(log_data)
+            if adw_id_str:
+                adw_uuid = uuid.uuid5(_ADW_UUID_NAMESPACE, adw_id_str)
+                await ws_manager.broadcast_adw_event(str(adw_uuid), log_data)
+
+        elif event_type == "system_log" and log_data:
+            await ws_manager.broadcast_system_log(log_data)
+
+        return {"status": "ok"}
+
+    except Exception as e:
+        logger.warning(f"ADW bridge notification failed: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 if __name__ == "__main__":
