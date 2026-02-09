@@ -196,6 +196,7 @@ class AgentPromptRequest(BaseModel):
     output_file: str
     working_dir: Optional[str] = None
     timeout_seconds: int = 600  # Default 10 minutes, configurable per request
+    resume_session_id: Optional[str] = None  # TAC-15: SDK session ID for context persistence
 
 
 class TokenUsage(BaseModel):
@@ -309,6 +310,8 @@ class ADWStateData(BaseModel):
     # TAC-9: AI documentation context (for reuse across phases)
     ai_docs_context: Optional[str] = None
     loaded_docs_topic: Optional[str] = None
+    # TAC-15: SDK session ID for cross-phase context persistence
+    sdk_session_id: Optional[str] = None
 
 
 class ReviewIssue(BaseModel):
