@@ -518,6 +518,12 @@ def _prompt_claude_code_sdk(request: AgentPromptRequest) -> AgentPromptResponse:
     adw_agent_sdk module for direct SDK integration. It produces
     exactly the same AgentPromptResponse type as the subprocess path.
 
+    Features (TAC-15 improvements):
+    - max_turns=50 to prevent infinite loops
+    - working_dir validation with parity to subprocess path
+    - Transcript saving for debugging (sdk_transcript.json)
+    - POST_TOOL_USE logging hook for tool visibility
+
     Args:
         request: The prompt request configuration
 
@@ -530,8 +536,47 @@ def _prompt_claude_code_sdk(request: AgentPromptRequest) -> AgentPromptResponse:
         QueryOptions,
         ModelName,
         SettingSource,
+        MessageHandlers,
+        HookEventName,
+        HooksConfig,
+        HookMatcher,
+        HookResponse,
         query_to_completion,
     )
+
+    logger = get_retry_logger(request.adw_id)
+
+    # TAC-15: Validate working_dir (parity with subprocess path)
+    # Read-only agents that don't create files - no warning needed
+    read_only_agents = {
+        "clarifier",
+        "resolver",
+        "classifier",
+        "branch_generator",
+        "branch_name_generator",
+        "issue_classifier",
+        "adw_classifier",
+        "docs_loader",
+        "doc_summarizer",
+        "codebase_scout",
+    }
+
+    effective_cwd = request.working_dir
+    if effective_cwd:
+        if not os.path.isdir(effective_cwd):
+            return AgentPromptResponse(
+                output=f"Error: working_dir does not exist: {effective_cwd}",
+                success=False,
+                session_id=None,
+                retry_code=RetryCode.NONE,
+            )
+    else:
+        # Only warn for agents that create files (not read-only agents)
+        if request.agent_name not in read_only_agents:
+            logger.warning(
+                f"⚠️ SDK: No working_dir provided for {request.agent_name} - "
+                f"executing in current directory. This may cause files to be created in main repo!"
+            )
 
     # Map model string to ModelName enum
     model_map = {
@@ -541,14 +586,40 @@ def _prompt_claude_code_sdk(request: AgentPromptRequest) -> AgentPromptResponse:
     }
     sdk_model = model_map.get(request.model.lower(), ModelName.SONNET)
 
+    # TAC-15: Create POST_TOOL_USE logging hook for tool visibility
+    async def log_tool_use(hook_input, tool_use_id, context):
+        """Log tool usage for debugging and visibility."""
+        tool_name = getattr(hook_input, 'tool_name', 'unknown')
+        tool_input = getattr(hook_input, 'tool_input', {})
+        tool_response = getattr(hook_input, 'tool_response', None)
+
+        # Truncate response for logging
+        response_preview = str(tool_response)[:200] if tool_response else "N/A"
+        if len(str(tool_response or "")) > 200:
+            response_preview += "..."
+
+        logger.debug(f"🔧 SDK Tool: {tool_name}")
+        logger.debug(f"   Input: {str(tool_input)[:100]}")
+        logger.debug(f"   Response: {response_preview}")
+
+        return HookResponse.allow()
+
+    # Build hooks config with POST_TOOL_USE logging
+    hooks_config = HooksConfig.from_callbacks({
+        HookEventName.POST_TOOL_USE: [log_tool_use],
+    })
+
     # Build QueryOptions matching subprocess behavior
     # Include resume session ID if provided for context persistence
+    # TAC-15: Add max_turns=50 to prevent infinite loops
     options = QueryOptions(
         model=sdk_model,
-        cwd=request.working_dir,
+        cwd=effective_cwd,
         bypass_permissions=request.dangerously_skip_permissions,
         setting_sources=[SettingSource.PROJECT],
         resume=request.resume_session_id if request.resume_session_id else None,
+        max_turns=50,  # TAC-15: Prevent infinite loops
+        hooks=hooks_config,  # TAC-15: Tool visibility logging
     )
 
     # Create QueryInput
