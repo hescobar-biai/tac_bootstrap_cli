@@ -373,9 +373,9 @@ class TestMetadataJSON:
             id="550e8400-e29b-41d4-a716-446655440008",
             log_level="info",
             message="Test",
-            metadata={"source": "orchestrator", "version": "0.10.2"},
+            metadata={"source": "orchestrator", "version": "0.11.0"},
         )
-        assert log.metadata == {"source": "orchestrator", "version": "0.10.2"}
+        assert log.metadata == {"source": "orchestrator", "version": "0.11.0"}
 
     def test_system_log_metadata_serialization(self):
         """Test SystemLog metadata serializes to JSON."""
