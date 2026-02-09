@@ -512,11 +512,13 @@ def _prompt_claude_code_sdk(request: AgentPromptRequest) -> AgentPromptResponse:
     sdk_model = model_map.get(request.model.lower(), ModelName.SONNET)
 
     # Build QueryOptions matching subprocess behavior
+    # Include resume session ID if provided for context persistence
     options = QueryOptions(
         model=sdk_model,
         cwd=request.working_dir,
         bypass_permissions=request.dangerously_skip_permissions,
         setting_sources=[SettingSource.PROJECT],
+        resume=request.resume_session_id if request.resume_session_id else None,
     )
 
     # Create QueryInput
