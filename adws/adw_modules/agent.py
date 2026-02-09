@@ -7,6 +7,7 @@ import json
 import re
 import logging
 import time
+import asyncio
 from typing import Optional, List, Dict, Any, Tuple, Final
 from dotenv import load_dotenv
 from .data_types import (
@@ -22,6 +23,9 @@ from .data_types import (
 
 # Load environment variables
 load_dotenv()
+
+# SDK Feature Flag - enables direct SDK execution instead of subprocess
+USE_SDK = os.getenv("ADW_USE_SDK", "0") == "1"
 
 # Get Claude Code CLI path from environment
 CLAUDE_PATH = os.getenv("CLAUDE_CODE_PATH", "claude")
@@ -414,6 +418,167 @@ def is_quota_exhausted_error(error_msg: str) -> bool:
     return False
 
 
+# =============================================================================
+# SDK BRIDGE FUNCTIONS
+# =============================================================================
+
+
+def _classify_sdk_error(error_msg: str) -> RetryCode:
+    """Classify an SDK error message to determine retry behavior.
+
+    Reuses existing error classification functions to maintain consistency
+    between subprocess and SDK execution paths.
+
+    Args:
+        error_msg: The error message from SDK execution
+
+    Returns:
+        Appropriate RetryCode for the error type
+    """
+    if is_quota_exhausted_error(error_msg):
+        return RetryCode.QUOTA_EXHAUSTED
+    elif is_rate_limited_error(error_msg):
+        return RetryCode.RATE_LIMITED
+    elif is_connection_error(error_msg):
+        return RetryCode.CONNECTION_ERROR
+    elif "api" in error_msg.lower() and "error" in error_msg.lower():
+        return RetryCode.API_ERROR
+    elif "timeout" in error_msg.lower():
+        return RetryCode.TIMEOUT_ERROR
+    else:
+        return RetryCode.EXECUTION_ERROR
+
+
+def _convert_sdk_token_usage(sdk_usage: Any, duration_seconds: float) -> TokenUsage:
+    """Convert SDK TokenUsage to our data_types.TokenUsage format.
+
+    Args:
+        sdk_usage: TokenUsage from adw_agent_sdk (Pydantic model)
+        duration_seconds: Duration of the query in seconds
+
+    Returns:
+        Our TokenUsage dataclass with mapped fields
+    """
+    if sdk_usage is None:
+        return TokenUsage(
+            input_tokens=0,
+            output_tokens=0,
+            cache_creation_input_tokens=0,
+            cache_read_input_tokens=0,
+            total_cost_usd=0.0,
+            duration_ms=int(duration_seconds * 1000),
+            model_usage={},
+        )
+
+    return TokenUsage(
+        input_tokens=getattr(sdk_usage, "input_tokens", 0),
+        output_tokens=getattr(sdk_usage, "output_tokens", 0),
+        cache_creation_input_tokens=getattr(sdk_usage, "cache_creation_input_tokens", 0),
+        cache_read_input_tokens=getattr(sdk_usage, "cache_read_input_tokens", 0),
+        total_cost_usd=getattr(sdk_usage, "total_cost_usd", 0.0) or 0.0,
+        duration_ms=int(duration_seconds * 1000),
+        model_usage={},  # SDK doesn't provide per-model breakdown
+    )
+
+
+def _prompt_claude_code_sdk(request: AgentPromptRequest) -> AgentPromptResponse:
+    """Execute Claude Code via SDK instead of subprocess.
+
+    This function provides an alternative execution path using the
+    adw_agent_sdk module for direct SDK integration. It produces
+    exactly the same AgentPromptResponse type as the subprocess path.
+
+    Args:
+        request: The prompt request configuration
+
+    Returns:
+        AgentPromptResponse with output or error, matching subprocess behavior
+    """
+    # Lazy import to avoid loading SDK when not needed
+    from .adw_agent_sdk import (
+        QueryInput,
+        QueryOptions,
+        ModelName,
+        SettingSource,
+        query_to_completion,
+    )
+
+    # Map model string to ModelName enum
+    model_map = {
+        "opus": ModelName.OPUS,
+        "sonnet": ModelName.SONNET,
+        "haiku": ModelName.HAIKU,
+    }
+    sdk_model = model_map.get(request.model.lower(), ModelName.SONNET)
+
+    # Build QueryOptions matching subprocess behavior
+    options = QueryOptions(
+        model=sdk_model,
+        cwd=request.working_dir,
+        bypass_permissions=request.dangerously_skip_permissions,
+        setting_sources=[SettingSource.PROJECT],
+    )
+
+    # Create QueryInput
+    query_input = QueryInput(
+        prompt=request.prompt,
+        options=options,
+    )
+
+    try:
+        # Execute via SDK with timeout
+        result = asyncio.run(
+            asyncio.wait_for(
+                query_to_completion(query_input),
+                timeout=request.timeout_seconds
+            )
+        )
+
+        # Convert SDK result to AgentPromptResponse
+        duration_seconds = result.duration_seconds or 0.0
+        token_usage = _convert_sdk_token_usage(result.usage, duration_seconds)
+
+        if result.success:
+            return AgentPromptResponse(
+                output=result.result or "",
+                success=True,
+                session_id=result.session_id,
+                retry_code=RetryCode.NONE,
+                token_usage=token_usage,
+            )
+        else:
+            # Classify the error for retry logic
+            error_msg = result.error or "Unknown SDK error"
+            retry_code = _classify_sdk_error(error_msg)
+
+            return AgentPromptResponse(
+                output=truncate_output(error_msg, max_length=800),
+                success=False,
+                session_id=result.session_id,
+                retry_code=retry_code,
+                token_usage=token_usage,
+            )
+
+    except asyncio.TimeoutError:
+        timeout_mins = request.timeout_seconds // 60
+        error_msg = f"Error: SDK query timed out after {timeout_mins} minutes ({request.timeout_seconds}s)"
+        return AgentPromptResponse(
+            output=error_msg,
+            success=False,
+            session_id=None,
+            retry_code=RetryCode.TIMEOUT_ERROR,
+        )
+    except Exception as e:
+        error_msg = f"SDK execution error: {e}"
+        retry_code = _classify_sdk_error(str(e))
+        return AgentPromptResponse(
+            output=truncate_output(error_msg, max_length=800),
+            success=False,
+            session_id=None,
+            retry_code=retry_code,
+        )
+
+
 # Model fallback chain: opus -> sonnet -> haiku -> retry_with_degradation
 # When all models exhausted, implements intelligent degradation strategies:
 # 1. Exponential backoff (30s, 60s, 120s, 300s)
@@ -590,6 +755,10 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
 
     # Save prompt before execution
     save_prompt(request.prompt, request.adw_id, request.agent_name)
+
+    # SDK dispatch: use SDK execution path if feature flag is enabled
+    if USE_SDK:
+        return _prompt_claude_code_sdk(request)
 
     # Create output directory if needed
     output_dir = os.path.dirname(request.output_file)
