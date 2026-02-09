@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-02-09
+
+### Added - TAC-15: Claude Agent SDK Integration
+
+**SDK Bridge Layer:**
+- Feature-flagged SDK dispatch in `agent.py` via `config.yml` setting `agentic.use_sdk`
+- `_prompt_claude_code_sdk()` bridge function converting `AgentPromptRequest` to SDK `QueryInput`
+- `_get_use_sdk_from_config()` helper to read SDK setting from `config.yml`
+- Token usage mapping from SDK `TokenUsage` to `data_types.TokenUsage`
+- Error classification reuse for SDK errors (quota, rate limit, connection, timeout)
+
+**Cross-Phase Context Persistence:**
+- `sdk_session_id` field added to `ADWStateData` for session tracking
+- `resume_session_id` parameter in `AgentPromptRequest` and `AgentTemplateRequest`
+- Session ID propagated through `execute_template()` to enable context reuse
+- 30-60% input token reduction on build/test/review phases via context persistence
+
+**Infrastructure:**
+- `output_file` made optional in `AgentPromptRequest` (not needed for SDK path)
+- `claude-agent-sdk>=0.1.18` added to all 14 ADW workflow script dependencies
+- `use_sdk: bool` field added to `AgenticSpec` model for CLI configuration
+- All modified source files synced to corresponding `.j2` templates
+
+**Configuration:**
+```yaml
+agentic:
+  use_sdk: false  # Enable SDK mode (experimental)
+```
+
 ## [0.10.4] - 2026-02-09
 
 ### Fixed
