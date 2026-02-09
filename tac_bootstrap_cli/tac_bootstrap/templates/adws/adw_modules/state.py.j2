@@ -20,13 +20,13 @@ class ADWState:
 
     def __init__(self, adw_id: str):
         """Initialize ADWState with a required ADW ID.
-
+        
         Args:
             adw_id: The ADW ID for this state (required)
         """
         if not adw_id:
             raise ValueError("adw_id is required for ADWState")
-
+        
         self.adw_id = adw_id
         # Start with minimal state
         self.data: Dict[str, Any] = {"adw_id": self.adw_id}
@@ -120,14 +120,14 @@ class ADWState:
 
     def get_working_directory(self) -> str:
         """Get the working directory for this ADW instance.
-
+        
         Returns worktree_path if set (for isolated workflows),
         otherwise returns the main repo path.
         """
         worktree_path = self.data.get("worktree_path")
         if worktree_path:
             return worktree_path
-
+        
         # Return main repo path (parent of adws directory)
         return os.path.dirname(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

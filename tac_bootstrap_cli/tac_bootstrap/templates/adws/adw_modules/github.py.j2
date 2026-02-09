@@ -421,9 +421,14 @@ def is_issue_assigned_to_me(issue_number: str, repo_path: Optional[str] = None) 
         env = get_github_env()
         result = subprocess.run(
             [
-                "gh", "issue", "view", issue_number,
-                "--repo", repo_path,
-                "--json", "assignees",
+                "gh",
+                "issue",
+                "view",
+                issue_number,
+                "--repo",
+                repo_path,
+                "--json",
+                "assignees",
             ],
             capture_output=True,
             text=True,
@@ -477,7 +482,9 @@ def assign_issue_to_me(issue_id: str) -> bool:
         return False
 
 
-def find_keyword_from_comment(keyword: str, issue: GitHubIssue) -> Optional[GitHubComment]:
+def find_keyword_from_comment(
+    keyword: str, issue: GitHubIssue
+) -> Optional[GitHubComment]:
     """Find the latest comment containing a specific keyword.
 
     Args:

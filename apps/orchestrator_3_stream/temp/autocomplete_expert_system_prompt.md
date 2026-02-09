@@ -22,9 +22,7 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
 
 ### Available Active Agents
 ```json
-[
-  "config-copier"
-]
+[]
 ```
 
 ### Available Slash Commands
@@ -440,11 +438,7 @@ Generate **{TOTAL_AUTOCOMPLETE_ITEMS}** highly relevant, concise completion sugg
 
 ### Previous Completion History
 ```yaml
-- completion_type: none
-  order: 1
-  user_input_on_enter: start_adw workflow_type=plan-build-review-fix crea una copai
-    del config.yml y agrega toda su configuracion se debe llamar config_v2.yml copia
-    todosu condiguracion
+[]
 
 ```
 

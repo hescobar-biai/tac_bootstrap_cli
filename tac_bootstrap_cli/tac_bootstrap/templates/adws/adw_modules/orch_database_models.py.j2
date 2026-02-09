@@ -1,7 +1,7 @@
 """
 Pydantic Database Models for Multi-Agent Orchestration
 
-These models map directly to the PostgreSQL tables defined in schema_orchestrator.sql.
+These models map directly to the SQLite tables defined in schema_orchestrator.sql.
 They provide:
 - Automatic UUID handling (converts asyncpg UUID objects to Python UUID)
 - Type safety and validation
@@ -9,18 +9,20 @@ They provide:
 - Field validation and defaults
 
 Usage:
-    from models import Agent, OrchestratorAgent, Prompt, AgentLog, SystemLog
+    from orch_database_models import Agent, OrchestratorAgent, Prompt, AgentLog, SystemLog
 
     # Automatically handles UUID conversion from database
     agent = Agent(**row_dict)
     print(agent.id)  # Works with both UUID objects and strings
 """
 
+import json
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, Any, Optional, Literal
+from typing import Any, Dict, Literal, Optional, Union
 from uuid import UUID
-from pydantic import BaseModel, Field, field_validator
+
+from pydantic import BaseModel, Field, field_serializer, field_validator, conint, confloat
 
 
 # ═══════════════════════════════════════════════════════════
@@ -34,50 +36,46 @@ class OrchestratorAgent(BaseModel):
 
     Maps to: orchestrator_agents table
     """
-    id: UUID
-    session_id: Optional[str] = None
-    system_prompt: Optional[str] = None
-    status: Optional[Literal['idle', 'executing', 'waiting', 'blocked', 'complete']] = None
-    working_dir: Optional[str] = None
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_cost: float = 0.0
-    archived: bool = False
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    created_at: datetime
-    updated_at: datetime
 
-    @field_validator('id', mode='before')
+    id: Union[str, UUID]
+    name: str
+    description: Optional[str] = None
+    agent_type: Optional[str] = None
+    capabilities: Optional[str] = None
+    default_model: Optional[str] = None
+    status: Literal["active", "inactive", "archived"] = "active"
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+    @field_validator("id", mode="before")
     @classmethod
-    def convert_uuid(cls, v):
-        """Convert asyncpg UUID to Python UUID"""
+    def validate_uuid_format(cls, v: Any) -> str:
+        """Validate UUID format and return as string"""
         if isinstance(v, UUID):
-            return v
-        return UUID(str(v))
+            return str(v)
+        uuid_str = str(v)
+        try:
+            UUID(uuid_str)  # Validate it's a valid UUID
+        except (ValueError, TypeError):
+            raise ValueError("Invalid UUID format")
+        return uuid_str
 
-    @field_validator('total_cost', mode='before')
+    @field_validator("status", mode="before")
     @classmethod
-    def convert_decimal(cls, v):
-        """Convert Decimal to float"""
-        if isinstance(v, Decimal):
-            return float(v)
+    def validate_status(cls, v: str) -> str:
+        """Validate status enum"""
+        valid = ["active", "inactive", "archived"]
+        if v not in valid:
+            raise ValueError(f"Status must be one of {valid}")
         return v
 
-    @field_validator('metadata', mode='before')
-    @classmethod
-    def parse_metadata(cls, v):
-        """Parse JSON string metadata to dict"""
-        if isinstance(v, str):
-            import json
-            return json.loads(v)
-        return v
+    @field_serializer("created_at", "updated_at")
+    def serialize_datetime(self, value: datetime) -> str:
+        """Serialize datetime to ISO 8601"""
+        return value.isoformat()
 
     class Config:
         from_attributes = True
-        json_encoders = {
-            UUID: str,
-            datetime: lambda v: v.isoformat()
-        }
 
 
 # ═══════════════════════════════════════════════════════════
@@ -91,56 +89,50 @@ class Agent(BaseModel):
 
     Maps to: agents table
     """
-    id: UUID
-    orchestrator_agent_id: UUID
-    name: str
-    model: str
-    system_prompt: Optional[str] = None
-    working_dir: Optional[str] = None
-    git_worktree: Optional[str] = None
-    status: Optional[Literal['idle', 'executing', 'waiting', 'blocked', 'complete']] = None
-    session_id: Optional[str] = None
-    adw_id: Optional[str] = None
-    adw_step: Optional[str] = None
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_cost: float = 0.0
-    archived: bool = False
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    created_at: datetime
-    updated_at: datetime
 
-    @field_validator('id', 'orchestrator_agent_id', mode='before')
+    id: Union[str, UUID]
+    orchestrator_agent_id: Union[str, UUID]
+    name: Optional[str] = None
+    model: Optional[str] = None
+    session_id: Optional[Union[str, UUID]] = None
+    status: Literal["pending", "running", "completed", "failed"] = "pending"
+    created_at: datetime = Field(default_factory=datetime.now)
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+
+    @field_validator("id", "orchestrator_agent_id", "session_id", mode="before")
     @classmethod
-    def convert_uuid(cls, v):
-        """Convert asyncpg UUID to Python UUID"""
+    def validate_uuid_format(cls, v: Any) -> Optional[str]:
+        """Validate UUID format and return as string"""
+        if v is None:
+            return None
         if isinstance(v, UUID):
-            return v
-        return UUID(str(v))
+            return str(v)
+        uuid_str = str(v)
+        try:
+            UUID(uuid_str)  # Validate it's a valid UUID
+        except (ValueError, TypeError):
+            raise ValueError("Invalid UUID format")
+        return uuid_str
 
-    @field_validator('total_cost', mode='before')
+    @field_validator("status", mode="before")
     @classmethod
-    def convert_decimal(cls, v):
-        """Convert Decimal to float"""
-        if isinstance(v, Decimal):
-            return float(v)
+    def validate_status(cls, v: str) -> str:
+        """Validate status enum"""
+        valid = ["pending", "running", "completed", "failed"]
+        if v not in valid:
+            raise ValueError(f"Status must be one of {valid}")
         return v
 
-    @field_validator('metadata', mode='before')
-    @classmethod
-    def parse_metadata(cls, v):
-        """Parse JSON string metadata to dict"""
-        if isinstance(v, str):
-            import json
-            return json.loads(v)
-        return v
+    @field_serializer("created_at", "started_at", "completed_at")
+    def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
+        """Serialize datetime to ISO 8601"""
+        if value is None:
+            return None
+        return value.isoformat()
 
     class Config:
         from_attributes = True
-        json_encoders = {
-            UUID: str,
-            datetime: lambda v: v.isoformat()
-        }
 
 
 # ═══════════════════════════════════════════════════════════
@@ -154,31 +146,51 @@ class Prompt(BaseModel):
 
     Maps to: prompts table
     """
-    id: UUID
-    agent_id: Optional[UUID] = None
-    task_slug: Optional[str] = None
-    author: Literal['engineer', 'orchestrator_agent']
-    prompt_text: str
-    summary: Optional[str] = None
-    timestamp: datetime
-    session_id: Optional[str] = None
 
-    @field_validator('id', 'agent_id', mode='before')
+    id: Union[str, UUID]
+    agent_id: Optional[Union[str, UUID]] = None
+    content: Optional[str] = None
+    response: Optional[str] = None
+    status: Literal["pending", "running", "completed", "failed"] = "pending"
+    tokens_input: int = Field(default=0, ge=0)
+    tokens_output: int = Field(default=0, ge=0)
+    cost_usd: float = Field(default=0.0, ge=0.0)
+    created_at: datetime = Field(default_factory=datetime.now)
+    completed_at: Optional[datetime] = None
+
+    @field_validator("id", "agent_id", mode="before")
     @classmethod
-    def convert_uuid(cls, v):
-        """Convert asyncpg UUID to Python UUID"""
+    def validate_uuid_format(cls, v: Any) -> Optional[str]:
+        """Validate UUID format and return as string"""
         if v is None:
             return None
         if isinstance(v, UUID):
-            return v
-        return UUID(str(v))
+            return str(v)
+        uuid_str = str(v)
+        try:
+            UUID(uuid_str)  # Validate it's a valid UUID
+        except (ValueError, TypeError):
+            raise ValueError("Invalid UUID format")
+        return uuid_str
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        """Validate status enum"""
+        valid = ["pending", "running", "completed", "failed"]
+        if v not in valid:
+            raise ValueError(f"Status must be one of {valid}")
+        return v
+
+    @field_serializer("created_at", "completed_at")
+    def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
+        """Serialize datetime to ISO 8601"""
+        if value is None:
+            return None
+        return value.isoformat()
 
     class Config:
         from_attributes = True
-        json_encoders = {
-            UUID: str,
-            datetime: lambda v: v.isoformat()
-        }
 
 
 # ═══════════════════════════════════════════════════════════
@@ -192,43 +204,60 @@ class AgentLog(BaseModel):
 
     Maps to: agent_logs table
     """
-    id: UUID
-    agent_id: UUID
-    session_id: Optional[str] = None
-    task_slug: Optional[str] = None
-    adw_id: Optional[str] = None
-    adw_step: Optional[str] = None
-    entry_index: Optional[int] = None
-    event_category: Literal['hook', 'response', 'adw_step']
-    event_type: str
-    content: Optional[str] = None
-    payload: Dict[str, Any] = Field(default_factory=dict)
-    summary: Optional[str] = None
-    timestamp: datetime
 
-    @field_validator('id', 'agent_id', mode='before')
+    id: Union[str, UUID]
+    agent_id: Union[str, UUID]
+    log_type: Literal["step_start", "step_end", "event", "error"]
+    message: str
+    metadata: Optional[Dict[str, Any]] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+
+    @field_validator("id", "agent_id", mode="before")
     @classmethod
-    def convert_uuid(cls, v):
-        """Convert asyncpg UUID to Python UUID"""
+    def validate_uuid_format(cls, v: Any) -> str:
+        """Validate UUID format and return as string"""
         if isinstance(v, UUID):
-            return v
-        return UUID(str(v))
+            return str(v)
+        uuid_str = str(v)
+        try:
+            UUID(uuid_str)  # Validate it's a valid UUID
+        except (ValueError, TypeError):
+            raise ValueError("Invalid UUID format")
+        return uuid_str
 
-    @field_validator('payload', mode='before')
+    @field_validator("log_type", mode="before")
     @classmethod
-    def parse_payload(cls, v):
-        """Parse JSON string payload to dict"""
+    def validate_log_type(cls, v: str) -> str:
+        """Validate log_type enum"""
+        valid = ["step_start", "step_end", "event", "error"]
+        if v not in valid:
+            raise ValueError(f"Log type must be one of {valid}")
+        return v
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def parse_metadata(cls, v: Any) -> Optional[Dict[str, Any]]:
+        """Parse JSON string metadata to dict"""
+        if v is None:
+            return None
         if isinstance(v, str):
-            import json
             return json.loads(v)
         return v
 
+    @field_serializer("metadata")
+    def serialize_metadata(self, value: Optional[Dict[str, Any]]) -> Optional[str]:
+        """Serialize metadata dict to JSON string"""
+        if value is None:
+            return None
+        return json.dumps(value)
+
+    @field_serializer("created_at")
+    def serialize_datetime(self, value: datetime) -> str:
+        """Serialize datetime to ISO 8601"""
+        return value.isoformat()
+
     class Config:
         from_attributes = True
-        json_encoders = {
-            UUID: str,
-            datetime: lambda v: v.isoformat()
-        }
 
 
 # ═══════════════════════════════════════════════════════════
@@ -244,41 +273,62 @@ class SystemLog(BaseModel):
 
     Maps to: system_logs table
     """
-    id: UUID
-    file_path: Optional[str] = None
-    adw_id: Optional[str] = None
-    adw_step: Optional[str] = None
-    level: Literal['DEBUG', 'INFO', 'WARNING', 'ERROR']
-    message: str
-    summary: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    timestamp: datetime
 
-    @field_validator('id', mode='before')
+    id: Union[str, UUID]
+    log_level: Literal["debug", "info", "warning", "error", "critical"]
+    message: str
+    source: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+
+    @field_validator("id", mode="before")
     @classmethod
-    def convert_uuid(cls, v):
-        """Convert asyncpg UUID to Python UUID"""
+    def validate_uuid_format(cls, v: Any) -> Optional[str]:
+        """Validate UUID format and return as string"""
         if v is None:
             return None
         if isinstance(v, UUID):
-            return v
-        return UUID(str(v))
+            return str(v)
+        uuid_str = str(v)
+        try:
+            UUID(uuid_str)  # Validate it's a valid UUID
+        except (ValueError, TypeError):
+            raise ValueError("Invalid UUID format")
+        return uuid_str
 
-    @field_validator('metadata', mode='before')
+    @field_validator("log_level", mode="before")
     @classmethod
-    def parse_metadata(cls, v):
+    def validate_log_level(cls, v: str) -> str:
+        """Validate log_level enum"""
+        valid = ["debug", "info", "warning", "error", "critical"]
+        if v not in valid:
+            raise ValueError(f"Log level must be one of {valid}")
+        return v
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def parse_metadata(cls, v: Any) -> Optional[Dict[str, Any]]:
         """Parse JSON string metadata to dict"""
+        if v is None:
+            return None
         if isinstance(v, str):
-            import json
             return json.loads(v)
         return v
 
+    @field_serializer("metadata")
+    def serialize_metadata(self, value: Optional[Dict[str, Any]]) -> Optional[str]:
+        """Serialize metadata dict to JSON string"""
+        if value is None:
+            return None
+        return json.dumps(value)
+
+    @field_serializer("created_at")
+    def serialize_datetime(self, value: datetime) -> str:
+        """Serialize datetime to ISO 8601"""
+        return value.isoformat()
+
     class Config:
         from_attributes = True
-        json_encoders = {
-            UUID: str,
-            datetime: lambda v: v.isoformat()
-        }
 
 
 # ═══════════════════════════════════════════════════════════
@@ -292,42 +342,48 @@ class OrchestratorChat(BaseModel):
 
     Maps to: orchestrator_chat table
     """
-    id: UUID
-    created_at: datetime
-    updated_at: datetime
-    orchestrator_agent_id: UUID
-    sender_type: Literal['user', 'orchestrator', 'agent']
-    receiver_type: Literal['user', 'orchestrator', 'agent']
+
+    id: Union[str, UUID]
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+    orchestrator_agent_id: Union[str, UUID]
+    sender_type: Literal["user", "orchestrator", "agent"]
+    receiver_type: Literal["user", "orchestrator", "agent"]
     message: str
     summary: Optional[str] = None
-    agent_id: Optional[UUID] = None
+    agent_id: Optional[Union[str, UUID]] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    @field_validator('id', 'orchestrator_agent_id', 'agent_id', mode='before')
+    @field_validator("id", "orchestrator_agent_id", "agent_id", mode="before")
     @classmethod
-    def convert_uuid(cls, v):
-        """Convert asyncpg UUID to Python UUID"""
+    def validate_uuid_format(cls, v: Any) -> Optional[str]:
+        """Validate UUID format and return as string"""
         if v is None:
             return None
         if isinstance(v, UUID):
-            return v
-        return UUID(str(v))
+            return str(v)
+        uuid_str = str(v)
+        try:
+            UUID(uuid_str)  # Validate it's a valid UUID
+        except (ValueError, TypeError):
+            raise ValueError("Invalid UUID format")
+        return uuid_str
 
-    @field_validator('metadata', mode='before')
+    @field_validator("metadata", mode="before")
     @classmethod
-    def parse_metadata(cls, v):
+    def parse_metadata(cls, v: Any) -> Dict[str, Any]:
         """Parse JSON string metadata to dict"""
         if isinstance(v, str):
-            import json
             return json.loads(v)
-        return v
+        return v or {}
+
+    @field_serializer("created_at", "updated_at")
+    def serialize_datetime(self, value: datetime) -> str:
+        """Serialize datetime to ISO 8601"""
+        return value.isoformat()
 
     class Config:
         from_attributes = True
-        json_encoders = {
-            UUID: str,
-            datetime: lambda v: v.isoformat()
-        }
 
 
 # ═══════════════════════════════════════════════════════════
@@ -341,12 +397,15 @@ class AiDeveloperWorkflow(BaseModel):
 
     Maps to: ai_developer_workflows table
     """
-    id: UUID
-    orchestrator_agent_id: Optional[UUID] = None
+
+    id: Union[str, UUID]
+    orchestrator_agent_id: Optional[Union[str, UUID]] = None
     adw_name: str
     workflow_type: str
     description: Optional[str] = None
-    status: Literal['pending', 'in_progress', 'completed', 'failed', 'cancelled'] = 'pending'
+    status: Literal["pending", "in_progress", "completed", "failed", "cancelled"] = (
+        "pending"
+    )
     current_step: Optional[str] = None
     total_steps: int = 0
     completed_steps: int = 0
@@ -359,34 +418,41 @@ class AiDeveloperWorkflow(BaseModel):
     error_step: Optional[str] = None
     error_count: int = 0
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
 
-    @field_validator('id', 'orchestrator_agent_id', mode='before')
+    @field_validator("id", "orchestrator_agent_id", mode="before")
     @classmethod
-    def convert_uuid(cls, v):
-        """Convert asyncpg UUID to Python UUID"""
+    def validate_uuid_format(cls, v: Any) -> Optional[str]:
+        """Validate UUID format and return as string"""
         if v is None:
             return None
         if isinstance(v, UUID):
-            return v
-        return UUID(str(v))
+            return str(v)
+        uuid_str = str(v)
+        try:
+            UUID(uuid_str)  # Validate it's a valid UUID
+        except (ValueError, TypeError):
+            raise ValueError("Invalid UUID format")
+        return uuid_str
 
-    @field_validator('input_data', 'output_data', 'metadata', mode='before')
+    @field_validator("input_data", "output_data", "metadata", mode="before")
     @classmethod
-    def parse_jsonb(cls, v):
+    def parse_jsonb(cls, v: Any) -> Dict[str, Any]:
         """Parse JSON string to dict"""
         if isinstance(v, str):
-            import json
             return json.loads(v)
-        return v
+        return v or {}
+
+    @field_serializer("created_at", "updated_at", "started_at", "completed_at")
+    def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
+        """Serialize datetime to ISO 8601"""
+        if value is None:
+            return None
+        return value.isoformat()
 
     class Config:
         from_attributes = True
-        json_encoders = {
-            UUID: str,
-            datetime: lambda v: v.isoformat()
-        }
 
 
 # ═══════════════════════════════════════════════════════════

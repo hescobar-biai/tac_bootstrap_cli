@@ -1,8 +1,3 @@
-orchestrator_agent_id: 87f08530-b36a-4825-aeb0-a2759604ce00
-completion_agent_id: 06861f42-d44c-4a08-a92d-047c4f276cc1
-previous_completions:
-- completion_type: none
-  user_input_on_enter: start_adw workflow_type=plan-build-review-fix crea una copai
-    del config.yml y agrega toda su configuracion se debe llamar config_v2.yml copia
-    todosu condiguracion
-  order: 1
+orchestrator_agent_id: 281d37cf-d1dd-44c6-b3e4-a998fde649dd
+completion_agent_id: null
+previous_completions: []
