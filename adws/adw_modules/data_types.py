@@ -193,7 +193,7 @@ class AgentPromptRequest(BaseModel):
     agent_name: str = "ops"
     model: Literal["sonnet", "opus", "haiku"] = "sonnet"
     dangerously_skip_permissions: bool = False
-    output_file: str
+    output_file: Optional[str] = None
     working_dir: Optional[str] = None
     timeout_seconds: int = 600  # Default 10 minutes, configurable per request
     resume_session_id: Optional[str] = None  # TAC-15: SDK session ID for context persistence
@@ -236,6 +236,7 @@ class AgentTemplateRequest(BaseModel):
     model: Literal["sonnet", "opus", "haiku"] = "sonnet"
     working_dir: Optional[str] = None
     ai_docs_context: Optional[str] = None  # TAC-9: Optional documentation context
+    resume_session_id: Optional[str] = None  # TAC-15: SDK session ID for context persistence
 
 
 class ClaudeCodeResultMessage(BaseModel):

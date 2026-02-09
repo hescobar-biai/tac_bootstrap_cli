@@ -540,6 +540,30 @@ def _prompt_claude_code_sdk(request: AgentPromptRequest) -> AgentPromptResponse:
         duration_seconds = result.duration_seconds or 0.0
         token_usage = _convert_sdk_token_usage(result.usage, duration_seconds)
 
+        # TAC-15: Save SDK transcript to agents/{adw_id}/{agent_name}/sdk_transcript.json
+        if result.messages:
+            try:
+                # __file__ is in adws/adw_modules/, go up 3 levels to project root
+                project_root = os.path.dirname(
+                    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                )
+                transcript_dir = os.path.join(
+                    project_root, "agents", request.adw_id, request.agent_name
+                )
+                os.makedirs(transcript_dir, exist_ok=True)
+                transcript_path = os.path.join(transcript_dir, "sdk_transcript.json")
+
+                # Convert messages to JSON-serializable format
+                messages_data = [
+                    msg.model_dump() if hasattr(msg, "model_dump") else str(msg)
+                    for msg in result.messages
+                ]
+                with open(transcript_path, "w") as f:
+                    json.dump(messages_data, f, indent=2, default=str)
+            except Exception:
+                # Transcript saving is optional - don't fail the request
+                pass
+
         if result.success:
             return AgentPromptResponse(
                 output=result.result or "",
@@ -761,6 +785,15 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
     # SDK dispatch: use SDK execution path if feature flag is enabled
     if USE_SDK:
         return _prompt_claude_code_sdk(request)
+
+    # TAC-15: Subprocess path requires output_file for JSONL output
+    if request.output_file is None:
+        return AgentPromptResponse(
+            output="Error: output_file is required when USE_SDK=False (subprocess path)",
+            success=False,
+            session_id=None,
+            retry_code=RetryCode.NONE,
+        )
 
     # Create output directory if needed
     output_dir = os.path.dirname(request.output_file)
@@ -1070,10 +1103,11 @@ def execute_prompt(
     if logger:
         logger.debug(f"Executing prompt for {request.agent_name}")
 
-    # Create output directory if needed
-    output_dir = os.path.dirname(request.output_file)
-    if output_dir:
-        os.makedirs(output_dir, exist_ok=True)
+    # TAC-15: Create output directory only if output_file is provided
+    if request.output_file:
+        output_dir = os.path.dirname(request.output_file)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
 
     # Execute with retry logic
     return prompt_claude_code_with_retry(request)
@@ -1154,18 +1188,23 @@ This is a safety feature to isolate development work. All your changes will be r
 """
         prompt = prompt + worktree_reminder
 
-    # Create output directory with adw_id at project root
-    # __file__ is in adws/adw_modules/, so we need to go up 3 levels to get to project root
-    project_root = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    )
-    output_dir = os.path.join(
-        project_root, "agents", request.adw_id, request.agent_name
-    )
-    os.makedirs(output_dir, exist_ok=True)
+    # TAC-15: Conditionally set output_file based on USE_SDK
+    if USE_SDK:
+        # SDK path: no JSONL output file needed
+        output_file = None
+    else:
+        # Subprocess path: create output directory with adw_id at project root
+        # __file__ is in adws/adw_modules/, so we need to go up 3 levels to get to project root
+        project_root = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        )
+        output_dir = os.path.join(
+            project_root, "agents", request.adw_id, request.agent_name
+        )
+        os.makedirs(output_dir, exist_ok=True)
 
-    # Build output file path
-    output_file = os.path.join(output_dir, "raw_output.jsonl")
+        # Build output file path
+        output_file = os.path.join(output_dir, "raw_output.jsonl")
 
     # Create prompt request with specific parameters
     prompt_request = AgentPromptRequest(
@@ -1176,6 +1215,7 @@ This is a safety feature to isolate development work. All your changes will be r
         dangerously_skip_permissions=True,
         output_file=output_file,
         working_dir=request.working_dir,  # Pass through working_dir
+        resume_session_id=request.resume_session_id,  # TAC-15: SDK session persistence
     )
 
     # Execute with retry logic and return response (prompt_claude_code now handles all parsing)
