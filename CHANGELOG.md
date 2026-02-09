@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.3] - 2026-02-09
+
+### Fixed
+- **`apps/` templates not fully copied during upgrade**: `_add_orchestrator_frontend()`, `_add_orchestrator_backend()`, and `_add_orchestrator_database()` listed files individually, missing ~140 files (`.claude/`, `app_docs/`, `specs/`, root configs). Replaced with bulk `_add_orchestrator_apps()` that walks `templates/apps/` recursively
+- **Non-existent template references causing upgrade failure**: `frontend/.env.j2`, `frontend/tsconfig.json`, `frontend/env.d.ts`, `playwright.config.ts.j2`, and 6 Playwright test files were referenced but did not exist on disk, causing `upgrade --with-orchestrator` to fail and rollback
+
+### Changed
+- `scaffold_service.py` - Replaced `_add_orchestrator_database()`, `_add_orchestrator_backend()`, `_add_orchestrator_frontend()` with single `_add_orchestrator_apps()` that uses `os.walk()` to copy entire `apps/orchestrator_db/` and `apps/orchestrator_3_stream/` directories
+- `scaffold_service.py` - Removed Playwright test references from `_add_test_files()` (now handled by bulk app copy)
+- Excludes build artifacts: `.venv`, `node_modules`, `__pycache__`, `.mypy_cache`, `.pytest_cache`, `logs`
+
 ## [0.10.2] - 2026-02-08
 
 ### Fixed

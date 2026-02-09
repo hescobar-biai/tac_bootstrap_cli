@@ -110,16 +110,10 @@ class ScaffoldService:
 
         # Add orchestrator components only if enabled (TAC-14 Task 16)
         if config.orchestrator.enabled:
-            # Add orchestrator database schema and migrations
-            self._add_orchestrator_database(plan, config, existing_repo)
+            # Add apps/ directories as bulk copy (orchestrator_3_stream + orchestrator_db)
+            self._add_orchestrator_apps(plan, config, existing_repo)
 
-            # Add orchestrator web backend
-            self._add_orchestrator_backend(plan, config, existing_repo)
-
-            # Add orchestrator frontend (Vue 3 + TypeScript)
-            self._add_orchestrator_frontend(plan, config, existing_repo)
-
-            # Add test suites (TAC-14 Task 15)
+            # Add ADW test suites (TAC-14 Task 15)
             self._add_test_files(plan, config, existing_repo)
 
             # Add orchestrator utility scripts (TAC-14 Task 19)
@@ -1151,320 +1145,81 @@ class ScaffoldService:
         # Docs directory
         plan.add_directory("docs", "Fractal documentation output")
 
-    def _add_orchestrator_database(
+    # Directories to exclude when walking apps/ templates
+    _APPS_EXCLUDE_DIRS = {
+        ".venv", "node_modules", "__pycache__", ".mypy_cache",
+        ".pytest_cache", "logs", ".git",
+    }
+
+    def _add_orchestrator_apps(
         self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
     ) -> None:
-        """Add apps/orchestrator_db/ PostgreSQL database schema and utilities.
+        """Add apps/ directories as bulk copy from templates.
 
-        Adds centralized database management:
-        - migrations/: Idempotent SQL migration files (0-10)
-        - models.py: Pydantic database models
-        - run_migrations.py: Migration runner
-        - drop_table.py: Safe table drop utility
-        - sync_models.py: Model distribution to apps
-        - git_utils.py: Git analysis utilities
+        Walks templates/apps/orchestrator_db/ and templates/apps/orchestrator_3_stream/
+        recursively, reading all source files and adding them to the plan.
+        Excludes build artifacts (.venv, node_modules, __pycache__, etc.).
         """
+        import os
+
         action = FileAction.OVERWRITE if existing_repo else FileAction.CREATE
+        templates_dir = self.template_repo.templates_dir
 
-        plan.add_directory("apps/orchestrator_db", "Orchestrator database schema")
-        plan.add_directory("apps/orchestrator_db/migrations", "PostgreSQL migrations")
+        # Both app directories to copy
+        app_dirs = ["apps/orchestrator_db", "apps/orchestrator_3_stream"]
 
-        db_files = [
-            ("README.md", "Database documentation"),
-            ("models.py", "Pydantic database models"),
-            ("run_migrations.py", "Migration runner"),
-            ("drop_table.py", "Table drop utility"),
-            ("sync_models.py", "Model sync script"),
-            ("git_utils.py", "Git utilities"),
-            ("migrations/README.md", "Migration documentation"),
-            ("migrations/0_orchestrator_agents.sql", "Orchestrator agents table"),
-            ("migrations/1_agents.sql", "Managed agents table"),
-            ("migrations/2_prompts.sql", "Prompt history table"),
-            ("migrations/3_agent_logs.sql", "Agent event logs table"),
-            ("migrations/4_system_logs.sql", "System logs table"),
-            ("migrations/5_indexes.sql", "Performance indexes"),
-            ("migrations/6_functions.sql", "Trigger functions"),
-            ("migrations/7_triggers.sql", "Auto-update triggers"),
-            ("migrations/8_orchestrator_chat.sql", "Conversation log table"),
-            ("migrations/9_ai_developer_workflows.sql", "ADW tracking table"),
-            ("migrations/10_adw_orchestrator_agent.sql", "ADW orchestrator seed data"),
-        ]
-
-        for path, reason in db_files:
-            full_path = f"apps/orchestrator_db/{path}"
-            template_path = self.template_repo.templates_dir / full_path
-            try:
-                content = template_path.read_text(encoding="utf-8")
-                plan.add_file(
-                    full_path,
-                    action=action,
-                    content=content,
-                    reason=reason,
-                )
-            except FileNotFoundError:
-                print(f"  [warn] Template not found: {template_path}")
+        for app_dir in app_dirs:
+            source_dir = templates_dir / app_dir
+            if not source_dir.exists():
+                print(f"  [warn] App template directory not found: {source_dir}")
                 continue
 
-    def _add_orchestrator_backend(
-        self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
-    ) -> None:
-        """Add apps/orchestrator_3_stream/backend/ FastAPI backend files.
+            # Walk the directory tree
+            for root, dirs, files in os.walk(source_dir):
+                # Prune excluded directories in-place
+                dirs[:] = [d for d in dirs if d not in self._APPS_EXCLUDE_DIRS]
 
-        Adds FastAPI backend with PostgreSQL persistence:
-        - main.py: FastAPI app with lifespan manager
-        - modules/: Core backend modules (database, agents, websockets, etc.)
-        - prompts/: System and user prompt templates
-        - tests/: Backend test suite
-        - pyproject.toml: Python project configuration
-        """
-        action = FileAction.OVERWRITE if existing_repo else FileAction.CREATE
+                rel_root = os.path.relpath(root, templates_dir)
 
-        # Add directory structure
-        plan.add_directory("apps/orchestrator_3_stream/backend", "Orchestrator web backend")
-        plan.add_directory("apps/orchestrator_3_stream/backend/modules", "Backend modules")
-        plan.add_directory("apps/orchestrator_3_stream/backend/prompts", "Prompt templates")
-        plan.add_directory(
-            "apps/orchestrator_3_stream/backend/prompts/experts/orch_autocomplete",
-            "Autocomplete expert prompts",
-        )
-        plan.add_directory("apps/orchestrator_3_stream/backend/tests", "Backend tests")
+                # Add directory to plan
+                if rel_root != app_dir:
+                    plan.add_directory(rel_root, f"Orchestrator: {os.path.basename(rel_root)}")
 
-        # All backend files (read as static content)
-        backend_files = [
-            # Root files
-            ("main.py", "FastAPI app with lifespan manager"),
-            ("pyproject.toml", "Python project configuration"),
-            (".python-version", "Python version specification"),
-            (".env.sample", "Environment variables template"),
-            # Modules
-            ("modules/config.py", "Central configuration"),
-            ("modules/logger.py", "Structured logger with Rich"),
-            ("modules/database.py", "asyncpg database layer"),
-            ("modules/websocket_manager.py", "WebSocket connection manager"),
-            ("modules/agent_manager.py", "Agent lifecycle management"),
-            ("modules/subagent_loader.py", "Subagent template loader"),
-            ("modules/subagent_models.py", "Subagent Pydantic models"),
-            ("modules/orchestrator_service.py", "Orchestrator Claude SDK service"),
-            ("modules/orchestrator_hooks.py", "Orchestrator event hooks"),
-            ("modules/orch_database_models.py", "Pydantic database models"),
-            ("modules/slash_command_parser.py", "Slash command discovery"),
-            ("modules/command_agent_hooks.py", "Command agent event hooks"),
-            ("modules/single_agent_prompt.py", "Single agent system prompt"),
-            ("modules/autocomplete_agent.py", "Autocomplete agent"),
-            ("modules/autocomplete_models.py", "Autocomplete Pydantic models"),
-            ("modules/autocomplete_service.py", "Autocomplete service"),
-            ("modules/event_summarizer.py", "Event summarization"),
-            ("modules/hooks.py", "Claude SDK event hooks"),
-            ("modules/file_tracker.py", "File change tracker"),
-            # Prompts
-            ("prompts/orchestrator_agent_system_prompt.md", "Orchestrator system prompt"),
-            ("prompts/command_level_agent_init_user_prompt.md", "Command agent init prompt"),
-            ("prompts/event_summarizer_system_prompt.md", "Event summarizer system prompt"),
-            ("prompts/event_summarizer_user_prompt.md", "Event summarizer user prompt"),
-            (
-                "prompts/experts/orch_autocomplete/autocomplete_expert_system_prompt.md",
-                "Autocomplete expert system prompt",
-            ),
-            (
-                "prompts/experts/orch_autocomplete/autocomplete_expert_user_prompt.md",
-                "Autocomplete expert user prompt",
-            ),
-            ("prompts/experts/orch_autocomplete/expertise.yaml", "Autocomplete expertise config"),
-            # Tests
-            ("tests/README.md", "Test documentation"),
-            ("tests/test_database.py", "Database integration tests"),
-            ("tests/test_agent_events.py", "Agent event WebSocket tests"),
-            ("tests/test_autocomplete_agent.py", "Autocomplete agent tests"),
-            ("tests/test_autocomplete_endpoints.py", "Autocomplete endpoint tests"),
-            ("tests/test_display.py", "Rich display tests"),
-            ("tests/test_slash_command_discovery.py", "Slash command discovery tests"),
-            ("tests/test_websocket_raw.py", "Raw WebSocket tests"),
-        ]
+                for filename in sorted(files):
+                    # Skip binary/generated files
+                    if filename.endswith((".pyc", ".pyo")):
+                        continue
 
-        for path, reason in backend_files:
-            full_path = f"apps/orchestrator_3_stream/backend/{path}"
-            template_path = self.template_repo.templates_dir / full_path
-            try:
-                content = template_path.read_text(encoding="utf-8")
-                plan.add_file(
-                    full_path,
-                    action=action,
-                    content=content,
-                    reason=reason,
-                )
-            except FileNotFoundError:
-                print(f"  [warn] Template not found: {template_path}")
-                continue
+                    rel_path = os.path.join(rel_root, filename)
+                    full_path = os.path.join(root, filename)
 
-    def _add_orchestrator_frontend(
-        self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
-    ) -> None:
-        """Add orchestrator frontend Vue 3 + TypeScript files (TAC-14 Task 13).
-
-        Adds Vue 3 SPA with Pinia state management and WebSocket integration:
-        - package.json: Vue 3, Pinia, Axios dependencies
-        - vite.config.ts.j2: Build configuration with template variables
-        - src/main.ts: Vue app initialization
-        - src/App.vue: Root component with 3-column layout
-        - src/stores/: Pinia orchestrator store
-        - src/services/: Chat, Agent, ADW, Event, Autocomplete services
-        - src/components/: Vue SFC components (AdwSwimlanes, EventStream, etc.)
-        - src/composables/: Vue composition functions (agent pulse, filters, etc.)
-        - .env.j2: Templated environment variables
-        """
-        action = FileAction.CREATE  # CREATE only creates if file doesn't exist
-
-        # Add directory structure
-        plan.add_directory("apps", "Application projects")
-        plan.add_directory("apps/orchestrator_3_stream", "Orchestrator application")
-        plan.add_directory("apps/orchestrator_3_stream/frontend", "Orchestrator web frontend")
-
-        # Add frontend config files from template
-        plan.add_file(
-            "apps/orchestrator_3_stream/frontend/package.json",
-            action=action,
-            template="apps/orchestrator_3_stream/frontend/package.json",
-            reason="Frontend dependencies",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/frontend/.env",
-            action=action,
-            template="apps/orchestrator_3_stream/frontend/.env.j2",
-            reason="Templated environment variables",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/frontend/vite.config.ts",
-            action=action,
-            template="apps/orchestrator_3_stream/frontend/vite.config.ts.j2",
-            reason="Templated Vite configuration",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/frontend/index.html",
-            action=action,
-            template="apps/orchestrator_3_stream/frontend/index.html",
-            reason="HTML entry point",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/frontend/tsconfig.json",
-            action=action,
-            template="apps/orchestrator_3_stream/frontend/tsconfig.json",
-            reason="TypeScript configuration",
-        )
-        plan.add_file(
-            "apps/orchestrator_3_stream/frontend/tsconfig.node.json",
-            action=action,
-            template="apps/orchestrator_3_stream/frontend/tsconfig.node.json",
-            reason="TypeScript node configuration for Vite",
-        )
-
-        # Root-level static files (no Jinja2 rendering needed)
-        frontend_root_files = [
-            ("env.d.ts", "TypeScript environment declarations for Vue/Vite", False),
-            ("start.sh", "Frontend start script", True),
-            ("public/favicon.svg", "Application favicon", False),
-        ]
-        for path, reason, executable in frontend_root_files:
-            frontend_path = f"apps/orchestrator_3_stream/frontend/{path}"
-            template_path = self.template_repo.templates_dir / frontend_path
-            try:
-                content = template_path.read_text(encoding="utf-8")
-                plan.add_file(
-                    frontend_path,
-                    action=action,
-                    content=content,
-                    reason=reason,
-                    executable=executable,
-                )
-            except FileNotFoundError:
-                print(f"  [warn] Template not found: {template_path}")
-                continue
-
-        # Source files - read as static content to avoid Jinja2/Vue syntax conflicts
-        frontend_files = [
-            # Core
-            ("src/main.ts", "Vue app entry point"),
-            ("src/App.vue", "Root component with 3-column layout"),
-            ("src/vite-env.d.ts", "Vite environment type declarations"),
-            ("src/types.d.ts", "TypeScript type definitions"),
-            # Config
-            ("src/config/constants.ts", "Application constants"),
-            # Styles
-            ("src/styles/global.css", "Dark theme CSS with cyan/teal accents"),
-            # Store
-            ("src/stores/orchestratorStore.ts", "Pinia orchestrator state management"),
-            # Services
-            ("src/services/api.ts", "Axios API client"),
-            ("src/services/chatService.ts", "Chat and WebSocket service"),
-            ("src/services/agentService.ts", "Agent management service"),
-            ("src/services/adwService.ts", "ADW workflow service"),
-            ("src/services/eventService.ts", "Event stream service"),
-            ("src/services/autocompleteService.ts", "Autocomplete service"),
-            ("src/services/fileService.ts", "File operations service"),
-            # Composables
-            ("src/composables/useAgentPulse.ts", "Agent pulse animation composable"),
-            ("src/composables/useAgentColors.ts", "Agent color assignment composable"),
-            ("src/composables/useEventStreamFilter.ts", "Event stream filter composable"),
-            ("src/composables/useHeaderBar.ts", "Header bar state composable"),
-            ("src/composables/useKeyboardShortcuts.ts", "Keyboard shortcuts composable"),
-            ("src/composables/useAutocomplete.ts", "Autocomplete composable"),
-            # Utils
-            ("src/utils/markdown.ts", "Markdown rendering utility"),
-            ("src/utils/agentColors.ts", "Agent color utility"),
-            # Components
-            ("src/components/AdwSwimlanes.vue", "ADW swimlane board"),
-            ("src/components/AgentList.vue", "Agent list sidebar"),
-            ("src/components/AppHeader.vue", "Application header bar"),
-            ("src/components/EventStream.vue", "Event log stream"),
-            ("src/components/FilterControls.vue", "Filter UI controls"),
-            ("src/components/GlobalCommandInput.vue", "Command palette overlay"),
-            ("src/components/OrchestratorChat.vue", "Chat interface"),
-            # Chat sub-components
-            ("src/components/chat/ThinkingBubble.vue", "Thinking block bubble"),
-            ("src/components/chat/ToolUseBubble.vue", "Tool use block bubble"),
-            # Event row sub-components
-            ("src/components/event-rows/AgentLogRow.vue", "Agent log event row"),
-            ("src/components/event-rows/AgentToolUseBlockRow.vue", "Agent tool use row"),
-            ("src/components/event-rows/FileChangesDisplay.vue", "File changes display"),
-            ("src/components/event-rows/OrchestratorChatRow.vue", "Orchestrator chat row"),
-            ("src/components/event-rows/SystemLogRow.vue", "System log event row"),
-            ("src/components/event-rows/ToolUseBlockRow.vue", "Tool use block row"),
-        ]
-
-        for path, reason in frontend_files:
-            # Read Vue/TypeScript files as static content (don't template them)
-            # to avoid Jinja2 conflicts with Vue syntax ({{ }}, @, :class, etc.)
-            frontend_path = f"apps/orchestrator_3_stream/frontend/{path}"
-            template_path = self.template_repo.templates_dir / frontend_path
-            try:
-                content = template_path.read_text(encoding='utf-8')
-                plan.add_file(
-                    frontend_path,
-                    action=action,
-                    content=content,
-                    reason=reason,
-                )
-            except FileNotFoundError:
-                print(f"  [warn] Template not found: {template_path}")
-                continue
+                    try:
+                        content = open(full_path, encoding="utf-8").read()
+                        executable = filename.endswith(".sh")
+                        plan.add_file(
+                            rel_path,
+                            action=action,
+                            content=content,
+                            reason=f"Orchestrator: {filename}",
+                            executable=executable,
+                        )
+                    except (UnicodeDecodeError, FileNotFoundError):
+                        # Skip binary files or missing files
+                        continue
 
     def _add_test_files(
         self, plan: ScaffoldPlan, config: TACConfig, existing_repo: bool
     ) -> None:
-        """Add test suites for ADW modules and orchestrator frontend (TAC-14 Task 15).
+        """Add ADW test suites (TAC-14 Task 15).
 
         Adds:
         - adws/adw_tests/: Pytest fixtures and tests for database, workflows, agent SDK, websockets
-        - apps/orchestrator_3_stream/playwright-tests/: Playwright E2E tests for frontend
-        - apps/orchestrator_3_stream/playwright.config.ts: Playwright configuration
         """
         action = FileAction.CREATE  # CREATE only creates if file doesn't exist
         adws_dir = config.paths.adws_dir
 
         # Add test directory structure
         plan.add_directory(f"{adws_dir}/adw_tests", "ADW pytest test suite")
-        plan.add_directory(
-            "apps/orchestrator_3_stream/playwright-tests", "Playwright E2E tests"
-        )
 
         # Pytest test files
         pytest_files = [
@@ -1499,40 +1254,6 @@ class ScaffoldService:
             template="adws/adw_tests/adw_modules/adw_agent_sdk.py.j2",
             reason="Agent SDK test module",
         )
-
-        # Playwright configuration
-        plan.add_file(
-            "apps/orchestrator_3_stream/playwright.config.ts",
-            action=action,
-            template="apps/orchestrator_3_stream/playwright.config.ts.j2",
-            reason="Playwright E2E test configuration",
-        )
-
-        # Playwright E2E test files
-        playwright_tests = [
-            ("app-loads.spec.ts", "Application loading tests"),
-            ("command-palette.spec.ts", "Command palette tests"),
-            ("websocket-status.spec.ts", "WebSocket status tests"),
-            ("swimlane-board.spec.ts", "Swimlane board tests"),
-            ("keyboard-navigation.spec.ts", "Keyboard navigation tests"),
-            ("visual-styling.spec.ts", "Visual styling tests"),
-        ]
-
-        for file, reason in playwright_tests:
-            # Read static TypeScript files (no Jinja templating needed)
-            test_path = f"apps/orchestrator_3_stream/playwright-tests/{file}"
-            template_path = self.template_repo.templates_dir / test_path
-            try:
-                content = template_path.read_text(encoding='utf-8')
-                plan.add_file(
-                    test_path,
-                    action=action,
-                    content=content,
-                    reason=reason,
-                )
-            except FileNotFoundError:
-                print(f"  [warn] Template not found: {template_path}")
-                continue
 
     def _add_orchestrator_scripts(
         self,
