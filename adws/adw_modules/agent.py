@@ -24,8 +24,38 @@ from .data_types import (
 # Load environment variables
 load_dotenv()
 
+
+def _get_use_sdk_from_config() -> bool:
+    """Load USE_SDK setting from config.yml.
+
+    Reads agentic.use_sdk from config.yml file.
+    Falls back to False if config not found or field missing.
+
+    Returns:
+        True if SDK mode is enabled, False otherwise
+    """
+    import yaml
+
+    # Find config.yml in project root (parent of adws/adw_modules/)
+    project_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+    config_path = os.path.join(project_root, "config.yml")
+
+    if not os.path.exists(config_path):
+        return False
+
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        return config.get("agentic", {}).get("use_sdk", False)
+    except Exception:
+        return False
+
+
 # SDK Feature Flag - enables direct SDK execution instead of subprocess
-USE_SDK = os.getenv("ADW_USE_SDK", "0") == "1"
+# Loaded from config.yml agentic.use_sdk (TAC-15)
+USE_SDK = _get_use_sdk_from_config()
 
 # Get Claude Code CLI path from environment
 CLAUDE_PATH = os.getenv("CLAUDE_CODE_PATH", "claude")
