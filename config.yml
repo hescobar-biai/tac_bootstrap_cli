@@ -35,7 +35,7 @@ commands:
 agentic:
   provider: "claude_code"
   target_branch: main  # Rama destino para merge/push (main, master, develop, etc.)
-  use_sdk: false  # TAC-15: Use Claude Agent SDK instead of subprocess CLI (experimental)
+  use_sdk: true  # TAC-15: Use Claude Agent SDK instead of subprocess CLI (experimental)
   model_policy:
     default: "sonnet"
     heavy: "opus"
