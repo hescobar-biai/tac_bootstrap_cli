@@ -678,7 +678,9 @@ def _prompt_claude_code_sdk(request: AgentPromptRequest) -> AgentPromptResponse:
             )
         else:
             # Classify the error for retry logic
-            error_msg = result.error or "Unknown SDK error"
+            # TAC-15: SDK puts error message in result.result when success=False
+            # result.error may be None even when there's an error
+            error_msg = result.error or result.result or "Unknown SDK error"
             retry_code = _classify_sdk_error(error_msg)
 
             return AgentPromptResponse(
