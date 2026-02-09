@@ -586,28 +586,31 @@ def _prompt_claude_code_sdk(request: AgentPromptRequest) -> AgentPromptResponse:
     }
     sdk_model = model_map.get(request.model.lower(), ModelName.SONNET)
 
-    # TAC-15: Create POST_TOOL_USE logging hook for tool visibility
-    async def log_tool_use(hook_input, tool_use_id, context):
-        """Log tool usage for debugging and visibility."""
-        tool_name = getattr(hook_input, 'tool_name', 'unknown')
-        tool_input = getattr(hook_input, 'tool_input', {})
-        tool_response = getattr(hook_input, 'tool_response', None)
+    # TAC-15: Optional POST_TOOL_USE logging hook for tool visibility
+    # Disabled by default as it may cause issues with some SDK versions
+    # Enable with SDK_ENABLE_HOOKS=1 environment variable
+    hooks_config = None
+    if os.getenv("SDK_ENABLE_HOOKS", "").lower() in ("1", "true", "yes"):
+        async def log_tool_use(hook_input, tool_use_id, context):
+            """Log tool usage for debugging and visibility."""
+            tool_name = getattr(hook_input, 'tool_name', 'unknown')
+            tool_input = getattr(hook_input, 'tool_input', {})
+            tool_response = getattr(hook_input, 'tool_response', None)
 
-        # Truncate response for logging
-        response_preview = str(tool_response)[:200] if tool_response else "N/A"
-        if len(str(tool_response or "")) > 200:
-            response_preview += "..."
+            # Truncate response for logging
+            response_preview = str(tool_response)[:200] if tool_response else "N/A"
+            if len(str(tool_response or "")) > 200:
+                response_preview += "..."
 
-        logger.debug(f"🔧 SDK Tool: {tool_name}")
-        logger.debug(f"   Input: {str(tool_input)[:100]}")
-        logger.debug(f"   Response: {response_preview}")
+            logger.debug(f"🔧 SDK Tool: {tool_name}")
+            logger.debug(f"   Input: {str(tool_input)[:100]}")
+            logger.debug(f"   Response: {response_preview}")
 
-        return HookResponse.allow()
+            return HookResponse.allow()
 
-    # Build hooks config with POST_TOOL_USE logging
-    hooks_config = HooksConfig.from_callbacks({
-        HookEventName.POST_TOOL_USE: [log_tool_use],
-    })
+        hooks_config = HooksConfig.from_callbacks({
+            HookEventName.POST_TOOL_USE: [log_tool_use],
+        })
 
     # Build QueryOptions matching subprocess behavior
     # Include resume session ID if provided for context persistence
@@ -619,7 +622,7 @@ def _prompt_claude_code_sdk(request: AgentPromptRequest) -> AgentPromptResponse:
         setting_sources=[SettingSource.PROJECT],
         resume=request.resume_session_id if request.resume_session_id else None,
         max_turns=50,  # TAC-15: Prevent infinite loops
-        hooks=hooks_config,  # TAC-15: Tool visibility logging
+        hooks=hooks_config,  # TAC-15: Tool visibility logging (optional)
     )
 
     # Create QueryInput
