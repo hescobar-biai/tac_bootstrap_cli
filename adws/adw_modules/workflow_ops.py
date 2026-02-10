@@ -242,6 +242,10 @@ def extract_issue_parameters(issue_body: Optional[str]) -> Dict[str, str]:
     """Extract workflow parameters from issue body.
 
     Looks for lines with format: /parameter_name: value
+    Supports both direct format and markdown list format:
+        /adw_id: feature_Tac_14_Task_5
+        - /adw_id: feature_Tac_14_Task_5
+
     Examples:
         /adw_id: feature_Tac_14_Task_5
         /skip_clarify: true
@@ -259,7 +263,8 @@ def extract_issue_parameters(issue_body: Optional[str]) -> Dict[str, str]:
 
     # Match lines with /parameter_name: value format
     # Supports parameters with hyphens, underscores, and alphanumeric characters
-    pattern = r'^/([a-z_\-]+):\s*(.+?)$'
+    # Also supports markdown list format: - /parameter_name: value
+    pattern = r'^[-\s]*/([a-z_\-]+):\s*(.+?)$'
 
     for line in issue_body.split('\n'):
         line = line.strip()
