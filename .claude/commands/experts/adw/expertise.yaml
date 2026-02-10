@@ -1,7 +1,7 @@
 overview:
   description: "AI Developer Workflows - Automated SDLC orchestration with isolated worktrees and GitHub integration"
   purpose: "Execute complete software development lifecycle through composable workflow scripts"
-  last_updated: "2026-02-05T16:30:00"
+  last_updated: "2026-02-10"
   total_files: 45
   key_files:
     - "adws/adw_sdlc_iso.py"
@@ -41,12 +41,12 @@ architecture:
     modules:
       path: "adws/adw_modules/"
       purpose: "Reusable infrastructure and utilities"
-      count: 15
+      count: 18
       key_modules:
-        - state.py: "Persistent state management via ADWState class"
-        - workflow_ops.py: "Shared operations (ADW ID management, doc detection)"
-        - agent.py: "Claude Code agent execution with model selection"
-        - github.py: "GitHub API operations (issues, comments, PRs)"
+        - state.py: "Persistent state management via ADWState class (259 lines)"
+        - workflow_ops.py: "Shared operations (ADW ID management, doc detection, expert integration) (2463 lines)"
+        - agent.py: "Claude Code agent execution with model selection (1328 lines)"
+        - github.py: "GitHub API operations (issues, comments, PRs) with rate limiting (509 lines)"
         - git_ops.py: "Git operations (branching, merging, status)"
         - worktree_ops.py: "Git worktree management for isolation"
         - data_types.py: "Pydantic models and SlashCommand type definitions (includes TAC-13 expert commands)"
@@ -55,8 +55,11 @@ architecture:
         - r2_uploader.py: "Cloudflare R2 uploader for context bundles"
         - adw_agent_sdk.py: "Abstract typed layer for Claude Agent SDK with Pydantic models (hooks, messages, sessions)"
         - orch_database_models.py: "SQLite database Pydantic models for orchestrator state (OrchestratorAgent, Agent, Prompt, AgentLog, SystemLog)"
-        - adw_database.py: "Async DatabaseManager implementation for SQLite operations (1287 lines, zero-config with auto-schema)"
-        - adw_websockets.py: "WebSocket server for real-time event broadcasting (511 lines, async with connection pooling)"
+        - adw_database.py: "Async DatabaseManager implementation for SQLite operations (457 lines, zero-config with auto-schema)"
+        - adw_websockets.py: "WebSocket server for real-time event broadcasting (598 lines, async with connection pooling)"
+        - adw_logging.py: "Step lifecycle and event logging with WebSocket broadcasting"
+        - adw_summarizer.py: "AI-powered event summarization using Claude Haiku for single-shot queries"
+        - adw_db_bridge.py: "Sync PostgreSQL bridge for workflow tracking with HTTP notifications"
 
     schema:
       path: "adws/schema/"
@@ -84,9 +87,9 @@ architecture:
       count: 3
       description: "Simplified workflows with --adw-id CLI arg, database config, and agent logging"
       key_workflows:
-        - adw_plan_build.py: "Two-step: plan → build (393 lines)"
-        - adw_plan_build_review.py: "Three-step: plan → build → review (487 lines)"
-        - adw_plan_build_review_fix.py: "Four-step: plan → build → review → fix (596 lines)"
+        - adw_plan_build.py: "Two-step: plan → build (976 lines)"
+        - adw_plan_build_review.py: "Three-step: plan → build → review (1203 lines)"
+        - adw_plan_build_review_fix.py: "Four-step: plan → build → review → fix (1463 lines)"
       usage_pattern: "uv run adws/adw_workflows/{workflow}.py --adw-id <uuid> --prompt 'task' --working-dir /path"
       features:
         - "Database-backed configuration via adw-id"
@@ -100,10 +103,10 @@ core_implementation:
   state_management:
     location: "adws/adw_modules/state.py"
     purpose: "Persistent state tracking across workflow phases"
-    line_count: "~200 lines"
+    line_count: "259 lines"
 
     ADWState_class:
-      lines: "15-150"
+      lines: "16-259"
       purpose: "Container for workflow state with file persistence"
       state_file: "adw_state.json"
 
@@ -120,6 +123,7 @@ core_implementation:
 
       key_methods:
         update:
+          lines: "35+"
           signature: "def update(self, **kwargs)"
           purpose: "Update state with new key-value pairs (filtered to core fields)"
           pattern: "Only allows whitelisted fields to prevent state pollution"
@@ -156,12 +160,12 @@ core_implementation:
   workflow_orchestration:
     location: "adws/adw_modules/workflow_ops.py"
     purpose: "Shared workflow operations and utilities"
-    line_count: "~2149 lines"
+    line_count: "2463 lines"
 
     key_functions:
       consult_expert:
         signature: "def consult_expert(domain: str, question: str, adw_id: str, logger: logging.Logger, working_dir: Optional[str]) -> AgentPromptResponse"
-        lines: "1710+"
+        lines: "2024+"
         purpose: "REUSE phase of Act → Learn → Reuse loop - consult domain expert using expertise.yaml"
         logic: |
           1. Build slash command: /experts:{domain}:question
@@ -173,7 +177,7 @@ core_implementation:
 
       improve_expert_knowledge:
         signature: "def improve_expert_knowledge(domain: str, check_git_diff: bool, focus_area: Optional[str], adw_id: str, logger: logging.Logger, working_dir: Optional[str]) -> AgentPromptResponse"
-        lines: "1752+"
+        lines: "2066+"
         purpose: "LEARN phase of Act → Learn → Reuse loop - update expertise.yaml based on code changes"
         logic: |
           1. Build args: [check_git_diff, focus_area]
@@ -185,7 +189,7 @@ core_implementation:
 
       extract_file_references_from_issue:
         signature: "def extract_file_references_from_issue(issue: GitHubIssue, logger: logging.Logger, working_dir: Optional[str]) -> dict[str, str]"
-        lines: "1812+"
+        lines: "2126+"
         purpose: "Auto-detect and load markdown files referenced in issue body and comments"
         logic: |
           1. Scan issue body and comments for file references (e.g., plan_tasks_Tac_14.md)
@@ -258,7 +262,7 @@ core_implementation:
   agent_execution:
     location: "adws/adw_modules/agent.py"
     purpose: "Claude Code agent orchestration with model selection"
-    line_count: "~920 lines"
+    line_count: "1328 lines"
 
     key_functions:
       execute_prompt:
@@ -314,7 +318,7 @@ core_implementation:
   github_integration:
     location: "adws/adw_modules/github.py"
     purpose: "GitHub API operations via gh CLI"
-    line_count: "~500 lines"
+    line_count: "509 lines"
 
     key_functions:
       fetch_issue:
@@ -450,10 +454,10 @@ core_implementation:
   database_implementation:
     location: "adws/adw_modules/adw_database.py"
     purpose: "Async SQLite database manager for orchestrator persistence (TAC-14 Task 8)"
-    line_count: "1287 lines"
+    line_count: "457 lines"
 
     DatabaseManager_class:
-      lines: "145-1287"
+      lines: "~50-457"
       purpose: "Zero-configuration async database operations with auto-schema initialization"
       features:
         - "Automatic schema initialization from schema_orchestrator.sql"
@@ -473,7 +477,7 @@ core_implementation:
   websocket_server:
     location: "adws/adw_modules/adw_websockets.py"
     purpose: "Real-time event broadcasting for orchestrator monitoring (TAC-14 Task 12)"
-    line_count: "511 lines"
+    line_count: "598 lines"
     architecture: "Orchestrator Workflow → WebSocket Server → Monitoring Clients"
     features:
       - "Async WebSocket server with connection pooling"
@@ -492,6 +496,33 @@ core_implementation:
       - remove_worktree: "Cleanup worktree after merge"
       - get_worktree_path: "Get path for ADW ID"
     isolation_pattern: "Enable parallel execution: repo_root/.git (main) + adws/ (shared) + trees/ (isolated per branch)"
+
+  logging_and_events:
+    location: "adws/adw_modules/adw_logging.py"
+    purpose: "Step lifecycle and event logging with WebSocket broadcasting"
+    integration: "Database writes with real-time event notifications to frontend"
+    key_functions:
+      - log_step_start: "Log workflow step start with WebSocket broadcast"
+      - log_step_end: "Log workflow step end with status and WebSocket broadcast"
+      - log_adw_event: "Log arbitrary ADW events with real-time updates"
+
+  event_summarization:
+    location: "adws/adw_modules/adw_summarizer.py"
+    purpose: "AI-powered event summarization using Claude Haiku"
+    pattern: "Single-shot queries for cheap, fast 1-sentence summaries"
+    use_cases: "Summarize agent events (hooks, tool calls, response blocks)"
+    key_functions:
+      - summarize_event: "Generate concise summary of event data"
+
+  database_bridge:
+    location: "adws/adw_modules/adw_db_bridge.py"
+    purpose: "Sync PostgreSQL bridge for workflow tracking"
+    pattern: "Synchronous DB writes with HTTP notifications to orchestrator backend"
+    reason: "Avoid async/sync mismatch (workflows use subprocess.run, backend uses asyncpg)"
+    features:
+      - "Try/except wrapped - failures never crash workflows"
+      - "Requires DATABASE_URL environment variable"
+      - "Sends HTTP notifications for WebSocket broadcasting"
 
 key_operations:
 
@@ -960,6 +991,9 @@ integrations:
           4. Phase workflows conditionally call expert functions based on flags
 
 recent_changes:
+  - date: "2026-02-10"
+    description: "Self-improve validation - updated line counts, added new modules (logging, summarizer, db_bridge)"
+    files: ["expertise.yaml", "adws/adw_modules/adw_logging.py", "adws/adw_modules/adw_summarizer.py", "adws/adw_modules/adw_db_bridge.py"]
   - date: "2026-02-05"
     description: "WebSocket server (TAC-14 Task 12), consolidated workflows (Task 10), worktree timing fix"
     files: ["adws/adw_modules/adw_websockets.py", "adws/adw_workflows/*.py", "adws/adw_plan_iso.py"]
