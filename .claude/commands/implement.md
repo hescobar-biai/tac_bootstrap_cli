@@ -1,45 +1,79 @@
 # Implement the following plan
-Follow the `Instructions` to implement the `Plan` then `Report` the completed work.
+Execute each task in the plan step-by-step, then report results.
 
-## Instructions
+## CRITICAL INSTRUCTIONS - READ CAREFULLY
 
-**CRITICAL: Your report MUST match actual changes in git. False success reports block workflows.**
+**Your job is to ACTUALLY EXECUTE the plan, not simulate it.**
 
-1. **Read** the implementation plan carefully
-2. **Execute** each step exactly as specified in the plan
-3. **Verify** each change by examining file contents AFTER modification
-4. **Commit** changes using git add/commit (do NOT report changes before commit)
-5. **Validate** with `git diff --stat` to confirm changes exist
-6. **Report** ONLY what `git diff --stat` shows as actually changed
+### Step 1: READ THE PLAN
+Read the entire plan file and understand:
+- What files need to be modified
+- What text/code needs to be added/changed
+- What the acceptance criteria are
+- What verification steps are required
 
-⚠️ **VALIDATION RULES (ENFORCED):**
-- **MUST check git status** after all file modifications
-- **MUST NOT report success if `git diff` is empty** - this blocks downstream phases
-- **MUST include actual `git diff --stat` output** in report (copy-paste, not summary)
-- **MUST verify file contents** match expectations (read modified file to confirm)
-- If plan specifies file modifications but none exist after implementation, report **FAILURE**
-- Never claim "2 insertions" if git diff shows 0 changes
+### Step 2: EXECUTE EACH TASK IN ORDER
+For each task in the plan:
+1. **Use the appropriate tool**: Read, Edit, Write, Bash, etc.
+2. **Actually modify the files** - don't skip this
+3. **Show me the tool output** - prove you executed it
+4. **Do NOT claim completion without using tools**
 
-**⚡ TOKEN OPTIMIZATION RULES:**
-- **DO NOT repeat the plan** - It's already provided, just implement it
-- **Keep report under 200 tokens** - List files changed and key actions only
-- **No verbose explanations** - The actual `git diff --stat` speaks for itself
-- **Bullet points only** - One line per file or major change
+### Step 3: VERIFY EACH CHANGE
+After each modification:
+- Read the file to confirm the change was applied
+- Check the modification matches the plan requirements
+- Look for the specific text/changes mentioned in plan
+- If verification fails, the change wasn't made correctly
+
+### Step 4: VALIDATE WITH GIT
+```bash
+git diff --name-only          # Show files that changed
+git diff --stat               # Show change statistics
+git diff [filename]           # Show actual content changes
+```
+
+**CRITICAL**: If `git diff --name-only` is EMPTY, you failed to implement anything.
+
+### Step 5: REPORT WHAT YOU ACTUALLY DID
+**ONLY report changes that appear in `git diff --stat`**
+
+Do NOT claim:
+- "I added text to file" if git diff shows 0 changes
+- "File modified" if it doesn't appear in `git diff`
+- "2 lines added" if git diff shows different number
+
+Report EXACTLY what git shows.
+
+## ⚠️ FAILURE CONDITIONS (report FAILURE if any occur)
+
+1. **No changes made**: `git diff --name-only` returns empty
+2. **Wrong files changed**: Files modified that aren't in the plan
+3. **Content missing**: Plan says "add text X" but `grep` shows X not in file
+4. **Incomplete changes**: Plan has 3 tasks but only 2 completed
+5. **Verification failed**: Spec includes verification command that fails
 
 ## Plan
 $ARGUMENTS
 
-## Report
+## Expected Report Format
 
-✅ **Implementation Report** (verify `git diff --stat` output below matches claimed changes)
-
-- [List files actually changed according to git]
-- [Include actual git diff --stat output]
-- [Example: `README.md | 2 ++` means 2 lines added to README]
-
-**Actual git output:**
 ```
-[INSERT ACTUAL `git diff --stat` OUTPUT HERE]
+## Implementation Report
+
+Files Changed:
+- [file1.txt] - [what changed]
+- [file2.py] - [what changed]
+
+Verification Results:
+✓ [Task 1]: [verification result]
+✓ [Task 2]: [verification result]
+✓ [Task 3]: [verification result]
+
+Git Diff Output:
+[INSERT ACTUAL OUTPUT HERE]
+
+Status: ✅ COMPLETED / ❌ FAILED
 ```
 
-⚠️ If `git diff --stat` shows empty or different files than claimed, implementation FAILED.
+If implementation FAILED at any step, report it clearly with reason.

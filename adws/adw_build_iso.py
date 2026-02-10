@@ -227,10 +227,11 @@ def main():
     )
     changed_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
 
-    if not changed_files:
+    if not changed_files or changed_files == ['']:
         error_msg = ("❌ IMPLEMENTATION VALIDATION FAILED: Agent reported success but made NO file modifications.\n"
                     "This indicates the /implement command did not actually execute the plan.\n"
-                    "The workflow cannot proceed without actual code changes.")
+                    "The workflow cannot proceed without actual code changes.\n"
+                    "Check: `git diff --name-only` shows no files changed.")
         logger.error(error_msg)
         make_issue_comment(
             issue_number,
@@ -240,11 +241,80 @@ def main():
         # Exit with error to trigger retry
         sys.exit(1)
 
-    logger.info(f"✅ Validation passed: {len(changed_files)} file(s) modified")
+    logger.info(f"✅ Git validation passed: {len(changed_files)} file(s) modified")
+
+    # ENHANCED: Validate content of modified files (check for expected text from spec)
+    # Extract key requirements from plan file
+    plan_file = state.get("plan_file")
+    validation_issues = []
+
+    if plan_file and os.path.exists(plan_file):
+        try:
+            with open(plan_file, 'r') as f:
+                plan_content = f.read()
+
+            # Look for common requirement markers (case-insensitive)
+            import re
+
+            # Pattern 1: "Append" or "Add" specific text
+            append_patterns = [
+                r'(?:Append|Add)\s+["\']([^"\']+)["\']',
+                r'add.*?["\']([^"\']+)["\']',
+                r'append.*?["\']([^"\']+)["\']'
+            ]
+
+            for pattern in append_patterns:
+                matches = re.finditer(pattern, plan_content, re.IGNORECASE)
+                for match in matches:
+                    expected_text = match.group(1)
+                    logger.info(f"Looking for expected text in modifications: '{expected_text}'")
+
+                    # Check if this text appears in any modified file
+                    text_found = False
+                    for changed_file in changed_files:
+                        if not changed_file or changed_file.startswith('Binary'):
+                            continue
+
+                        file_path = os.path.join(worktree_path, changed_file)
+                        if os.path.exists(file_path) and os.path.isfile(file_path):
+                            try:
+                                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                    file_content = f.read()
+                                    if expected_text in file_content:
+                                        text_found = True
+                                        logger.info(f"✓ Found '{expected_text}' in {changed_file}")
+                                        break
+                            except Exception as e:
+                                logger.debug(f"Could not read {file_path}: {e}")
+
+                    if not text_found:
+                        validation_issues.append(
+                            f"Expected text '{expected_text}' not found in any modified files. "
+                            f"Modified files: {', '.join(changed_files[:5])}"
+                        )
+        except Exception as e:
+            logger.warning(f"Could not perform content validation: {e}")
+
+    # Report content validation failures
+    if validation_issues:
+        error_msg = ("❌ CONTENT VALIDATION FAILED: Files were modified but don't contain expected content.\n"
+                    "Issues found:\n")
+        for issue in validation_issues:
+            error_msg += f"- {issue}\n"
+
+        logger.error(error_msg)
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, AGENT_IMPLEMENTOR,
+                               error_msg + "\nThe agent may have modified wrong files. Re-running workflow...")
+        )
+        sys.exit(1)
+
+    logger.info(f"✅ All validations passed: Files modified + content verified")
     make_issue_comment(
         issue_number,
         format_issue_message(adw_id, AGENT_IMPLEMENTOR,
-                           f"✅ Solution implemented ({len(changed_files)} files modified)")
+                           f"✅ Solution implemented ({len(changed_files)} files modified + content verified)")
     )
 
     # Fetch issue data for commit message generation
