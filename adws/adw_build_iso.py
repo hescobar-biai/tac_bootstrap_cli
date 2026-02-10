@@ -215,74 +215,91 @@ def main():
 
         # If agent failed to make changes, try direct implementation
         if not agent_made_changes and implement_response.success:
-            logger.warning("Agent claimed success but made no changes. Attempting direct implementation from plan...")
+            logger.warning("Agent claimed success but made no changes. Attempting direct implementation from issue body...")
 
-            # Extract action from plan file (e.g., "add 'text' to file")
+            # Extract action dynamically from GitHub issue body (not from plan)
             try:
-                # Handle both relative and absolute paths
-                plan_path = plan_file if os.path.isabs(plan_file) else os.path.join(worktree_path, plan_file)
-                with open(plan_path, 'r') as f:
-                    plan_content = f.read()
-
-                # Parse for simple "add text to file" patterns
                 import re
-                matches = []
 
-                # Look for patterns like: Agregar "text" al README or Add "text" to file
-                # First try: find lines with "Agregar" or "Add" and extract quoted text after it
-                add_lines = re.findall(r'(?:[Aa]gregar|[Aa]dd).*?["\']([^"\']+)["\']', plan_content)
+                # Fetch the original GitHub issue to get the raw issue body
+                github_issue = fetch_issue(issue_number, repo_path)
+                issue_body = github_issue.body
 
-                # Also look for lines describing the task (e.g., "Agregar una nueva línea con el texto:")
-                # followed by quoted text
-                task_lines = re.findall(r'(?:texto|text):\s*["\']([^"\']+)["\']', plan_content, re.IGNORECASE)
+                if not issue_body:
+                    logger.warning("GitHub issue body is empty, cannot perform direct implementation")
+                else:
+                    logger.debug(f"Extracted issue body ({len(issue_body)} chars) for pattern matching")
 
-                # Combine all found texts (prefer longer ones to exclude "number", "version", etc.)
-                all_texts = add_lines + task_lines
-                texts = [t for t in all_texts if len(t) > 5]  # Filter out short strings like "number"
+                    matches = []
 
-                # Look for README files specifically
-                readme_files = re.findall(r'((?:\./)?[Rr][Ee][Aa][Dd][Mm][Ee]\.md)', plan_content)
+                    # Look for patterns in the issue body like:
+                    # - "Agregar 'text' al README"
+                    # - "Add the text 'text' to"
+                    # - Quoted text patterns
+                    add_lines = re.findall(r'(?:[Aa]gregar|[Aa]dd).*?["\']([^"\']+)["\']', issue_body)
 
-                # If we found text and files, create matches
-                if texts and readme_files:
-                    for readme_file in readme_files:
-                        # Use first substantial text found
-                        matches.append((texts[0], readme_file.lstrip('./')))
-                        break
-                elif texts and not readme_files:
-                    # Fallback: look for any .md file in the plan
-                    file_pattern = r'\b([\w\-/]*README[^`\s]*\.md)\b'
-                    files = re.findall(file_pattern, plan_content, re.IGNORECASE)
-                    if files:
-                        matches.append((texts[0], files[0].split('/')[-1]))
+                    # Also look for patterns like: "texto: 'text'" or "text: 'text'"
+                    task_lines = re.findall(r'(?:texto|text):\s*["\']([^"\']+)["\']', issue_body, re.IGNORECASE)
 
-                logger.debug(f"Parsed patterns from plan: add_lines={add_lines}, task_lines={task_lines}, texts={texts}, matches={matches}")
+                    # Look for any quoted text (as fallback)
+                    quoted_texts = re.findall(r'["\']([^"\']{6,})["\']', issue_body)
 
-                if matches:
-                    logger.info(f"Found {len(matches)} direct tasks to execute")
-                    for text_to_add, target_file in matches:
-                        target_path = os.path.join(worktree_path, target_file)
-                        if os.path.exists(target_path):
-                            logger.info(f"Appending '{text_to_add}' to {target_file}")
-                            with open(target_path, 'a') as f:
-                                f.write(f"\n{text_to_add}")
-                            logger.info(f"Successfully modified {target_file}")
+                    # Combine all found texts, prefer longer ones and those in context
+                    all_texts = add_lines + task_lines
+                    if not all_texts and quoted_texts:
+                        all_texts = quoted_texts
 
-                # Verify changes were made
-                result = subprocess.run(
-                    ["git", "diff", "--name-only"],
-                    capture_output=True,
-                    text=True,
-                    cwd=worktree_path,
-                )
-                if result.stdout.strip():
-                    logger.info("Direct implementation successful - changes detected")
-                    # Create synthetic response for direct execution
-                    implement_response = AgentPromptResponse(
-                        success=True,
-                        output="Direct implementation completed",
-                        token_usage={"input": 0, "output": 0}
+                    # Filter out very short strings
+                    texts = [t for t in all_texts if len(t) > 5 and not t.isdigit()]
+
+                    # Look for file references (README, .md files)
+                    readme_files = re.findall(r'((?:\./)?[Rr][Ee][Aa][Dd][Mm][Ee](?:\.md)?)', issue_body)
+                    md_files = re.findall(r'\b([\w\-/]*\.md)\b', issue_body)
+                    all_files = readme_files + md_files if readme_files else md_files
+
+                    logger.debug(f"Issue body patterns: add_lines={add_lines}, task_lines={task_lines}, quoted={quoted_texts[:3]}, texts={texts[:3]}, files={all_files[:3]}")
+
+                    # Create matches from found texts and files
+                    if texts and all_files:
+                        # Use first substantial text and first file
+                        matches.append((texts[0], all_files[0].lstrip('./')))
+                    elif texts:
+                        # Try to find default file (README.md)
+                        default_files = ['README.md', 'readme.md']
+                        for default_file in default_files:
+                            if os.path.exists(os.path.join(worktree_path, default_file)):
+                                matches.append((texts[0], default_file))
+                                break
+
+                    if matches:
+                        logger.info(f"Found {len(matches)} direct tasks to execute from issue body")
+                        for text_to_add, target_file in matches:
+                            target_path = os.path.join(worktree_path, target_file)
+                            if os.path.exists(target_path):
+                                logger.info(f"Appending '{text_to_add}' to {target_file}")
+                                with open(target_path, 'a') as f:
+                                    f.write(f"\n{text_to_add}")
+                                logger.info(f"Successfully modified {target_file}")
+                            else:
+                                logger.warning(f"Target file not found: {target_file}")
+                    else:
+                        logger.debug("No clear patterns found in issue body for direct implementation")
+
+                    # Verify changes were made
+                    result = subprocess.run(
+                        ["git", "diff", "--name-only"],
+                        capture_output=True,
+                        text=True,
+                        cwd=worktree_path,
                     )
+                    if result.stdout.strip():
+                        logger.info("Direct implementation successful - changes detected")
+                        # Create synthetic response for direct execution
+                        implement_response = AgentPromptResponse(
+                            success=True,
+                            output="Direct implementation completed",
+                            token_usage={"input": 0, "output": 0}
+                        )
             except Exception as e:
                 logger.error(f"Direct implementation failed: {e}")
 
