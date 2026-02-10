@@ -97,8 +97,11 @@ Read this file completely and understand every requirement.
 
 ---
 
-## Execution Strategy
-$ARGUMENT_2
+## Plan Details to Implement
+
+Read the plan file at: `$ARGUMENT_2`
+
+Then implement each requirement exactly as specified. The plan file contains your detailed implementation roadmap.
 
 ## Expected Report Format
 
