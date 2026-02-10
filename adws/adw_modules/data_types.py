@@ -319,7 +319,9 @@ class ReviewIssue(BaseModel):
     """Individual review issue found during spec verification."""
 
     review_issue_number: int
-    screenshot_path: str  # Local file path to screenshot (e.g., "agents/ADW-123/reviewer/review_img/error.png")
+    screenshot_path: Optional[str] = (
+        None  # Local file path to screenshot (e.g., "agents/ADW-123/reviewer/review_img/error.png")
+    )
     screenshot_url: Optional[str] = (
         None  # Public URL after upload (e.g., "https://domain.com/adw/ADW-123/review/error.png")
     )
