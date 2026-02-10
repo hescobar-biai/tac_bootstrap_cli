@@ -642,14 +642,51 @@ def implement_plan(
     working_dir: Optional[str] = None,
     ai_docs_context: Optional[str] = None,  # TAC-9: Documentation context
 ) -> AgentPromptResponse:
-    """Implement the plan using the /implement command."""
+    """Implement the plan using the /implement command.
+
+    This function sends the plan to an agent with the /implement command.
+    The agent MUST use Read/Edit/Write tools to modify files and verify changes with git diff.
+
+    Args:
+        plan_file: Path to the plan markdown file
+        adw_id: ADW workflow identifier
+        logger: Logger instance
+        agent_name: Override agent name (default: AGENT_IMPLEMENTOR)
+        working_dir: Working directory for implementation
+        ai_docs_context: Documentation context from planning phase
+
+    Returns:
+        AgentPromptResponse with implementation output
+    """
     # Use provided agent_name or default to AGENT_IMPLEMENTOR
     implementor_name = agent_name or AGENT_IMPLEMENTOR
+
+    # Read the plan file to extract summary information
+    try:
+        with open(plan_file, 'r', encoding='utf-8') as f:
+            plan_content = f.read()
+            # Extract first 500 chars to show what's being planned
+            plan_preview = plan_content[:500] if len(plan_content) > 500 else plan_content
+    except Exception as e:
+        logger.warning(f"Could not read plan file for context: {e}")
+        plan_preview = "[Plan file could not be read]"
+
+    # Build enhanced context for the agent
+    context_info = (
+        f"📋 **IMPLEMENTATION TASK FOR ADW {adw_id}**\n\n"
+        f"You are implementing code changes from the plan file: {plan_file}\n\n"
+        f"**CRITICAL REQUIREMENT**: You MUST use the Read/Edit/Write tools to make actual file changes.\n"
+        f"False claims of success without tool usage will cause the workflow to FAIL.\n\n"
+        f"**Plan Preview**:\n{plan_preview}\n\n"
+    )
+
+    # Combine context with plan file argument
+    args = [context_info, plan_file]
 
     implement_template_request = AgentTemplateRequest(
         agent_name=implementor_name,
         slash_command="/implement",
-        args=[plan_file],
+        args=args,
         adw_id=adw_id,
         working_dir=working_dir,
         ai_docs_context=ai_docs_context,  # TAC-9: Pass docs to implementation
