@@ -224,10 +224,28 @@ def main():
                 with open(plan_path, 'r') as f:
                     plan_content = f.read()
 
-                # Parse for "add" or "append" patterns
+                # Parse for simple "add text to file" patterns
                 import re
-                add_pattern = r'[Aa]dd.*?["\']([^"\']+)["\'].*?(?:to|in|at)\s+(?:the\s+)?[`]?([^`\s]+)'
-                matches = re.findall(add_pattern, plan_content)
+                matches = []
+
+                # Look for quoted text that should be added
+                text_pattern = r'["\']([^"\']+)["\']'
+                texts = re.findall(text_pattern, plan_content)
+
+                # Look for files mentioned (.md, .txt, .py, etc.)
+                file_pattern = r'\b([\w\-/]+\.(md|txt|py|js|ts|json|yaml|yml))\b'
+                files = re.findall(file_pattern, plan_content)
+
+                # If we found text and files, try to match them
+                if texts and files:
+                    # Simple heuristic: use first text and first README-like file
+                    for file_match in files:
+                        file_name = file_match[0]
+                        if 'readme' in file_name.lower() or file_name.endswith('.md'):
+                            matches.append((texts[0], file_name.split('/')[-1]))  # Use just filename
+                            break
+
+                logger.debug(f"Parsed patterns from plan: texts={texts}, files={[f[0] for f in files]}, matches={matches}")
 
                 if matches:
                     logger.info(f"Found {len(matches)} direct tasks to execute")
