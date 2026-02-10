@@ -250,10 +250,79 @@ def merge_pr(
     return True, None
 
 
+def create_pr_direct(
+    branch_name: str,
+    issue_title: str,
+    issue_number: str,
+    logger: logging.Logger,
+) -> Tuple[Optional[str], Optional[str]]:
+    """Create PR directly using gh CLI in bash. Returns (pr_url, error_message).
+
+    This approach is more reliable than using execute_template because:
+    - Direct bash execution, no subprocess context issues
+    - Simple gh pr create command
+    - Direct error handling
+    """
+    try:
+        repo_url = get_repo_url()
+        repo_path = extract_repo_path(repo_url)
+    except Exception as e:
+        return None, f"Failed to get repo info: {e}"
+
+    target_branch = get_target_branch()
+
+    # Build PR title
+    pr_title = f"[ADW] #{issue_number} - {issue_title}"[:100]  # GitHub has 100 char limit
+
+    # Build PR body with issue linking
+    # Using "Closes" keyword auto-links issue and closes it when PR is merged
+    pr_body = f"""Closes #{issue_number}
+
+## Summary
+This PR implements the solution for issue #{issue_number}.
+
+Automatically created by TAC ADW (AI Developer Workflow).
+
+---
+**ADW Metadata:**
+- Automated branch creation and PR management
+- All code changes tracked and tested
+- Ready for merge upon approval"""
+
+    # Create PR using gh CLI
+    cmd = [
+        "gh",
+        "pr",
+        "create",
+        "--repo", repo_path,
+        "--title", pr_title,
+        "--body", pr_body,
+        "--base", target_branch,
+        "--head", branch_name,
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        error_msg = result.stderr or result.stdout
+        logger.error(f"Failed to create PR: {error_msg}")
+        return None, error_msg
+
+    pr_url = result.stdout.strip()
+    logger.info(f"Successfully created PR: {pr_url}")
+    return pr_url, None
+
+
 def finalize_git_operations(
     state: "ADWState", logger: logging.Logger, cwd: Optional[str] = None
 ) -> None:
-    """Standard git finalization: push branch and create/update PR."""
+    """Standard git finalization: push branch and create/update PR.
+
+    IMPROVED VERSION:
+    - Creates PR directly using gh CLI (more reliable)
+    - Saves PR URL to state for later use (especially important for ship phase)
+    - Better error handling and logging
+    """
     target_branch = get_target_branch()
     branch_name = state.get("branch_name")
     if not branch_name:
@@ -281,38 +350,42 @@ def finalize_git_operations(
     # Handle PR
     pr_url = check_pr_exists(branch_name)
     issue_number = state.get("issue_number")
+    issue_title = state.get("issue_title", "Issue")
     adw_id = state.get("adw_id")
 
     if pr_url:
         logger.info(f"Found existing PR: {pr_url}")
+        # Store PR URL in state for later use (important for ship phase)
+        state.update(pr_url=pr_url)
+        state.save("finalize_git_operations")
         # Post PR link for easy reference
         if issue_number and adw_id:
             make_issue_comment(issue_number, f"{adw_id}_ops: ✅ Pull request: {pr_url}")
     else:
-        # Create new PR - fetch issue data first
+        # Create new PR directly using gh CLI (no execute_template)
         if issue_number:
-            try:
-                repo_url = get_repo_url()
-                repo_path = extract_repo_path(repo_url)
-                from adw_modules.github import fetch_issue
+            pr_url, error = create_pr_direct(branch_name, issue_title, issue_number, logger)
 
-                issue = fetch_issue(issue_number, repo_path)
-
-                from adw_modules.workflow_ops import create_pull_request
-
-                pr_url, error = create_pull_request(branch_name, issue, state, logger, cwd)
-            except Exception as e:
-                logger.error(f"Failed to fetch issue for PR creation: {e}")
-                pr_url, error = None, str(e)
+            if pr_url:
+                # Store PR URL in state for later use (important for ship phase)
+                state.update(pr_url=pr_url)
+                state.save("finalize_git_operations")
+                logger.info(f"Created PR: {pr_url}")
+                # Post new PR link
+                if adw_id:
+                    make_issue_comment(
+                        issue_number, f"{adw_id}_ops: ✅ Pull request created: {pr_url}"
+                    )
+            else:
+                logger.error(f"Failed to create PR: {error}")
+                # Post error to issue
+                if adw_id:
+                    try:
+                        make_issue_comment(
+                            issue_number,
+                            f"{adw_id}_ops: ⚠️ Failed to create PR: {error}\n\nPlease create PR manually or restart the workflow."
+                        )
+                    except:
+                        pass
         else:
-            pr_url, error = None, "No issue number in state"
-
-        if pr_url:
-            logger.info(f"Created PR: {pr_url}")
-            # Post new PR link
-            if issue_number and adw_id:
-                make_issue_comment(
-                    issue_number, f"{adw_id}_ops: ✅ Pull request created: {pr_url}"
-                )
-        else:
-            logger.error(f"Failed to create PR: {error}")
+            logger.error("No issue number in state, cannot create PR")
