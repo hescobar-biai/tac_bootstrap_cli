@@ -59,6 +59,7 @@ from adw_modules.workflow_ops import (
     improve_expert_knowledge,
     extract_file_references_from_issue,
     format_file_references_for_context,
+    extract_issue_parameters,
     AGENT_PLANNER,
 )
 from adw_modules.utils import setup_logger, check_env_vars
@@ -105,6 +106,30 @@ def main():
     use_experts = args.use_experts
     expert_learn = args.expert_learn
 
+    # Get repo information early to fetch issue details
+    try:
+        github_repo_url = get_repo_url()
+        repo_path = extract_repo_path(github_repo_url)
+    except ValueError as e:
+        print(f"Error getting repository URL: {e}")
+        sys.exit(1)
+
+    # Fetch issue details to extract parameters from body
+    issue: GitHubIssue = fetch_issue(issue_number, repo_path)
+
+    # Extract parameters from issue body (e.g., /adw_id: feature_Tac_14_Task_5)
+    issue_params = extract_issue_parameters(issue.body)
+
+    # Use adw_id from issue body if provided, otherwise use command line arg
+    if "adw_id" in issue_params and issue_params["adw_id"]:
+        extracted_adw_id = issue_params["adw_id"]
+        print(f"Found /adw_id in issue body: {extracted_adw_id}")
+        if not adw_id:
+            adw_id = extracted_adw_id
+        elif adw_id != extracted_adw_id:
+            print(f"Warning: Command line adw_id ({adw_id}) differs from issue body ({extracted_adw_id})")
+            print(f"Using command line value: {adw_id}")
+
     # Ensure ADW ID exists with initialized state
     temp_logger = setup_logger(adw_id, "adw_plan_iso") if adw_id else None
     adw_id = ensure_adw_id(issue_number, adw_id, temp_logger)
@@ -125,17 +150,6 @@ def main():
 
     # Validate environment
     check_env_vars(logger)
-
-    # Get repo information
-    try:
-        github_repo_url = get_repo_url()
-        repo_path = extract_repo_path(github_repo_url)
-    except ValueError as e:
-        logger.error(f"Error getting repository URL: {e}")
-        sys.exit(1)
-
-    # Fetch issue details
-    issue: GitHubIssue = fetch_issue(issue_number, repo_path)
 
     logger.debug(f"Fetched issue: {issue.model_dump_json(indent=2, by_alias=True)}")
     make_issue_comment(

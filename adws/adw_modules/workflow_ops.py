@@ -233,6 +233,45 @@ AVAILABLE_ADW_WORKFLOWS = [
 ]
 
 
+# =============================================================================
+# Issue Body Parameter Extraction
+# =============================================================================
+
+
+def extract_issue_parameters(issue_body: Optional[str]) -> Dict[str, str]:
+    """Extract workflow parameters from issue body.
+
+    Looks for lines with format: /parameter_name: value
+    Examples:
+        /adw_id: feature_Tac_14_Task_5
+        /skip_clarify: true
+        /load_docs: TAC-14
+
+    Args:
+        issue_body: The GitHub issue body text
+
+    Returns:
+        Dictionary of extracted parameters (empty if none found)
+    """
+    params = {}
+    if not issue_body:
+        return params
+
+    # Match lines with /parameter_name: value format
+    # Supports parameters with hyphens, underscores, and alphanumeric characters
+    pattern = r'^/([a-z_\-]+):\s*(.+?)$'
+
+    for line in issue_body.split('\n'):
+        line = line.strip()
+        match = re.match(pattern, line, re.IGNORECASE)
+        if match:
+            param_name = match.group(1).lower()
+            param_value = match.group(2).strip()
+            params[param_name] = param_value
+
+    return params
+
+
 def format_issue_message(
     adw_id: str, agent_name: str, message: str, session_id: Optional[str] = None
 ) -> str:
