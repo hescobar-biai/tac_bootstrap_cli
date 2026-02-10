@@ -1,7 +1,7 @@
 overview:
   description: "AI Developer Workflows - Automated SDLC orchestration with isolated worktrees and GitHub integration"
   purpose: "Execute complete software development lifecycle through composable workflow scripts"
-  last_updated: "2026-02-05T16:30:00"
+  last_updated: "2026-02-10T20:00:00"
   total_files: 45
   key_files:
     - "adws/adw_sdlc_iso.py"
@@ -57,6 +57,9 @@ architecture:
         - orch_database_models.py: "SQLite database Pydantic models for orchestrator state (OrchestratorAgent, Agent, Prompt, AgentLog, SystemLog)"
         - adw_database.py: "Async DatabaseManager implementation for SQLite operations (1287 lines, zero-config with auto-schema)"
         - adw_websockets.py: "WebSocket server for real-time event broadcasting (511 lines, async with connection pooling)"
+        - adw_logging.py: "Async logging functions for database event tracking (364 lines, integrated with adw_database)"
+        - adw_summarizer.py: "Event summarization using Claude API for log compression (189 lines)"
+        - adw_db_bridge.py: "DEPRECATED - Database bridge (433 lines, removed from orchestrators in commit 9ef1dc3)"
 
     schema:
       path: "adws/schema/"
@@ -161,7 +164,7 @@ core_implementation:
     key_functions:
       consult_expert:
         signature: "def consult_expert(domain: str, question: str, adw_id: str, logger: logging.Logger, working_dir: Optional[str]) -> AgentPromptResponse"
-        lines: "1710+"
+        lines: "2024+"
         purpose: "REUSE phase of Act → Learn → Reuse loop - consult domain expert using expertise.yaml"
         logic: |
           1. Build slash command: /experts:{domain}:question
@@ -173,7 +176,7 @@ core_implementation:
 
       improve_expert_knowledge:
         signature: "def improve_expert_knowledge(domain: str, check_git_diff: bool, focus_area: Optional[str], adw_id: str, logger: logging.Logger, working_dir: Optional[str]) -> AgentPromptResponse"
-        lines: "1752+"
+        lines: "2066+"
         purpose: "LEARN phase of Act → Learn → Reuse loop - update expertise.yaml based on code changes"
         logic: |
           1. Build args: [check_git_diff, focus_area]
@@ -185,7 +188,7 @@ core_implementation:
 
       extract_file_references_from_issue:
         signature: "def extract_file_references_from_issue(issue: GitHubIssue, logger: logging.Logger, working_dir: Optional[str]) -> dict[str, str]"
-        lines: "1812+"
+        lines: "2126+"
         purpose: "Auto-detect and load markdown files referenced in issue body and comments"
         logic: |
           1. Scan issue body and comments for file references (e.g., plan_tasks_Tac_14.md)
@@ -960,6 +963,9 @@ integrations:
           4. Phase workflows conditionally call expert functions based on flags
 
 recent_changes:
+  - date: "2026-02-10"
+    description: "Removed database bridge from SDLC orchestrators (clean up after Task 9 integration)"
+    files: ["adws/adw_sdlc_iso.py", "adws/adw_sdlc_zte_iso.py", "adws/adw_ship_iso.py"]
   - date: "2026-02-05"
     description: "WebSocket server (TAC-14 Task 12), consolidated workflows (Task 10), worktree timing fix"
     files: ["adws/adw_modules/adw_websockets.py", "adws/adw_workflows/*.py", "adws/adw_plan_iso.py"]
