@@ -41,10 +41,12 @@ from adw_modules.workflow_ops import (
     extract_file_references_from_issue,
     format_file_references_for_context,
     get_model_id,
+    extract_issue_parameters,
 )
 from adw_modules.github import make_issue_comment, fetch_issue, get_repo_url, extract_repo_path
 from adw_modules.utils import get_target_branch, setup_logger
 from adw_modules.state import ADWState
+from adw_modules.data_types import GitHubIssue
 from adw_modules.adw_db_bridge import (
     init_bridge, close_bridge,
     track_workflow_start, track_phase_update, track_workflow_end,
@@ -108,6 +110,30 @@ def main():
 
     issue_number = sys.argv[1]
     adw_id = sys.argv[2] if len(sys.argv) > 2 else None
+
+    # Get repo information early to fetch issue details
+    try:
+        github_repo_url = get_repo_url()
+        repo_path = extract_repo_path(github_repo_url)
+    except ValueError as e:
+        print(f"Error getting repository URL: {e}")
+        sys.exit(1)
+
+    # Fetch issue details to extract parameters from body
+    issue_for_params: GitHubIssue = fetch_issue(issue_number, repo_path)
+
+    # Extract parameters from issue body (e.g., /adw_id: feature_Tac_14_Task_5)
+    issue_params = extract_issue_parameters(issue_for_params.body)
+
+    # Use adw_id from issue body if provided, otherwise use command line arg
+    if "adw_id" in issue_params and issue_params["adw_id"]:
+        extracted_adw_id = issue_params["adw_id"]
+        print(f"Found /adw_id in issue body: {extracted_adw_id}")
+        if not adw_id:
+            adw_id = extracted_adw_id
+        elif adw_id != extracted_adw_id:
+            print(f"Warning: Command line adw_id ({adw_id}) differs from issue body ({extracted_adw_id})")
+            print(f"Using command line value: {adw_id}")
 
     # Ensure ADW ID exists with initialized state
     adw_id = ensure_adw_id(issue_number, adw_id)
