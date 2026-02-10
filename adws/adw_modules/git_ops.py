@@ -274,8 +274,20 @@ def create_pr_direct(
     # Build PR title
     pr_title = f"[ADW] #{issue_number} - {issue_title}"[:100]  # GitHub has 100 char limit
 
-    # Build PR body
-    pr_body = f"Implements issue #{issue_number}\n\nAutomatically created by TAC ADW workflow."
+    # Build PR body with issue linking
+    # Using "Closes" keyword auto-links issue and closes it when PR is merged
+    pr_body = f"""Closes #{issue_number}
+
+## Summary
+This PR implements the solution for issue #{issue_number}.
+
+Automatically created by TAC ADW (AI Developer Workflow).
+
+---
+**ADW Metadata:**
+- Automated branch creation and PR management
+- All code changes tracked and tested
+- Ready for merge upon approval"""
 
     # Create PR using gh CLI
     cmd = [
