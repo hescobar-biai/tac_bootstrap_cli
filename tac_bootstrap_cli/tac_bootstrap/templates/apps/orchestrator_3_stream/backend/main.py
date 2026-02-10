@@ -1070,9 +1070,9 @@ async def get_adw_summary(adw_id: str) -> Any:
 _ADW_UUID_NAMESPACE = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 
 
-def _serialize(record: dict) -> dict:
+def _serialize(record: dict[str, Any]) -> dict[str, Any]:
     """Serialize DB record for JSON/WebSocket (handle UUID, datetime, Decimal)."""
-    result = {}
+    result: dict[str, Any] = {}
     for k, v in record.items():
         if isinstance(v, uuid.UUID):
             result[k] = str(v)
@@ -1086,7 +1086,7 @@ def _serialize(record: dict) -> dict:
 
 
 @app.post("/api/adw-bridge/notify")
-async def adw_bridge_notify(request: Request):
+async def adw_bridge_notify(request: Request) -> dict[str, str]:
     """
     Receive notifications from CLI adw_db_bridge and broadcast via WebSocket.
 

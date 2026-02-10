@@ -22,7 +22,7 @@ from decimal import Decimal
 from typing import Any, Dict, Literal, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_serializer, field_validator, conint, confloat
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator, conint, confloat
 
 
 # ═══════════════════════════════════════════════════════════
@@ -74,8 +74,7 @@ class OrchestratorAgent(BaseModel):
         """Serialize datetime to ISO 8601"""
         return value.isoformat()
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -131,8 +130,7 @@ class Agent(BaseModel):
             return None
         return value.isoformat()
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -189,8 +187,7 @@ class Prompt(BaseModel):
             return None
         return value.isoformat()
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -256,8 +253,7 @@ class AgentLog(BaseModel):
         """Serialize datetime to ISO 8601"""
         return value.isoformat()
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -327,8 +323,7 @@ class SystemLog(BaseModel):
         """Serialize datetime to ISO 8601"""
         return value.isoformat()
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -382,8 +377,7 @@ class OrchestratorChat(BaseModel):
         """Serialize datetime to ISO 8601"""
         return value.isoformat()
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -451,8 +445,7 @@ class AiDeveloperWorkflow(BaseModel):
             return None
         return value.isoformat()
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ═══════════════════════════════════════════════════════════
