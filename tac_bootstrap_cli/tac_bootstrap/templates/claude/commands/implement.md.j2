@@ -4,14 +4,28 @@ Follow the `Instructions` to implement the `Plan` then `Report` the completed wo
 
 ## Instructions
 
-- Read the plan, think hard about the plan and implement the plan.
-- Follow {{ config.project.architecture.value }} architecture patterns if applicable.
-- Run validation commands after implementation.
+**CRITICAL: Your report MUST match actual changes in git. False success reports block workflows.**
 
-**⚡ TOKEN OPTIMIZATION RULES (CRITICAL):**
+1. **Read** the implementation plan carefully
+2. **Execute** each step exactly as specified in the plan
+3. **Verify** each change by examining file contents AFTER modification
+4. **Commit** changes using git add/commit (do NOT report changes before commit)
+5. **Validate** with `git diff --stat` to confirm changes exist
+6. **Report** ONLY what `git diff --stat` shows as actually changed
+7. Follow {{ config.project.architecture.value }} architecture patterns if applicable.
+
+⚠️ **VALIDATION RULES (ENFORCED):**
+- **MUST check git status** after all file modifications
+- **MUST NOT report success if `git diff` is empty** - this blocks downstream phases
+- **MUST include actual `git diff --stat` output** in report (copy-paste, not summary)
+- **MUST verify file contents** match expectations (read modified file to confirm)
+- If plan specifies file modifications but none exist after implementation, report **FAILURE**
+- Never claim "2 insertions" if git diff shows 0 changes
+
+**⚡ TOKEN OPTIMIZATION RULES:**
 - **DO NOT repeat the plan** - It's already provided, just implement it
 - **Keep report under 200 tokens** - List files changed and key actions only
-- **No verbose explanations** - The diff speaks for itself
+- **No verbose explanations** - The actual `git diff --stat` speaks for itself
 - **Bullet points only** - One line per file or major change
 
 ## Plan
@@ -21,6 +35,10 @@ $ARGUMENTS
 ## Validation
 
 After implementing, validate your work:
+
+- **CRITICAL**: Run `git diff --stat` to verify files were actually modified
+- **CRITICAL**: Read at least one modified file to confirm content matches plan
+- **CRITICAL**: Confirm `git diff` is NOT empty before reporting success
 
 {% if config.commands.test %}
 - `{{ config.commands.test }}` - Run tests
@@ -34,5 +52,15 @@ After implementing, validate your work:
 
 ## Report
 
-- Summarize the work you've just done in a concise bullet point list.
-- Report the files and total lines changed with `git diff --stat`
+✅ **Implementation Report** (verify `git diff --stat` output below matches claimed changes)
+
+- [List files actually changed according to git]
+- [Include actual git diff --stat output]
+- [Example: `README.md | 2 ++` means 2 lines added to README]
+
+**Actual git output:**
+```
+[INSERT ACTUAL `git diff --stat` OUTPUT HERE]
+```
+
+⚠️ If `git diff --stat` shows empty or different files than claimed, implementation FAILED.

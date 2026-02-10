@@ -216,11 +216,37 @@ def main():
         sys.exit(1)
     
     logger.debug(f"Implementation response: {implement_response.output}")
+
+    # CRITICAL: Validate that implementation actually made changes
+    # This prevents false success reports from being accepted
+    result = subprocess.run(
+        ["git", "diff", "--name-only"],
+        capture_output=True,
+        text=True,
+        cwd=worktree_path,
+    )
+    changed_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
+
+    if not changed_files:
+        error_msg = ("❌ IMPLEMENTATION VALIDATION FAILED: Agent reported success but made NO file modifications.\n"
+                    "This indicates the /implement command did not actually execute the plan.\n"
+                    "The workflow cannot proceed without actual code changes.")
+        logger.error(error_msg)
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, AGENT_IMPLEMENTOR,
+                               error_msg + "\n\nPlease re-run the workflow - the agent will be given another attempt.")
+        )
+        # Exit with error to trigger retry
+        sys.exit(1)
+
+    logger.info(f"✅ Validation passed: {len(changed_files)} file(s) modified")
     make_issue_comment(
         issue_number,
-        format_issue_message(adw_id, AGENT_IMPLEMENTOR, "✅ Solution implemented")
+        format_issue_message(adw_id, AGENT_IMPLEMENTOR,
+                           f"✅ Solution implemented ({len(changed_files)} files modified)")
     )
-    
+
     # Fetch issue data for commit message generation
     logger.info("Fetching issue data for commit message")
     issue = fetch_issue(issue_number, repo_path)
