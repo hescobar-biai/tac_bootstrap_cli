@@ -344,7 +344,8 @@ def finalize_git_operations(
     if pr_url:
         logger.info(f"Found existing PR: {pr_url}")
         # Store PR URL in state for later use (important for ship phase)
-        state.set("pr_url", pr_url)
+        state.update(pr_url=pr_url)
+        state.save("finalize_git_operations")
         # Post PR link for easy reference
         if issue_number and adw_id:
             make_issue_comment(issue_number, f"{adw_id}_ops: ✅ Pull request: {pr_url}")
@@ -355,7 +356,8 @@ def finalize_git_operations(
 
             if pr_url:
                 # Store PR URL in state for later use (important for ship phase)
-                state.set("pr_url", pr_url)
+                state.update(pr_url=pr_url)
+                state.save("finalize_git_operations")
                 logger.info(f"Created PR: {pr_url}")
                 # Post new PR link
                 if adw_id:
