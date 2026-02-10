@@ -586,7 +586,7 @@ Each task MUST:
   - **Impacted Paths** (absolute paths only)
 - Be executable **without further clarification**
 - Avoid vague language such as:
-  - “update”, “improve”, “adjust”, “refactor”  
+  - "update", "improve", "adjust", "refactor"
   unless **what / where / why / expected outcome** are explicitly stated
 
 ---
@@ -618,7 +618,7 @@ Each template-related task MUST specify:
 
 ---
 
-### C) CLI README Update + Table (“Cuadro”)
+### C) CLI README Update + Table ("Cuadro")
 
 You MUST include tasks that update:
 
@@ -626,7 +626,7 @@ You MUST include tasks that update:
 
 Requirements:
 - Document all new commands, agents, templates, or workflows
-- Add or update a **Markdown table (“cuadro”)**, consistent with the existing README style
+- Add or update a **Markdown table ("cuadro")**, consistent with the existing README style
 - The task MUST specify:
   - Section header where the table is added
   - Column definitions
@@ -705,3 +705,4 @@ In your response:
 BEGIN.
 
 sammy
+test iso v3 ok
