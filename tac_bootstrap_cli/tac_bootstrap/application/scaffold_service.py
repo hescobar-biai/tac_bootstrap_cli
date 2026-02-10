@@ -359,6 +359,7 @@ class ScaffoldService:
             "classify_adw",
             "classify_issue",
             "cleanup_worktrees",
+            "create-gh-issue",
             "generate_branch_name",
             "install_worktree",
             # Test resolution commands
