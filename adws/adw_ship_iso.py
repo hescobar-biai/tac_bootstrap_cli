@@ -237,7 +237,7 @@ def manual_merge_to_target(branch_name: str, logger: logging.Logger) -> Tuple[bo
 
 def validate_state_completeness(state: ADWState, logger: logging.Logger) -> tuple[bool, list[str]]:
     """Validate that all fields in ADWState have values (not None).
-    
+
     Returns:
         tuple of (is_valid, missing_fields)
     """
@@ -250,9 +250,9 @@ def validate_state_completeness(state: ADWState, logger: logging.Logger) -> tupl
         "issue_class",
         "worktree_path",
     }
-    
+
     missing_fields = []
-    
+
     for field in expected_fields:
         value = state.get(field)
         if value is None:
@@ -260,8 +260,73 @@ def validate_state_completeness(state: ADWState, logger: logging.Logger) -> tupl
             logger.warning(f"Missing required field: {field}")
         else:
             logger.debug(f"✓ {field}: {value}")
-    
+
     return len(missing_fields) == 0, missing_fields
+
+
+def validate_pr_exists(branch_name: str, logger: logging.Logger) -> tuple[bool, Optional[str], Optional[str]]:
+    """Validate that PR exists for the branch before attempting merge.
+
+    Returns:
+        tuple of (pr_exists, pr_url, error_message)
+    """
+    try:
+        repo_url = get_repo_url()
+        repo_path = extract_repo_path(repo_url)
+    except Exception as e:
+        error_msg = f"Failed to get repo info: {e}"
+        logger.error(error_msg)
+        return False, None, error_msg
+
+    # Use gh CLI to check if PR exists
+    result = subprocess.run(
+        [
+            "gh",
+            "pr",
+            "list",
+            "--repo", repo_path,
+            "--head", branch_name,
+            "--json", "number,url,state",
+            "--limit", "1",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    if result.returncode != 0:
+        error_msg = f"Failed to check PR status: {result.stderr}"
+        logger.error(error_msg)
+        return False, None, error_msg
+
+    try:
+        prs = json.loads(result.stdout)
+        if not prs:
+            error_msg = f"No PR found for branch '{branch_name}'. The PR must be created in earlier phases."
+            logger.error(error_msg)
+            return False, None, error_msg
+
+        pr = prs[0]
+        pr_state = pr.get("state", "UNKNOWN")
+        pr_url = pr.get("url", "")
+
+        # Check if PR is in a valid state (not closed/merged already)
+        if pr_state.upper() == "MERGED":
+            error_msg = f"PR #{pr.get('number')} is already merged"
+            logger.warning(error_msg)
+            return True, pr_url, None  # Still return True since PR exists, just log warning
+
+        if pr_state.upper() == "CLOSED":
+            error_msg = f"PR #{pr.get('number')} is closed"
+            logger.error(error_msg)
+            return False, pr_url, error_msg
+
+        logger.info(f"✅ PR found: {pr_url} (state: {pr_state})")
+        return True, pr_url, None
+
+    except json.JSONDecodeError as e:
+        error_msg = f"Failed to parse PR response: {e}"
+        logger.error(error_msg)
+        return False, None, error_msg
 
 
 def main():
@@ -356,7 +421,7 @@ def main():
         sys.exit(1)
     
     logger.info("✅ State validation passed - all fields have values")
-    
+
     # Step 2: Validate worktree exists
     valid, error = validate_worktree(adw_id, state)
     if not valid:
@@ -366,18 +431,50 @@ def main():
             format_issue_message(adw_id, AGENT_SHIPPER, f"❌ Worktree validation failed: {error}")
         )
         sys.exit(1)
-    
+
     worktree_path = state.get("worktree_path")
     logger.info(f"✅ Worktree validated at: {worktree_path}")
-    
+
     # Step 3: Get branch name
     branch_name = state.get("branch_name")
     logger.info(f"Preparing to merge branch: {branch_name}")
-    
+
     make_issue_comment(
         issue_number,
         format_issue_message(adw_id, AGENT_SHIPPER, f"📋 State validation complete\n"
                            f"🔍 Preparing to merge branch: {branch_name}")
+    )
+
+    # Step 3.5: Validate PR exists before attempting merge (NEW - CRITICAL)
+    logger.info(f"Validating that PR exists for branch: {branch_name}...")
+    pr_exists, pr_url, pr_error = validate_pr_exists(branch_name, logger)
+
+    if not pr_exists:
+        error_msg = pr_error or "Unknown error validating PR"
+        logger.error(f"PR validation failed: {error_msg}")
+        make_issue_comment(
+            issue_number,
+            format_issue_message(adw_id, AGENT_SHIPPER,
+                               f"❌ **Cannot ship: PR not found**\n\n"
+                               f"Error: {error_msg}\n\n"
+                               f"The PR should have been created in earlier phases:\n"
+                               f"- adw_plan_iso.py (creates PR)\n"
+                               f"- adw_build_iso.py, adw_test_iso.py, adw_review_iso.py, adw_document_iso.py (update PR)\n\n"
+                               f"**Solution**: Please verify that:\n"
+                               f"1. Branch `{branch_name}` exists and is pushed to origin\n"
+                               f"2. No network/auth issues preventing PR creation\n"
+                               f"3. If PR was accidentally deleted, recreate it manually with `gh pr create`")
+        )
+        track_phase_update(adw_id, "merge", "failed", 0)
+        track_workflow_end(adw_id, "failed", error_msg)
+        close_bridge()
+        sys.exit(1)
+
+    logger.info(f"✅ PR validation passed: {pr_url}")
+    make_issue_comment(
+        issue_number,
+        format_issue_message(adw_id, AGENT_SHIPPER, f"✅ PR validation passed\n"
+                           f"📋 PR: {pr_url}")
     )
     
     # Step 4: Perform manual merge
