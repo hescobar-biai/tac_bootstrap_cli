@@ -2122,3 +2122,13 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When integrating aiosqlite async database operations
     - When validating database models with proper type hints
     - When configuring orchestrator in generated projects
+
+- app_docs/feature-chore_model_config_task_01_v3-model-ids-config.md
+  - Conditions:
+    - When working with model configuration in config.yml
+    - When implementing model selection or policy features
+    - When needing to specify full Claude model identifiers
+    - When extending agentic.model_policy configuration
+    - When pinning specific Claude model versions
+    - When testing specific model releases
+    - When implementing model ID override functionality
