@@ -702,7 +702,13 @@ def implement_plan(
 
     # Read the plan file to extract summary information
     try:
-        with open(plan_file, 'r', encoding='utf-8') as f:
+        # Resolve plan file path using working_dir if provided
+        if working_dir:
+            plan_file_path = os.path.join(working_dir, plan_file)
+        else:
+            plan_file_path = plan_file
+
+        with open(plan_file_path, 'r', encoding='utf-8') as f:
             plan_content = f.read()
             # Extract first 500 chars to show what's being planned
             plan_preview = plan_content[:500] if len(plan_content) > 500 else plan_content
