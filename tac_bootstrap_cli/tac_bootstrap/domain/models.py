@@ -25,7 +25,7 @@ Example usage:
 
 import re
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -304,6 +304,10 @@ class ModelPolicy(BaseModel):
     default: str = Field(default="sonnet", description="Default model for standard tasks")
     heavy: str = Field(default="opus", description="Model for complex/heavy tasks")
     fallback: str = Field(default="haiku", description="Fallback model when quota is exhausted")
+    # Optional: Fully qualified model IDs (if not set, uses defaults)
+    opus_model: Optional[str] = Field(default=None, description="Fully qualified Opus model ID")
+    sonnet_model: Optional[str] = Field(default=None, description="Fully qualified Sonnet model ID")
+    haiku_model: Optional[str] = Field(default=None, description="Fully qualified Haiku model ID")
 
 
 class TokenOptimizationConfig(BaseModel):

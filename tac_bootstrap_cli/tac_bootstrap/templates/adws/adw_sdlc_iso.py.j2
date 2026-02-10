@@ -31,7 +31,7 @@ import os
 
 # Add the parent directory to Python path to import modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from adw_modules.workflow_ops import ensure_adw_id, detect_relevant_docs
+from adw_modules.workflow_ops import ensure_adw_id, detect_relevant_docs, get_model_id
 from adw_modules.github import make_issue_comment, fetch_issue, get_repo_url, extract_repo_path
 from adw_modules.utils import setup_logger
 from adw_modules.state import ADWState
@@ -148,7 +148,7 @@ def main():
             logger.info("Plan phase already completed, skipping execution")
         else:
             track_phase_update(adw_id, "plan", "in_progress", 0)
-            agent_id = track_agent_start(adw_id, "adw_plan_iso", model="claude-sonnet-4-5-20250929")
+            agent_id = track_agent_start(adw_id, "adw_plan_iso", model=get_model_id("sonnet"))
             log_event("adw_plan_iso", f"Plan phase started for {adw_id}")
             plan_cmd = [
                 "uv",
@@ -201,7 +201,7 @@ def main():
             logger.info("Build phase already completed, skipping execution")
         else:
             track_phase_update(adw_id, "build", "in_progress", 1)
-            agent_id = track_agent_start(adw_id, "adw_build_iso", model="claude-sonnet-4-5-20250929")
+            agent_id = track_agent_start(adw_id, "adw_build_iso", model=get_model_id("sonnet"))
             log_event("adw_build_iso", f"Build phase started for {adw_id}")
             build_cmd = [
                 "uv",
@@ -237,7 +237,7 @@ def main():
             logger.info("Test phase already completed, skipping execution")
         else:
             track_phase_update(adw_id, "test", "in_progress", 2)
-            agent_id = track_agent_start(adw_id, "adw_test_iso", model="claude-sonnet-4-5-20250929")
+            agent_id = track_agent_start(adw_id, "adw_test_iso", model=get_model_id("sonnet"))
             log_event("adw_test_iso", f"Test phase started for {adw_id}")
             test_cmd = [
                 "uv",
@@ -274,7 +274,7 @@ def main():
             logger.info("Review phase already completed, skipping execution")
         else:
             track_phase_update(adw_id, "review", "in_progress", 3)
-            agent_id = track_agent_start(adw_id, "adw_review_iso", model="claude-sonnet-4-5-20250929")
+            agent_id = track_agent_start(adw_id, "adw_review_iso", model=get_model_id("sonnet"))
             log_event("adw_review_iso", f"Review phase started for {adw_id}")
             review_cmd = [
                 "uv",
@@ -314,7 +314,7 @@ def main():
             logger.info("Documentation phase already completed, skipping execution")
         else:
             track_phase_update(adw_id, "document", "in_progress", 4)
-            agent_id = track_agent_start(adw_id, "adw_document_iso", model="claude-sonnet-4-5-20250929")
+            agent_id = track_agent_start(adw_id, "adw_document_iso", model=get_model_id("sonnet"))
             log_event("adw_document_iso", f"Document phase started for {adw_id}")
             document_cmd = [
                 "uv",

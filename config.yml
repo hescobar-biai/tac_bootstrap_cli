@@ -40,6 +40,10 @@ agentic:
     default: "sonnet"
     heavy: "opus"
     fallback: "haiku"  # Fallback model when quota is exhausted
+    # Optional: Fully qualified model IDs (if not set, uses defaults)
+    opus_model: "claude-opus-4-5-20251101"
+    sonnet_model: "claude-sonnet-4-5-20250929"
+    haiku_model: "claude-haiku-4-5-20251001"
   worktrees:
     enabled: true
     max_parallel: 5
