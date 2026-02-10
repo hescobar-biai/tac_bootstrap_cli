@@ -44,8 +44,6 @@ from adw_modules.workflow_ops import format_issue_message, get_model_id
 from adw_modules.utils import setup_logger, check_env_vars
 from adw_modules.worktree_ops import validate_worktree
 from adw_modules.data_types import ADWStateData
-    init_bridge, close_bridge,
-)
 
 # Agent name constant
 AGENT_SHIPPER = "shipper"

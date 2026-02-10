@@ -368,7 +368,6 @@ def main():
                 print("Isolated documentation phase failed")
                 # Documentation failure shouldn't block shipping
                 print("WARNING: Documentation phase failed but continuing with shipping")
-            else:
 
             # Reload state after documentation completes
             state = ADWState(adw_id)
@@ -438,7 +437,6 @@ def main():
         raise  # Let sys.exit() propagate
     except Exception as e:
         raise
-    finally:
 
 
 if __name__ == "__main__":

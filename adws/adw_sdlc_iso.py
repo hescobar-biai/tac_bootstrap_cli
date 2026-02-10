@@ -218,7 +218,6 @@ def main():
                 print("Isolated test phase failed")
                 # Note: Continue anyway as some tests might be flaky
                 print("WARNING: Test phase failed but continuing with review")
-            else:
 
             # Reload state after test completes
             state = ADWState(adw_id)
@@ -322,7 +321,6 @@ def main():
         raise  # Let sys.exit() propagate
     except Exception as e:
         raise
-    finally:
 
 
 if __name__ == "__main__":
