@@ -219,7 +219,9 @@ def main():
 
             # Extract action from plan file (e.g., "add 'text' to file")
             try:
-                with open(plan_file, 'r') as f:
+                # Handle both relative and absolute paths
+                plan_path = plan_file if os.path.isabs(plan_file) else os.path.join(worktree_path, plan_file)
+                with open(plan_path, 'r') as f:
                     plan_content = f.read()
 
                 # Parse for "add" or "append" patterns
