@@ -44,11 +44,7 @@ from adw_modules.workflow_ops import format_issue_message, get_model_id
 from adw_modules.utils import setup_logger, check_env_vars
 from adw_modules.worktree_ops import validate_worktree
 from adw_modules.data_types import ADWStateData
-from adw_modules.adw_db_bridge import (
     init_bridge, close_bridge,
-    track_workflow_start, track_phase_update, track_workflow_end,
-    track_agent_start, track_agent_end,
-    log_event,
 )
 
 # Agent name constant
@@ -384,9 +380,6 @@ def main():
     logger.info(f"ADW Ship Iso starting - ID: {adw_id}, Issue: {issue_number}")
 
     # Initialize DB bridge for orchestrator dashboard tracking
-    init_bridge()
-    track_workflow_start(adw_id, "ship", issue_number, total_steps=1)
-    track_phase_update(adw_id, "merge", "in_progress", 0)
 
     # Track that this ADW workflow has run
     state.append_adw_id("adw_ship_iso")
@@ -465,9 +458,6 @@ def main():
                                f"2. No network/auth issues preventing PR creation\n"
                                f"3. If PR was accidentally deleted, recreate it manually with `gh pr create`")
         )
-        track_phase_update(adw_id, "merge", "failed", 0)
-        track_workflow_end(adw_id, "failed", error_msg)
-        close_bridge()
         sys.exit(1)
 
     logger.info(f"✅ PR validation passed: {pr_url}")
@@ -486,18 +476,11 @@ def main():
                            "Using manual git operations in main repository")
     )
 
-    agent_id = track_agent_start(adw_id, "adw_ship_iso", model=get_model_id("sonnet"))
-    log_event("adw_ship_iso", f"Ship merge started for {adw_id}")
 
     success, error = manual_merge_to_target(branch_name, logger)
 
     if not success:
         logger.error(f"Failed to merge: {error}")
-        track_agent_end(agent_id, "failed")
-        log_event("adw_ship_iso", f"Ship merge failed for {adw_id}", level="ERROR")
-        track_phase_update(adw_id, "merge", "failed", 0)
-        track_workflow_end(adw_id, "failed", error)
-        close_bridge()
         make_issue_comment(
             issue_number,
             format_issue_message(adw_id, AGENT_SHIPPER, f"❌ Failed to merge: {error}")
@@ -537,11 +520,6 @@ def main():
     state.save("adw_ship_iso")
 
     # Track successful completion in orchestrator DB
-    track_phase_update(adw_id, "merge", "completed", 1)
-    track_workflow_end(adw_id, "completed")
-    track_agent_end(agent_id, "completed")
-    log_event("adw_ship_iso", f"Ship workflow completed for {adw_id}")
-    close_bridge()
 
     # Post final state summary
     make_issue_comment(
