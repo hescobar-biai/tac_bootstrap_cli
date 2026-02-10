@@ -14,10 +14,13 @@ Read the entire plan file and understand:
 
 ### Step 2: EXECUTE EACH TASK IN ORDER
 For each task in the plan:
-1. **Use the appropriate tool**: Read, Edit, Write, Bash, etc.
-2. **Actually modify the files** - don't skip this
-3. **Show me the tool output** - prove you executed it
-4. **Do NOT claim completion without using tools**
+1. **FIRST**: Use Read to check current file content
+2. **THEN**: Use Edit or Write to make the modification
+3. **THEN**: Use Read again to confirm the change was applied
+4. **THEN**: Show the file content with the modification visible
+5. **CRITICAL**: Use tools EVERY TIME - don't skip to reporting
+
+⚠️ **IMPORTANT**: If you don't see tool execution output showing actual file content being modified, you failed.
 
 ### Step 3: VERIFY EACH CHANGE
 After each modification:
