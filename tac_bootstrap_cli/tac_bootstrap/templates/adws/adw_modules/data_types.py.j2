@@ -315,13 +315,19 @@ class ReviewIssue(BaseModel):
     """Individual review issue found during spec verification."""
 
     review_issue_number: int
-    screenshot_path: str  # Local file path to screenshot (e.g., "agents/ADW-123/reviewer/review_img/error.png")
-    screenshot_url: Optional[str] = (
-        None  # Public URL after upload (e.g., "https://domain.com/adw/ADW-123/review/error.png")
-    )
     issue_description: str
     issue_resolution: str
     issue_severity: Literal["skippable", "tech_debt", "blocker"]
+    screenshot_path: Optional[str] = (
+        None  # Local file path to screenshot (e.g., "agents/ADW-123/reviewer/review_img/error.png")
+    )
+    screenshot_url: Optional[str] = (
+        None  # Public URL after upload (e.g., "https://domain.com/adw/ADW-123/review/error.png")
+    )
+
+    class Config:
+        # Allow partial model updates - screenshot fields are truly optional
+        extra = "allow"
 
 
 class ReviewResult(BaseModel):

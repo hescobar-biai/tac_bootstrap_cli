@@ -6,8 +6,8 @@ Revisar trabajo realizado contra un archivo de especificación (specs/*.md) para
 
 adw_id: $ARGUMENT
 spec_file: $ARGUMENT
-agent_name: $ARGUMENT si se proporciona, de lo contrario usar 'review_agent'
-review_image_dir: `<absolute path to codebase>/agents/<adw_id>/<agent_name>/review_img/`
+agent_name: $ARGUMENT si se proporciona (OPCIONAL), de lo contrario usar 'review_agent'
+review_image_dir: `<absolute path to codebase>/agents/<adw_id>/<agent_name>/review_img/` (crea si no existe)
 
 ## Instructions
 
@@ -80,7 +80,9 @@ Después de completar la validación, generar DOS outputs:
             "review_issue_number": "number",
             "issue_description": "string",
             "issue_resolution": "string",
-            "issue_severity": "skippable|tech_debt|blocker"
+            "issue_severity": "skippable|tech_debt|blocker",
+            "screenshot_path": "null or string (OPTIONAL)",
+            "screenshot_url": "null or string (OPTIONAL)"
         }
     ]
 }
