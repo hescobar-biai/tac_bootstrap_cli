@@ -219,29 +219,61 @@ def main():
 
     # CRITICAL: Validate that implementation actually made changes
     # This prevents false success reports from being accepted
-    result = subprocess.run(
-        ["git", "diff", "--name-only"],
-        capture_output=True,
-        text=True,
-        cwd=worktree_path,
-    )
-    changed_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
+    # Retry up to 2 times if validation fails
+    max_build_retries = 2
+    build_attempt = 1
+    validation_passed = False
+    changed_files = []
 
-    if not changed_files or changed_files == ['']:
-        error_msg = ("❌ IMPLEMENTATION VALIDATION FAILED: Agent reported success but made NO file modifications.\n"
-                    "This indicates the /implement command did not actually execute the plan.\n"
-                    "The workflow cannot proceed without actual code changes.\n"
-                    "Check: `git diff --name-only` shows no files changed.")
-        logger.error(error_msg)
-        make_issue_comment(
-            issue_number,
-            format_issue_message(adw_id, AGENT_IMPLEMENTOR,
-                               error_msg + "\n\nPlease re-run the workflow - the agent will be given another attempt.")
+    while build_attempt <= max_build_retries and not validation_passed:
+        result = subprocess.run(
+            ["git", "diff", "--name-only"],
+            capture_output=True,
+            text=True,
+            cwd=worktree_path,
         )
-        # Exit with error to trigger retry
-        sys.exit(1)
+        changed_files = result.stdout.strip().split('\n') if result.stdout.strip() else []
 
-    logger.info(f"✅ Git validation passed: {len(changed_files)} file(s) modified")
+        if not changed_files or changed_files == ['']:
+            if build_attempt < max_build_retries:
+                # Retry: ask agent to try again with more explicit instructions
+                retry_msg = (f"⚠️ Build attempt {build_attempt} failed - no changes detected.\n"
+                           f"Retrying with explicit feedback (attempt {build_attempt + 1}/{max_build_retries})...\n\n"
+                           f"The /implement command was executed but made NO actual file changes.\n"
+                           f"This means: your tools (Edit, Write, Read) must be used to modify files.\n"
+                           f"Do NOT report success without using tools.\n"
+                           f"\nRetrying now...")
+                logger.warning(retry_msg)
+                make_issue_comment(issue_number, format_issue_message(adw_id, AGENT_IMPLEMENTOR, retry_msg))
+
+                # Retry implementation with fresh context
+                build_attempt += 1
+                implement_response = implement_plan(plan_file, adw_id, logger, working_dir=worktree_path, ai_docs_context=ai_docs_context)
+                state.accumulate_tokens(AGENT_IMPLEMENTOR, implement_response.token_usage)
+                state.save("adw_build_iso")
+
+                if not implement_response.success:
+                    error_msg = f"❌ Retry {build_attempt - 1} also failed: {implement_response.output}"
+                    logger.error(error_msg)
+                    make_issue_comment(issue_number, format_issue_message(adw_id, AGENT_IMPLEMENTOR, error_msg))
+                    sys.exit(1)
+            else:
+                # Final failure after all retries
+                error_msg = ("❌ IMPLEMENTATION VALIDATION FAILED (Final): Agent reported success but made NO file modifications.\n"
+                            "After multiple attempts, the workflow cannot proceed without actual code changes.\n"
+                            "The /implement command must use Edit, Write, or other tools to modify files.\n"
+                            "Check: `git diff --name-only` shows no files changed.")
+                logger.error(error_msg)
+                make_issue_comment(
+                    issue_number,
+                    format_issue_message(adw_id, AGENT_IMPLEMENTOR,
+                                       error_msg + "\n\n⚠️ Please review the plan and ensure it's clear.")
+                )
+                sys.exit(1)
+        else:
+            validation_passed = True
+
+    logger.info(f"✅ Build validation passed (attempt {build_attempt}): {len(changed_files)} file(s) modified")
 
     # ENHANCED: Validate content of modified files (check for expected text from spec)
     # Extract key requirements from plan file
