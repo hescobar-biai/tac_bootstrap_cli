@@ -228,24 +228,35 @@ def main():
                 import re
                 matches = []
 
-                # Look for quoted text that should be added
-                text_pattern = r'["\']([^"\']+)["\']'
-                texts = re.findall(text_pattern, plan_content)
+                # Look for patterns like: Agregar "text" al README or Add "text" to file
+                # First try: find lines with "Agregar" or "Add" and extract quoted text after it
+                add_lines = re.findall(r'(?:[Aa]gregar|[Aa]dd).*?["\']([^"\']+)["\']', plan_content)
 
-                # Look for files mentioned (.md, .txt, .py, etc.)
-                file_pattern = r'\b([\w\-/]+\.(md|txt|py|js|ts|json|yaml|yml))\b'
-                files = re.findall(file_pattern, plan_content)
+                # Also look for lines describing the task (e.g., "Agregar una nueva línea con el texto:")
+                # followed by quoted text
+                task_lines = re.findall(r'(?:texto|text):\s*["\']([^"\']+)["\']', plan_content, re.IGNORECASE)
 
-                # If we found text and files, try to match them
-                if texts and files:
-                    # Simple heuristic: use first text and first README-like file
-                    for file_match in files:
-                        file_name = file_match[0]
-                        if 'readme' in file_name.lower() or file_name.endswith('.md'):
-                            matches.append((texts[0], file_name.split('/')[-1]))  # Use just filename
-                            break
+                # Combine all found texts (prefer longer ones to exclude "number", "version", etc.)
+                all_texts = add_lines + task_lines
+                texts = [t for t in all_texts if len(t) > 5]  # Filter out short strings like "number"
 
-                logger.debug(f"Parsed patterns from plan: texts={texts}, files={[f[0] for f in files]}, matches={matches}")
+                # Look for README files specifically
+                readme_files = re.findall(r'((?:\./)?[Rr][Ee][Aa][Dd][Mm][Ee]\.md)', plan_content)
+
+                # If we found text and files, create matches
+                if texts and readme_files:
+                    for readme_file in readme_files:
+                        # Use first substantial text found
+                        matches.append((texts[0], readme_file.lstrip('./')))
+                        break
+                elif texts and not readme_files:
+                    # Fallback: look for any .md file in the plan
+                    file_pattern = r'\b([\w\-/]*README[^`\s]*\.md)\b'
+                    files = re.findall(file_pattern, plan_content, re.IGNORECASE)
+                    if files:
+                        matches.append((texts[0], files[0].split('/')[-1]))
+
+                logger.debug(f"Parsed patterns from plan: add_lines={add_lines}, task_lines={task_lines}, texts={texts}, matches={matches}")
 
                 if matches:
                     logger.info(f"Found {len(matches)} direct tasks to execute")
