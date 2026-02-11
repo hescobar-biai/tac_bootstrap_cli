@@ -3,6 +3,10 @@
 Uses Rich for beautiful terminal UI with prompts and selections.
 Provides guided step-by-step configuration for both new projects
 and adding agentic layers to existing repositories.
+
+Includes both the standard wizard (run_init_wizard) and the enhanced
+wizard (run_enhanced_init_wizard) with Rich UI components, directory tree
+preview, real-time validation feedback, and confirmation summary.
 """
 
 from __future__ import annotations
@@ -43,6 +47,7 @@ from tac_bootstrap.domain.models import (
     get_frameworks_for_language,
     get_package_managers_for_language,
 )
+from tac_bootstrap.infrastructure.ui_components import UIComponents
 
 # Global console instance for consistent output
 console = Console()
@@ -394,6 +399,279 @@ def run_add_agentic_wizard(
     if not Confirm.ask("\nProceed with this configuration?", default=True):
         console.print("[yellow]Aborted.[/yellow]")
         raise SystemExit(0)
+
+    return config
+
+
+# ============================================================================
+# Enhanced Init Wizard with Rich UI Components
+# ============================================================================
+
+
+def get_frameworks_for_language_display(language: str) -> List[str]:
+    """Get available framework display names for a given language string.
+
+    Maps a language string to its valid frameworks and returns their
+    display-friendly names (capitalized).
+
+    Args:
+        language: Language string value (e.g., "python", "typescript")
+
+    Returns:
+        List of framework display names for the language
+    """
+    language_map = {
+        "python": ["FastAPI", "Django", "Flask", "None"],
+        "typescript": ["Next.js", "Express", "NestJS", "React", "Vue", "None"],
+        "javascript": ["Next.js", "Express", "React", "Vue", "None"],
+        "go": ["Gin", "Echo", "None"],
+        "rust": ["Axum", "Actix", "None"],
+        "java": ["Spring", "None"],
+    }
+    return language_map.get(language, ["None"])
+
+
+def get_managers_for_language_display(language: str) -> List[str]:
+    """Get package manager display names for a given language string.
+
+    Args:
+        language: Language string value (e.g., "python", "typescript")
+
+    Returns:
+        List of package manager display names for the language
+    """
+    manager_map = {
+        "python": ["uv", "poetry", "pip", "pipenv"],
+        "typescript": ["pnpm", "npm", "yarn", "bun"],
+        "javascript": ["pnpm", "npm", "yarn", "bun"],
+        "go": ["go"],
+        "rust": ["cargo"],
+        "java": ["maven", "gradle"],
+    }
+    return manager_map.get(language, [])
+
+
+def _validate_project_name(name: str) -> tuple[bool, str]:
+    """Validate project name for safe directory and package naming.
+
+    Checks that the name is non-empty, contains only valid characters,
+    and can be used as a directory name.
+
+    Args:
+        name: Project name to validate
+
+    Returns:
+        Tuple of (is_valid, error_message). If valid, error_message is empty.
+    """
+    if not name or not name.strip():
+        return False, "Project name cannot be empty"
+
+    sanitized = name.strip().lower().replace(" ", "-")
+
+    # Check for valid slug format
+    if not re.match(r"^[a-z][a-z0-9-]*$", sanitized):
+        return (
+            False,
+            "Project name must start with a letter and contain only "
+            "lowercase letters, numbers, and hyphens.",
+        )
+
+    # Check reasonable length
+    if len(sanitized) > 100:
+        return False, "Project name must be 100 characters or fewer"
+
+    return True, ""
+
+
+def run_enhanced_init_wizard(
+    name: str,
+    language: Optional[Language] = None,
+    framework: Optional[Framework] = None,
+    package_manager: Optional[PackageManager] = None,
+    architecture: Optional[Architecture] = None,
+    with_orchestrator: bool = False,
+) -> Optional[TACConfig]:
+    """Enhanced interactive wizard with Rich UI components and previews.
+
+    Provides a multi-step wizard with:
+    1. Branded banner
+    2. Step progress headers
+    3. Real-time validation feedback
+    4. Smart default suggestions
+    5. Directory tree preview
+    6. Configuration summary
+    7. Final confirmation
+
+    The flow is:
+    Step 1: Project name validation (with feedback)
+    Step 2: Language selection
+    Step 3: Framework selection (filtered by language)
+    Step 4: Architecture selection
+    Step 5: Package manager (auto-suggested)
+    Step 6: Orchestrator enabled?
+    Step 7: Preview directory tree + configuration summary + confirm
+
+    Args:
+        name: Project name (already provided via CLI)
+        language: Pre-selected language (or None to ask)
+        framework: Pre-selected framework (or None to ask)
+        package_manager: Pre-selected package manager (or None to ask)
+        architecture: Pre-selected architecture (or None to ask)
+        with_orchestrator: Whether to include orchestrator components
+
+    Returns:
+        Configured TACConfig ready for scaffolding, or None if user cancels.
+
+    Raises:
+        SystemExit: If user cancels at confirmation prompt
+    """
+    total_steps = 7
+
+    # Banner
+    UIComponents.show_banner(
+        "TAC Bootstrap Project Generator",
+        "Interactive Setup Wizard",
+    )
+
+    # Step 1: Validate project name
+    UIComponents.show_step_header(1, total_steps, "Project Name")
+
+    is_valid, error_msg = _validate_project_name(name)
+    if is_valid:
+        UIComponents.show_validation_feedback("Project name", True, f"'{name}' is valid")
+    else:
+        UIComponents.show_validation_feedback("Project name", False, error_msg)
+        console.print(f"[red]Error: {error_msg}[/red]")
+        raise SystemExit(1)
+
+    # Step 2: Language
+    if language is None:
+        UIComponents.show_step_header(2, total_steps, "Programming Language")
+        language = select_from_enum(
+            "What programming language?",
+            Language,
+            default=Language.PYTHON,
+        )
+    else:
+        UIComponents.show_step_header(2, total_steps, "Programming Language")
+    UIComponents.show_validation_feedback("Language", True, language.value)
+
+    # Step 3: Framework (filtered by language)
+    if framework is None:
+        UIComponents.show_step_header(3, total_steps, "Framework")
+        valid_frameworks = get_frameworks_for_language(language)
+        framework = select_from_enum(
+            "What framework?",
+            Framework,
+            default=Framework.NONE,
+            filter_fn=lambda f: f in valid_frameworks,
+        )
+    else:
+        UIComponents.show_step_header(3, total_steps, "Framework")
+    UIComponents.show_validation_feedback("Framework", True, framework.value)
+
+    # Step 4: Architecture
+    if architecture is None:
+        UIComponents.show_step_header(4, total_steps, "Architecture")
+        architecture = select_from_enum(
+            "What architecture pattern?",
+            Architecture,
+            default=Architecture.SIMPLE,
+        )
+    else:
+        UIComponents.show_step_header(4, total_steps, "Architecture")
+    UIComponents.show_validation_feedback("Architecture", True, architecture.value)
+
+    # Step 5: Package Manager (auto-suggested based on language)
+    if package_manager is None:
+        UIComponents.show_step_header(5, total_steps, "Package Manager")
+        valid_managers = get_package_managers_for_language(language)
+        default_pm = valid_managers[0] if valid_managers else None
+        package_manager = select_from_enum(
+            "What package manager?",
+            PackageManager,
+            default=default_pm,
+            filter_fn=lambda p: p in valid_managers,
+        )
+    else:
+        UIComponents.show_step_header(5, total_steps, "Package Manager")
+    UIComponents.show_validation_feedback("Package Manager", True, package_manager.value)
+
+    # Step 6: Orchestrator
+    UIComponents.show_step_header(6, total_steps, "AI Developer Workflows (ADW)")
+    if not with_orchestrator:
+        with_orchestrator = Confirm.ask("Enable ADW orchestrator?", default=False)
+    orchestrator_status = "Enabled" if with_orchestrator else "Disabled"
+    UIComponents.show_validation_feedback("Orchestrator", True, orchestrator_status)
+
+    # Commands Configuration (smart defaults)
+    console.print("\n[bold]Commands Configuration[/bold]")
+    console.print("[dim]These commands will be used by Claude Code and ADW workflows[/dim]\n")
+
+    default_commands = get_default_commands(language, package_manager)
+
+    start_cmd = Prompt.ask(
+        "  Start command",
+        default=default_commands.get("start", ""),
+    )
+    test_cmd = Prompt.ask(
+        "  Test command",
+        default=default_commands.get("test", ""),
+    )
+    lint_cmd = Prompt.ask(
+        "  Lint command (optional)",
+        default=default_commands.get("lint", ""),
+    )
+
+    # Worktrees
+    use_worktrees = Confirm.ask(
+        "\nEnable git worktrees for parallel workflows?",
+        default=True,
+    )
+
+    # Target Branch
+    target_branch = Prompt.ask(
+        "Target branch for merge/push (main, master, develop)",
+        default="main",
+    )
+
+    # Build configuration object
+    config = TACConfig(
+        project=ProjectSpec(
+            name=name,
+            mode=ProjectMode.NEW,
+            language=language,
+            framework=framework,
+            architecture=architecture,
+            package_manager=package_manager,
+        ),
+        paths=PathsSpec(
+            app_root="src" if architecture != Architecture.SIMPLE else ".",
+        ),
+        commands=CommandsSpec(
+            start=start_cmd,
+            test=test_cmd,
+            lint=lint_cmd,
+        ),
+        agentic=AgenticSpec(
+            target_branch=target_branch,
+            worktrees=WorktreeConfig(enabled=use_worktrees, max_parallel=5),
+        ),
+        claude=ClaudeConfig(
+            settings=ClaudeSettings(project_name=name),
+        ),
+        orchestrator=OrchestratorConfig(enabled=with_orchestrator),
+    )
+
+    # Step 7: Preview and confirmation
+    UIComponents.show_step_header(7, total_steps, "Project Preview")
+    UIComponents.show_project_tree_preview(config)
+    UIComponents.show_configuration_summary(config)
+
+    # Final confirmation
+    if not Confirm.ask("\n[bold]Create project with this configuration?[/bold]", default=True):
+        console.print("[yellow]Project creation cancelled.[/yellow]")
+        return None
 
     return config
 
