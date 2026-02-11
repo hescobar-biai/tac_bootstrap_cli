@@ -68,7 +68,7 @@ agentic:
   token_optimization:
     max_issue_body_length: 2000  # Truncate issue body to reduce token usage
     max_file_reference_size: 5000  # Max chars per referenced file
-    max_clarification_length: 1000  # Max chars for clarification responses
+    max_clarification_length: 3000  # Max chars for clarification responses
     max_docs_planning: 2  # Max documentation files to load in planning phase
     max_summary_tokens_planning: 200  # Max tokens per doc summary in planning
     max_file_references: 3  # Max number of files to load from issue references

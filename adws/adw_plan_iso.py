@@ -249,7 +249,7 @@ def main():
         logger.info(f"Loading AI documentation for {len(topics)} topic(s): {', '.join(topics)}")
         make_issue_comment(
             issue_number,
-            format_issue_message(adw_id, "ops", f"📚 Loading AI documentation: {', '.join(topics)} (TAC-9 optimized)"),
+            format_issue_message(adw_id, "ops", f"📚 Loading AI documentation: {', '.join(topics)} "),
         )
 
         # Load each topic and concatenate results
