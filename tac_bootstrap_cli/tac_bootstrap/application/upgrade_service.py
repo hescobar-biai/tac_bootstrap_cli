@@ -212,8 +212,12 @@ class UpgradeService:
         if self.config_path.exists():
             shutil.copy2(self.config_path, backup_dir / "config.yml")
 
-        # Clean up old backups (keep only last 3)
-        self._cleanup_old_backups(keep_count=3)
+        # Clean up old backups (keep based on config setting)
+        keep_count = 3  # Default value
+        config = self.load_existing_config()
+        if config and config.bootstrap and hasattr(config.bootstrap, 'backup_retention'):
+            keep_count = config.bootstrap.backup_retention
+        self._cleanup_old_backups(keep_count=keep_count)
 
         return backup_dir
 

@@ -112,3 +112,4 @@ bootstrap:
   initial_commit: false
   license: "MIT"
   readme: true
+  backup_retention: 3  # Number of backups to keep during upgrade (1-10)

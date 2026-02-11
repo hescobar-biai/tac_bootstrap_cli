@@ -452,13 +452,19 @@ class BootstrapConfig(BaseModel):
     """
     Bootstrap options for new projects.
 
-    Controls what gets created during project initialization.
+    Controls what gets created during project initialization and upgrade behavior.
     """
 
     create_git_repo: bool = Field(default=True, description="Initialize git repository")
     initial_commit: bool = Field(default=True, description="Create initial commit")
     license: str = Field(default="MIT", description="License type (MIT, Apache-2.0, etc.)")
     readme: bool = Field(default=True, description="Generate README.md")
+    backup_retention: int = Field(
+        default=3,
+        description="Number of backup directories to keep during upgrade",
+        ge=1,
+        le=10
+    )
 
 
 class OrchestratorConfig(BaseModel):
