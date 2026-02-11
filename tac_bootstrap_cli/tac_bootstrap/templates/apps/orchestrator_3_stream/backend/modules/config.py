@@ -83,19 +83,50 @@ CORS_ORIGINS = os.getenv(
 ).split(",")
 
 # ============================================================================
-# AGENT CONFIGURATION
+# AGENT CONFIGURATION - MODEL RESOLUTION
 # ============================================================================
 
-# Default model for agents (Opus is the primary model)
-DEFAULT_MODEL = "claude-opus-4-5-20251101"
+def get_model_id(model_type: str) -> str:
+    """
+    Get Claude model ID with 3-tier resolution.
 
-FAST_MODEL = "claude-haiku-4-5-20251001"
+    Resolution order:
+    1. Environment variable (ANTHROPIC_DEFAULT_{TYPE}_MODEL) - highest priority
+    2. Hardcoded default - fallback
+
+    Args:
+        model_type: "opus", "sonnet", or "haiku"
+
+    Returns:
+        Full Claude model ID (e.g., "claude-opus-4-5-20251101")
+    """
+    # Tier 1: Environment variable
+    env_var = f"ANTHROPIC_DEFAULT_{model_type.upper()}_MODEL"
+    env_value = os.getenv(env_var)
+    if env_value:
+        return env_value
+
+    # Tier 2: Hardcoded defaults
+    defaults = {
+        "opus": "claude-opus-4-5-20251101",
+        "sonnet": "claude-sonnet-4-5-20250929",
+        "haiku": "claude-haiku-4-5-20251001",
+    }
+    return defaults.get(model_type, "claude-opus-4-5-20251101")
+
+
+# Default model for agents (Opus is the primary model)
+# Resolved dynamically based on environment and config
+DEFAULT_MODEL = get_model_id("opus")
+
+# Fast model for quick operations (Haiku)
+FAST_MODEL = get_model_id("haiku")
 
 # Available models
 AVAILABLE_MODELS = [
-    "claude-opus-4-5-20251101",
-    "claude-sonnet-4-5-20250929",
-    "claude-haiku-4-5-20251001",
+    get_model_id("opus"),
+    get_model_id("sonnet"),
+    get_model_id("haiku"),
 ]
 
 # ============================================================================

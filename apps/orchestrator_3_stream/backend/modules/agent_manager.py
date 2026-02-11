@@ -171,12 +171,12 @@ class AgentManager:
                 model_input = args.get("model", config.DEFAULT_AGENT_MODEL)
                 subagent_template = args.get("subagent_template")
 
-                # Model alias mapping
+                # Model alias mapping (dynamically resolved)
                 model_aliases = {
-                    "opus": "claude-opus-4-5-20251101",
-                    "sonnet": "claude-sonnet-4-5-20250929",
-                    "haiku": "claude-haiku-4-5-20251001",
-                    "fast": "claude-haiku-4-5-20251001",  # Alias for haiku
+                    "opus": config.get_model_id("opus"),
+                    "sonnet": config.get_model_id("sonnet"),
+                    "haiku": config.get_model_id("haiku"),
+                    "fast": config.get_model_id("haiku"),  # Alias for haiku
                 }
 
                 # Resolve model alias or use as-is

@@ -19,6 +19,7 @@ from .autocomplete_models import (
     PreviousCompletionAutocomplete,
 )
 from . import database
+from . import config
 
 # Maximum number of codebase files to include in autocomplete context
 # Captures all files from git but only sends first N to keep prompt size manageable
@@ -186,7 +187,7 @@ class AutocompleteAgent:
         # Build ClaudeAgentOptions
         options_dict = {
             "system_prompt": placeholder_system_prompt,
-            "model": "claude-haiku-4-5-20251001",  # LATEST HAIKU MODEL
+            "model": config.get_model_id("haiku"),  # Fast model for autocomplete (dynamically resolved)
             "cwd": self.working_dir,
         }
 
