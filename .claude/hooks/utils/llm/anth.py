@@ -12,6 +12,23 @@ import sys
 from dotenv import load_dotenv
 
 
+def get_haiku_model():
+    """
+    Get Haiku model ID with 2-tier resolution.
+
+    Resolution order:
+    1. Environment variable (ANTHROPIC_DEFAULT_HAIKU_MODEL)
+    2. Hardcoded default
+    """
+    # Tier 1: Environment variable
+    env_model = os.getenv('ANTHROPIC_DEFAULT_HAIKU_MODEL')
+    if env_model:
+        return env_model
+
+    # Tier 2: Hardcoded default
+    return "claude-3-5-haiku-20241022"
+
+
 def prompt_llm(prompt_text):
     """
     Base Anthropic LLM prompting method using fastest model.
@@ -34,7 +51,7 @@ def prompt_llm(prompt_text):
         client = anthropic.Anthropic(api_key=api_key)
 
         message = client.messages.create(
-            model="claude-3-5-haiku-20241022",  # Fastest Anthropic model
+            model=get_haiku_model(),  # Fastest Anthropic model (dynamically resolved)
             max_tokens=100,
             temperature=0.7,
             messages=[{"role": "user", "content": prompt_text}],
