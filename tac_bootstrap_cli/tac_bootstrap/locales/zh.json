@@ -1,0 +1,181 @@
+{
+  "cli": {
+    "welcome": "欢迎使用 TAC Bootstrap",
+    "version": "TAC Bootstrap v{v}",
+    "description": "使用TAC模式为Claude Code生成Agentic Layer",
+    "success": "操作成功完成",
+    "error": "发生错误",
+    "cancelled": "操作已取消",
+    "confirm": "是否继续？",
+    "yes": "是",
+    "no": "否"
+  },
+  "commands": {
+    "init": {
+      "name": "初始化",
+      "description": "使用Agentic Layer创建新项目",
+      "success": "项目创建成功！",
+      "dry_run": "模拟运行 - 预览",
+      "target_dir": "目标目录",
+      "project_name": "项目名称",
+      "language": "语言",
+      "framework": "框架",
+      "package_manager": "包管理器",
+      "architecture": "架构",
+      "would_create": "将创建",
+      "next_steps": "后续步骤",
+      "files_created": "已创建文件",
+      "dirs_created": "已创建目录"
+    },
+    "add_agentic": {
+      "name": "添加Agentic",
+      "description": "将Agentic Layer注入现有仓库",
+      "success": "Agentic Layer添加成功！",
+      "detection": "自动检测结果",
+      "repository": "仓库"
+    },
+    "doctor": {
+      "name": "诊断",
+      "description": "验证Agentic Layer设置",
+      "healthy": "所有检查均通过！",
+      "unhealthy": "检测到问题",
+      "diagnosing": "诊断中"
+    },
+    "validate": {
+      "name": "验证",
+      "description": "验证项目配置和要求",
+      "all_passed": "所有验证均通过！",
+      "failed": "验证失败",
+      "with_warnings": "验证通过，有{count}个警告"
+    },
+    "upgrade": {
+      "name": "升级",
+      "description": "升级到最新TAC Bootstrap版本",
+      "up_to_date": "项目已是最新版本！",
+      "current_version": "当前版本",
+      "target_version": "目标版本"
+    },
+    "generate": {
+      "name": "生成",
+      "description": "生成代码工件",
+      "entity_success": "实体生成成功！",
+      "entity": "实体",
+      "capability": "能力"
+    },
+    "telemetry": {
+      "name": "遥测",
+      "description": "管理匿名使用跟踪",
+      "enabled": "遥测已启用",
+      "disabled": "遥测已禁用",
+      "cleared": "遥测数据已清除"
+    },
+    "config": {
+      "name": "配置",
+      "description": "管理CLI配置",
+      "set_success": "配置已更新：{key} = {value}",
+      "get_value": "{key}的当前值：{value}",
+      "list_title": "当前配置",
+      "unknown_key": "未知配置键：{key}"
+    },
+    "search": {
+      "name": "搜索",
+      "description": "搜索命令、模板和功能",
+      "no_results": "未找到'{query}'的结果",
+      "results_title": "搜索结果",
+      "found_count": "找到{count}个结果"
+    },
+    "snapshot": {
+      "name": "快照",
+      "description": "管理项目快照",
+      "created": "快照'{name}'创建成功",
+      "restored": "快照'{name}'恢复成功",
+      "deleted": "快照'{name}'已删除",
+      "not_found": "未找到快照'{name}'",
+      "list_title": "项目快照",
+      "no_snapshots": "未找到快照"
+    },
+    "ai": {
+      "name": "AI生成",
+      "description": "AI辅助代码生成",
+      "generating": "正在使用AI辅助生成代码...",
+      "success": "代码生成成功",
+      "api_key_missing": "未配置Claude API密钥",
+      "suggestion": "AI建议"
+    },
+    "learn": {
+      "name": "学习",
+      "description": "交互式学习和教程",
+      "topic_title": "学习：{topic}",
+      "tutorial_title": "教程：{type}",
+      "available_topics": "可用主题"
+    },
+    "team": {
+      "name": "团队",
+      "description": "团队协作功能",
+      "shared": "已与{user}共享项目",
+      "synced": "已与团队同步更改",
+      "notification_sent": "已向团队发送通知"
+    },
+    "metrics": {
+      "name": "指标",
+      "description": "项目分析和指标",
+      "generating": "正在生成项目指标...",
+      "title": "项目指标",
+      "complexity": "代码复杂度",
+      "coverage": "测试覆盖率",
+      "health_score": "健康评分"
+    },
+    "recommend": {
+      "name": "推荐",
+      "description": "智能改进建议",
+      "title": "推荐",
+      "no_recommendations": "目前没有推荐",
+      "found": "找到{count}条推荐"
+    },
+    "community": {
+      "name": "社区",
+      "description": "社区插件和模板",
+      "shared": "已成功分享到社区注册表",
+      "published": "模板已发布到社区",
+      "browse_title": "社区模板"
+    },
+    "dashboard": {
+      "name": "仪表盘",
+      "description": "项目管理Web仪表盘",
+      "starting": "正在端口{port}上启动Web仪表盘...",
+      "stopping": "正在停止Web仪表盘...",
+      "running": "仪表盘运行在 http://localhost:{port}",
+      "stopped": "仪表盘已停止"
+    }
+  },
+  "errors": {
+    "not_found": "未找到：{item}",
+    "invalid_config": "无效配置：{detail}",
+    "permission_denied": "权限被拒绝：{path}",
+    "network_error": "网络错误：{detail}",
+    "api_error": "API错误：{detail}",
+    "file_exists": "文件已存在：{path}",
+    "dir_not_exists": "目录不存在：{path}",
+    "unsupported_language": "不支持的语言：{lang}。支持的语言：{supported}",
+    "validation_failed": "验证失败，{count}个错误"
+  },
+  "labels": {
+    "status": "状态",
+    "location": "位置",
+    "created": "已创建",
+    "modified": "已修改",
+    "deleted": "已删除",
+    "errors": "错误",
+    "warnings": "警告",
+    "info": "信息",
+    "total": "总计",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "preview": "预览",
+    "success": "成功",
+    "failed": "失败",
+    "pending": "待处理",
+    "running": "运行中",
+    "completed": "已完成"
+  }
+}

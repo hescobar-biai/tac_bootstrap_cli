@@ -1,0 +1,12 @@
+name: example-plugin
+version: "1.0.0"
+author: TAC Bootstrap Team
+description: Example plugin demonstrating the TAC Bootstrap plugin system
+hooks:
+  - post_project_create
+  - pre_scaffold
+  - post_scaffold
+dependencies: []
+config:
+  greeting: "Hello from example plugin!"
+  verbose: true

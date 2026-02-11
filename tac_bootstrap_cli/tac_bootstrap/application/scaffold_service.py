@@ -7,11 +7,16 @@ Invariants: Plans are idempotent, templates must exist, output directory must be
             expert templates follow 3-component pattern
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from tac_bootstrap.application.exceptions import ScaffoldValidationError
+
+if TYPE_CHECKING:
+    from tac_bootstrap.infrastructure.telemetry import TelemetryService
 from tac_bootstrap.application.validation_service import ValidationService
 from tac_bootstrap.domain.models import Architecture, Framework, TACConfig
 from tac_bootstrap.domain.plan import (
@@ -49,15 +54,18 @@ class ScaffoldService:
         self,
         template_repo: Optional[TemplateRepository] = None,
         validation_service: Optional[ValidationService] = None,
+        telemetry: Optional["TelemetryService"] = None,
     ):
         """Initialize scaffold service.
 
         Args:
             template_repo: Template repository (created if not provided)
             validation_service: Validation service (created if not provided)
+            telemetry: Optional TelemetryService instance for usage tracking
         """
         self.template_repo = template_repo or TemplateRepository()
         self.validation_service = validation_service or ValidationService(self.template_repo)
+        self.telemetry = telemetry
 
     def build_plan(
         self,
@@ -73,6 +81,9 @@ class ScaffoldService:
         Returns:
             ScaffoldPlan with all operations to perform
         """
+        import time
+
+        start_time = time.time()
         plan = ScaffoldPlan()
 
         # Add directory structure
@@ -126,6 +137,11 @@ class ScaffoldService:
                 template="Makefile.j2",
                 reason="Orchestrator build and run commands",
             )
+
+        # Track build_plan performance
+        duration_ms = (time.time() - start_time) * 1000
+        if self.telemetry:
+            self.telemetry.track_performance("scaffold_plan_build", duration_ms)
 
         return plan
 
@@ -1291,11 +1307,14 @@ class ScaffoldService:
         Returns:
             ApplyResult with statistics and any errors
         """
+        import time
         from datetime import datetime, timezone
 
         from rich.console import Console
 
         from tac_bootstrap.infrastructure.fs import FileSystem
+
+        apply_start_time = time.time()
 
         # Pre-scaffold validation gate
         console = Console()
@@ -1398,5 +1417,28 @@ class ScaffoldService:
         if result.errors:
             result.success = False
             result.error = f"{len(result.errors)} error(s) occurred"
+
+        # Track scaffold application via telemetry
+        apply_duration_ms = (time.time() - apply_start_time) * 1000
+        if self.telemetry:
+            self.telemetry.track_event(
+                "scaffold_applied",
+                {
+                    "success": result.success,
+                    "files_created": result.files_created,
+                    "directories_created": result.directories_created,
+                    "files_skipped": result.files_skipped,
+                    "files_overwritten": result.files_overwritten,
+                    "duration_ms": round(apply_duration_ms, 2),
+                },
+            )
+            if not result.success:
+                self.telemetry.track_error(
+                    RuntimeError("scaffold_apply_errors"),
+                    {
+                        "operation": "scaffold_apply",
+                        "error_count": len(result.errors),
+                    },
+                )
 
         return result

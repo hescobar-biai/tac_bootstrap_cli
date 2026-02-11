@@ -1,0 +1,181 @@
+{
+  "cli": {
+    "welcome": "TAC Bootstrap へようこそ",
+    "version": "TAC Bootstrap v{v}",
+    "description": "TACパターンを使用してClaude Code用のAgentic Layerを生成します",
+    "success": "操作が正常に完了しました",
+    "error": "エラーが発生しました",
+    "cancelled": "操作がキャンセルされました",
+    "confirm": "続行しますか？",
+    "yes": "はい",
+    "no": "いいえ"
+  },
+  "commands": {
+    "init": {
+      "name": "初期化",
+      "description": "Agentic Layerで新しいプロジェクトを作成",
+      "success": "プロジェクトが正常に作成されました！",
+      "dry_run": "ドライラン - プレビュー",
+      "target_dir": "対象ディレクトリ",
+      "project_name": "プロジェクト名",
+      "language": "言語",
+      "framework": "フレームワーク",
+      "package_manager": "パッケージマネージャー",
+      "architecture": "アーキテクチャ",
+      "would_create": "作成予定",
+      "next_steps": "次のステップ",
+      "files_created": "作成されたファイル",
+      "dirs_created": "作成されたディレクトリ"
+    },
+    "add_agentic": {
+      "name": "Agentic追加",
+      "description": "既存のリポジトリにAgentic Layerを注入",
+      "success": "Agentic Layerが正常に追加されました！",
+      "detection": "自動検出結果",
+      "repository": "リポジトリ"
+    },
+    "doctor": {
+      "name": "診断",
+      "description": "Agentic Layer設定を検証",
+      "healthy": "すべてのチェックに合格しました！",
+      "unhealthy": "問題が検出されました",
+      "diagnosing": "診断中"
+    },
+    "validate": {
+      "name": "検証",
+      "description": "プロジェクト設定と要件を検証",
+      "all_passed": "すべての検証に合格しました！",
+      "failed": "検証失敗",
+      "with_warnings": "{count}件の警告付きで検証合格"
+    },
+    "upgrade": {
+      "name": "アップグレード",
+      "description": "最新のTAC Bootstrapバージョンにアップグレード",
+      "up_to_date": "プロジェクトは最新です！",
+      "current_version": "現在のバージョン",
+      "target_version": "対象バージョン"
+    },
+    "generate": {
+      "name": "生成",
+      "description": "コードアーティファクトを生成",
+      "entity_success": "エンティティが正常に生成されました！",
+      "entity": "エンティティ",
+      "capability": "機能"
+    },
+    "telemetry": {
+      "name": "テレメトリ",
+      "description": "匿名使用追跡を管理",
+      "enabled": "テレメトリが有効になりました",
+      "disabled": "テレメトリが無効になりました",
+      "cleared": "テレメトリデータが削除されました"
+    },
+    "config": {
+      "name": "設定",
+      "description": "CLI設定を管理",
+      "set_success": "設定が更新されました: {key} = {value}",
+      "get_value": "{key}の現在の値: {value}",
+      "list_title": "現在の設定",
+      "unknown_key": "不明な設定キー: {key}"
+    },
+    "search": {
+      "name": "検索",
+      "description": "コマンド、テンプレート、機能を検索",
+      "no_results": "'{query}'の結果が見つかりません",
+      "results_title": "検索結果",
+      "found_count": "{count}件の結果が見つかりました"
+    },
+    "snapshot": {
+      "name": "スナップショット",
+      "description": "プロジェクトのスナップショットを管理",
+      "created": "スナップショット'{name}'が正常に作成されました",
+      "restored": "スナップショット'{name}'が正常に復元されました",
+      "deleted": "スナップショット'{name}'が削除されました",
+      "not_found": "スナップショット'{name}'が見つかりません",
+      "list_title": "プロジェクトのスナップショット",
+      "no_snapshots": "スナップショットが見つかりません"
+    },
+    "ai": {
+      "name": "AI生成",
+      "description": "AI支援によるコード生成",
+      "generating": "AIアシスタンスでコードを生成中...",
+      "success": "コードが正常に生成されました",
+      "api_key_missing": "Claude APIキーが設定されていません",
+      "suggestion": "AI提案"
+    },
+    "learn": {
+      "name": "学習",
+      "description": "インタラクティブな学習とチュートリアル",
+      "topic_title": "学習: {topic}",
+      "tutorial_title": "チュートリアル: {type}",
+      "available_topics": "利用可能なトピック"
+    },
+    "team": {
+      "name": "チーム",
+      "description": "チームコラボレーション機能",
+      "shared": "{user}とプロジェクトを共有しました",
+      "synced": "チームと変更を同期しました",
+      "notification_sent": "チームに通知を送信しました"
+    },
+    "metrics": {
+      "name": "メトリクス",
+      "description": "プロジェクト分析とメトリクス",
+      "generating": "プロジェクトメトリクスを生成中...",
+      "title": "プロジェクトメトリクス",
+      "complexity": "コード複雑度",
+      "coverage": "テストカバレッジ",
+      "health_score": "ヘルススコア"
+    },
+    "recommend": {
+      "name": "推奨",
+      "description": "改善のためのスマートな推奨事項",
+      "title": "推奨事項",
+      "no_recommendations": "現在推奨事項はありません",
+      "found": "{count}件の推奨事項が見つかりました"
+    },
+    "community": {
+      "name": "コミュニティ",
+      "description": "コミュニティプラグインとテンプレート",
+      "shared": "コミュニティレジストリに正常に共有されました",
+      "published": "テンプレートがコミュニティに公開されました",
+      "browse_title": "コミュニティテンプレート"
+    },
+    "dashboard": {
+      "name": "ダッシュボード",
+      "description": "プロジェクト管理用のWebダッシュボード",
+      "starting": "ポート{port}でWebダッシュボードを起動中...",
+      "stopping": "Webダッシュボードを停止中...",
+      "running": "ダッシュボードはhttp://localhost:{port}で実行中",
+      "stopped": "ダッシュボードが停止しました"
+    }
+  },
+  "errors": {
+    "not_found": "見つかりません: {item}",
+    "invalid_config": "無効な設定: {detail}",
+    "permission_denied": "アクセス拒否: {path}",
+    "network_error": "ネットワークエラー: {detail}",
+    "api_error": "APIエラー: {detail}",
+    "file_exists": "ファイルは既に存在します: {path}",
+    "dir_not_exists": "ディレクトリが存在しません: {path}",
+    "unsupported_language": "サポートされていない言語: {lang}。サポート言語: {supported}",
+    "validation_failed": "{count}件のエラーで検証失敗"
+  },
+  "labels": {
+    "status": "ステータス",
+    "location": "場所",
+    "created": "作成済み",
+    "modified": "変更済み",
+    "deleted": "削除済み",
+    "errors": "エラー",
+    "warnings": "警告",
+    "info": "情報",
+    "total": "合計",
+    "enabled": "有効",
+    "disabled": "無効",
+    "preview": "プレビュー",
+    "success": "成功",
+    "failed": "失敗",
+    "pending": "保留中",
+    "running": "実行中",
+    "completed": "完了"
+  }
+}

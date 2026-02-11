@@ -122,7 +122,7 @@ class TestTACConfig:
             commands=CommandsSpec(start="echo start", test="echo test"),
             claude=ClaudeConfig(settings=ClaudeSettings(project_name="test")),
         )
-        assert config.schema_version == 1
+        assert config.schema_version == 2
         assert config.paths.adws_dir == "adws"
         assert config.paths.specs_dir == "specs"
         assert config.paths.prompts_dir == "prompts"

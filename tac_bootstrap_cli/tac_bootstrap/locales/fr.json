@@ -1,0 +1,181 @@
+{
+  "cli": {
+    "welcome": "Bienvenue sur TAC Bootstrap",
+    "version": "TAC Bootstrap v{v}",
+    "description": "Generez un Agentic Layer pour Claude Code avec les patterns TAC",
+    "success": "Operation terminee avec succes",
+    "error": "Une erreur est survenue",
+    "cancelled": "Operation annulee",
+    "confirm": "Voulez-vous continuer ?",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "commands": {
+    "init": {
+      "name": "Initialiser",
+      "description": "Creer un nouveau projet avec Agentic Layer",
+      "success": "Projet cree avec succes !",
+      "dry_run": "Simulation - Apercu",
+      "target_dir": "Repertoire cible",
+      "project_name": "Nom du projet",
+      "language": "Langage",
+      "framework": "Framework",
+      "package_manager": "Gestionnaire de paquets",
+      "architecture": "Architecture",
+      "would_create": "Serait cree",
+      "next_steps": "Prochaines etapes",
+      "files_created": "Fichiers crees",
+      "dirs_created": "Repertoires crees"
+    },
+    "add_agentic": {
+      "name": "Ajouter Agentic",
+      "description": "Injecter Agentic Layer dans un depot existant",
+      "success": "Agentic Layer ajoute avec succes !",
+      "detection": "Resultats de la detection automatique",
+      "repository": "Depot"
+    },
+    "doctor": {
+      "name": "Docteur",
+      "description": "Valider la configuration d'Agentic Layer",
+      "healthy": "Toutes les verifications sont passees !",
+      "unhealthy": "Problemes detectes",
+      "diagnosing": "Diagnostic en cours"
+    },
+    "validate": {
+      "name": "Valider",
+      "description": "Valider la configuration du projet et les prerequis",
+      "all_passed": "Toutes les validations sont passees !",
+      "failed": "Validation echouee",
+      "with_warnings": "Validation passee avec {count} avertissement(s)"
+    },
+    "upgrade": {
+      "name": "Mise a jour",
+      "description": "Mettre a jour vers la derniere version de TAC Bootstrap",
+      "up_to_date": "Le projet est deja a jour !",
+      "current_version": "Version actuelle",
+      "target_version": "Version cible"
+    },
+    "generate": {
+      "name": "Generer",
+      "description": "Generer des artefacts de code",
+      "entity_success": "Entite generee avec succes !",
+      "entity": "Entite",
+      "capability": "Capacite"
+    },
+    "telemetry": {
+      "name": "Telemetrie",
+      "description": "Gerer le suivi anonyme d'utilisation",
+      "enabled": "Telemetrie activee",
+      "disabled": "Telemetrie desactivee",
+      "cleared": "Donnees de telemetrie supprimees"
+    },
+    "config": {
+      "name": "Configuration",
+      "description": "Gerer la configuration CLI",
+      "set_success": "Configuration mise a jour : {key} = {value}",
+      "get_value": "Valeur actuelle de {key} : {value}",
+      "list_title": "Configuration actuelle",
+      "unknown_key": "Cle de configuration inconnue : {key}"
+    },
+    "search": {
+      "name": "Rechercher",
+      "description": "Rechercher commandes, modeles et fonctionnalites",
+      "no_results": "Aucun resultat pour '{query}'",
+      "results_title": "Resultats de recherche",
+      "found_count": "{count} resultat(s) trouve(s)"
+    },
+    "snapshot": {
+      "name": "Instantane",
+      "description": "Gerer les instantanes du projet",
+      "created": "Instantane '{name}' cree avec succes",
+      "restored": "Instantane '{name}' restaure avec succes",
+      "deleted": "Instantane '{name}' supprime",
+      "not_found": "Instantane '{name}' non trouve",
+      "list_title": "Instantanes du projet",
+      "no_snapshots": "Aucun instantane trouve"
+    },
+    "ai": {
+      "name": "Generation IA",
+      "description": "Generation de code assistee par IA",
+      "generating": "Generation de code avec assistance IA...",
+      "success": "Code genere avec succes",
+      "api_key_missing": "Cle API Claude non configuree",
+      "suggestion": "Suggestion IA"
+    },
+    "learn": {
+      "name": "Apprendre",
+      "description": "Apprentissage interactif et tutoriels",
+      "topic_title": "Apprentissage : {topic}",
+      "tutorial_title": "Tutoriel : {type}",
+      "available_topics": "Sujets disponibles"
+    },
+    "team": {
+      "name": "Equipe",
+      "description": "Fonctionnalites de collaboration en equipe",
+      "shared": "Projet partage avec {user}",
+      "synced": "Modifications synchronisees avec l'equipe",
+      "notification_sent": "Notification envoyee a l'equipe"
+    },
+    "metrics": {
+      "name": "Metriques",
+      "description": "Analytique et metriques du projet",
+      "generating": "Generation des metriques du projet...",
+      "title": "Metriques du projet",
+      "complexity": "Complexite du code",
+      "coverage": "Couverture des tests",
+      "health_score": "Score de sante"
+    },
+    "recommend": {
+      "name": "Recommander",
+      "description": "Recommandations intelligentes pour ameliorations",
+      "title": "Recommandations",
+      "no_recommendations": "Pas de recommandations pour le moment",
+      "found": "{count} recommandation(s) trouvee(s)"
+    },
+    "community": {
+      "name": "Communaute",
+      "description": "Plugins et modeles communautaires",
+      "shared": "Partage avec succes dans le registre communautaire",
+      "published": "Modele publie dans la communaute",
+      "browse_title": "Modeles communautaires"
+    },
+    "dashboard": {
+      "name": "Tableau de bord",
+      "description": "Tableau de bord web pour la gestion de projet",
+      "starting": "Demarrage du tableau de bord sur le port {port}...",
+      "stopping": "Arret du tableau de bord...",
+      "running": "Tableau de bord disponible sur http://localhost:{port}",
+      "stopped": "Tableau de bord arrete"
+    }
+  },
+  "errors": {
+    "not_found": "Non trouve : {item}",
+    "invalid_config": "Configuration invalide : {detail}",
+    "permission_denied": "Permission refusee : {path}",
+    "network_error": "Erreur reseau : {detail}",
+    "api_error": "Erreur API : {detail}",
+    "file_exists": "Le fichier existe deja : {path}",
+    "dir_not_exists": "Le repertoire n'existe pas : {path}",
+    "unsupported_language": "Langue non supportee : {lang}. Supportees : {supported}",
+    "validation_failed": "Validation echouee avec {count} erreur(s)"
+  },
+  "labels": {
+    "status": "Statut",
+    "location": "Emplacement",
+    "created": "Cree",
+    "modified": "Modifie",
+    "deleted": "Supprime",
+    "errors": "Erreurs",
+    "warnings": "Avertissements",
+    "info": "Info",
+    "total": "Total",
+    "enabled": "Active",
+    "disabled": "Desactive",
+    "preview": "Apercu",
+    "success": "Succes",
+    "failed": "Echoue",
+    "pending": "En attente",
+    "running": "En cours",
+    "completed": "Termine"
+  }
+}

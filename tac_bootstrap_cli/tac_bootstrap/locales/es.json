@@ -1,0 +1,181 @@
+{
+  "cli": {
+    "welcome": "Bienvenido a TAC Bootstrap",
+    "version": "TAC Bootstrap v{v}",
+    "description": "Genera Agentic Layer para Claude Code con patrones TAC",
+    "success": "Operacion completada exitosamente",
+    "error": "Ha ocurrido un error",
+    "cancelled": "Operacion cancelada",
+    "confirm": "Desea continuar?",
+    "yes": "Si",
+    "no": "No"
+  },
+  "commands": {
+    "init": {
+      "name": "Inicializar",
+      "description": "Crear un nuevo proyecto con Agentic Layer",
+      "success": "Proyecto creado exitosamente!",
+      "dry_run": "Ejecucion de prueba - Vista previa",
+      "target_dir": "Directorio destino",
+      "project_name": "Nombre del proyecto",
+      "language": "Lenguaje",
+      "framework": "Framework",
+      "package_manager": "Gestor de paquetes",
+      "architecture": "Arquitectura",
+      "would_create": "Se crearia",
+      "next_steps": "Proximos pasos",
+      "files_created": "Archivos creados",
+      "dirs_created": "Directorios creados"
+    },
+    "add_agentic": {
+      "name": "Agregar Agentic",
+      "description": "Inyectar Agentic Layer en repositorio existente",
+      "success": "Agentic Layer agregado exitosamente!",
+      "detection": "Resultados de deteccion automatica",
+      "repository": "Repositorio"
+    },
+    "doctor": {
+      "name": "Doctor",
+      "description": "Validar configuracion de Agentic Layer",
+      "healthy": "Todas las verificaciones pasaron!",
+      "unhealthy": "Problemas detectados",
+      "diagnosing": "Diagnosticando"
+    },
+    "validate": {
+      "name": "Validar",
+      "description": "Validar configuracion del proyecto y requisitos",
+      "all_passed": "Todas las validaciones pasaron!",
+      "failed": "Validacion fallida",
+      "with_warnings": "Validacion paso con {count} advertencia(s)"
+    },
+    "upgrade": {
+      "name": "Actualizar",
+      "description": "Actualizar a la ultima version de TAC Bootstrap",
+      "up_to_date": "El proyecto ya esta actualizado!",
+      "current_version": "Version actual",
+      "target_version": "Version destino"
+    },
+    "generate": {
+      "name": "Generar",
+      "description": "Generar artefactos de codigo",
+      "entity_success": "Entidad generada exitosamente!",
+      "entity": "Entidad",
+      "capability": "Capacidad"
+    },
+    "telemetry": {
+      "name": "Telemetria",
+      "description": "Gestionar seguimiento anonimo de uso",
+      "enabled": "Telemetria habilitada",
+      "disabled": "Telemetria deshabilitada",
+      "cleared": "Datos de telemetria eliminados"
+    },
+    "config": {
+      "name": "Configuracion",
+      "description": "Gestionar configuracion de CLI",
+      "set_success": "Configuracion actualizada: {key} = {value}",
+      "get_value": "Valor actual de {key}: {value}",
+      "list_title": "Configuracion actual",
+      "unknown_key": "Clave de configuracion desconocida: {key}"
+    },
+    "search": {
+      "name": "Buscar",
+      "description": "Buscar comandos, plantillas y funcionalidades",
+      "no_results": "Sin resultados para '{query}'",
+      "results_title": "Resultados de busqueda",
+      "found_count": "Se encontraron {count} resultado(s)"
+    },
+    "snapshot": {
+      "name": "Instantanea",
+      "description": "Gestionar instantaneas del proyecto",
+      "created": "Instantanea '{name}' creada exitosamente",
+      "restored": "Instantanea '{name}' restaurada exitosamente",
+      "deleted": "Instantanea '{name}' eliminada",
+      "not_found": "Instantanea '{name}' no encontrada",
+      "list_title": "Instantaneas del proyecto",
+      "no_snapshots": "No se encontraron instantaneas"
+    },
+    "ai": {
+      "name": "Generacion IA",
+      "description": "Generacion de codigo asistida por IA",
+      "generating": "Generando codigo con asistencia de IA...",
+      "success": "Codigo generado exitosamente",
+      "api_key_missing": "Clave API de Claude no configurada",
+      "suggestion": "Sugerencia IA"
+    },
+    "learn": {
+      "name": "Aprender",
+      "description": "Aprendizaje interactivo y tutoriales",
+      "topic_title": "Aprendiendo: {topic}",
+      "tutorial_title": "Tutorial: {type}",
+      "available_topics": "Temas disponibles"
+    },
+    "team": {
+      "name": "Equipo",
+      "description": "Funciones de colaboracion en equipo",
+      "shared": "Proyecto compartido con {user}",
+      "synced": "Cambios sincronizados con el equipo",
+      "notification_sent": "Notificacion enviada al equipo"
+    },
+    "metrics": {
+      "name": "Metricas",
+      "description": "Analitica y metricas del proyecto",
+      "generating": "Generando metricas del proyecto...",
+      "title": "Metricas del proyecto",
+      "complexity": "Complejidad del codigo",
+      "coverage": "Cobertura de pruebas",
+      "health_score": "Puntaje de salud"
+    },
+    "recommend": {
+      "name": "Recomendar",
+      "description": "Recomendaciones inteligentes para mejoras",
+      "title": "Recomendaciones",
+      "no_recommendations": "Sin recomendaciones por ahora",
+      "found": "Se encontraron {count} recomendacion(es)"
+    },
+    "community": {
+      "name": "Comunidad",
+      "description": "Plugins y plantillas de la comunidad",
+      "shared": "Compartido exitosamente en el registro comunitario",
+      "published": "Plantilla publicada en la comunidad",
+      "browse_title": "Plantillas de la comunidad"
+    },
+    "dashboard": {
+      "name": "Panel",
+      "description": "Panel web para gestion de proyectos",
+      "starting": "Iniciando panel web en el puerto {port}...",
+      "stopping": "Deteniendo panel web...",
+      "running": "Panel ejecutandose en http://localhost:{port}",
+      "stopped": "Panel detenido"
+    }
+  },
+  "errors": {
+    "not_found": "No encontrado: {item}",
+    "invalid_config": "Configuracion invalida: {detail}",
+    "permission_denied": "Permiso denegado: {path}",
+    "network_error": "Error de red: {detail}",
+    "api_error": "Error de API: {detail}",
+    "file_exists": "El archivo ya existe: {path}",
+    "dir_not_exists": "El directorio no existe: {path}",
+    "unsupported_language": "Idioma no soportado: {lang}. Soportados: {supported}",
+    "validation_failed": "Validacion fallida con {count} error(es)"
+  },
+  "labels": {
+    "status": "Estado",
+    "location": "Ubicacion",
+    "created": "Creado",
+    "modified": "Modificado",
+    "deleted": "Eliminado",
+    "errors": "Errores",
+    "warnings": "Advertencias",
+    "info": "Info",
+    "total": "Total",
+    "enabled": "Habilitado",
+    "disabled": "Deshabilitado",
+    "preview": "Vista previa",
+    "success": "Exito",
+    "failed": "Fallido",
+    "pending": "Pendiente",
+    "running": "Ejecutando",
+    "completed": "Completado"
+  }
+}

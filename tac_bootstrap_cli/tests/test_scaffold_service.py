@@ -654,7 +654,7 @@ class TestScaffoldServiceADWCompleteness:
             assert (
                 parsed["version"] == __version__
             ), f"version should default to {__version__}"
-            assert parsed["schema_version"] == 1, "schema_version should default to 1"
+            assert parsed["schema_version"] == 2, "schema_version should default to 2"
 
             # Verify header comment contains TAC version
             assert (

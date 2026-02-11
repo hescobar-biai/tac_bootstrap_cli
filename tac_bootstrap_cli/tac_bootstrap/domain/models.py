@@ -580,6 +580,37 @@ class BootstrapMetadata(BaseModel):
 
 
 # ============================================================================
+# SYSTEM REQUIREMENT MODEL
+# ============================================================================
+
+
+class SystemRequirement(BaseModel):
+    """
+    Represents a system-level dependency requirement for project generation.
+
+    Tracks whether a required tool (git, python, uv, gh, etc.) is installed
+    and whether its version meets the minimum requirement.
+
+    Attributes:
+        name: Name of the tool/dependency (e.g., "git", "python", "uv")
+        min_version: Minimum required version string (e.g., "2.30", "3.10"), or None
+            if any version is acceptable.
+        installed: Whether the tool is found on the system PATH.
+        version: The detected version string if installed, or None if not found
+            or version could not be determined.
+    """
+
+    name: str = Field(..., description="Name of the system requirement (e.g., 'git', 'python')")
+    min_version: Optional[str] = Field(
+        default=None, description="Minimum required version (e.g., '2.30')"
+    )
+    installed: bool = Field(default=False, description="Whether the tool is installed on the system")
+    version: Optional[str] = Field(
+        default=None, description="Detected version string, or None if not found"
+    )
+
+
+# ============================================================================
 # ROOT MODEL - Complete Configuration
 # ============================================================================
 
@@ -618,7 +649,7 @@ class TACConfig(BaseModel):
         default=__version__,
         description="TAC Bootstrap version used to generate this project"
     )
-    schema_version: int = Field(default=1, description="Configuration schema version")
+    schema_version: int = Field(default=2, description="Configuration schema version")
     project: ProjectSpec = Field(..., description="Project metadata and settings")
     paths: PathsSpec = Field(
         default_factory=lambda: PathsSpec(
@@ -645,6 +676,13 @@ class TACConfig(BaseModel):
     )
     metadata: BootstrapMetadata | None = Field(
         default=None, description="Bootstrap generation metadata for audit trail"
+    )
+    validation_mode: str = Field(
+        default="standard",
+        description=(
+            "Validation strictness level: 'permissive' (warnings only), "
+            "'standard' (errors for critical issues), 'strict' (errors for all issues)"
+        ),
     )
 
     model_config = {"extra": "forbid"}
