@@ -53,6 +53,7 @@ from adw_modules.adw_logging import (
 )
 from adw_modules.adw_summarizer import summarize_event
 from adw_modules.adw_websockets import broadcast_adw_event_summary_update
+from adw_modules.workflow_ops import get_model_id
 from adw_modules.adw_agent_sdk import (
     query_to_completion,
     quick_prompt,
@@ -392,8 +393,10 @@ async def run_plan_step(
     orchestrator_agent_id: str,
     prompt: str,
     working_dir: str,
-    model: str = ModelName.OPUS.value,
+    model: str = None,
 ) -> tuple[bool, str | None, str | None]:
+    if model is None:
+        model = get_model_id("opus")
     """Run the /plan step.
 
     Args:
@@ -539,7 +542,7 @@ async def run_plan_step(
 async def extract_plan_path(
     working_dir: str,
     session_id: str | None,
-    model: str = ModelName.OPUS.value,
+    model: str = None,
 ) -> str | None:
     """Use quick_prompt to extract the plan file path.
 
@@ -551,6 +554,8 @@ async def extract_plan_path(
     Returns:
         Path to the plan file, or None if not found
     """
+    if model is None:
+        model = get_model_id("opus")
     console.print("[cyan]Extracting plan file path...[/cyan]")
 
     # Very explicit prompt to get ONLY the file path
@@ -607,7 +612,7 @@ async def run_build_step(
     orchestrator_agent_id: str,
     plan_path: str,
     working_dir: str,
-    model: str = ModelName.OPUS.value,
+    model: str = None,
 ) -> tuple[bool, str | None, str | None]:
     """Run the /build step.
 
@@ -616,7 +621,9 @@ async def run_build_step(
         orchestrator_agent_id: Parent orchestrator agent ID
         plan_path: Path to the plan file
         working_dir: Working directory for the agent
-        model: Model to use
+        model: Model to use"""
+    if model is None:
+        model = get_model_id("opus")
 
     Returns:
         Tuple of (success, session_id, agent_id)
@@ -757,14 +764,16 @@ async def run_review_step(
     user_prompt: str,
     plan_path: str,
     working_dir: str,
-    model: str = ModelName.OPUS.value,  # Use Opus for thorough review
+    model: str = None,  # Use Opus for thorough review
 ) -> tuple[bool, str | None, str | None, str | None]:
     """Run the /review step to validate completed work.
 
     Args:
         adw_id: ADW ID for logging
         orchestrator_agent_id: Parent orchestrator agent ID
-        user_prompt: Original user prompt describing the work
+        user_prompt: Original user prompt describing the work"""
+    if model is None:
+        model = get_model_id("opus")
         plan_path: Path to the plan file that was implemented
         working_dir: Working directory for the agent
         model: Model to use (defaults to Opus for thorough analysis)
@@ -978,8 +987,8 @@ async def run_workflow(adw_id: str) -> bool:
     input_data = adw.get("input_data", {})
     prompt = input_data.get("prompt")
     working_dir = input_data.get("working_dir")
-    model = input_data.get("model", ModelName.OPUS.value)
-    review_model = input_data.get("review_model", ModelName.OPUS.value)
+    model = input_data.get("model", get_model_id("opus"))
+    review_model = input_data.get("review_model", get_model_id("opus"))
 
     if not prompt:
         console.print("[red]No prompt found in ADW input_data[/red]")

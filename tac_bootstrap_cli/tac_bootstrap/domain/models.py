@@ -305,6 +305,20 @@ class ModelPolicy(BaseModel):
     heavy: str = Field(default="opus", description="Model for complex/heavy tasks")
     fallback: str = Field(default="haiku", description="Fallback model when quota is exhausted")
 
+    # Optional: Fully qualified model IDs (override hardcoded defaults)
+    opus_model: Optional[str] = Field(
+        default=None,
+        description="Fully qualified Opus model ID (e.g., claude-opus-4-5-20251101)",
+    )
+    sonnet_model: Optional[str] = Field(
+        default=None,
+        description="Fully qualified Sonnet model ID (e.g., claude-sonnet-4-5-20250929)",
+    )
+    haiku_model: Optional[str] = Field(
+        default=None,
+        description="Fully qualified Haiku model ID (e.g., claude-haiku-4-5-20251001)",
+    )
+
 
 class TokenOptimizationConfig(BaseModel):
     """

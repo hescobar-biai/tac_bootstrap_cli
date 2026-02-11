@@ -127,6 +127,42 @@ AVAILABLE_ADW_WORKFLOWS = [
 ]
 
 
+def get_model_id(model_type: str) -> str:
+    """Get fully qualified model ID with 3-tier resolution.
+
+    Resolution order:
+    1. Environment variable (ANTHROPIC_DEFAULT_{TYPE}_MODEL)
+    2. Config file (config.yml: agentic.model_policy.{type}_model)
+    3. Hardcoded default
+
+    Args:
+        model_type: One of "opus", "sonnet", or "haiku"
+
+    Returns:
+        Fully qualified model ID string
+    """
+    # Tier 1: Environment variable
+    env_var = f"ANTHROPIC_DEFAULT_{model_type.upper()}_MODEL"
+    env_value = os.getenv(env_var)
+    if env_value:
+        return env_value
+
+    # Tier 2: Config file
+    config = load_config()
+    model_policy = config.get("agentic", {}).get("model_policy", {})
+    config_value = model_policy.get(f"{model_type}_model")
+    if config_value:
+        return config_value
+
+    # Tier 3: Hardcoded defaults
+    defaults = {
+        "opus": "claude-opus-4-5-20251101",
+        "sonnet": "claude-sonnet-4-5-20250929",
+        "haiku": "claude-haiku-4-5-20251001",
+    }
+    return defaults.get(model_type, "claude-sonnet-4-5-20250929")
+
+
 def format_issue_message(
     adw_id: str, agent_name: str, message: str, session_id: Optional[str] = None
 ) -> str:

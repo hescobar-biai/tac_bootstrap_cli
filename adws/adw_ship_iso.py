@@ -40,7 +40,7 @@ from adw_modules.github import (
     get_repo_url,
     extract_repo_path,
 )
-from adw_modules.workflow_ops import format_issue_message
+from adw_modules.workflow_ops import format_issue_message, get_model_id
 from adw_modules.utils import setup_logger, check_env_vars
 from adw_modules.worktree_ops import validate_worktree
 from adw_modules.data_types import ADWStateData
@@ -389,7 +389,7 @@ def main():
                            "Using manual git operations in main repository")
     )
 
-    agent_id = track_agent_start(adw_id, "adw_ship_iso", model="claude-sonnet-4-5-20250929")
+    agent_id = track_agent_start(adw_id, "adw_ship_iso", model=get_model_id("sonnet"))
     log_event("adw_ship_iso", f"Ship merge started for {adw_id}")
 
     success, error = manual_merge_to_target(branch_name, logger)
