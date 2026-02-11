@@ -120,10 +120,10 @@ class UpgradeService:
             return None
 
     def _ensure_model_fields_in_config(self) -> None:
-        """Ensure model configuration fields are present in config.yml.
+        """Ensure model configuration and bootstrap fields are present in config.yml.
 
-        This is a post-migration step that ensures the config.yml file has the
-        model configuration fields even if they weren't included during template rendering.
+        This is a post-migration step that ensures the config.yml file has all
+        required fields even if they weren't included during template rendering.
         """
         if not self.config_path.exists():
             return
@@ -133,10 +133,10 @@ class UpgradeService:
             with open(self.config_path) as f:
                 config_data = yaml.safe_load(f)
 
-            # Check if model fields are missing
-            model_policy = config_data.get("agentic", {}).get("model_policy", {})
             needs_update = False
 
+            # Ensure model fields in agentic.model_policy
+            model_policy = config_data.get("agentic", {}).get("model_policy", {})
             if "opus_model" not in model_policy:
                 model_policy["opus_model"] = "claude-opus-4-5-20251101"
                 needs_update = True
@@ -145,6 +145,13 @@ class UpgradeService:
                 needs_update = True
             if "haiku_model" not in model_policy:
                 model_policy["haiku_model"] = "claude-haiku-4-5-20251001"
+                needs_update = True
+
+            # Ensure bootstrap_retention field
+            if "bootstrap" not in config_data:
+                config_data["bootstrap"] = {}
+            if "backup_retention" not in config_data["bootstrap"]:
+                config_data["bootstrap"]["backup_retention"] = 3
                 needs_update = True
 
             # Update schema_version if needed
@@ -156,10 +163,10 @@ class UpgradeService:
             if needs_update:
                 with open(self.config_path, "w") as f:
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
-                console.print("[green]✓ Added model configuration to config.yml[/green]")
+                console.print("[green]✓ Updated config.yml with missing fields[/green]")
 
         except Exception as e:
-            console.print(f"[yellow]Warning: Could not update config.yml with model fields: {e}[/yellow]")
+            console.print(f"[yellow]Warning: Could not update config.yml: {e}[/yellow]")
 
     def _migrate_schema(self, config_data: dict) -> dict:
         """Migrate configuration schema to latest version.
