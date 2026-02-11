@@ -111,9 +111,12 @@ class UpgradeService:
             # Actualizar version al target
             config_data["version"] = self.get_target_version()
 
-            return TACConfig(**config_data)
+            config = TACConfig(**config_data)
+            return config
         except Exception as e:
             console.print(f"[red]Error loading config: {e}[/red]")
+            import traceback
+            traceback.print_exc()
             return None
 
     def _migrate_schema(self, config_data: dict) -> dict:
@@ -250,6 +253,7 @@ class UpgradeService:
             return True, f"Successfully upgraded to v{self.get_target_version()}"
 
         except Exception as e:
+
             # Restore from backup if available
             if backup_path and backup_path.exists():
                 console.print("[yellow]Restoring from backup...[/yellow]")
