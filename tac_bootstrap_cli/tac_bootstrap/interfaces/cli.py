@@ -293,16 +293,14 @@ def init(
             for issue in preflight_result.warnings():
                 console.print(f"  [yellow][!][/yellow] {issue.message}")
 
-        # Import scaffold service (will fail if not implemented yet)
-        try:
-            from tac_bootstrap.application.scaffold_service import ScaffoldService
+        from tac_bootstrap.application.scaffold_service import ScaffoldService
 
-            service = ScaffoldService()
-            plan = service.build_plan(config, existing_repo=False)
+        service = ScaffoldService()
+        plan = service.build_plan(config, existing_repo=False)
 
-            if dry_run:
-                # Show preview (use values from config which are guaranteed to be set)
-                preview_text = f"""[bold]Dry Run - Preview[/bold]
+        if dry_run:
+            # Show preview (use values from config which are guaranteed to be set)
+            preview_text = f"""[bold]Dry Run - Preview[/bold]
 
 [cyan]Target Directory:[/cyan] {target_dir}
 [cyan]Project Name:[/cyan] {config.project.name}
@@ -313,28 +311,28 @@ def init(
 
 [bold]Would create:[/bold]
 """
-                console.print(Panel(preview_text, border_style="yellow", title="Preview"))
+            console.print(Panel(preview_text, border_style="yellow", title="Preview"))
 
-                # List directories and files from plan
-                console.print("[bold cyan]Directories:[/bold cyan]")
-                for dir_op in plan.directories:
-                    console.print(f"  📁 {dir_op.path}")
+            # List directories and files from plan
+            console.print("[bold cyan]Directories:[/bold cyan]")
+            for dir_op in plan.directories:
+                console.print(f"  📁 {dir_op.path}")
 
-                console.print("\n[bold cyan]Files:[/bold cyan]")
-                for file_op in plan.files:
-                    console.print(f"  📄 {file_op.path}")
+            console.print("\n[bold cyan]Files:[/bold cyan]")
+            for file_op in plan.files:
+                console.print(f"  📄 {file_op.path}")
 
-                console.print("\n[dim]Run without --dry-run to create the project[/dim]")
-                return
+            console.print("\n[dim]Run without --dry-run to create the project[/dim]")
+            return
 
-            # Apply plan
-            result = service.apply_plan(plan, target_dir, config, force=False)
+        # Apply plan
+        result = service.apply_plan(plan, target_dir, config, force=False)
 
-            # Show success using UIComponents for enhanced mode, standard display otherwise
-            if enhanced:
-                UIComponents.show_success_message(name, target_dir)
-            else:
-                success_text = f"""[bold green]Project created successfully![/bold green]
+        # Show success using UIComponents for enhanced mode, standard display otherwise
+        if enhanced:
+            UIComponents.show_success_message(name, target_dir)
+        else:
+            success_text = f"""[bold green]Project created successfully![/bold green]
 
 [cyan]Location:[/cyan] {target_dir}
 [cyan]Files Created:[/cyan] {result.files_created}
@@ -346,12 +344,7 @@ def init(
   3. Initialize git: git init
   4. Start development with Claude Code
 """
-                console.print(Panel(success_text, border_style="green", title="Success"))
-
-        except ImportError as e:
-            console.print(f"[red]ScaffoldService not yet implemented: {e}[/red]")
-            console.print("[yellow]This feature will be available in TAREA 4.2[/yellow]")
-            raise typer.Exit(1)
+            console.print(Panel(success_text, border_style="green", title="Success"))
 
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
@@ -405,15 +398,14 @@ def add_agentic(
             raise typer.Exit(1)
 
         # Auto-detect project settings
-        try:
-            from tac_bootstrap.application.detect_service import DetectService
+        from tac_bootstrap.application.detect_service import DetectService
 
-            detector = DetectService()
-            detected = detector.detect(repo_path)
+        detector = DetectService()
+        detected = detector.detect(repo_path)
 
-            # Show auto-detection results
-            framework_display = detected.framework.value if detected.framework else "None"
-            detection_text = f"""[bold]Auto-Detection Results[/bold]
+        # Show auto-detection results
+        framework_display = detected.framework.value if detected.framework else "None"
+        detection_text = f"""[bold]Auto-Detection Results[/bold]
 
 [cyan]Repository:[/cyan] {repo_path}
 [cyan]Language:[/cyan] {detected.language.value}
@@ -421,76 +413,76 @@ def add_agentic(
 [cyan]Package Manager:[/cyan] {detected.package_manager.value}
 [cyan]App Root:[/cyan] {detected.app_root or "."}
 """
-            console.print(Panel(detection_text, border_style="cyan", title="Detection"))
+        console.print(Panel(detection_text, border_style="cyan", title="Detection"))
 
-            if interactive:
-                from tac_bootstrap.interfaces.wizard import run_add_agentic_wizard
+        if interactive:
+            from tac_bootstrap.interfaces.wizard import run_add_agentic_wizard
 
-                config = run_add_agentic_wizard(
-                    repo_path, detected, with_orchestrator=with_orchestrator
-                )
-            else:
-                # Non-interactive mode: build config from detected settings
-                # Use repo directory name as project name
-                project_name = repo_path.name
-                default_cmds = get_default_commands(detected.language, detected.package_manager)
-                config = TACConfig(
-                    project=ProjectSpec(
-                        name=project_name,
-                        language=detected.language,
-                        framework=detected.framework or Framework.NONE,
-                        package_manager=detected.package_manager,
-                    ),
-                    paths=PathsSpec(app_root=detected.app_root or "src"),
-                    commands=CommandsSpec(
-                        start=default_cmds.get("start", ""),
-                        test=default_cmds.get("test", ""),
-                        lint=default_cmds.get("lint", ""),
-                        typecheck=default_cmds.get("typecheck", ""),
-                        format=default_cmds.get("format", ""),
-                        build=default_cmds.get("build", ""),
-                    ),
-                    claude=ClaudeConfig(settings=ClaudeSettings(project_name=project_name)),
-                    orchestrator=OrchestratorConfig(enabled=with_orchestrator),
-                )
+            config = run_add_agentic_wizard(
+                repo_path, detected, with_orchestrator=with_orchestrator
+            )
+        else:
+            # Non-interactive mode: build config from detected settings
+            # Use repo directory name as project name
+            project_name = repo_path.name
+            default_cmds = get_default_commands(detected.language, detected.package_manager)
+            config = TACConfig(
+                project=ProjectSpec(
+                    name=project_name,
+                    language=detected.language,
+                    framework=detected.framework or Framework.NONE,
+                    package_manager=detected.package_manager,
+                ),
+                paths=PathsSpec(app_root=detected.app_root or "src"),
+                commands=CommandsSpec(
+                    start=default_cmds.get("start", ""),
+                    test=default_cmds.get("test", ""),
+                    lint=default_cmds.get("lint", ""),
+                    typecheck=default_cmds.get("typecheck", ""),
+                    format=default_cmds.get("format", ""),
+                    build=default_cmds.get("build", ""),
+                ),
+                claude=ClaudeConfig(settings=ClaudeSettings(project_name=project_name)),
+                orchestrator=OrchestratorConfig(enabled=with_orchestrator),
+            )
 
-            # Build and apply plan
-            from tac_bootstrap.application.scaffold_service import ScaffoldService
+        # Build and apply plan
+        from tac_bootstrap.application.scaffold_service import ScaffoldService
 
-            service = ScaffoldService()
-            plan = service.build_plan(config, existing_repo=True)
+        service = ScaffoldService()
+        plan = service.build_plan(config, existing_repo=True)
 
-            if dry_run:
-                # Show preview
-                preview_text = f"""[bold]Dry Run - Preview[/bold]
+        if dry_run:
+            # Show preview
+            preview_text = f"""[bold]Dry Run - Preview[/bold]
 
 [cyan]Target Repository:[/cyan] {repo_path}
 
 [bold]Would create/modify:[/bold]
 """
-                console.print(Panel(preview_text, border_style="yellow", title="Preview"))
+            console.print(Panel(preview_text, border_style="yellow", title="Preview"))
 
-                # Show directories
-                for dir_op in plan.directories:
-                    console.print(f"  📁 Create {dir_op.path}")
+            # Show directories
+            for dir_op in plan.directories:
+                console.print(f"  📁 Create {dir_op.path}")
 
-                # Show files
-                for file_op in plan.files:
-                    action = (
-                        "📝 Modify"
-                        if file_op.action.value in ("overwrite", "patch")
-                        else "📄 Create"
-                    )
-                    console.print(f"  {action} {file_op.path}")
+            # Show files
+            for file_op in plan.files:
+                action = (
+                    "📝 Modify"
+                    if file_op.action.value in ("overwrite", "patch")
+                    else "📄 Create"
+                )
+                console.print(f"  {action} {file_op.path}")
 
-                console.print("\n[dim]Run without --dry-run to apply changes[/dim]")
-                return
+            console.print("\n[dim]Run without --dry-run to apply changes[/dim]")
+            return
 
-            # Apply plan
-            result = service.apply_plan(plan, repo_path, config, force=force)
+        # Apply plan
+        result = service.apply_plan(plan, repo_path, config, force=force)
 
-            # Show success
-            success_text = f"""[bold green]✓ Agentic Layer added successfully![/bold green]
+        # Show success
+        success_text = f"""[bold green]✓ Agentic Layer added successfully![/bold green]
 
 [cyan]Location:[/cyan] {repo_path}
 [cyan]Files Created:[/cyan] {result.files_created}
@@ -501,12 +493,7 @@ def add_agentic(
   2. Update config.yml with your specific commands
   3. Start using slash commands in Claude Code
 """
-            console.print(Panel(success_text, border_style="green", title="Success"))
-
-        except ImportError as e:
-            console.print(f"[red]DetectService not yet implemented: {e}[/red]")
-            console.print("[yellow]This feature will be available in FASE 6[/yellow]")
-            raise typer.Exit(1)
+        console.print(Panel(success_text, border_style="green", title="Success"))
 
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
@@ -543,68 +530,62 @@ def doctor(
         console.print(f"[cyan]Diagnosing:[/cyan] {repo_path}\n")
 
         # Run diagnostics
-        try:
-            from tac_bootstrap.application.doctor_service import DoctorService
+        from tac_bootstrap.application.doctor_service import DoctorService
 
-            doctor_service = DoctorService()
-            report = doctor_service.diagnose(repo_path)
+        doctor_service = DoctorService()
+        report = doctor_service.diagnose(repo_path)
 
-            if report.healthy:
-                # Show success
-                success_text = """[bold green]✓ All checks passed![/bold green]
+        if report.healthy:
+            # Show success
+            success_text = """[bold green]✓ All checks passed![/bold green]
 
 Your Agentic Layer setup is healthy.
 """
-                console.print(Panel(success_text, border_style="green", title="Healthy"))
-                return
+            console.print(Panel(success_text, border_style="green", title="Healthy"))
+            return
 
-            # Show issues
-            error_count = sum(1 for issue in report.issues if issue.severity == "error")
-            warning_count = sum(1 for issue in report.issues if issue.severity == "warning")
-            info_count = sum(1 for issue in report.issues if issue.severity == "info")
+        # Show issues
+        error_count = sum(1 for issue in report.issues if issue.severity == "error")
+        warning_count = sum(1 for issue in report.issues if issue.severity == "warning")
+        info_count = sum(1 for issue in report.issues if issue.severity == "info")
 
-            status_text = f"""[bold red]✗ Issues detected[/bold red]
+        status_text = f"""[bold red]✗ Issues detected[/bold red]
 
 [red]Errors:[/red] {error_count}
 [yellow]Warnings:[/yellow] {warning_count}
 [blue]Info:[/blue] {info_count}
 """
-            console.print(Panel(status_text, border_style="red", title="Unhealthy"))
+        console.print(Panel(status_text, border_style="red", title="Unhealthy"))
 
-            # List each issue
-            for issue in report.issues:
-                if issue.severity == "error":
-                    color = "red"
-                    icon = "✗"
-                elif issue.severity == "warning":
-                    color = "yellow"
-                    icon = "⚠"
-                else:  # info
-                    color = "blue"
-                    icon = "ℹ"
+        # List each issue
+        for issue in report.issues:
+            if issue.severity == "error":
+                color = "red"
+                icon = "✗"
+            elif issue.severity == "warning":
+                color = "yellow"
+                icon = "⚠"
+            else:  # info
+                color = "blue"
+                icon = "ℹ"
 
-                console.print(f"\n[{color}]{icon} [{issue.severity.upper()}][/{color}]")
-                console.print(f"  {issue.message}")
-                if issue.suggestion:
-                    console.print(f"  [dim]Suggestion: {issue.suggestion}[/dim]")
+            console.print(f"\n[{color}]{icon} [{issue.severity.upper()}][/{color}]")
+            console.print(f"  {issue.message}")
+            if issue.suggestion:
+                console.print(f"  [dim]Suggestion: {issue.suggestion}[/dim]")
 
-            # Auto-fix if requested
-            if fix:
-                console.print("\n[cyan]Attempting to fix issues...[/cyan]")
-                fix_result = doctor_service.fix(repo_path, report)
-                console.print(f"[green]Fixed {fix_result.fixed_count} issues[/green]")
+        # Auto-fix if requested
+        if fix:
+            console.print("\n[cyan]Attempting to fix issues...[/cyan]")
+            fix_result = doctor_service.fix(repo_path, report)
+            console.print(f"[green]Fixed {fix_result.fixed_count} issues[/green]")
 
-                if fix_result.failed_count > 0:
-                    console.print(
-                        f"[yellow]Failed to fix {fix_result.failed_count} issues[/yellow]"
-                    )
+            if fix_result.failed_count > 0:
+                console.print(
+                    f"[yellow]Failed to fix {fix_result.failed_count} issues[/yellow]"
+                )
 
-            raise typer.Exit(1)
-
-        except ImportError as e:
-            console.print(f"[red]DoctorService not yet implemented: {e}[/red]")
-            console.print("[yellow]This feature will be available in FASE 7[/yellow]")
-            raise typer.Exit(1)
+        raise typer.Exit(1)
 
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")
@@ -675,15 +656,14 @@ def render(
         target_dir = target_dir.resolve()
 
         # Build plan
-        try:
-            from tac_bootstrap.application.scaffold_service import ScaffoldService
+        from tac_bootstrap.application.scaffold_service import ScaffoldService
 
-            service = ScaffoldService()
-            plan = service.build_plan(config, existing_repo=True)
+        service = ScaffoldService()
+        plan = service.build_plan(config, existing_repo=True)
 
-            if dry_run:
-                # Show preview
-                preview_text = f"""[bold]Dry Run - Preview[/bold]
+        if dry_run:
+            # Show preview
+            preview_text = f"""[bold]Dry Run - Preview[/bold]
 
 [cyan]Config File:[/cyan] {config_file}
 [cyan]Target Directory:[/cyan] {target_dir}
@@ -691,29 +671,29 @@ def render(
 
 [bold]Would create/modify:[/bold]
 """
-                console.print(Panel(preview_text, border_style="yellow", title="Preview"))
+            console.print(Panel(preview_text, border_style="yellow", title="Preview"))
 
-                # Show directories
-                for dir_op in plan.directories:
-                    console.print(f"  📁 Create {dir_op.path}")
+            # Show directories
+            for dir_op in plan.directories:
+                console.print(f"  📁 Create {dir_op.path}")
 
-                # Show files
-                for file_op in plan.files:
-                    action = (
-                        "📝 Modify"
-                        if file_op.action.value in ("overwrite", "patch")
-                        else "📄 Create"
-                    )
-                    console.print(f"  {action} {file_op.path}")
+            # Show files
+            for file_op in plan.files:
+                action = (
+                    "📝 Modify"
+                    if file_op.action.value in ("overwrite", "patch")
+                    else "📄 Create"
+                )
+                console.print(f"  {action} {file_op.path}")
 
-                console.print("\n[dim]Run without --dry-run to apply changes[/dim]")
-                return
+            console.print("\n[dim]Run without --dry-run to apply changes[/dim]")
+            return
 
-            # Apply plan
-            result = service.apply_plan(plan, target_dir, config, force=force)
+        # Apply plan
+        result = service.apply_plan(plan, target_dir, config, force=force)
 
-            # Show success
-            success_text = f"""[bold green]✓ Rendered successfully![/bold green]
+        # Show success
+        success_text = f"""[bold green]✓ Rendered successfully![/bold green]
 
 [cyan]Target:[/cyan] {target_dir}
 [cyan]Files Created:[/cyan] {result.files_created}
@@ -721,12 +701,7 @@ def render(
 
 All files have been regenerated from {config_file.name}
 """
-            console.print(Panel(success_text, border_style="green", title="Success"))
-
-        except ImportError as e:
-            console.print(f"[red]ScaffoldService not yet implemented: {e}[/red]")
-            console.print("[yellow]This feature will be available in TAREA 4.2[/yellow]")
-            raise typer.Exit(1)
+        console.print(Panel(success_text, border_style="green", title="Success"))
 
     except Exception as e:
         console.print(f"[red]Error:[/red] {e}")

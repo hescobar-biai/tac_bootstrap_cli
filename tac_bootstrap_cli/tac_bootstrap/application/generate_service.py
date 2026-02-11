@@ -10,7 +10,8 @@ from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
-from tac_bootstrap.domain.models import EntitySpec, TACConfig
+from tac_bootstrap.domain.entity_config import EntitySpec
+from tac_bootstrap.domain.models import TACConfig
 from tac_bootstrap.infrastructure.fs import FileSystem
 from tac_bootstrap.infrastructure.template_repo import TemplateRepository
 
