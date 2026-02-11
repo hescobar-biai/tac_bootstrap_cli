@@ -1,0 +1,35 @@
+# Create GitHub Issue from Task File
+
+Create a GitHub issue from a feature task file in `project/tasks/`.
+
+## Parameters
+
+- `$ARGUMENTS` - Two space-separated values:
+  - **Argument 1**: Feature identifier (e.g., `feature-012`)
+  - **Argument 2**: Repository (e.g., `{{ config.project.name }}`)
+
+## Instructions
+
+1. Parse `$ARGUMENTS` to extract:
+   - Feature ID: first word
+   - Repository: second word
+2. Read the task file at `project/tasks/<feature-id>-*.md` (use glob to find the exact filename)
+3. Extract the title from the first H1 heading (`# Title`)
+4. Build the issue body starting with `adw_id: <feature-id>-v2` followed by all content after the H1 heading
+5. Create the issue using:
+   ```bash
+   gh issue create --repo <repo> --title "<title>" --body "<body>"
+   ```
+6. After creating the issue, output: `issue number: #<number>`
+
+## Example Usage
+
+```
+/create-gh-issue feature-012 {{ config.project.name }}
+```
+
+This will:
+- Find `project/tasks/feature-012-prompt-versioning.md`
+- Create issue in `{{ config.project.name }}`
+- Create issue titled "Feature-012: Prompt Versioning"
+- Body starts with `adw_id: feature-012-v2`
