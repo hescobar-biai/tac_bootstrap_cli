@@ -343,9 +343,6 @@ class UpgradeService:
                     console.print(f"  [red]• {err}[/red]")
                 raise Exception(result.error or "Scaffold apply failed")
 
-            # Post-migration: Ensure all required fields are present
-            self._ensure_all_config_fields()
-
             return True, f"Successfully upgraded to v{self.get_target_version()}"
 
         except Exception as e:
@@ -362,3 +359,8 @@ class UpgradeService:
                         shutil.copytree(backup_source, target)
 
             return False, f"Upgrade failed: {e}"
+
+        finally:
+            # Post-migration: ALWAYS ensure all required fields are present
+            # This runs whether upgrade succeeded or failed
+            self._ensure_all_config_fields()
