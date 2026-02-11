@@ -92,7 +92,8 @@ def get_model_id(model_type: str) -> str:
 
     Resolution order:
     1. Environment variable (ANTHROPIC_DEFAULT_{TYPE}_MODEL) - highest priority
-    2. Hardcoded default - fallback
+    2. config.yml: agentic.model_policy.{type}_model
+    3. Hardcoded default - fallback
 
     Args:
         model_type: "opus", "sonnet", or "haiku"
@@ -106,7 +107,24 @@ def get_model_id(model_type: str) -> str:
     if env_value:
         return env_value
 
-    # Tier 2: Hardcoded defaults
+    # Tier 2: Load from config.yml if available
+    try:
+        # Try to find config.yml in project root (parent of apps/orchestrator_3_stream)
+        project_root = Path(__file__).parent.parent.parent.parent.parent
+        config_path = project_root / "config.yml"
+
+        if config_path.exists():
+            import yaml
+            with open(config_path) as f:
+                config_data = yaml.safe_load(f)
+                if config_data:
+                    model = config_data.get("agentic", {}).get("model_policy", {}).get(f"{model_type}_model")
+                    if model:
+                        return model
+    except Exception:
+        pass  # Fall through to hardcoded default
+
+    # Tier 3: Hardcoded defaults
     defaults = {
         "opus": "claude-opus-4-5-20251101",
         "sonnet": "claude-sonnet-4-5-20250929",
