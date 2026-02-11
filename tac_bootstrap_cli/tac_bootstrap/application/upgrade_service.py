@@ -301,6 +301,13 @@ class UpgradeService:
         if config is None:
             return False, "Could not load existing configuration"
 
+        # Ensure bootstrap config has backup_retention field
+        if not config.bootstrap:
+            from tac_bootstrap.domain.models import BootstrapConfig
+            config.bootstrap = BootstrapConfig()
+        elif not hasattr(config.bootstrap, 'backup_retention') or config.bootstrap.backup_retention is None:
+            config.bootstrap.backup_retention = 3
+
         # Enable orchestrator if requested
         if with_orchestrator:
             config.orchestrator = OrchestratorConfig(enabled=True)
