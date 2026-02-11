@@ -212,7 +212,31 @@ class UpgradeService:
         if self.config_path.exists():
             shutil.copy2(self.config_path, backup_dir / "config.yml")
 
+        # Clean up old backups (keep only last 3)
+        self._cleanup_old_backups(keep_count=3)
+
         return backup_dir
+
+    def _cleanup_old_backups(self, keep_count: int = 3) -> None:
+        """Remove old backup directories, keeping only the most recent ones.
+
+        Args:
+            keep_count: Number of recent backups to keep (default: 3)
+        """
+        try:
+            # Find all backup directories
+            backup_dirs = sorted(
+                [d for d in self.project_path.glob(".tac-backup-*") if d.is_dir()],
+                key=lambda p: p.name,  # Sorts by timestamp in name
+                reverse=True  # Newest first
+            )
+
+            # Remove old backups
+            for old_backup in backup_dirs[keep_count:]:
+                shutil.rmtree(old_backup)
+                console.print(f"[dim]Removed old backup: {old_backup.name}[/dim]")
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not clean up old backups: {e}[/yellow]")
 
     def get_changes_preview(self, with_orchestrator: bool = False) -> List[str]:
         """Get list of changes that will be made.
