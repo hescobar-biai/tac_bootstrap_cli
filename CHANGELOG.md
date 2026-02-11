@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-02-10
+
+### Added - 3-Tier Runtime Model Configuration System
+
+**Core Model Configuration:**
+- **`get_model_id(model_type)` function** in `adw_modules/workflow_ops.py` - Implements 3-tier resolution hierarchy:
+  1. Environment variables (`ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL`, `ANTHROPIC_DEFAULT_HAIKU_MODEL`)
+  2. Configuration file (`config.yml: agentic.model_policy.{opus,sonnet,haiku}_model`)
+  3. Hardcoded defaults (Opus: `claude-opus-4-5-20251101`, Sonnet: `claude-sonnet-4-5-20250929`, Haiku: `claude-haiku-4-5-20251001`)
+
+**Configuration Schema Extension:**
+- `config.yml` - Added optional fields to `agentic.model_policy`:
+  - `opus_model: Optional[str]` - Override Opus model ID
+  - `sonnet_model: Optional[str]` - Override Sonnet model ID
+  - `haiku_model: Optional[str]` - Override Haiku model ID
+- `tac_bootstrap_cli/tac_bootstrap/domain/models.py` - Extended Pydantic `ModelPolicy` with three new optional fields
+
+**Dynamic Model Resolution Functions:**
+- `get_resolved_model_opus()`, `get_resolved_model_sonnet()`, `get_resolved_model_haiku()` in `adw_agent_sdk.py`
+- `get_model_fallback_chain()` in `agent.py` - Returns dynamic fallback mapping with resolved model IDs
+- `get_fallback_model(current_model)` in `agent.py` - Retrieves fallback model for any given model
+- `get_fast_model()` in `adw_summarizer.py` - Returns Haiku model ID for fast operations
+
+**Orchestrator Updates:**
+- `adw_sdlc_zte_iso.py` - Updated 6 phases (plan, build, test, review, document, ship) to use `get_model_id("sonnet")`
+- `adw_sdlc_iso.py` - Updated 5 phases (plan, build, test, review, document) to use dynamic model resolution
+- `adw_ship_iso.py` - Updated ship phase orchestrator
+
+**Workflow Updates:**
+- `adw_plan_build_review.py` - Updated model parameter initialization to use `get_model_id("opus")`
+- `adw_plan_build_review_fix.py` - Updated plan, build, review, and fix models to use dynamic resolution
+
+**Template Synchronization:**
+- 11 Jinja2 templates synchronized with source implementations:
+  - `adws/adw_modules/workflow_ops.py.j2`
+  - `adws/adw_modules/agent.py.j2`
+  - `adws/adw_modules/adw_summarizer.py.j2`
+  - `adws/adw_modules/adw_agent_sdk.py.j2`
+  - `adws/adw_sdlc_zte_iso.py.j2`, `adws/adw_sdlc_iso.py.j2`, `adws/adw_ship_iso.py.j2`
+  - `adws/adw_workflows/adw_plan_build_review.py.j2`
+  - `adws/adw_workflows/adw_plan_build_review_fix.py.j2`
+  - `config/config.yml.j2` (with conditional Jinja2 rendering)
+
+**Environment Variable Documentation:**
+- `.env.example` - Added optional section documenting 3 new environment variables for model configuration
+
+**Comprehensive Testing & Documentation:**
+- `adws/tests/test_model_configuration.py` - 23-test suite covering:
+  - 3-tier resolution hierarchy verification
+  - Environment variable override validation
+  - Configuration file loading
+  - Model fallback chain logic
+  - Fast model resolution
+  - Edge cases and error handling
+- `MODEL_CONFIGURATION.md` - Complete documentation with:
+  - Usage examples for all three configuration methods
+  - API reference for all resolver functions
+  - Architecture details and implementation flow
+  - Migration guide for existing projects
+  - Troubleshooting section
+  - Future enhancement ideas
+
+**Additional Templates:**
+- `.claude/commands/create-gh-issue.md` - Command template for creating GitHub issues from task files
+- `tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py.j2` - ScaffoldService template for project generation
+
+**CLI Roadmap:**
+- `CLI_ROADMAP_100PERCENT.md` - Comprehensive analysis of 20 features needed for 100% CLI completeness:
+  - 3 Tier 1 CRITICAL features (11h effort)
+  - 7 Tier 2 IMPORTANT features (18h effort)
+  - 10 Tier 3 NICE-TO-HAVE features (20h effort)
+  - 4-6 week implementation timeline with effort estimates
+
+### Changed
+- All orchestrators and workflows now dynamically resolve model IDs at runtime
+- `MODEL_FALLBACK_CHAIN` refactored from static dict to `get_model_fallback_chain()` function
+- `FAST_MODEL` now calls `get_fast_model()` for dynamic resolution
+- New projects inherit complete model configuration system through template synchronization
+
+### Benefits
+- 🔄 **Runtime Configuration** - Change Claude models without code modifications
+- 💰 **Cost Optimization** - Use cheaper models (Haiku) for testing, premium models (Opus) for production
+- 🌍 **Environment Flexibility** - Different models for dev, staging, production
+- 🔒 **Vendor Stability** - Pin to specific model versions for reproducibility
+- ✅ **Zero Breaking Changes** - 100% backward compatible with existing projects
+
 ## [0.10.4] - 2026-02-09
 
 ### Fixed
