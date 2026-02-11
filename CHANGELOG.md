@@ -7,6 +7,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-02-10
+
+### Added - Phase 1: MVP Completeness (Tier 1 Critical Features)
+
+**Feature 1: Exhaustive Project Validation**
+- System requirements checking: git >= 2.30, python >= 3.10, uv, gh CLI
+- Project name validation (slug format: lowercase, hyphens, 3-50 chars)
+- Project path validation (no special characters, writable permissions)
+- Multi-layer validation with SYSTEM level issues
+- New CLI commands: `health-check`, `validate`
+- Integrated preflight checks in `init` command
+- 66 comprehensive validation tests
+
+**Feature 2: Schema Migration Framework**
+- Migration definitions for v1→v2 schema transformation
+- `MigrationService` with apply/rollback/dry-run capabilities
+- Backup and restore functionality
+- Config schema_version field tracking (now v2)
+- Metadata block tracking (generated_at, last_upgrade, template_checksums)
+- New CLI commands: `migrate`, `rollback`
+- Support for multi-step migration paths
+- 78 comprehensive migration tests
+
+**Feature 3: CLI Analytics & Telemetry**
+- `TelemetryService` for opt-in usage tracking
+- Privacy-first design (no IP, paths, credentials, secrets)
+- Local file-based storage at `~/.tac-bootstrap/telemetry/`
+- Daily log rotation with aggregated statistics
+- Event, error, and performance tracking
+- New CLI command: `telemetry enable|disable|status|clear`
+- ScaffoldService integration tracking operations
+- Disabled by default (user opt-in)
+- 53 comprehensive telemetry tests
+
+**Feature 4: Interactive Setup Wizard Enhancement**
+- `UIComponents` class for reusable Rich UI components
+- Directory tree preview visualization (architecture-aware)
+- Real-time validation feedback with inline markers
+- Multi-step wizard with progress headers [1/7]
+- Configuration summary in Rich Table
+- New flags: `--enhanced`, `--preview` for init command
+- Smart default suggestions filtered by language
+- Success message with next steps
+- 47 comprehensive wizard enhancement tests
+
+### Changed
+- CLI now includes 4 new commands: health-check, validate, migrate, rollback, telemetry
+- Config schema updated to v2 with metadata tracking
+- ScaffoldService now accepts optional telemetry parameter
+- Init command now performs preflight validation before scaffolding
+- Init command now supports --enhanced and --preview flags
+
+### Template Synchronization
+- Created 6 new .j2 templates for Phase 1 features:
+  - `migrations.py.j2`
+  - `migration_service.py.j2`
+  - `validation_service.py.j2`
+  - `telemetry.py.j2`
+  - `ui_components.py.j2`
+  - Updated `config.yml.j2` with schema_version field
+
+### Quality Metrics
+- Total new tests: 244 (all passing)
+- Overall CLI test coverage: 1206+ tests
+- Zero breaking changes - 100% backward compatible
+- All new features are opt-in or backward-compatible
+
+### Benefits
+- 🔍 **Robustness**: Validate system requirements before project generation
+- 🔄 **Safety**: Migrate schemas safely with rollback capabilities
+- 📊 **Insights**: Track usage patterns with privacy-first telemetry (opt-in)
+- 👥 **UX**: Enhanced interactive wizard with visual feedback
+
+---
+
 ## [0.11.2] - 2026-02-10
 
 ### Added - 3-Tier Runtime Model Configuration System
