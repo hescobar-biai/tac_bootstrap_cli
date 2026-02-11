@@ -13,6 +13,46 @@ Event summarizer for Claude Desktop Hooks
 import json
 import os
 import sys
+from pathlib import Path
+import yaml
+
+
+def get_summarization_model():
+    """
+    Get the model ID for summarization with 3-tier resolution.
+
+    Resolution order:
+    1. Environment variable (ANTHROPIC_DEFAULT_HAIKU_MODEL) - highest priority
+    2. config.yml: agentic.model_policy.haiku_model
+    3. Hardcoded default - fallback
+    """
+    # Tier 1: Environment variable
+    env_model = os.getenv('ANTHROPIC_DEFAULT_HAIKU_MODEL')
+    if env_model:
+        return env_model
+
+    # Tier 2: Load from config.yml if available
+    try:
+        # Try to find config.yml in common locations
+        config_paths = [
+            Path.cwd() / "config.yml",
+            Path.home() / ".config" / "tac" / "config.yml",
+            Path(__file__).parent.parent.parent.parent.parent / "config.yml",
+        ]
+
+        for config_path in config_paths:
+            if config_path.exists():
+                with open(config_path) as f:
+                    config_data = yaml.safe_load(f)
+                    if config_data:
+                        model = config_data.get("agentic", {}).get("model_policy", {}).get("haiku_model")
+                        if model:
+                            return model
+    except Exception:
+        pass  # Fall through to hardcoded default
+
+    # Tier 3: Hardcoded default
+    return "claude-haiku-4-5-20251001"
 
 
 def generate_event_summary(event_data):
@@ -82,7 +122,7 @@ Write a brief, natural language summary that captures what happened."""
         client = anthropic.Anthropic(api_key=api_key)
 
         message = client.messages.create(
-            model="claude-haiku-4-5-20251001",  # Fast model for summaries
+            model=get_summarization_model(),  # Fast model for summaries (dynamically resolved)
             max_tokens=50,
             temperature=0.3,
             messages=[

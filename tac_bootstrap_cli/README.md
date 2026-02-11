@@ -1058,11 +1058,88 @@ Token usage is tracked and logged in:
 
 ### Environment Variables
 
+#### Required Variables
+
+| Variable | Description |
+|----------|-------------|
+| `ANTHROPIC_API_KEY` | API key for programmatic mode |
+| `GITHUB_PAT` | GitHub Personal Access Token for integration |
+
+#### Optional: Claude Model Configuration
+
+Override default Claude model versions via environment variables. TAC Bootstrap uses a **3-tier resolution hierarchy**:
+
+1. **Environment Variables** (highest priority) - `ANTHROPIC_DEFAULT_*_MODEL`
+2. **config.yml** (medium priority) - `agentic.model_policy.*_model`
+3. **Hardcoded Defaults** (fallback) - Built-in model versions
+
+**Environment Variables:**
+
+| Variable | Default Value | Description |
+|----------|---------------|-------------|
+| `ANTHROPIC_DEFAULT_OPUS_MODEL` | `claude-opus-4-5-20251101` | Override Opus model ID |
+| `ANTHROPIC_DEFAULT_SONNET_MODEL` | `claude-sonnet-4-5-20250929` | Override Sonnet model ID |
+| `ANTHROPIC_DEFAULT_HAIKU_MODEL` | `claude-haiku-4-5-20251001` | Override Haiku model ID |
+
+**Usage Examples:**
+
+```bash
+# Override all models via environment variables
+export ANTHROPIC_DEFAULT_OPUS_MODEL="claude-opus-4-5-20251101"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="claude-sonnet-4-5-20250929"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="claude-haiku-4-5-20251001"
+
+# Run workflow with custom models
+uv run adws/adw_sdlc_iso.py --issue 123
+
+# Use different models for cost optimization (testing)
+export ANTHROPIC_DEFAULT_OPUS_MODEL="claude-haiku-4-5-20251001"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="claude-haiku-4-5-20251001"
+uv run adws/adw_sdlc_iso.py --issue 124
+```
+
+**Configuration File Alternative (config.yml):**
+
+```yaml
+agentic:
+  model_policy:
+    default: "sonnet"
+    heavy: "opus"
+    fallback: "haiku"
+    # Optional: Override model IDs without environment variables
+    opus_model: "claude-opus-4-5-20251101"
+    sonnet_model: "claude-sonnet-4-5-20250929"
+    haiku_model: "claude-haiku-4-5-20251001"
+```
+
+**Resolution Order (Example):**
+
+```
+Workflow calls: get_model_id("opus")
+  ↓
+1. Check env var: $ANTHROPIC_DEFAULT_OPUS_MODEL
+   → If set: use this value
+   → If not set: continue to step 2
+  ↓
+2. Check config.yml: agentic.model_policy.opus_model
+   → If set: use this value
+   → If not set: continue to step 3
+  ↓
+3. Use hardcoded default: "claude-opus-4-5-20251101"
+```
+
+**Benefits:**
+
+- **Flexibility**: Change models without redeploying code
+- **Multi-Environment**: Use different models for dev/staging/prod
+- **Cost Optimization**: Quick switch to cheaper models for testing
+- **Backward Compatible**: No changes required if using defaults
+
+#### Utility Variables
+
 | Variable | Description |
 |----------|-------------|
 | `CLAUDE_CODE_PATH` | Path to Claude Code executable |
-| `ANTHROPIC_API_KEY` | For programmatic mode |
-| `GITHUB_PAT` | GitHub integration |
 
 ## Entity Generation
 

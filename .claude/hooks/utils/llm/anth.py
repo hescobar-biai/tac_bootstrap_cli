@@ -10,6 +10,46 @@
 import os
 import sys
 from dotenv import load_dotenv
+from pathlib import Path
+import yaml
+
+
+def get_haiku_model():
+    """
+    Get Haiku model ID with 3-tier resolution.
+
+    Resolution order:
+    1. Environment variable (ANTHROPIC_DEFAULT_HAIKU_MODEL) - highest priority
+    2. config.yml: agentic.model_policy.haiku_model
+    3. Hardcoded default - fallback
+    """
+    # Tier 1: Environment variable
+    env_model = os.getenv('ANTHROPIC_DEFAULT_HAIKU_MODEL')
+    if env_model:
+        return env_model
+
+    # Tier 2: Load from config.yml if available
+    try:
+        # Try to find config.yml in common locations
+        config_paths = [
+            Path.cwd() / "config.yml",
+            Path.home() / ".config" / "tac" / "config.yml",
+            Path(__file__).parent.parent.parent.parent.parent / "config.yml",
+        ]
+
+        for config_path in config_paths:
+            if config_path.exists():
+                with open(config_path) as f:
+                    config_data = yaml.safe_load(f)
+                    if config_data:
+                        model = config_data.get("agentic", {}).get("model_policy", {}).get("haiku_model")
+                        if model:
+                            return model
+    except Exception:
+        pass  # Fall through to hardcoded default
+
+    # Tier 3: Hardcoded default
+    return "claude-3-5-haiku-20241022"
 
 
 def prompt_llm(prompt_text):
@@ -34,7 +74,7 @@ def prompt_llm(prompt_text):
         client = anthropic.Anthropic(api_key=api_key)
 
         message = client.messages.create(
-            model="claude-3-5-haiku-20241022",  # Fastest Anthropic model
+            model=get_haiku_model(),  # Fastest Anthropic model (dynamically resolved)
             max_tokens=100,
             temperature=0.7,
             messages=[{"role": "user", "content": prompt_text}],

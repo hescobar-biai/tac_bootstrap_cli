@@ -2,6 +2,11 @@
 allowed-tools: Read, Glob, Grep, Bash, Edit, Write, Task
 description: Prime agents with comprehensive understanding of the Nile adaptive shopping application
 model: opus
+# NOTE: Model "opus" uses 3-tier resolution:
+#   1. ANTHROPIC_DEFAULT_OPUS_MODEL (env var) - highest priority
+#   2. config.yml agentic.model_policy.opus_model - project config
+#   3. Hardcoded default "claude-opus-4-5-20251101" - fallback
+# See .claude/MODEL_RESOLUTION.md for details
 ---
 
 # Purpose

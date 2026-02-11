@@ -19,6 +19,7 @@ from claude_agent_sdk import (
 )
 
 from . import database
+from . import config
 from .autocomplete_models import (
     AutocompleteExpertiseData,
     AutocompleteItem,
@@ -199,7 +200,7 @@ class AutocompleteAgent:
         # Build ClaudeAgentOptions
         options_dict = {
             "system_prompt": placeholder_system_prompt,
-            "model": "claude-haiku-4-5-20251001",  # LATEST HAIKU MODEL
+            "model": config.get_model_id("haiku"),  # Fast model for autocomplete (dynamically resolved)
             "cwd": self.working_dir,
         }
 

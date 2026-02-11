@@ -105,13 +105,109 @@ class UpgradeService:
                     config_data["version"] = config_data["tac_version"]
                 config_data.pop("tac_version")
 
+            # Migrate schema if needed
+            config_data = self._migrate_schema(config_data)
+
             # Actualizar version al target
             config_data["version"] = self.get_target_version()
 
-            return TACConfig(**config_data)
+            config = TACConfig(**config_data)
+            return config
         except Exception as e:
             console.print(f"[red]Error loading config: {e}[/red]")
+            import traceback
+            traceback.print_exc()
             return None
+
+    def _ensure_all_config_fields(self) -> None:
+        """Ensure all required fields are present in config.yml after upgrade.
+
+        This is a post-migration step that ensures the config.yml file has all
+        required fields (model IDs, backup retention, schema version) by directly
+        modifying the YAML file without relying on template rendering.
+        """
+        if not self.config_path.exists():
+            return
+
+        try:
+            # Read current config
+            with open(self.config_path) as f:
+                config_data = yaml.safe_load(f)
+
+            if config_data is None:
+                config_data = {}
+
+            needs_update = False
+
+            # Ensure model fields in agentic.model_policy
+            if "agentic" not in config_data:
+                config_data["agentic"] = {}
+            if "model_policy" not in config_data["agentic"]:
+                config_data["agentic"]["model_policy"] = {}
+
+            model_policy = config_data["agentic"]["model_policy"]
+            for field, default_value in [
+                ("opus_model", "claude-opus-4-5-20251101"),
+                ("sonnet_model", "claude-sonnet-4-5-20250929"),
+                ("haiku_model", "claude-haiku-4-5-20251001"),
+            ]:
+                if field not in model_policy or model_policy[field] is None:
+                    model_policy[field] = default_value
+                    needs_update = True
+
+            # Ensure bootstrap_retention field
+            if "bootstrap" not in config_data:
+                config_data["bootstrap"] = {}
+
+            if "backup_retention" not in config_data["bootstrap"]:
+                config_data["bootstrap"]["backup_retention"] = 3
+                needs_update = True
+
+            # Update schema_version to 2
+            if config_data.get("schema_version") != 2:
+                config_data["schema_version"] = 2
+                needs_update = True
+
+            # Write back if any updates needed
+            if needs_update:
+                with open(self.config_path, "w") as f:
+                    yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
+                console.print("[green]✓ config.yml updated with model IDs and backup settings[/green]")
+
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not ensure config fields: {e}[/yellow]")
+
+    def _migrate_schema(self, config_data: dict) -> dict:
+        """Migrate configuration schema to latest version.
+
+        Args:
+            config_data: Raw configuration dictionary
+
+        Returns:
+            Migrated configuration dictionary
+        """
+        current_schema = config_data.get("schema_version", 1)
+
+        # Migrate from schema v1 to v2 (add model IDs)
+        if current_schema == 1:
+            if "agentic" not in config_data:
+                config_data["agentic"] = {}
+            if "model_policy" not in config_data["agentic"]:
+                config_data["agentic"]["model_policy"] = {}
+
+            # Add new model ID fields if not present
+            model_policy = config_data["agentic"]["model_policy"]
+            if "opus_model" not in model_policy:
+                model_policy["opus_model"] = "claude-opus-4-5-20251101"
+            if "sonnet_model" not in model_policy:
+                model_policy["sonnet_model"] = "claude-sonnet-4-5-20250929"
+            if "haiku_model" not in model_policy:
+                model_policy["haiku_model"] = "claude-haiku-4-5-20251001"
+
+            # Update schema version
+            config_data["schema_version"] = 2
+
+        return config_data
 
     def create_backup(self) -> Path:
         """Create backup of upgradeable directories.
@@ -132,7 +228,35 @@ class UpgradeService:
         if self.config_path.exists():
             shutil.copy2(self.config_path, backup_dir / "config.yml")
 
+        # Clean up old backups (keep based on config setting)
+        keep_count = 3  # Default value
+        config = self.load_existing_config()
+        if config and config.bootstrap and hasattr(config.bootstrap, 'backup_retention'):
+            keep_count = config.bootstrap.backup_retention
+        self._cleanup_old_backups(keep_count=keep_count)
+
         return backup_dir
+
+    def _cleanup_old_backups(self, keep_count: int = 3) -> None:
+        """Remove old backup directories, keeping only the most recent ones.
+
+        Args:
+            keep_count: Number of recent backups to keep (default: 3)
+        """
+        try:
+            # Find all backup directories
+            backup_dirs = sorted(
+                [d for d in self.project_path.glob(".tac-backup-*") if d.is_dir()],
+                key=lambda p: p.name,  # Sorts by timestamp in name
+                reverse=True  # Newest first
+            )
+
+            # Remove old backups
+            for old_backup in backup_dirs[keep_count:]:
+                shutil.rmtree(old_backup)
+                console.print(f"[dim]Removed old backup: {old_backup.name}[/dim]")
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not clean up old backups: {e}[/yellow]")
 
     def get_changes_preview(self, with_orchestrator: bool = False) -> List[str]:
         """Get list of changes that will be made.
@@ -186,6 +310,13 @@ class UpgradeService:
         if config is None:
             return False, "Could not load existing configuration"
 
+        # Ensure bootstrap config has backup_retention field
+        if not config.bootstrap:
+            from tac_bootstrap.domain.models import BootstrapConfig
+            config.bootstrap = BootstrapConfig()
+        elif not hasattr(config.bootstrap, 'backup_retention') or config.bootstrap.backup_retention is None:
+            config.bootstrap.backup_retention = 3
+
         # Enable orchestrator if requested
         if with_orchestrator:
             config.orchestrator = OrchestratorConfig(enabled=True)
@@ -215,6 +346,7 @@ class UpgradeService:
             return True, f"Successfully upgraded to v{self.get_target_version()}"
 
         except Exception as e:
+
             # Restore from backup if available
             if backup_path and backup_path.exists():
                 console.print("[yellow]Restoring from backup...[/yellow]")
@@ -227,3 +359,8 @@ class UpgradeService:
                         shutil.copytree(backup_source, target)
 
             return False, f"Upgrade failed: {e}"
+
+        finally:
+            # Post-migration: ALWAYS ensure all required fields are present
+            # This runs whether upgrade succeeded or failed
+            self._ensure_all_config_fields()

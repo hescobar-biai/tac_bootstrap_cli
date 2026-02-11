@@ -122,3 +122,4 @@ metadata:
   last_upgrade: null
   schema_version: 2
   template_checksums: {}
+  backup_retention: 3  # Number of backups to keep during upgrade (1-10)

@@ -390,6 +390,7 @@ class ScaffoldService:
             "find_and_summarize",
             "scout",
             "question",
+            "create-gh-issue",
             # TAC-9/10: Context and agent delegation commands
             "background",
             "load_ai_docs",

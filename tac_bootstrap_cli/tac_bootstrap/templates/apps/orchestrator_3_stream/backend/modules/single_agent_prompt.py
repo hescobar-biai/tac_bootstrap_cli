@@ -26,12 +26,13 @@ from typing import Any, Optional
 from claude_agent_sdk import AssistantMessage, ClaudeAgentOptions, TextBlock, query
 
 from .logger import OrchestratorLogger
+from . import config
 
 # Configure module logger
 logger = OrchestratorLogger()
 
-# Fast model for summarization (Haiku for speed and cost)
-FAST_MODEL = "claude-haiku-4-5-20251001"
+# Fast model for summarization (Haiku for speed and cost, dynamically resolved)
+FAST_MODEL = config.get_model_id("haiku")
 
 # Load prompt templates from files
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
