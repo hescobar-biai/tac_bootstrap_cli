@@ -126,26 +126,13 @@ class UpgradeService:
         required fields (model IDs, backup retention, schema version) by directly
         modifying the YAML file without relying on template rendering.
         """
-        log_file = self.project_path / "upgrade.log"
-
-        with open(log_file, "a") as f:
-            f.write(f"[ENSURE] _ensure_all_config_fields started\n")
-            f.write(f"[ENSURE] config_path: {self.config_path}\n")
-            f.write(f"[ENSURE] exists: {self.config_path.exists()}\n")
-
         if not self.config_path.exists():
-            with open(log_file, "a") as f:
-                f.write(f"[ENSURE] Config doesn't exist, returning\n")
             return
 
         try:
             # Read current config
             with open(self.config_path) as f:
-                content = f.read()
-                config_data = yaml.safe_load(content)
-
-            with open(log_file, "a") as f:
-                f.write(f"[ENSURE] config_data loaded: {config_data is not None}\n")
+                config_data = yaml.safe_load(f)
 
             if config_data is None:
                 config_data = {}
@@ -167,47 +154,28 @@ class UpgradeService:
                 if field not in model_policy or model_policy[field] is None:
                     model_policy[field] = default_value
                     needs_update = True
-                    with open(log_file, "a") as f:
-                        f.write(f"[ENSURE] Added {field}\n")
 
             # Ensure bootstrap_retention field
             if "bootstrap" not in config_data:
                 config_data["bootstrap"] = {}
 
-            with open(log_file, "a") as f:
-                f.write(f"[ENSURE] bootstrap exists: {'bootstrap' in config_data}\n")
-                f.write(f"[ENSURE] backup_retention in bootstrap: {'backup_retention' in config_data.get('bootstrap', {})}\n")
-
             if "backup_retention" not in config_data["bootstrap"]:
                 config_data["bootstrap"]["backup_retention"] = 3
                 needs_update = True
-                with open(log_file, "a") as f:
-                    f.write(f"[ENSURE] Added backup_retention = 3\n")
 
             # Update schema_version to 2
             if config_data.get("schema_version") != 2:
                 config_data["schema_version"] = 2
                 needs_update = True
-                with open(log_file, "a") as f:
-                    f.write(f"[ENSURE] Updated schema_version to 2\n")
-
-            with open(log_file, "a") as f:
-                f.write(f"[ENSURE] needs_update: {needs_update}\n")
 
             # Write back if any updates needed
             if needs_update:
                 with open(self.config_path, "w") as f:
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
-                with open(log_file, "a") as f:
-                    f.write(f"[ENSURE] File written successfully\n")
                 console.print("[green]✓ config.yml updated with model IDs and backup settings[/green]")
 
         except Exception as e:
-            # Log errors
-            with open(log_file, "a") as f:
-                f.write(f"[ENSURE] Exception: {e}\n")
-                import traceback
-                f.write(traceback.format_exc())
+            console.print(f"[yellow]Warning: Could not ensure config fields: {e}[/yellow]")
 
     def _migrate_schema(self, config_data: dict) -> dict:
         """Migrate configuration schema to latest version.
@@ -337,17 +305,8 @@ class UpgradeService:
         Returns:
             Tuple of (success, message)
         """
-        # Debug log
-        log_file = self.project_path / "upgrade.log"
-        with open(log_file, "w") as f:
-            f.write(f"[START] perform_upgrade called\n")
-
         # Load existing config
         config = self.load_existing_config()
-        with open(log_file, "a") as f:
-            f.write(f"[LOAD] config loaded: {config is not None}\n")
-            if config and config.bootstrap:
-                f.write(f"[LOAD] backup_retention before ensure: {config.bootstrap.backup_retention}\n")
         if config is None:
             return False, "Could not load existing configuration"
 
@@ -404,19 +363,4 @@ class UpgradeService:
         finally:
             # Post-migration: ALWAYS ensure all required fields are present
             # This runs whether upgrade succeeded or failed
-            log_file = self.project_path / "upgrade.log"
-            with open(log_file, "a") as f:
-                f.write(f"[FINALLY] Post-migration starting\n")
-                f.write(f"[FINALLY] config_path exists: {self.config_path.exists()}\n")
-
             self._ensure_all_config_fields()
-
-            with open(log_file, "a") as f:
-                f.write(f"[FINALLY] Post-migration complete\n")
-                if self.config_path.exists():
-                    with open(self.config_path) as cf:
-                        content = cf.read()
-                        if "backup_retention" in content:
-                            f.write(f"[FINALLY] backup_retention FOUND in config.yml\n")
-                        else:
-                            f.write(f"[FINALLY] backup_retention NOT FOUND in config.yml\n")
