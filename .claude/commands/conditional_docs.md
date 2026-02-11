@@ -2122,3 +2122,11 @@ Esta guía ayuda a determinar qué documentación leer basado en los cambios esp
     - When integrating aiosqlite async database operations
     - When validating database models with proper type hints
     - When configuring orchestrator in generated projects
+
+- app_docs/feature-f85a5456-model-id-overrides.md
+  - Conditions:
+    - When working with model_policy configuration in config.yml
+    - When adding or modifying opus_model, sonnet_model, haiku_model fields
+    - When implementing Claude model ID overrides in agentic layer
+    - When validating optional model configuration fields in domain models
+    - When testing config.yml.j2 template rendering with model overrides
