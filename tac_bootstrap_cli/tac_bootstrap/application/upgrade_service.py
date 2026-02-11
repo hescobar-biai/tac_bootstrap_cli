@@ -120,11 +120,11 @@ class UpgradeService:
             return None
 
     def _ensure_all_config_fields(self) -> None:
-        """Ensure all required fields are present in config.yml.
+        """Ensure all required fields are present in config.yml after upgrade.
 
         This is a post-migration step that ensures the config.yml file has all
-        required fields (model IDs, backup retention, schema version) even if they
-        weren't included during template rendering.
+        required fields (model IDs, backup retention, schema version) by directly
+        modifying the YAML file without relying on template rendering.
         """
         if not self.config_path.exists():
             return
@@ -132,12 +132,13 @@ class UpgradeService:
         try:
             # Read current config
             with open(self.config_path) as f:
-                config_data = yaml.safe_load(f)
+                content = f.read()
+                config_data = yaml.safe_load(content)
 
             if config_data is None:
-                return
+                config_data = {}
 
-            updated = False
+            needs_update = False
 
             # Ensure model fields in agentic.model_policy
             if "agentic" not in config_data:
@@ -151,31 +152,32 @@ class UpgradeService:
                 ("sonnet_model", "claude-sonnet-4-5-20250929"),
                 ("haiku_model", "claude-haiku-4-5-20251001"),
             ]:
-                if field not in model_policy:
+                if field not in model_policy or model_policy[field] is None:
                     model_policy[field] = default_value
-                    updated = True
+                    needs_update = True
 
             # Ensure bootstrap_retention field
             if "bootstrap" not in config_data:
                 config_data["bootstrap"] = {}
             if "backup_retention" not in config_data["bootstrap"]:
                 config_data["bootstrap"]["backup_retention"] = 3
-                updated = True
+                needs_update = True
 
             # Update schema_version to 2
             if config_data.get("schema_version") != 2:
                 config_data["schema_version"] = 2
-                updated = True
+                needs_update = True
 
-            # Always write to ensure consistency
-            if updated:
+            # Write back if any updates needed
+            if needs_update:
                 with open(self.config_path, "w") as f:
                     yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
-                console.print("[green]✓ Added missing fields to config.yml (models, backup_retention)[/green]")
+                console.print("[green]✓ config.yml updated with model IDs and backup settings[/green]")
 
         except Exception as e:
-            # Don't fail upgrade if post-migration has issues
-            pass
+            # Silently fail post-migration - don't break upgrade
+            import traceback
+            traceback.print_exc()
 
     def _migrate_schema(self, config_data: dict) -> dict:
         """Migrate configuration schema to latest version.
