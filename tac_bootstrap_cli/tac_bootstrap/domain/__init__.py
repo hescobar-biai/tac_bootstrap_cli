@@ -29,6 +29,14 @@ from tac_bootstrap.domain.models import (
     get_frameworks_for_language,
     get_package_managers_for_language,
 )
+from tac_bootstrap.domain.migrations import (
+    MIGRATION_REGISTRY,
+    Migration,
+    get_latest_version,
+    get_migration_path,
+    migrate_v1_to_v2,
+    migrate_v2_to_v1,
+)
 from tac_bootstrap.domain.validators import (
     ARCHITECTURES_REQUIRING_BASE_CLASSES,
     COMPATIBLE_FRAMEWORKS,
@@ -81,4 +89,11 @@ __all__ = [
     "COMPATIBLE_FRAMEWORKS",
     "COMPATIBLE_PACKAGE_MANAGERS",
     "ARCHITECTURES_REQUIRING_BASE_CLASSES",
+    # Migrations
+    "Migration",
+    "MIGRATION_REGISTRY",
+    "get_latest_version",
+    "get_migration_path",
+    "migrate_v1_to_v2",
+    "migrate_v2_to_v1",
 ]
