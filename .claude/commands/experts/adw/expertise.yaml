@@ -1,7 +1,7 @@
 overview:
   description: "AI Developer Workflows - Automated SDLC orchestration with isolated worktrees and GitHub integration"
   purpose: "Execute complete software development lifecycle through composable workflow scripts"
-  last_updated: "2026-02-05T16:30:00"
+  last_updated: "2026-02-10"
   total_files: 45
   key_files:
     - "adws/adw_sdlc_iso.py"
@@ -100,7 +100,7 @@ core_implementation:
   state_management:
     location: "adws/adw_modules/state.py"
     purpose: "Persistent state tracking across workflow phases"
-    line_count: "~200 lines"
+    line_count: "259 lines"
 
     ADWState_class:
       lines: "15-150"
@@ -156,12 +156,12 @@ core_implementation:
   workflow_orchestration:
     location: "adws/adw_modules/workflow_ops.py"
     purpose: "Shared workflow operations and utilities"
-    line_count: "~2149 lines"
+    line_count: "2463 lines"
 
     key_functions:
       consult_expert:
         signature: "def consult_expert(domain: str, question: str, adw_id: str, logger: logging.Logger, working_dir: Optional[str]) -> AgentPromptResponse"
-        lines: "1710+"
+        lines: "2024+"
         purpose: "REUSE phase of Act → Learn → Reuse loop - consult domain expert using expertise.yaml"
         logic: |
           1. Build slash command: /experts:{domain}:question
@@ -173,7 +173,7 @@ core_implementation:
 
       improve_expert_knowledge:
         signature: "def improve_expert_knowledge(domain: str, check_git_diff: bool, focus_area: Optional[str], adw_id: str, logger: logging.Logger, working_dir: Optional[str]) -> AgentPromptResponse"
-        lines: "1752+"
+        lines: "2066+"
         purpose: "LEARN phase of Act → Learn → Reuse loop - update expertise.yaml based on code changes"
         logic: |
           1. Build args: [check_git_diff, focus_area]
@@ -185,7 +185,7 @@ core_implementation:
 
       extract_file_references_from_issue:
         signature: "def extract_file_references_from_issue(issue: GitHubIssue, logger: logging.Logger, working_dir: Optional[str]) -> dict[str, str]"
-        lines: "1812+"
+        lines: "2126+"
         purpose: "Auto-detect and load markdown files referenced in issue body and comments"
         logic: |
           1. Scan issue body and comments for file references (e.g., plan_tasks_Tac_14.md)
@@ -199,7 +199,7 @@ core_implementation:
 
       format_file_references_for_context:
         signature: "def format_file_references_for_context(file_references: dict[str, str]) -> str"
-        lines: "1925+"
+        lines: "2239+"
         purpose: "Format loaded file references as context for agent prompts"
         logic: |
           1. Build markdown section with file paths and content
@@ -209,7 +209,7 @@ core_implementation:
 
       ensure_adw_id:
         signature: "def ensure_adw_id(issue_number: str, adw_id: Optional[str]) -> str"
-        lines: "~50-100"
+        lines: "1677+"
         logic: |
           1. If adw_id provided: validate format and return
           2. If no adw_id: fetch issue from GitHub
@@ -220,8 +220,8 @@ core_implementation:
         integration: "Called at start of every workflow script"
 
       detect_relevant_docs:
-        signature: "def detect_relevant_docs(issue: GitHubIssue) -> Optional[str]"
-        lines: "~150-200"
+        signature: "def detect_relevant_docs(issue: GitHubIssue) -> list[str]"
+        lines: "1192+"
         purpose: "TAC-9 integration - detect documentation topics from issue"
         logic: |
           1. Parse issue body for keyword patterns
@@ -258,12 +258,12 @@ core_implementation:
   agent_execution:
     location: "adws/adw_modules/agent.py"
     purpose: "Claude Code agent orchestration with model selection"
-    line_count: "~920 lines"
+    line_count: "1328 lines"
 
     key_functions:
       execute_prompt:
         signature: "def execute_prompt(request: AgentPromptRequest) -> AgentPromptResponse"
-        lines: "~200-300"
+        lines: "1193+"
         logic: |
           1. Build claude command with model, cwd, and prompt
           2. Execute via subprocess with environment variables
@@ -274,7 +274,7 @@ core_implementation:
 
       execute_template:
         signature: "def execute_template(request: AgentTemplateRequest) -> AgentPromptResponse"
-        lines: "~350-450"
+        lines: "1232+"
         logic: |
           1. Resolve slash command from request
           2. Select model based on model_set and command mapping
@@ -314,7 +314,7 @@ core_implementation:
   github_integration:
     location: "adws/adw_modules/github.py"
     purpose: "GitHub API operations via gh CLI"
-    line_count: "~500 lines"
+    line_count: "509 lines"
 
     key_functions:
       fetch_issue:
@@ -429,12 +429,12 @@ core_implementation:
   worktree_management:
     location: "adws/adw_modules/worktree_ops.py"
     purpose: "Git worktree operations for workflow isolation"
-    line_count: "~154 lines"
+    line_count: "154 lines"
 
   database_models:
     location: "adws/adw_modules/orch_database_models.py"
     purpose: "SQLite database Pydantic models for orchestrator state tracking"
-    line_count: "343 lines"
+    line_count: "463 lines"
 
     key_models:
       models_range: "65-343"
@@ -449,31 +449,35 @@ core_implementation:
 
   database_implementation:
     location: "adws/adw_modules/adw_database.py"
-    purpose: "Async SQLite database manager for orchestrator persistence (TAC-14 Task 8)"
-    line_count: "1287 lines"
+    purpose: "Async PostgreSQL database operations for orchestrator persistence (TAC-14 Task 8)"
+    line_count: "457 lines"
+    architecture: "Function-based async API using asyncpg connection pooling"
 
-    DatabaseManager_class:
-      lines: "145-1287"
-      purpose: "Zero-configuration async database operations with auto-schema initialization"
-      features:
-        - "Automatic schema initialization from schema_orchestrator.sql"
-        - "WAL mode for concurrent read/write operations"
-        - "Explicit transaction control (BEGIN, COMMIT, ROLLBACK)"
-        - "Connection pooling and async context management"
-        - "Typed operations using orch_database_models.py"
+    key_functions:
+      lines: "49-457"
+      purpose: "Direct database operations without ORM abstraction"
+      functions:
+        - get_pool: "Global asyncpg connection pool initialization"
+        - get_adw: "Fetch ADW record by ID"
+        - update_adw_status: "Update workflow status"
+        - create_agent: "Create agent execution record"
+        - update_agent: "Update agent execution status and results"
+        - write_agent_log: "Log agent operations and tool calls"
+        - write_system_log: "Log system-level orchestrator events"
       integration: "Used by workflow orchestrator for persistent state tracking"
-      database_location: "adws/schema/orchestrator.db (gitignored)"
+      database_type: "PostgreSQL (asyncpg)"
 
     standalone_script:
       location: "adws/adw_database.py"
-      purpose: "Standalone CLI script for database testing and operations (480 lines)"
+      purpose: "Standalone CLI script for database testing and operations"
+      line_count: "480 lines"
       usage: "uv run adws/adw_database.py"
-      pattern: "Demonstrates DatabaseManager usage with example queries"
+      pattern: "Demonstrates database operations with example queries"
 
   websocket_server:
     location: "adws/adw_modules/adw_websockets.py"
     purpose: "Real-time event broadcasting for orchestrator monitoring (TAC-14 Task 12)"
-    line_count: "511 lines"
+    line_count: "598 lines"
     architecture: "Orchestrator Workflow → WebSocket Server → Monitoring Clients"
     features:
       - "Async WebSocket server with connection pooling"
@@ -920,7 +924,7 @@ integrations:
     act_learn_reuse_implementation:
       reuse_phase:
         function: "consult_expert(domain, question, adw_id, logger, working_dir)"
-        location: "adws/adw_modules/workflow_ops.py:1450-1488"
+        location: "adws/adw_modules/workflow_ops.py:2024+"
         pattern: |
           1. Phase workflow calls consult_expert() with domain-specific question
           2. Function executes /experts:{domain}:question via agent
@@ -934,7 +938,7 @@ integrations:
 
       learn_phase:
         function: "improve_expert_knowledge(domain, check_git_diff, focus_area, adw_id, logger, working_dir)"
-        location: "adws/adw_modules/workflow_ops.py:1491-1541"
+        location: "adws/adw_modules/workflow_ops.py:2066+"
         pattern: |
           1. Phase workflow calls improve_expert_knowledge() after completion
           2. Function executes /experts:{domain}:self-improve with focus_area
@@ -960,6 +964,9 @@ integrations:
           4. Phase workflows conditionally call expert functions based on flags
 
 recent_changes:
+  - date: "2026-02-10"
+    description: "Self-improve validation - updated line counts and function locations across modules"
+    files: ["all core modules"]
   - date: "2026-02-05"
     description: "WebSocket server (TAC-14 Task 12), consolidated workflows (Task 10), worktree timing fix"
     files: ["adws/adw_modules/adw_websockets.py", "adws/adw_workflows/*.py", "adws/adw_plan_iso.py"]
