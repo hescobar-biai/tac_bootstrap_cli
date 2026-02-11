@@ -119,6 +119,48 @@ class UpgradeService:
             traceback.print_exc()
             return None
 
+    def _ensure_model_fields_in_config(self) -> None:
+        """Ensure model configuration fields are present in config.yml.
+
+        This is a post-migration step that ensures the config.yml file has the
+        model configuration fields even if they weren't included during template rendering.
+        """
+        if not self.config_path.exists():
+            return
+
+        try:
+            # Read current config
+            with open(self.config_path) as f:
+                config_data = yaml.safe_load(f)
+
+            # Check if model fields are missing
+            model_policy = config_data.get("agentic", {}).get("model_policy", {})
+            needs_update = False
+
+            if "opus_model" not in model_policy:
+                model_policy["opus_model"] = "claude-opus-4-5-20251101"
+                needs_update = True
+            if "sonnet_model" not in model_policy:
+                model_policy["sonnet_model"] = "claude-sonnet-4-5-20250929"
+                needs_update = True
+            if "haiku_model" not in model_policy:
+                model_policy["haiku_model"] = "claude-haiku-4-5-20251001"
+                needs_update = True
+
+            # Update schema_version if needed
+            if config_data.get("schema_version") != 2:
+                config_data["schema_version"] = 2
+                needs_update = True
+
+            # Save if updated
+            if needs_update:
+                with open(self.config_path, "w") as f:
+                    yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
+                console.print("[green]✓ Added model configuration to config.yml[/green]")
+
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not update config.yml with model fields: {e}[/yellow]")
+
     def _migrate_schema(self, config_data: dict) -> dict:
         """Migrate configuration schema to latest version.
 
@@ -249,6 +291,9 @@ class UpgradeService:
                 for err in result.errors:
                     console.print(f"  [red]• {err}[/red]")
                 raise Exception(result.error or "Scaffold apply failed")
+
+            # Post-migration: Ensure model configuration fields are present
+            self._ensure_model_fields_in_config()
 
             return True, f"Successfully upgraded to v{self.get_target_version()}"
 
