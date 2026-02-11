@@ -88,6 +88,11 @@ Bootstrap Agentic Layer for Claude Code with TAC patterns.
   [green]migrate[/green]      Migrate config schema to specific version
   [green]rollback[/green]     Rollback previous schema migration(s)
   [green]telemetry[/green]    Manage anonymous usage tracking
+  [green]plugin[/green]       Manage plugins
+  [green]template[/green]     Template store (search, install, rate)
+  [green]security[/green]     Security scanning and auditing
+  [green]docs[/green]         Generate project documentation
+  [green]test-generate[/green] Generate test scaffolding
   [green]version[/green]      Show version
 
 Use [cyan]tac-bootstrap --help[/cyan] for more information.
@@ -1562,6 +1567,2045 @@ def telemetry(
             "Use: enable, disable, status, or clear"
         )
         raise typer.Exit(1)
+
+
+# ============================================================================
+# PLUGIN COMMANDS
+# ============================================================================
+
+
+@app.command()
+def plugin(
+    action: str = typer.Argument(
+        ...,
+        help="Action: list, info <name>, enable <name>, disable <name>",
+    ),
+    name: Optional[str] = typer.Argument(None, help="Plugin name (for info/enable/disable)"),
+    plugins_dir: Optional[Path] = typer.Option(
+        None, "--plugins-dir", help="Custom plugins directory"
+    ),
+) -> None:
+    """
+    Manage TAC Bootstrap plugins.
+
+    Plugins extend TAC Bootstrap with custom hooks that execute
+    during project generation lifecycle events.
+
+    Examples:
+        $ tac-bootstrap plugin list
+        $ tac-bootstrap plugin info example-plugin
+        $ tac-bootstrap plugin enable example-plugin
+        $ tac-bootstrap plugin disable example-plugin
+    """
+    try:
+        from tac_bootstrap.application.plugin_service import PluginService
+
+        service = PluginService()
+
+        # Determine plugins directory
+        pdir = plugins_dir or Path.cwd() / "plugins"
+        if pdir.is_dir():
+            service.load_plugins(pdir)
+
+        if action == "list":
+            plugins = service.list_plugins()
+            if not plugins:
+                console.print("[yellow]No plugins found.[/yellow]")
+                console.print(f"[dim]Looking in: {pdir}[/dim]")
+                return
+
+            table = Table(title="Installed Plugins", border_style="cyan")
+            table.add_column("Name", style="bold")
+            table.add_column("Version")
+            table.add_column("Author")
+            table.add_column("Status")
+            table.add_column("Hooks")
+
+            for p in plugins:
+                status = "[green]Enabled[/green]" if p.enabled else "[red]Disabled[/red]"
+                hooks_str = ", ".join(p.hooks.keys()) if p.hooks else "-"
+                table.add_row(p.name, p.version, p.author, status, hooks_str)
+
+            console.print(table)
+            console.print(f"\n[dim]Total: {service.plugin_count} plugin(s), "
+                          f"{service.enabled_count} enabled[/dim]")
+
+        elif action == "info":
+            if not name:
+                console.print("[red]Error:[/red] Plugin name required for 'info'")
+                raise typer.Exit(1)
+            p = service.get_plugin(name)
+            if p is None:
+                console.print(f"[red]Plugin '{name}' not found[/red]")
+                raise typer.Exit(1)
+            info = f"""[bold]{p.name}[/bold] v{p.version}
+[cyan]Author:[/cyan] {p.author}
+[cyan]Description:[/cyan] {p.description}
+[cyan]Status:[/cyan] {"Enabled" if p.enabled else "Disabled"}
+[cyan]Hooks:[/cyan] {', '.join(p.hooks.keys()) if p.hooks else 'None'}"""
+            if p.load_error:
+                info += f"\n[red]Error:[/red] {p.load_error}"
+            console.print(Panel(info, border_style="cyan", title="Plugin Info"))
+
+        elif action == "enable":
+            if not name:
+                console.print("[red]Error:[/red] Plugin name required")
+                raise typer.Exit(1)
+            if service.enable_plugin(name):
+                console.print(f"[green]Plugin '{name}' enabled[/green]")
+            else:
+                console.print(f"[red]Plugin '{name}' not found[/red]")
+                raise typer.Exit(1)
+
+        elif action == "disable":
+            if not name:
+                console.print("[red]Error:[/red] Plugin name required")
+                raise typer.Exit(1)
+            if service.disable_plugin(name):
+                console.print(f"[yellow]Plugin '{name}' disabled[/yellow]")
+            else:
+                console.print(f"[red]Plugin '{name}' not found[/red]")
+                raise typer.Exit(1)
+
+        else:
+            console.print(
+                f"[red]Error:[/red] Unknown action '{action}'. "
+                "Use: list, info, enable, or disable"
+            )
+            raise typer.Exit(1)
+
+    except SystemExit:
+        raise
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+# ============================================================================
+# TEMPLATE STORE COMMANDS
+# ============================================================================
+
+
+@app.command()
+def template(
+    action: str = typer.Argument(
+        ...,
+        help="Action: search, install, list, rate, info",
+    ),
+    query: Optional[str] = typer.Argument(None, help="Search query or template ID"),
+    rating: Optional[int] = typer.Option(None, "--rating", "-r", help="Rating (1-5)"),
+    installed_only: bool = typer.Option(
+        False, "--installed", help="Show only installed templates"
+    ),
+) -> None:
+    """
+    Manage the template store (search, install, rate templates).
+
+    The template store provides reusable project templates that can be
+    searched, installed, and rated.
+
+    Examples:
+        $ tac-bootstrap template search "fastapi auth"
+        $ tac-bootstrap template install tac/fastapi-starter
+        $ tac-bootstrap template list --installed
+        $ tac-bootstrap template rate tac/fastapi-starter --rating 5
+        $ tac-bootstrap template info tac/fastapi-starter
+    """
+    try:
+        from tac_bootstrap.application.template_store_service import TemplateStoreService
+
+        service = TemplateStoreService()
+
+        # Ensure defaults are seeded
+        if service.template_count == 0:
+            service.seed_defaults()
+
+        if action == "search":
+            search_query = query or ""
+            results = service.search_templates(search_query)
+
+            if not results:
+                console.print(f"[yellow]No templates found for '{search_query}'[/yellow]")
+                return
+
+            table = Table(title=f"Templates matching '{search_query}'", border_style="cyan")
+            table.add_column("ID", style="bold")
+            table.add_column("Name")
+            table.add_column("Version")
+            table.add_column("Rating")
+            table.add_column("Downloads")
+            table.add_column("Tags")
+
+            for t in results:
+                rating_str = f"{t['rating']:.1f}" if t['rating'] > 0 else "-"
+                tags_str = ", ".join(t.get("tags", [])[:3])
+                table.add_row(
+                    t["id"], t["name"], t["version"],
+                    rating_str, str(t["downloads"]), tags_str,
+                )
+
+            console.print(table)
+
+        elif action == "install":
+            if not query:
+                console.print("[red]Error:[/red] Template ID required")
+                raise typer.Exit(1)
+            result = service.install_template(query)
+            if result["success"]:
+                console.print(f"[green]{result['message']}[/green]")
+            else:
+                console.print(f"[red]{result['message']}[/red]")
+                raise typer.Exit(1)
+
+        elif action == "list":
+            if installed_only:
+                templates = service.list_installed_templates()
+                title = "Installed Templates"
+            else:
+                templates = service.list_all_templates()
+                title = "All Templates"
+
+            if not templates:
+                console.print("[yellow]No templates found[/yellow]")
+                return
+
+            table = Table(title=title, border_style="cyan")
+            table.add_column("ID", style="bold")
+            table.add_column("Name")
+            table.add_column("Version")
+            table.add_column("Installed")
+
+            for t in templates:
+                installed_str = "[green]Yes[/green]" if t["installed"] else "[dim]No[/dim]"
+                table.add_row(t["id"], t["name"], t["version"], installed_str)
+
+            console.print(table)
+            console.print(f"\n[dim]Total: {len(templates)} template(s)[/dim]")
+
+        elif action == "rate":
+            if not query:
+                console.print("[red]Error:[/red] Template ID required")
+                raise typer.Exit(1)
+            if rating is None:
+                console.print("[red]Error:[/red] --rating value required (1-5)")
+                raise typer.Exit(1)
+            result = service.rate_template(query, rating)
+            if result["success"]:
+                console.print(f"[green]{result['message']}[/green]")
+            else:
+                console.print(f"[red]{result['message']}[/red]")
+                raise typer.Exit(1)
+
+        elif action == "info":
+            if not query:
+                console.print("[red]Error:[/red] Template ID required")
+                raise typer.Exit(1)
+            info = service.get_template_info(query)
+            if info is None:
+                console.print(f"[red]Template '{query}' not found[/red]")
+                raise typer.Exit(1)
+            rating_str = f"{info['rating']:.1f}" if info['rating'] > 0 else "Not rated"
+            info_text = f"""[bold]{info['name']}[/bold] ({info['id']})
+[cyan]Version:[/cyan] {info['version']}
+[cyan]Author:[/cyan] {info['author']}
+[cyan]Description:[/cyan] {info['description']}
+[cyan]Rating:[/cyan] {rating_str} ({info['rating_count']} ratings)
+[cyan]Downloads:[/cyan] {info['downloads']}
+[cyan]Tags:[/cyan] {', '.join(info.get('tags', []))}
+[cyan]Installed:[/cyan] {'Yes' if info['installed'] else 'No'}"""
+            console.print(Panel(info_text, border_style="cyan", title="Template Info"))
+
+        else:
+            console.print(
+                f"[red]Error:[/red] Unknown action '{action}'. "
+                "Use: search, install, list, rate, or info"
+            )
+            raise typer.Exit(1)
+
+    except SystemExit:
+        raise
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+# ============================================================================
+# SECURITY COMMANDS
+# ============================================================================
+
+
+@app.command()
+def security(
+    action: str = typer.Argument(
+        ...,
+        help="Action: audit, scan-templates, report",
+    ),
+    repo_path: Path = typer.Argument(
+        Path("."), help="Project path (default: current directory)"
+    ),
+    output: Optional[Path] = typer.Option(
+        None, "--output", "-o", help="Output file for report"
+    ),
+) -> None:
+    """
+    Security scanning and auditing tools.
+
+    Scans project files for security issues including hardcoded secrets,
+    SQL injection, XSS vulnerabilities, and OWASP Top 10 compliance.
+
+    Examples:
+        $ tac-bootstrap security audit
+        $ tac-bootstrap security scan-templates
+        $ tac-bootstrap security report --output security-report.txt
+    """
+    try:
+        from tac_bootstrap.application.security_service import SecurityService
+
+        service = SecurityService()
+        target_path = repo_path.resolve()
+
+        if action == "audit":
+            console.print(f"[cyan]Running security audit on:[/cyan] {target_path}\n")
+
+            report = service.generate_security_report(target_path)
+
+            console.print(f"[dim]Files scanned: {report.total_files_scanned}[/dim]")
+
+            if not report.has_issues:
+                console.print(
+                    Panel(
+                        "[bold green]No security issues found![/bold green]",
+                        border_style="green",
+                        title="Security Audit",
+                    )
+                )
+                return
+
+            # Show issues
+            for issue in report.issues:
+                severity = issue.severity.value.upper()
+                if issue.severity.value in ("critical", "high"):
+                    color = "red"
+                elif issue.severity.value == "medium":
+                    color = "yellow"
+                else:
+                    color = "blue"
+
+                console.print(f"  [{color}][{severity}][/{color}] {issue.message}")
+                if issue.file_path:
+                    console.print(f"    [dim]File: {issue.file_path}:{issue.line_number}[/dim]")
+                if issue.suggestion:
+                    console.print(f"    [dim]Fix: {issue.suggestion}[/dim]")
+
+            report.compute_summary()
+            console.print(
+                f"\n[bold]Summary:[/bold] {report.total_issues} issue(s) found"
+            )
+            for sev, count in sorted(report.summary.items()):
+                console.print(f"  {sev.upper()}: {count}")
+
+        elif action == "scan-templates":
+            console.print(f"[cyan]Scanning templates for vulnerabilities:[/cyan] {target_path}\n")
+
+            issues = service.scan_templates(target_path)
+
+            if not issues:
+                console.print("[green]No template vulnerabilities found[/green]")
+                return
+
+            for issue in issues:
+                severity = issue.severity.value.upper()
+                console.print(f"  [{severity}] {issue.message}")
+                if issue.file_path:
+                    console.print(f"    File: {issue.file_path}:{issue.line_number}")
+                if issue.suggestion:
+                    console.print(f"    Fix: {issue.suggestion}")
+
+            console.print(f"\n[bold]Total: {len(issues)} vulnerability(ies) found[/bold]")
+
+        elif action == "report":
+            console.print(f"[cyan]Generating security report for:[/cyan] {target_path}\n")
+
+            report = service.generate_security_report(target_path)
+            text = service.format_report_text(report)
+
+            if output:
+                output.write_text(text, encoding="utf-8")
+                console.print(f"[green]Report written to {output}[/green]")
+            else:
+                console.print(text)
+
+        else:
+            console.print(
+                f"[red]Error:[/red] Unknown action '{action}'. "
+                "Use: audit, scan-templates, or report"
+            )
+            raise typer.Exit(1)
+
+    except SystemExit:
+        raise
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+# ============================================================================
+# DOCS COMMANDS
+# ============================================================================
+
+
+@app.command()
+def docs(
+    action: str = typer.Argument(
+        ...,
+        help="Action: generate, serve, new-adr",
+    ),
+    repo_path: Path = typer.Argument(
+        Path("."), help="Project path (default: current directory)"
+    ),
+    with_diagrams: bool = typer.Option(
+        True, "--with-diagrams/--no-diagrams", help="Include Mermaid diagrams"
+    ),
+    port: int = typer.Option(3000, "--port", "-p", help="Port for docs server"),
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing files"),
+    title: Optional[str] = typer.Option(None, "--title", "-t", help="ADR title"),
+) -> None:
+    """
+    Generate and manage project documentation.
+
+    Auto-generates API docs, architecture docs, ADRs, and Mermaid diagrams.
+
+    Examples:
+        $ tac-bootstrap docs generate
+        $ tac-bootstrap docs generate --with-diagrams
+        $ tac-bootstrap docs serve --port 3000
+        $ tac-bootstrap docs new-adr --title "Use PostgreSQL"
+    """
+    try:
+        from tac_bootstrap.application.docs_generator import DocsGenerator
+
+        target_path = repo_path.resolve()
+
+        # Try to load project config
+        config = None
+        config_file = target_path / "config.yml"
+        project_name = target_path.name
+        language = "python"
+        framework = "none"
+        architecture = "simple"
+
+        if config_file.exists():
+            try:
+                with open(config_file, "r") as f:
+                    raw_config = yaml.safe_load(f)
+                from tac_bootstrap.domain.models import TACConfig
+                config = TACConfig(**raw_config)
+                project_name = config.project.name
+                language = config.project.language.value
+                framework = config.project.framework.value
+                architecture = config.project.architecture.value
+            except Exception:
+                pass
+
+        generator = DocsGenerator(
+            project_name=project_name,
+            language=language,
+            framework=framework,
+            architecture=architecture,
+            config=config,
+        )
+
+        if action == "generate":
+            console.print(f"[cyan]Generating documentation for:[/cyan] {target_path}\n")
+
+            files = generator.generate_all(
+                target_path,
+                force=force,
+                with_diagrams=with_diagrams,
+            )
+
+            if not files:
+                console.print(
+                    "[yellow]No new files generated (all exist already). "
+                    "Use --force to overwrite.[/yellow]"
+                )
+                return
+
+            console.print(f"[green]Generated {len(files)} documentation file(s):[/green]")
+            for f in files:
+                console.print(f"  {f.relative_to(target_path)}")
+
+        elif action == "serve":
+            docs_dir = target_path / "docs"
+            if not docs_dir.is_dir():
+                console.print("[yellow]No docs/ directory found. Run 'docs generate' first.[/yellow]")
+                raise typer.Exit(1)
+            generator.serve_docs(docs_dir, port=port)
+
+        elif action == "new-adr":
+            if not title:
+                console.print("[red]Error:[/red] --title is required for new-adr")
+                raise typer.Exit(1)
+
+            docs_dir = target_path / "docs"
+            adr_dir = docs_dir / "adr"
+            adr_dir.mkdir(parents=True, exist_ok=True)
+
+            number = generator.get_next_adr_number(docs_dir)
+            content = generator.generate_adr(
+                decision=title,
+                context="(Add context here)",
+                consequence="(Add consequences here)",
+                number=number,
+            )
+
+            # Generate filename from title
+            slug = title.lower().replace(" ", "-")[:50]
+            filename = f"{number:04d}-{slug}.md"
+            adr_path = adr_dir / filename
+            adr_path.write_text(content, encoding="utf-8")
+
+            console.print(f"[green]Created ADR:[/green] {adr_path.relative_to(target_path)}")
+
+        else:
+            console.print(
+                f"[red]Error:[/red] Unknown action '{action}'. "
+                "Use: generate, serve, or new-adr"
+            )
+            raise typer.Exit(1)
+
+    except SystemExit:
+        raise
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+# ============================================================================
+# TEST GENERATION COMMANDS
+# ============================================================================
+
+
+@app.command(name="test-generate")
+def test_generate(
+    test_type: str = typer.Argument(
+        ...,
+        help="Test type: unit, integration, e2e, load, coverage, all",
+    ),
+    repo_path: Path = typer.Argument(
+        Path("."), help="Project path (default: current directory)"
+    ),
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing files"),
+) -> None:
+    """
+    Generate test scaffolding for your project.
+
+    Creates test templates for various testing types including unit,
+    integration, E2E, load testing, and coverage configuration.
+
+    Examples:
+        $ tac-bootstrap test-generate unit
+        $ tac-bootstrap test-generate integration
+        $ tac-bootstrap test-generate e2e
+        $ tac-bootstrap test-generate load
+        $ tac-bootstrap test-generate coverage
+        $ tac-bootstrap test-generate all
+    """
+    try:
+        from tac_bootstrap.application.test_generator import TestGenerator
+
+        target_path = repo_path.resolve()
+
+        # Try to load project config
+        project_name = target_path.name
+        language = "python"
+        framework = "none"
+        config = None
+
+        config_file = target_path / "config.yml"
+        if config_file.exists():
+            try:
+                with open(config_file, "r") as f:
+                    raw_config = yaml.safe_load(f)
+                from tac_bootstrap.domain.models import TACConfig
+                config = TACConfig(**raw_config)
+                project_name = config.project.name
+                language = config.project.language.value
+                framework = config.project.framework.value
+            except Exception:
+                pass
+
+        generator = TestGenerator(
+            project_name=project_name,
+            language=language,
+            framework=framework,
+            config=config,
+        )
+
+        if test_type == "unit":
+            content = generator.generate_unit_tests(
+                module_path=Path("app"),
+                output_dir=target_path / "tests" / "unit",
+                force=force,
+            )
+            console.print("[green]Unit test template generated[/green]")
+            console.print(f"  tests/unit/test_app.py")
+
+        elif test_type == "integration":
+            generator.generate_integration_tests(
+                project_path=target_path, force=force
+            )
+            console.print("[green]Integration test template generated[/green]")
+
+        elif test_type == "e2e":
+            generator.generate_e2e_tests(
+                project_path=target_path, force=force
+            )
+            console.print("[green]E2E test template generated[/green]")
+
+        elif test_type == "load":
+            generator.generate_load_tests(
+                project_path=target_path, force=force
+            )
+            console.print("[green]Load test template generated[/green]")
+
+        elif test_type == "coverage":
+            generator.setup_coverage_config(target_path, force=force)
+            console.print("[green]Coverage configuration created[/green]")
+            console.print("  .coveragerc")
+
+        elif test_type == "all":
+            files = generator.generate_all(target_path, force=force)
+            console.print(f"[green]Generated {len(files)} test file(s):[/green]")
+            for f in files:
+                try:
+                    console.print(f"  {f.relative_to(target_path)}")
+                except ValueError:
+                    console.print(f"  {f}")
+
+        else:
+            console.print(
+                f"[red]Error:[/red] Unknown test type '{test_type}'. "
+                "Use: unit, integration, e2e, load, coverage, or all"
+            )
+            raise typer.Exit(1)
+
+    except SystemExit:
+        raise
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+# ============================================================================
+# PHASE 3: PREMIUM FEATURES & POLISH COMMANDS
+# ============================================================================
+
+
+# --- Feature 11: Config / Language Management ---
+
+config_app = typer.Typer(
+    name="config",
+    help="Manage CLI configuration settings",
+)
+app.add_typer(config_app, name="config")
+
+
+@config_app.command("set")
+def config_set(
+    key: str = typer.Argument(..., help="Configuration key (e.g., language)"),
+    value: str = typer.Argument(..., help="Configuration value"),
+) -> None:
+    """
+    Set a CLI configuration value.
+
+    Examples:
+        $ tac-bootstrap config set language es
+        $ tac-bootstrap config set language zh
+    """
+    supported_keys = {"language"}
+    if key not in supported_keys:
+        console.print(
+            f"[red]Error:[/red] Unknown configuration key '{key}'. "
+            f"Supported keys: {', '.join(supported_keys)}"
+        )
+        raise typer.Exit(1)
+
+    if key == "language":
+        from tac_bootstrap.infrastructure.i18n import I18nService, SUPPORTED_LANGUAGES
+
+        i18n = I18nService()
+        if value not in SUPPORTED_LANGUAGES:
+            console.print(
+                f"[red]Error:[/red] Unsupported language '{value}'. "
+                f"Supported: {', '.join(SUPPORTED_LANGUAGES.keys())}"
+            )
+            raise typer.Exit(1)
+        i18n.set_language(value)
+        lang_name = SUPPORTED_LANGUAGES[value]
+        console.print(
+            Panel(
+                f"[bold green]Language set to {lang_name} ({value})[/bold green]",
+                border_style="green",
+                title="Configuration",
+            )
+        )
+
+
+@config_app.command("get")
+def config_get(
+    key: str = typer.Argument(..., help="Configuration key to retrieve"),
+) -> None:
+    """
+    Get a CLI configuration value.
+
+    Examples:
+        $ tac-bootstrap config get language
+    """
+    if key == "language":
+        from tac_bootstrap.infrastructure.i18n import I18nService
+
+        i18n = I18nService()
+        console.print(
+            f"[cyan]language[/cyan] = [green]{i18n.current_language}[/green] "
+            f"({i18n.current_language_name})"
+        )
+    else:
+        console.print(f"[red]Error:[/red] Unknown configuration key '{key}'")
+        raise typer.Exit(1)
+
+
+@config_app.command("list")
+def config_list() -> None:
+    """
+    List all CLI configuration values.
+
+    Examples:
+        $ tac-bootstrap config list
+    """
+    from tac_bootstrap.infrastructure.i18n import I18nService
+
+    i18n = I18nService()
+
+    table = Table(title="CLI Configuration", border_style="cyan")
+    table.add_column("Key", style="bold")
+    table.add_column("Value", style="green")
+    table.add_column("Description")
+
+    table.add_row(
+        "language",
+        f"{i18n.current_language} ({i18n.current_language_name})",
+        "CLI output language",
+    )
+
+    console.print(table)
+
+
+# --- Feature 12: Dashboard ---
+
+dashboard_app = typer.Typer(
+    name="dashboard",
+    help="Web dashboard for project management",
+)
+app.add_typer(dashboard_app, name="dashboard")
+
+
+@dashboard_app.command("start")
+def dashboard_start(
+    port: int = typer.Option(3000, "--port", "-p", help="Dashboard port (default: 3000)"),
+    host: str = typer.Option(
+        "127.0.0.1", "--host", help="Dashboard host (default: 127.0.0.1)"
+    ),
+) -> None:
+    """
+    Start the web dashboard.
+
+    Examples:
+        $ tac-bootstrap dashboard start
+        $ tac-bootstrap dashboard start --port 8080
+    """
+    try:
+        from tac_bootstrap.infrastructure.web_server import DashboardServer
+
+        server = DashboardServer(host=host, port=port)
+        result = server.start()
+
+        if result["status"] == "already_running":
+            console.print(
+                Panel(
+                    f"[yellow]Dashboard is already running[/yellow]\n\n"
+                    f"[cyan]URL:[/cyan] {result['url']}\n"
+                    f"[cyan]PID:[/cyan] {result['pid']}",
+                    border_style="yellow",
+                    title="Dashboard",
+                )
+            )
+        else:
+            console.print(
+                Panel(
+                    f"[bold green]Dashboard started successfully[/bold green]\n\n"
+                    f"[cyan]URL:[/cyan] {result['url']}\n"
+                    f"[cyan]PID:[/cyan] {result['pid']}\n\n"
+                    f"Open [bold]{result['url']}[/bold] in your browser.",
+                    border_style="green",
+                    title="Dashboard",
+                )
+            )
+    except Exception as e:
+        console.print(f"[red]Error starting dashboard:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@dashboard_app.command("stop")
+def dashboard_stop() -> None:
+    """
+    Stop the web dashboard.
+
+    Examples:
+        $ tac-bootstrap dashboard stop
+    """
+    try:
+        from tac_bootstrap.infrastructure.web_server import DashboardServer
+
+        server = DashboardServer()
+        result = server.stop()
+
+        if result["status"] == "not_running":
+            console.print("[yellow]Dashboard is not running[/yellow]")
+        elif result["status"] == "stopped":
+            console.print(
+                Panel(
+                    f"[bold green]Dashboard stopped[/bold green]\n"
+                    f"PID {result['pid']} terminated.",
+                    border_style="green",
+                    title="Dashboard",
+                )
+            )
+        else:
+            console.print(f"[red]Error:[/red] {result.get('message', 'Unknown error')}")
+            raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@dashboard_app.command("status")
+def dashboard_status() -> None:
+    """
+    Show dashboard status.
+
+    Examples:
+        $ tac-bootstrap dashboard status
+    """
+    from tac_bootstrap.infrastructure.web_server import DashboardServer
+
+    server = DashboardServer()
+    status_info = server.get_status()
+
+    if status_info["running"]:
+        console.print(
+            Panel(
+                f"[bold green]Dashboard is running[/bold green]\n\n"
+                f"[cyan]URL:[/cyan] {status_info['url']}\n"
+                f"[cyan]PID:[/cyan] {status_info.get('pid', 'unknown')}\n"
+                f"[cyan]Port:[/cyan] {status_info['port']}",
+                border_style="green",
+                title="Dashboard Status",
+            )
+        )
+    else:
+        console.print(
+            Panel(
+                "[yellow]Dashboard is not running[/yellow]\n\n"
+                "Start with: [cyan]tac-bootstrap dashboard start[/cyan]",
+                border_style="yellow",
+                title="Dashboard Status",
+            )
+        )
+
+
+# --- Feature 13: Search ---
+
+search_app = typer.Typer(
+    name="search",
+    help="Search commands, templates, and features",
+)
+app.add_typer(search_app, name="search")
+
+
+@search_app.command("commands")
+def search_commands_cmd(
+    query: str = typer.Argument("", help="Search query"),
+    tag: Optional[str] = typer.Option(None, "--tag", "-t", help="Filter by tag"),
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Filter by model"),
+) -> None:
+    """
+    Search available commands and workflows.
+
+    Examples:
+        $ tac-bootstrap search commands "testing"
+        $ tac-bootstrap search commands --tag "testing" --model "opus"
+    """
+    from tac_bootstrap.application.search_service import SearchService
+
+    service = SearchService()
+    results = service.search_commands(query=query, tag=tag, model=model)
+
+    if results.total == 0:
+        console.print(f"[yellow]No results found for '{query}'[/yellow]")
+        return
+
+    table = Table(title=f"Search Results ({results.total})", border_style="cyan")
+    table.add_column("Name", style="bold green")
+    table.add_column("Type")
+    table.add_column("Description")
+    table.add_column("Tags", style="dim")
+
+    for r in results.results:
+        table.add_row(r.name, r.category, r.description, ", ".join(r.tags[:3]))
+
+    console.print(table)
+
+
+@search_app.command("templates")
+def search_templates_cmd(
+    query: str = typer.Argument("", help="Search query"),
+    framework: Optional[str] = typer.Option(
+        None, "--framework", "-f", help="Filter by framework"
+    ),
+    arch: Optional[str] = typer.Option(
+        None, "--arch", "-a", help="Filter by architecture"
+    ),
+) -> None:
+    """
+    Search available templates.
+
+    Examples:
+        $ tac-bootstrap search templates --framework fastapi --arch ddd
+    """
+    from tac_bootstrap.application.search_service import SearchService
+
+    service = SearchService()
+    results = service.search_templates(query=query, framework=framework, architecture=arch)
+
+    if results.total == 0:
+        console.print("[yellow]No matching templates found[/yellow]")
+        return
+
+    table = Table(title=f"Templates ({results.total})", border_style="cyan")
+    table.add_column("Name", style="bold green")
+    table.add_column("Description")
+    table.add_column("Tags", style="dim")
+
+    for r in results.results:
+        table.add_row(r.name, r.description, ", ".join(r.tags[:4]))
+
+    console.print(table)
+
+
+@search_app.command("features")
+def search_features_cmd(
+    query: str = typer.Argument("", help="Search query"),
+    tier: Optional[str] = typer.Option(
+        None, "--tier", help="Filter by tier (core, optional, premium)"
+    ),
+) -> None:
+    """
+    Search available features.
+
+    Examples:
+        $ tac-bootstrap search features "performance" --tier premium
+    """
+    from tac_bootstrap.application.search_service import SearchService
+
+    service = SearchService()
+    results = service.search_features(query=query, tier=tier)
+
+    if results.total == 0:
+        console.print("[yellow]No matching features found[/yellow]")
+        return
+
+    table = Table(title=f"Features ({results.total})", border_style="cyan")
+    table.add_column("Name", style="bold green")
+    table.add_column("Tier")
+    table.add_column("Description")
+    table.add_column("Status")
+
+    for r in results.results:
+        tier_val = r.metadata.get("tier", "")
+        status_val = r.metadata.get("status", "")
+        table.add_row(r.name, tier_val, r.description, status_val)
+
+    console.print(table)
+
+
+# --- Feature 14: Snapshots ---
+
+snapshot_app = typer.Typer(
+    name="snapshot",
+    help="Manage project snapshots",
+)
+app.add_typer(snapshot_app, name="snapshot")
+
+
+@snapshot_app.command("create")
+def snapshot_create(
+    name: str = typer.Argument(..., help="Snapshot name"),
+    project_path: Path = typer.Option(
+        Path("."), "--path", "-p", help="Project path (default: current directory)"
+    ),
+    description: str = typer.Option("", "--desc", "-d", help="Snapshot description"),
+) -> None:
+    """
+    Create a named snapshot of the project.
+
+    Examples:
+        $ tac-bootstrap snapshot create "initial-setup"
+    """
+    try:
+        from tac_bootstrap.application.snapshot_service import SnapshotService
+
+        service = SnapshotService()
+        metadata = service.create_snapshot(project_path.resolve(), name, description)
+
+        console.print(
+            Panel(
+                f"[bold green]Snapshot '{name}' created successfully[/bold green]\n\n"
+                f"[cyan]Files:[/cyan] {metadata.file_count}\n"
+                f"[cyan]Size:[/cyan] {metadata.total_size_bytes:,} bytes\n"
+                f"[cyan]Created:[/cyan] {metadata.created_at}",
+                border_style="green",
+                title="Snapshot Created",
+            )
+        )
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        console.print(f"[red]Error creating snapshot:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@snapshot_app.command("list")
+def snapshot_list(
+    project_path: Path = typer.Option(
+        Path("."), "--path", "-p", help="Project path (default: current directory)"
+    ),
+) -> None:
+    """
+    List all snapshots for a project.
+
+    Examples:
+        $ tac-bootstrap snapshot list
+    """
+    from tac_bootstrap.application.snapshot_service import SnapshotService
+
+    service = SnapshotService()
+    snapshots = service.list_snapshots(project_path.resolve())
+
+    if not snapshots:
+        console.print("[yellow]No snapshots found for this project[/yellow]")
+        return
+
+    table = Table(title=f"Project Snapshots ({len(snapshots)})", border_style="cyan")
+    table.add_column("Name", style="bold green")
+    table.add_column("Files")
+    table.add_column("Size")
+    table.add_column("Created")
+    table.add_column("Description", style="dim")
+
+    for snap in snapshots:
+        size_str = f"{snap.total_size_bytes:,} B"
+        if snap.total_size_bytes > 1_000_000:
+            size_str = f"{snap.total_size_bytes / 1_000_000:.1f} MB"
+        elif snap.total_size_bytes > 1_000:
+            size_str = f"{snap.total_size_bytes / 1_000:.1f} KB"
+
+        table.add_row(
+            snap.name,
+            str(snap.file_count),
+            size_str,
+            snap.created_at[:19],
+            snap.description[:40] if snap.description else "",
+        )
+
+    console.print(table)
+
+
+@snapshot_app.command("diff")
+def snapshot_diff(
+    name1: str = typer.Argument(..., help="First snapshot name (baseline)"),
+    name2: str = typer.Argument(..., help="Second snapshot name (comparison)"),
+    project_path: Path = typer.Option(
+        Path("."), "--path", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Show differences between two snapshots.
+
+    Examples:
+        $ tac-bootstrap snapshot diff initial-setup after-changes
+    """
+    try:
+        from tac_bootstrap.application.snapshot_service import SnapshotService
+
+        service = SnapshotService()
+        diff_result = service.diff_snapshots(name1, name2, project_path.resolve())
+
+        summary = (
+            f"[bold]Comparing:[/bold] {diff_result.snapshot1} -> {diff_result.snapshot2}\n\n"
+            f"[green]Added:[/green] {len(diff_result.added)}\n"
+            f"[red]Removed:[/red] {len(diff_result.removed)}\n"
+            f"[yellow]Modified:[/yellow] {len(diff_result.modified)}\n"
+            f"[dim]Unchanged:[/dim] {diff_result.unchanged}"
+        )
+        console.print(Panel(summary, border_style="cyan", title="Snapshot Diff"))
+
+        if diff_result.added:
+            console.print("\n[bold green]Added files:[/bold green]")
+            for f in diff_result.added:
+                console.print(f"  + {f}")
+
+        if diff_result.removed:
+            console.print("\n[bold red]Removed files:[/bold red]")
+            for f in diff_result.removed:
+                console.print(f"  - {f}")
+
+        if diff_result.modified:
+            console.print("\n[bold yellow]Modified files:[/bold yellow]")
+            for f in diff_result.modified:
+                console.print(f"  ~ {f}")
+
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@snapshot_app.command("restore")
+def snapshot_restore(
+    name: str = typer.Argument(..., help="Snapshot name to restore"),
+    project_path: Path = typer.Option(
+        Path("."), "--path", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Restore a project from a snapshot.
+
+    Examples:
+        $ tac-bootstrap snapshot restore initial-setup
+    """
+    try:
+        from tac_bootstrap.application.snapshot_service import SnapshotService
+
+        service = SnapshotService()
+
+        if not typer.confirm(
+            f"Restore snapshot '{name}'? A backup will be created first.", default=True
+        ):
+            console.print("[yellow]Restore cancelled[/yellow]")
+            raise typer.Exit(0)
+
+        result = service.restore_snapshot(name, project_path.resolve())
+
+        console.print(
+            Panel(
+                f"[bold green]Snapshot '{name}' restored successfully[/bold green]\n\n"
+                f"[cyan]Files Restored:[/cyan] {result['files_restored']}\n"
+                f"[cyan]Backup Created:[/cyan] {result['backup_name']}",
+                border_style="green",
+                title="Restored",
+            )
+        )
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@snapshot_app.command("delete")
+def snapshot_delete(
+    name: str = typer.Argument(..., help="Snapshot name to delete"),
+    project_path: Path = typer.Option(
+        Path("."), "--path", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Delete a snapshot.
+
+    Examples:
+        $ tac-bootstrap snapshot delete old-snapshot
+    """
+    from tac_bootstrap.application.snapshot_service import SnapshotService
+
+    service = SnapshotService()
+    deleted = service.delete_snapshot(name, project_path.resolve())
+
+    if deleted:
+        console.print(f"[green]Snapshot '{name}' deleted[/green]")
+    else:
+        console.print(f"[yellow]Snapshot '{name}' not found[/yellow]")
+
+
+# --- Feature 15: AI Generation ---
+
+ai_app = typer.Typer(
+    name="ai",
+    help="AI-assisted code generation",
+)
+app.add_typer(ai_app, name="ai")
+
+
+@ai_app.command("generate:endpoint")
+def ai_generate_endpoint(
+    path: str = typer.Option(..., "--path", help="URL path (e.g., /users)"),
+    method: str = typer.Option("GET", "--method", "-m", help="HTTP method"),
+    project_path: Path = typer.Option(
+        Path("."), "--project", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Generate an API endpoint using AI.
+
+    Examples:
+        $ tac-bootstrap ai generate:endpoint --path /users --method GET
+    """
+    from tac_bootstrap.application.ai_generator import AIGeneratorService
+
+    service = AIGeneratorService()
+    if not service.is_configured:
+        console.print(
+            "[red]Error:[/red] Claude API key not configured. "
+            "Set ANTHROPIC_API_KEY environment variable."
+        )
+        raise typer.Exit(1)
+
+    console.print(f"[cyan]Generating {method} endpoint for {path}...[/cyan]")
+    result = service.generate_endpoint(
+        path=path, method=method, project_path=project_path
+    )
+
+    if result.success:
+        console.print(
+            Panel(
+                f"[bold green]Endpoint generated[/bold green]\n\n"
+                f"[cyan]Path:[/cyan] {path}\n"
+                f"[cyan]Method:[/cyan] {method}\n"
+                f"[cyan]File:[/cyan] {result.file_path}\n\n"
+                f"[bold]Generated Code:[/bold]\n{result.code[:2000]}",
+                border_style="green",
+                title="AI Generation",
+            )
+        )
+    else:
+        console.print(f"[red]Error:[/red] {result.error}")
+        raise typer.Exit(1)
+
+
+@ai_app.command("generate:migration")
+def ai_generate_migration(
+    migration_type: str = typer.Option(
+        "add-column", "--type", help="Migration type"
+    ),
+    name: str = typer.Option(..., "--name", help="Column/table name"),
+    data_type: str = typer.Option("string", "--data-type", help="Data type"),
+    project_path: Path = typer.Option(
+        Path("."), "--project", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Generate a database migration using AI.
+
+    Examples:
+        $ tac-bootstrap ai generate:migration --type add-column --name email
+    """
+    from tac_bootstrap.application.ai_generator import AIGeneratorService
+
+    service = AIGeneratorService()
+    if not service.is_configured:
+        console.print(
+            "[red]Error:[/red] Claude API key not configured. "
+            "Set ANTHROPIC_API_KEY environment variable."
+        )
+        raise typer.Exit(1)
+
+    console.print(
+        f"[cyan]Generating {migration_type} migration for '{name}'...[/cyan]"
+    )
+    result = service.generate_migration(
+        migration_type=migration_type,
+        name=name,
+        data_type=data_type,
+        project_path=project_path,
+    )
+
+    if result.success:
+        console.print(
+            Panel(
+                f"[bold green]Migration generated[/bold green]\n\n"
+                f"[bold]Generated Code:[/bold]\n{result.code[:2000]}",
+                border_style="green",
+                title="AI Generation",
+            )
+        )
+    else:
+        console.print(f"[red]Error:[/red] {result.error}")
+        raise typer.Exit(1)
+
+
+@ai_app.command("suggest:refactor")
+def ai_suggest_refactor(
+    file: Path = typer.Option(..., "--file", "-f", help="File to analyze"),
+    project_path: Path = typer.Option(
+        Path("."), "--project", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Get AI-powered refactoring suggestions.
+
+    Examples:
+        $ tac-bootstrap ai suggest:refactor --file src/app.py
+    """
+    from tac_bootstrap.application.ai_generator import AIGeneratorService
+
+    service = AIGeneratorService()
+    if not service.is_configured:
+        console.print("[red]Error:[/red] Claude API key not configured.")
+        raise typer.Exit(1)
+
+    console.print(f"[cyan]Analyzing {file}...[/cyan]")
+    suggestions = service.suggest_refactor(
+        file_path=file, project_path=project_path
+    )
+
+    if not suggestions:
+        console.print("[green]No refactoring suggestions - code looks good![/green]")
+        return
+
+    for i, suggestion in enumerate(suggestions, 1):
+        color = (
+            "red"
+            if suggestion.severity == "critical"
+            else ("yellow" if suggestion.severity == "warning" else "blue")
+        )
+        console.print(
+            f"\n[{color}][{i}] [{suggestion.severity.upper()}] "
+            f"{suggestion.category}[/{color}]"
+        )
+        console.print(f"  {suggestion.description}")
+        if suggestion.reasoning:
+            console.print(f"  [dim]Reason: {suggestion.reasoning}[/dim]")
+
+
+@ai_app.command("suggest:tests")
+def ai_suggest_tests(
+    module: Path = typer.Option(
+        ..., "--module", "-m", help="Module to generate tests for"
+    ),
+    project_path: Path = typer.Option(
+        Path("."), "--project", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Get AI-generated test suggestions.
+
+    Examples:
+        $ tac-bootstrap ai suggest:tests --module src/domain/user.py
+    """
+    from tac_bootstrap.application.ai_generator import AIGeneratorService
+
+    service = AIGeneratorService()
+    if not service.is_configured:
+        console.print("[red]Error:[/red] Claude API key not configured.")
+        raise typer.Exit(1)
+
+    console.print(f"[cyan]Generating test suggestions for {module}...[/cyan]")
+    suggestions = service.suggest_tests(
+        module_path=module, project_path=project_path
+    )
+
+    if not suggestions:
+        console.print("[yellow]No test suggestions generated[/yellow]")
+        return
+
+    for i, test_suggestion in enumerate(suggestions, 1):
+        console.print(
+            Panel(
+                f"[bold]{test_suggestion.test_name}[/bold]\n"
+                f"[dim]{test_suggestion.description}[/dim]\n"
+                f"[cyan]Type:[/cyan] {test_suggestion.test_type} | "
+                f"[cyan]Priority:[/cyan] {test_suggestion.priority}\n\n"
+                f"```python\n{test_suggestion.test_code[:1000]}\n```",
+                border_style="cyan",
+                title=f"Test Suggestion {i}",
+            )
+        )
+
+
+# --- Feature 16: Learn ---
+
+@app.command()
+def learn(
+    topic: Optional[str] = typer.Option(
+        None, "--topic", "-t", help="Topic to learn about"
+    ),
+) -> None:
+    """
+    Interactive learning mode.
+
+    Examples:
+        $ tac-bootstrap learn --topic ddd
+        $ tac-bootstrap learn --topic architecture
+    """
+    from tac_bootstrap.application.learning_service import LearningService
+
+    service = LearningService()
+
+    if topic:
+        topic_content = service.get_topic(topic)
+        if topic_content is None:
+            console.print(f"[red]Topic '{topic}' not found[/red]")
+            console.print("\n[bold]Available topics:[/bold]")
+            for t in service.list_topics():
+                console.print(f"  [green]{t.id}[/green] - {t.title}")
+            raise typer.Exit(1)
+
+        console.print(
+            Panel(
+                f"[bold cyan]{topic_content.title}[/bold cyan]\n"
+                f"[dim]{topic_content.description}[/dim]\n"
+                f"[dim]Difficulty: {topic_content.difficulty}[/dim]",
+                border_style="cyan",
+            )
+        )
+
+        for section in topic_content.sections:
+            console.print(f"\n[bold]{section['title']}[/bold]")
+            console.print(section["content"])
+
+        if topic_content.examples:
+            console.print("\n[bold cyan]Examples:[/bold cyan]")
+            for example in topic_content.examples:
+                console.print(f"\n[bold]{example['title']}[/bold]")
+                console.print(f"[dim]{example['code']}[/dim]")
+
+        if topic_content.related_topics:
+            console.print(
+                f"\n[dim]Related topics: "
+                f"{', '.join(topic_content.related_topics)}[/dim]"
+            )
+    else:
+        # List all topics
+        topics = service.list_topics()
+        table = Table(title="Available Learning Topics", border_style="cyan")
+        table.add_column("Topic ID", style="bold green")
+        table.add_column("Title")
+        table.add_column("Difficulty")
+        table.add_column("Description", style="dim")
+
+        for t in topics:
+            table.add_row(t.id, t.title, t.difficulty, t.description[:60])
+
+        console.print(table)
+        console.print("\n[dim]Use: tac-bootstrap learn --topic <id>[/dim]")
+
+
+@app.command(name="tutorial")
+def tutorial_cmd(
+    tutorial_type: str = typer.Option(
+        "quick-start", "--type", "-t", help="Tutorial type"
+    ),
+) -> None:
+    """
+    Run an interactive tutorial.
+
+    Examples:
+        $ tac-bootstrap tutorial --type quick-start
+        $ tac-bootstrap tutorial --type advanced
+    """
+    from tac_bootstrap.application.learning_service import LearningService
+
+    service = LearningService()
+    tut = service.get_tutorial(tutorial_type)
+
+    if tut is None:
+        console.print(f"[red]Tutorial '{tutorial_type}' not found[/red]")
+        console.print("\n[bold]Available tutorials:[/bold]")
+        for t in service.list_tutorials():
+            console.print(
+                f"  [green]{t.id}[/green] - {t.title} ({t.estimated_minutes} min)"
+            )
+        raise typer.Exit(1)
+
+    console.print(
+        Panel(
+            f"[bold cyan]{tut.title}[/bold cyan]\n"
+            f"[dim]{tut.description}[/dim]\n"
+            f"Difficulty: {tut.difficulty} | Est. time: {tut.estimated_minutes} min",
+            border_style="cyan",
+            title="Tutorial",
+        )
+    )
+
+    if tut.prerequisites:
+        console.print("\n[bold]Prerequisites:[/bold]")
+        for prereq in tut.prerequisites:
+            console.print(f"  - {prereq}")
+
+    for i, step in enumerate(tut.steps, 1):
+        console.print(
+            f"\n[bold cyan]Step {i}/{len(tut.steps)}:[/bold cyan] {step['title']}"
+        )
+        console.print(f"  {step['instruction']}")
+        if step.get("command"):
+            console.print(f"  [dim]$ {step['command']}[/dim]")
+
+
+# --- Feature 17: Team ---
+
+team_app = typer.Typer(
+    name="team",
+    help="Team collaboration features",
+)
+app.add_typer(team_app, name="team")
+
+
+@team_app.command("share")
+def team_share(
+    user: str = typer.Option(
+        ..., "--user", "-u", help="Email address to share with"
+    ),
+    role: str = typer.Option(
+        "contributor", "--role", "-r",
+        help="Role: owner, admin, contributor, viewer",
+    ),
+    project_path: Path = typer.Option(
+        Path("."), "--path", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Share project with a team member.
+
+    Examples:
+        $ tac-bootstrap team share --user alice@company.com
+    """
+    try:
+        from tac_bootstrap.application.team_service import TeamService
+
+        service = TeamService()
+        member = service.share_project(project_path.resolve(), user, role)
+
+        console.print(
+            Panel(
+                f"[bold green]Project shared with {user}[/bold green]\n"
+                f"[cyan]Role:[/cyan] {member.role}\n"
+                f"[cyan]Added:[/cyan] {member.added_at}",
+                border_style="green",
+                title="Shared",
+            )
+        )
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@team_app.command("list-shared")
+def team_list_shared(
+    project_path: Path = typer.Option(
+        Path("."), "--path", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    List team members for a project.
+
+    Examples:
+        $ tac-bootstrap team list-shared
+    """
+    from tac_bootstrap.application.team_service import TeamService
+
+    service = TeamService()
+    members = service.list_shared(project_path.resolve())
+
+    if not members:
+        console.print("[yellow]No team members for this project[/yellow]")
+        return
+
+    table = Table(title="Team Members", border_style="cyan")
+    table.add_column("Email", style="bold")
+    table.add_column("Role")
+    table.add_column("Added")
+    table.add_column("Last Sync", style="dim")
+
+    for m in members:
+        table.add_row(
+            m.email,
+            m.role,
+            m.added_at[:19],
+            m.last_sync[:19] if m.last_sync else "Never",
+        )
+
+    console.print(table)
+
+
+@team_app.command("sync")
+def team_sync(
+    project_path: Path = typer.Option(
+        Path("."), "--path", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Sync changes with team.
+
+    Examples:
+        $ tac-bootstrap team sync
+    """
+    from tac_bootstrap.application.team_service import TeamService
+
+    service = TeamService()
+    result = service.sync_changes(project_path.resolve())
+
+    if result.success:
+        console.print(
+            Panel(
+                f"[bold green]Sync completed[/bold green]\n"
+                f"[dim]{result.message}[/dim]",
+                border_style="green",
+                title="Team Sync",
+            )
+        )
+    else:
+        console.print("[red]Sync failed[/red]")
+        raise typer.Exit(1)
+
+
+@team_app.command("notify")
+def team_notify(
+    message: str = typer.Option(
+        ..., "--message", "-m", help="Notification message"
+    ),
+    project_path: Path = typer.Option(
+        Path("."), "--path", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Send a notification to the team.
+
+    Examples:
+        $ tac-bootstrap team notify --message "Updated API schema"
+    """
+    from tac_bootstrap.application.team_service import TeamService
+
+    service = TeamService()
+    notif = service.notify_team(project_path.resolve(), message)
+
+    console.print(f"[green]Notification sent:[/green] {notif.message}")
+
+
+# --- Feature 18: Metrics ---
+
+metrics_app = typer.Typer(
+    name="metrics",
+    help="Project analytics and metrics",
+)
+app.add_typer(metrics_app, name="metrics")
+
+
+@metrics_app.command("generate")
+def metrics_generate(
+    project_path: Path = typer.Option(
+        Path("."), "--path", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Generate project metrics.
+
+    Examples:
+        $ tac-bootstrap metrics generate
+    """
+    from tac_bootstrap.application.metrics_service import MetricsService
+
+    service = MetricsService()
+    console.print("[cyan]Generating project metrics...[/cyan]")
+
+    metrics = service.generate_metrics(project_path.resolve())
+
+    # Health score panel
+    grade_color = (
+        "green"
+        if metrics.health_score >= 70
+        else ("yellow" if metrics.health_score >= 40 else "red")
+    )
+    console.print(
+        Panel(
+            f"[bold {grade_color}]{metrics.health_grade}[/bold {grade_color}] "
+            f"Health Score: [{grade_color}]{metrics.health_score}/100[/{grade_color}]",
+            border_style=grade_color,
+            title="Project Health",
+        )
+    )
+
+    # Complexity table
+    table = Table(title="Code Metrics", border_style="cyan")
+    table.add_column("Metric", style="bold")
+    table.add_column("Value", style="green")
+
+    table.add_row("Source Files", str(metrics.source_file_count))
+    table.add_row("Test Files", str(metrics.test_file_count))
+    table.add_row("Total Lines", str(metrics.complexity.total_lines))
+    table.add_row("Functions", str(metrics.complexity.total_functions))
+    table.add_row("Classes", str(metrics.complexity.total_classes))
+    table.add_row("Avg File Length", f"{metrics.complexity.average_file_length:.1f}")
+    table.add_row("Avg Complexity", f"{metrics.complexity.average_complexity:.2f}")
+    table.add_row("Dependencies", str(metrics.dependencies.total_dependencies))
+
+    console.print(table)
+
+    # Recommendations
+    if metrics.recommendations:
+        console.print("\n[bold]Recommendations:[/bold]")
+        for rec in metrics.recommendations:
+            console.print(f"  - {rec}")
+
+    # Save to history
+    service.save_metrics_history(project_path.resolve(), metrics)
+
+
+@metrics_app.command("show")
+def metrics_show(
+    metric: str = typer.Option(
+        "complexity", "--metric", "-m",
+        help="Metric to show (complexity, coverage)",
+    ),
+    project_path: Path = typer.Option(
+        Path("."), "--path", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Show specific project metrics.
+
+    Examples:
+        $ tac-bootstrap metrics show --metric complexity
+    """
+    from tac_bootstrap.application.metrics_service import MetricsService
+
+    service = MetricsService()
+
+    if metric == "complexity":
+        complexity = service.get_complexity_metrics(project_path.resolve())
+
+        console.print(
+            Panel(
+                f"[bold]Code Complexity Analysis[/bold]\n\n"
+                f"[cyan]Files:[/cyan] {complexity.total_files}\n"
+                f"[cyan]Total Lines:[/cyan] {complexity.total_lines}\n"
+                f"[cyan]Average Complexity:[/cyan] {complexity.average_complexity:.2f}",
+                border_style="cyan",
+                title="Complexity Metrics",
+            )
+        )
+
+        if complexity.most_complex_files:
+            table = Table(title="Most Complex Files", border_style="yellow")
+            table.add_column("File", style="bold")
+            table.add_column("Lines")
+            table.add_column("Functions")
+            table.add_column("Complexity", style="yellow")
+
+            for fm in complexity.most_complex_files[:10]:
+                table.add_row(
+                    fm.path,
+                    str(fm.total_lines),
+                    str(fm.functions),
+                    f"{fm.complexity_score:.1f}",
+                )
+            console.print(table)
+    else:
+        console.print(
+            f"[yellow]Metric '{metric}' display not yet implemented[/yellow]"
+        )
+
+
+@metrics_app.command("history")
+def metrics_history(
+    days: int = typer.Option(
+        30, "--days", "-d", help="Number of days of history"
+    ),
+    project_path: Path = typer.Option(
+        Path("."), "--path", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Show metrics history.
+
+    Examples:
+        $ tac-bootstrap metrics history --days 30
+    """
+    from tac_bootstrap.application.metrics_service import MetricsService
+
+    service = MetricsService()
+    history_data = service.get_metrics_history(project_path.resolve(), days=days)
+
+    if not history_data:
+        console.print(
+            "[yellow]No metrics history found. "
+            "Run 'tac-bootstrap metrics generate' first.[/yellow]"
+        )
+        return
+
+    table = Table(title=f"Metrics History (last {days} days)", border_style="cyan")
+    table.add_column("Date", style="bold")
+    table.add_column("Health")
+    table.add_column("Grade")
+    table.add_column("Files")
+    table.add_column("Lines")
+    table.add_column("Complexity")
+
+    for entry in history_data[-20:]:
+        table.add_row(
+            entry.get("timestamp", "")[:10],
+            str(entry.get("health_score", 0)),
+            entry.get("health_grade", ""),
+            str(entry.get("total_files", 0)),
+            str(entry.get("total_lines", 0)),
+            f"{entry.get('avg_complexity', 0):.2f}",
+        )
+
+    console.print(table)
+
+
+# --- Feature 19: Recommendations ---
+
+@app.command()
+def recommend(
+    project_path: Path = typer.Option(
+        Path("."), "--path", "-p", help="Project path"
+    ),
+) -> None:
+    """
+    Get smart recommendations for project improvements.
+
+    Analyzes security, structure, testing, performance, and dependencies.
+
+    Examples:
+        $ tac-bootstrap recommend
+        $ tac-bootstrap recommend --path /my/project
+    """
+    from tac_bootstrap.application.recommendation_service import RecommendationService
+
+    service = RecommendationService()
+    console.print("[cyan]Analyzing project for recommendations...[/cyan]\n")
+    report = service.analyze(project_path.resolve())
+
+    if report.total == 0:
+        console.print(
+            Panel(
+                "[bold green]No recommendations - your project looks great![/bold green]",
+                border_style="green",
+                title="Recommendations",
+            )
+        )
+        return
+
+    # Summary
+    console.print(
+        Panel(
+            f"[bold]Found {report.total} recommendation(s)[/bold]\n\n"
+            f"[red]Critical:[/red] {report.critical}\n"
+            f"[yellow]Warnings:[/yellow] {report.warnings}\n"
+            f"[blue]Info:[/blue] {report.info}",
+            border_style="cyan",
+            title="Recommendations",
+        )
+    )
+
+    # Details
+    for rec in report.recommendations:
+        if rec.severity == "critical":
+            color = "red"
+            icon = "[X]"
+        elif rec.severity == "warning":
+            color = "yellow"
+            icon = "[!]"
+        else:
+            color = "blue"
+            icon = "[i]"
+
+        console.print(
+            f"\n[{color}]{icon} [{rec.severity.upper()}] {rec.title}[/{color}]"
+        )
+        if rec.description:
+            console.print(f"  {rec.description}")
+        if rec.suggestion:
+            console.print(f"  [dim]Suggestion: {rec.suggestion}[/dim]")
+        if rec.file_path:
+            console.print(f"  [dim]File: {rec.file_path}[/dim]")
+
+
+# --- Feature 20: Community ---
+
+community_app = typer.Typer(
+    name="community",
+    help="Community plugins, templates, and achievements",
+)
+app.add_typer(community_app, name="community")
+
+
+@community_app.command("share")
+def community_share(
+    plugin_name: str = typer.Option(
+        ..., "--plugin", help="Plugin name to share"
+    ),
+    description: str = typer.Option(
+        "", "--desc", "-d", help="Plugin description"
+    ),
+    category: str = typer.Option(
+        "general", "--category", "-c", help="Plugin category"
+    ),
+) -> None:
+    """
+    Share a plugin to the community registry.
+
+    Examples:
+        $ tac-bootstrap community share --plugin my-auth-plugin
+    """
+    try:
+        from tac_bootstrap.application.community_service import CommunityService
+
+        service = CommunityService()
+        item = service.share_plugin(
+            name=plugin_name, description=description, category=category
+        )
+
+        console.print(
+            Panel(
+                f"[bold green]Plugin '{item.name}' shared successfully[/bold green]\n"
+                f"[cyan]Category:[/cyan] {item.category}\n"
+                f"[cyan]Type:[/cyan] {item.item_type}",
+                border_style="green",
+                title="Community Share",
+            )
+        )
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@community_app.command("publish")
+def community_publish(
+    template_name: str = typer.Option(
+        ..., "--template", help="Template name to publish"
+    ),
+    description: str = typer.Option(
+        "", "--desc", "-d", help="Template description"
+    ),
+    category: str = typer.Option(
+        "general", "--category", "-c", help="Template category"
+    ),
+) -> None:
+    """
+    Publish a template to the community.
+
+    Examples:
+        $ tac-bootstrap community publish --template my-template
+    """
+    try:
+        from tac_bootstrap.application.community_service import CommunityService
+
+        service = CommunityService()
+        item = service.publish_template(
+            name=template_name, description=description, category=category
+        )
+
+        console.print(
+            Panel(
+                f"[bold green]Template '{item.name}' published[/bold green]\n"
+                f"[cyan]Category:[/cyan] {item.category}",
+                border_style="green",
+                title="Community Publish",
+            )
+        )
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@community_app.command("browse")
+def community_browse(
+    category: Optional[str] = typer.Option(
+        None, "--category", "-c", help="Filter by category"
+    ),
+    query: Optional[str] = typer.Option(
+        None, "--query", "-q", help="Search query"
+    ),
+) -> None:
+    """
+    Browse community templates and plugins.
+
+    Examples:
+        $ tac-bootstrap community browse --category authentication
+    """
+    from tac_bootstrap.application.community_service import CommunityService
+
+    service = CommunityService()
+    templates = service.browse_templates(category=category, query=query)
+    plugins = service.browse_plugins(category=category, query=query)
+
+    all_items = templates + plugins
+    if not all_items:
+        console.print("[yellow]No items found matching your criteria[/yellow]")
+        return
+
+    table = Table(title="Community Items", border_style="cyan")
+    table.add_column("Name", style="bold green")
+    table.add_column("Type")
+    table.add_column("Category")
+    table.add_column("Description")
+    table.add_column("Rating", style="yellow")
+
+    for item in all_items:
+        rating_str = f"{item.rating:.1f}/5" if item.rating > 0 else "-"
+        table.add_row(
+            item.name,
+            item.item_type,
+            item.category,
+            item.description[:50],
+            rating_str,
+        )
+
+    console.print(table)
+
+
+@community_app.command("awards")
+def community_awards() -> None:
+    """
+    View achievements and badges.
+
+    Examples:
+        $ tac-bootstrap community awards
+    """
+    from tac_bootstrap.application.community_service import CommunityService
+
+    service = CommunityService()
+    awards = service.get_awards()
+
+    table = Table(title="Achievements", border_style="cyan")
+    table.add_column("Badge", style="bold")
+    table.add_column("Name")
+    table.add_column("Description")
+    table.add_column("Points")
+    table.add_column("Status")
+
+    for award in awards:
+        status_str = (
+            "[green]Earned[/green]" if award.earned else "[dim]Locked[/dim]"
+        )
+        table.add_row(
+            award.icon, award.name, award.description, str(award.points), status_str
+        )
+
+    console.print(table)
+
+    # Show total points
+    total = sum(a.points for a in awards if a.earned)
+    console.print(f"\n[bold cyan]Total Points:[/bold cyan] {total}")
 
 
 if __name__ == "__main__":

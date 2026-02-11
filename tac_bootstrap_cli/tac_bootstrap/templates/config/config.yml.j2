@@ -131,6 +131,9 @@ orchestrator:
   polling_interval: {{ config.orchestrator.polling_interval }}
 {% endif %}
 
+# Validation strictness: permissive, standard, or strict
+validation_mode: "{{ config.validation_mode | default('standard') }}"
+
 bootstrap:
   create_git_repo: {{ config.bootstrap.create_git_repo | lower }}
   initial_commit: {{ config.bootstrap.initial_commit | lower }}

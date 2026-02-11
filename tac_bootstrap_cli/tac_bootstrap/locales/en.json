@@ -1,0 +1,181 @@
+{
+  "cli": {
+    "welcome": "Welcome to TAC Bootstrap",
+    "version": "TAC Bootstrap v{v}",
+    "description": "Bootstrap Agentic Layer for Claude Code with TAC patterns",
+    "success": "Operation completed successfully",
+    "error": "An error occurred",
+    "cancelled": "Operation cancelled",
+    "confirm": "Do you want to proceed?",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "commands": {
+    "init": {
+      "name": "Initialize",
+      "description": "Create a new project with Agentic Layer",
+      "success": "Project created successfully!",
+      "dry_run": "Dry Run - Preview",
+      "target_dir": "Target Directory",
+      "project_name": "Project Name",
+      "language": "Language",
+      "framework": "Framework",
+      "package_manager": "Package Manager",
+      "architecture": "Architecture",
+      "would_create": "Would create",
+      "next_steps": "Next Steps",
+      "files_created": "Files Created",
+      "dirs_created": "Directories Created"
+    },
+    "add_agentic": {
+      "name": "Add Agentic",
+      "description": "Inject Agentic Layer into existing repository",
+      "success": "Agentic Layer added successfully!",
+      "detection": "Auto-Detection Results",
+      "repository": "Repository"
+    },
+    "doctor": {
+      "name": "Doctor",
+      "description": "Validate existing Agentic Layer setup",
+      "healthy": "All checks passed!",
+      "unhealthy": "Issues detected",
+      "diagnosing": "Diagnosing"
+    },
+    "validate": {
+      "name": "Validate",
+      "description": "Validate project configuration and requirements",
+      "all_passed": "All validations passed!",
+      "failed": "Validation failed",
+      "with_warnings": "Validation passed with {count} warning(s)"
+    },
+    "upgrade": {
+      "name": "Upgrade",
+      "description": "Upgrade to latest TAC Bootstrap version",
+      "up_to_date": "Project is already up to date!",
+      "current_version": "Current version",
+      "target_version": "Target version"
+    },
+    "generate": {
+      "name": "Generate",
+      "description": "Generate code artifacts",
+      "entity_success": "Entity generated successfully!",
+      "entity": "Entity",
+      "capability": "Capability"
+    },
+    "telemetry": {
+      "name": "Telemetry",
+      "description": "Manage anonymous usage tracking",
+      "enabled": "Telemetry enabled",
+      "disabled": "Telemetry disabled",
+      "cleared": "Telemetry data cleared"
+    },
+    "config": {
+      "name": "Config",
+      "description": "Manage CLI configuration",
+      "set_success": "Configuration updated: {key} = {value}",
+      "get_value": "Current value of {key}: {value}",
+      "list_title": "Current Configuration",
+      "unknown_key": "Unknown configuration key: {key}"
+    },
+    "search": {
+      "name": "Search",
+      "description": "Search commands, templates, and features",
+      "no_results": "No results found for '{query}'",
+      "results_title": "Search Results",
+      "found_count": "Found {count} result(s)"
+    },
+    "snapshot": {
+      "name": "Snapshot",
+      "description": "Manage project snapshots",
+      "created": "Snapshot '{name}' created successfully",
+      "restored": "Snapshot '{name}' restored successfully",
+      "deleted": "Snapshot '{name}' deleted",
+      "not_found": "Snapshot '{name}' not found",
+      "list_title": "Project Snapshots",
+      "no_snapshots": "No snapshots found"
+    },
+    "ai": {
+      "name": "AI Generate",
+      "description": "AI-assisted code generation",
+      "generating": "Generating code with AI assistance...",
+      "success": "Code generated successfully",
+      "api_key_missing": "Claude API key not configured",
+      "suggestion": "AI Suggestion"
+    },
+    "learn": {
+      "name": "Learn",
+      "description": "Interactive learning and tutorials",
+      "topic_title": "Learning: {topic}",
+      "tutorial_title": "Tutorial: {type}",
+      "available_topics": "Available Topics"
+    },
+    "team": {
+      "name": "Team",
+      "description": "Team collaboration features",
+      "shared": "Project shared with {user}",
+      "synced": "Changes synced with team",
+      "notification_sent": "Notification sent to team"
+    },
+    "metrics": {
+      "name": "Metrics",
+      "description": "Project analytics and metrics",
+      "generating": "Generating project metrics...",
+      "title": "Project Metrics",
+      "complexity": "Code Complexity",
+      "coverage": "Test Coverage",
+      "health_score": "Health Score"
+    },
+    "recommend": {
+      "name": "Recommend",
+      "description": "Smart recommendations for improvements",
+      "title": "Recommendations",
+      "no_recommendations": "No recommendations at this time",
+      "found": "Found {count} recommendation(s)"
+    },
+    "community": {
+      "name": "Community",
+      "description": "Community plugins and templates",
+      "shared": "Successfully shared to community registry",
+      "published": "Template published to community",
+      "browse_title": "Community Templates"
+    },
+    "dashboard": {
+      "name": "Dashboard",
+      "description": "Web dashboard for project management",
+      "starting": "Starting web dashboard on port {port}...",
+      "stopping": "Stopping web dashboard...",
+      "running": "Dashboard running at http://localhost:{port}",
+      "stopped": "Dashboard stopped"
+    }
+  },
+  "errors": {
+    "not_found": "Not found: {item}",
+    "invalid_config": "Invalid configuration: {detail}",
+    "permission_denied": "Permission denied: {path}",
+    "network_error": "Network error: {detail}",
+    "api_error": "API error: {detail}",
+    "file_exists": "File already exists: {path}",
+    "dir_not_exists": "Directory does not exist: {path}",
+    "unsupported_language": "Unsupported language: {lang}. Supported: {supported}",
+    "validation_failed": "Validation failed with {count} error(s)"
+  },
+  "labels": {
+    "status": "Status",
+    "location": "Location",
+    "created": "Created",
+    "modified": "Modified",
+    "deleted": "Deleted",
+    "errors": "Errors",
+    "warnings": "Warnings",
+    "info": "Info",
+    "total": "Total",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "preview": "Preview",
+    "success": "Success",
+    "failed": "Failed",
+    "pending": "Pending",
+    "running": "Running",
+    "completed": "Completed"
+  }
+}
