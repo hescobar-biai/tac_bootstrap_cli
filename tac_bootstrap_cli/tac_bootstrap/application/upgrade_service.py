@@ -105,6 +105,9 @@ class UpgradeService:
                     config_data["version"] = config_data["tac_version"]
                 config_data.pop("tac_version")
 
+            # Migrate schema if needed
+            config_data = self._migrate_schema(config_data)
+
             # Actualizar version al target
             config_data["version"] = self.get_target_version()
 
@@ -112,6 +115,38 @@ class UpgradeService:
         except Exception as e:
             console.print(f"[red]Error loading config: {e}[/red]")
             return None
+
+    def _migrate_schema(self, config_data: dict) -> dict:
+        """Migrate configuration schema to latest version.
+
+        Args:
+            config_data: Raw configuration dictionary
+
+        Returns:
+            Migrated configuration dictionary
+        """
+        current_schema = config_data.get("schema_version", 1)
+
+        # Migrate from schema v1 to v2 (add model IDs)
+        if current_schema == 1:
+            if "agentic" not in config_data:
+                config_data["agentic"] = {}
+            if "model_policy" not in config_data["agentic"]:
+                config_data["agentic"]["model_policy"] = {}
+
+            # Add new model ID fields if not present
+            model_policy = config_data["agentic"]["model_policy"]
+            if "opus_model" not in model_policy:
+                model_policy["opus_model"] = "claude-opus-4-5-20251101"
+            if "sonnet_model" not in model_policy:
+                model_policy["sonnet_model"] = "claude-sonnet-4-5-20250929"
+            if "haiku_model" not in model_policy:
+                model_policy["haiku_model"] = "claude-haiku-4-5-20251001"
+
+            # Update schema version
+            config_data["schema_version"] = 2
+
+        return config_data
 
     def create_backup(self) -> Path:
         """Create backup of upgradeable directories.
