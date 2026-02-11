@@ -8,9 +8,13 @@ import typer
 import yaml
 from rich.console import Console
 from rich.panel import Panel
+from rich.table import Table
 
 from tac_bootstrap import __version__
+from tac_bootstrap.application.migration_service import MigrationService
 from tac_bootstrap.application.upgrade_service import UpgradeService
+from tac_bootstrap.application.validation_service import ValidationLevel, ValidationService
+from tac_bootstrap.infrastructure.template_repo import TemplateRepository
 from tac_bootstrap.domain.entity_config import EntitySpec, FieldSpec, FieldType
 from tac_bootstrap.domain.models import (
     Architecture,
@@ -27,6 +31,7 @@ from tac_bootstrap.domain.models import (
     get_default_commands,
     get_package_managers_for_language,
 )
+from tac_bootstrap.infrastructure.ui_components import UIComponents
 
 # Rich console for formatted output
 console = Console()
@@ -76,8 +81,13 @@ Bootstrap Agentic Layer for Claude Code with TAC patterns.
   [green]add-agentic[/green]  Inject Agentic Layer into existing repo
   [green]generate[/green]     Generate code artifacts (entities, etc.)
   [green]doctor[/green]       Validate existing setup
+  [green]health-check[/green] Check system health and requirements
+  [green]validate[/green]     Validate project configuration
   [green]render[/green]       Regenerate from config.yml
   [green]upgrade[/green]      Upgrade to latest TAC Bootstrap version
+  [green]migrate[/green]      Migrate config schema to specific version
+  [green]rollback[/green]     Rollback previous schema migration(s)
+  [green]telemetry[/green]    Manage anonymous usage tracking
   [green]version[/green]      Show version
 
 Use [cyan]tac-bootstrap --help[/cyan] for more information.
@@ -122,6 +132,12 @@ def init(
     interactive: bool = typer.Option(
         True, "--interactive/--no-interactive", help="Use interactive wizard"
     ),
+    enhanced: bool = typer.Option(
+        False, "--enhanced", "-e", help="Use enhanced wizard with Rich UI and previews"
+    ),
+    preview: bool = typer.Option(
+        False, "--preview", help="Show directory tree preview without creating files"
+    ),
     dry_run: bool = typer.Option(False, "--dry-run", help="Preview without creating files"),
 ) -> None:
     """
@@ -133,6 +149,12 @@ def init(
     Examples:
         # Interactive mode (default)
         $ tac-bootstrap init my-app
+
+        # Enhanced wizard with Rich UI and tree preview
+        $ tac-bootstrap init my-app --enhanced
+
+        # Show directory structure preview only
+        $ tac-bootstrap init my-app --preview
 
         # Non-interactive with options
         $ tac-bootstrap init my-api --language python --framework fastapi \\
@@ -146,7 +168,45 @@ def init(
         target_dir = output_dir or Path.cwd() / name
         target_dir = target_dir.resolve()
 
-        if interactive:
+        # Handle --preview: show directory tree without creating
+        if preview:
+            # Build a minimal config for preview
+            preview_lang = language or Language.PYTHON
+            preview_fw = framework or Framework.NONE
+            preview_arch = architecture or Architecture.SIMPLE
+            preview_pm = package_manager or PackageManager.UV
+            preview_config = TACConfig(
+                project=ProjectSpec(
+                    name=name,
+                    language=preview_lang,
+                    framework=preview_fw,
+                    architecture=preview_arch,
+                    package_manager=preview_pm,
+                ),
+                paths=PathsSpec(app_root="src"),
+                commands=CommandsSpec(start="", test=""),
+                claude=ClaudeConfig(settings=ClaudeSettings(project_name=name)),
+                orchestrator=OrchestratorConfig(enabled=with_orchestrator),
+            )
+            UIComponents.show_project_tree_preview(preview_config)
+            UIComponents.show_configuration_summary(preview_config)
+            return
+
+        if enhanced:
+            from tac_bootstrap.interfaces.wizard import run_enhanced_init_wizard
+
+            config = run_enhanced_init_wizard(
+                name=name,
+                language=language,
+                framework=framework,
+                package_manager=package_manager,
+                architecture=architecture,
+                with_orchestrator=with_orchestrator,
+            )
+            if config is None:
+                # User cancelled
+                raise typer.Exit(0)
+        elif interactive:
             from tac_bootstrap.interfaces.wizard import run_init_wizard
 
             config = run_init_wizard(
@@ -199,6 +259,35 @@ def init(
                 orchestrator=OrchestratorConfig(enabled=with_orchestrator),
             )
 
+        # Run preflight validation checks before scaffolding
+        template_repo = TemplateRepository()
+        vs = ValidationService(template_repo)
+        preflight_result = vs.run_preflight_checks(config, target_dir)
+
+        if not preflight_result.valid:
+            error_count = len(preflight_result.errors())
+            console.print(
+                f"\n[bold red]Preflight validation failed with {error_count} error(s):[/bold red]"
+            )
+            for issue in preflight_result.errors():
+                console.print(f"  [red][x][/red] {issue.message}")
+                if issue.suggestion:
+                    console.print(f"      [dim]{issue.suggestion}[/dim]")
+            for issue in preflight_result.warnings():
+                console.print(f"  [yellow][!][/yellow] {issue.message}")
+                if issue.suggestion:
+                    console.print(f"      [dim]{issue.suggestion}[/dim]")
+            console.print(
+                "\n[dim]Fix the errors above and try again. "
+                "Run 'tac-bootstrap validate' for detailed diagnostics.[/dim]"
+            )
+            raise typer.Exit(1)
+
+        # Show warnings if any
+        if preflight_result.warnings():
+            for issue in preflight_result.warnings():
+                console.print(f"  [yellow][!][/yellow] {issue.message}")
+
         # Import scaffold service (will fail if not implemented yet)
         try:
             from tac_bootstrap.application.scaffold_service import ScaffoldService
@@ -236,8 +325,11 @@ def init(
             # Apply plan
             result = service.apply_plan(plan, target_dir, config, force=False)
 
-            # Show success
-            success_text = f"""[bold green]✓ Project created successfully![/bold green]
+            # Show success using UIComponents for enhanced mode, standard display otherwise
+            if enhanced:
+                UIComponents.show_success_message(name, target_dir)
+            else:
+                success_text = f"""[bold green]Project created successfully![/bold green]
 
 [cyan]Location:[/cyan] {target_dir}
 [cyan]Files Created:[/cyan] {result.files_created}
@@ -249,7 +341,7 @@ def init(
   3. Initialize git: git init
   4. Start development with Claude Code
 """
-            console.print(Panel(success_text, border_style="green", title="Success"))
+                console.print(Panel(success_text, border_style="green", title="Success"))
 
         except ImportError as e:
             console.print(f"[red]ScaffoldService not yet implemented: {e}[/red]")
@@ -959,6 +1051,516 @@ def upgrade(
             console.print("[dim]Backup preserved. Delete manually when confirmed working.[/dim]")
     else:
         console.print(f"\n[red]✗ {message}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def migrate(
+    repo_path: Path = typer.Argument(
+        Path("."),
+        help="Project root directory",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+    ),
+    to_version: str = typer.Argument(..., help="Target schema version (e.g., 2)"),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        "-n",
+        help="Preview changes without applying",
+    ),
+    backup: bool = typer.Option(
+        True,
+        "--backup/--no-backup",
+        help="Create backup before migrating (default: enabled)",
+    ),
+) -> None:
+    """
+    Migrate config.yml to a specific schema version.
+
+    Applies forward or backward schema migrations to transform config.yml
+    between schema versions. Supports multi-step migration paths.
+
+    Examples:
+        tac-bootstrap migrate . 2                   # Migrate to schema v2
+        tac-bootstrap migrate ./my-project 2        # Migrate specific project
+        tac-bootstrap migrate . 2 --dry-run         # Preview migration changes
+        tac-bootstrap migrate . 1 --no-backup       # Rollback to v1 without backup
+    """
+    project_path = repo_path.resolve()
+
+    # Verify config.yml exists
+    config_file = project_path / "config.yml"
+    if not config_file.exists():
+        console.print("[red]Error: No config.yml found. Is this a TAC Bootstrap project?[/red]")
+        raise typer.Exit(1)
+
+    service = MigrationService(project_path)
+    current_version = service.detect_current_version()
+    target = to_version
+
+    console.print("\n[bold]TAC Bootstrap Schema Migration[/bold]")
+    console.print(f"  Current schema version: [yellow]{current_version}[/yellow]")
+    console.print(f"  Target schema version:  [green]{target}[/green]")
+
+    # Check if already at target
+    if current_version == target:
+        console.print(
+            f"\n[green]Already at schema version {target}. No migration needed.[/green]"
+        )
+        raise typer.Exit(0)
+
+    # Check if migration path exists
+    if not service.can_migrate(current_version, target):
+        console.print(
+            f"\n[red]Error: No migration path from version {current_version} "
+            f"to {target}.[/red]"
+        )
+        raise typer.Exit(1)
+
+    # Dry-run mode
+    if dry_run:
+        changes = service.dry_run(target)
+        console.print("\n[bold]Preview of changes:[/bold]")
+        for change in changes:
+            console.print(f"  {change}")
+        console.print("\n[yellow]Dry run - no changes made[/yellow]")
+        raise typer.Exit(0)
+
+    # Apply migration
+    console.print("\n[bold]Applying migration...[/bold]")
+    success, message = service.apply_migration(target, backup=backup)
+
+    if success:
+        console.print(f"\n[green]✓ {message}[/green]")
+        if backup:
+            console.print(
+                "[dim]Config backup preserved. Delete manually when confirmed working.[/dim]"
+            )
+    else:
+        console.print(f"\n[red]✗ {message}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def rollback(
+    repo_path: Path = typer.Argument(
+        Path("."),
+        help="Project root directory",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+    ),
+    steps: int = typer.Option(
+        1,
+        "--steps",
+        "-s",
+        help="Number of schema versions to rollback",
+        min=1,
+    ),
+    from_backup: bool = typer.Option(
+        True,
+        "--from-backup/--no-backup",
+        help="Restore from backup if available (default: enabled)",
+    ),
+) -> None:
+    """
+    Rollback previous schema migration(s).
+
+    Restores config.yml from a backup (if available) or applies backward
+    migrations to undo schema changes.
+
+    Examples:
+        tac-bootstrap rollback                      # Rollback 1 step
+        tac-bootstrap rollback . --steps 2          # Rollback 2 steps
+        tac-bootstrap rollback . --no-backup        # Use backward migrations only
+    """
+    project_path = repo_path.resolve()
+
+    # Verify config.yml exists
+    config_file = project_path / "config.yml"
+    if not config_file.exists():
+        console.print("[red]Error: No config.yml found. Is this a TAC Bootstrap project?[/red]")
+        raise typer.Exit(1)
+
+    service = MigrationService(project_path)
+    current_version = service.detect_current_version()
+
+    console.print("\n[bold]TAC Bootstrap Schema Rollback[/bold]")
+    console.print(f"  Current schema version: [yellow]{current_version}[/yellow]")
+    console.print(f"  Steps to rollback: [cyan]{steps}[/cyan]")
+    console.print(f"  From backup: [cyan]{from_backup}[/cyan]")
+
+    # Perform rollback
+    console.print("\n[bold]Rolling back...[/bold]")
+    success, message = service.rollback_migration(steps=steps, from_backup=from_backup)
+
+    if success:
+        console.print(f"\n[green]✓ {message}[/green]")
+    else:
+        console.print(f"\n[red]✗ {message}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def health_check(
+    repo_path: Path = typer.Argument(
+        Path("."), help="Project root (default: current directory)"
+    ),
+) -> None:
+    """
+    Check system health and requirements.
+
+    Validates that all required system dependencies are installed and meet
+    minimum version requirements for TAC Bootstrap project generation.
+
+    Checks:
+    - git >= 2.30
+    - python >= 3.10
+    - Package manager (uv, npm, yarn, pnpm, bun)
+    - gh CLI (if orchestrator is enabled)
+
+    Examples:
+        # Check current directory
+        $ tac-bootstrap health-check
+
+        # Check specific project
+        $ tac-bootstrap health-check /path/to/repo
+    """
+    try:
+        repo_path = repo_path.resolve()
+        console.print(f"[cyan]Checking system health for:[/cyan] {repo_path}\n")
+
+        # Try to load config from repo if available
+        config_file = repo_path / "config.yml"
+        if config_file.exists():
+            try:
+                with open(config_file, "r") as f:
+                    raw_config = yaml.safe_load(f)
+                config = TACConfig(**raw_config)
+                console.print(f"[dim]Loaded config from {config_file}[/dim]\n")
+            except Exception:
+                # Fall back to minimal config for system checks
+                config = TACConfig(
+                    project=ProjectSpec(
+                        name="health-check",
+                        language=Language.PYTHON,
+                        package_manager=PackageManager.UV,
+                    ),
+                    commands=CommandsSpec(start="", test=""),
+                    claude=ClaudeConfig(settings=ClaudeSettings(project_name="health-check")),
+                )
+        else:
+            config = TACConfig(
+                project=ProjectSpec(
+                    name="health-check",
+                    language=Language.PYTHON,
+                    package_manager=PackageManager.UV,
+                ),
+                commands=CommandsSpec(start="", test=""),
+                claude=ClaudeConfig(settings=ClaudeSettings(project_name="health-check")),
+            )
+
+        template_repo = TemplateRepository()
+        vs = ValidationService(template_repo)
+        result = vs.validate_system_requirements(config)
+
+        # Build results table
+        table = Table(title="System Requirements", border_style="cyan")
+        table.add_column("Tool", style="bold")
+        table.add_column("Required")
+        table.add_column("Status")
+
+        checks_info = [("git", ">= 2.30"), ("python", ">= 3.10")]
+        if config.project.package_manager == PackageManager.UV:
+            checks_info.append(("uv", "any"))
+        if config.project.package_manager in ValidationService.JS_PACKAGE_MANAGERS:
+            checks_info.append((config.project.package_manager.value, "any"))
+        if config.orchestrator.enabled:
+            checks_info.append(("gh", "any"))
+
+        for tool_name, required_ver in checks_info:
+            tool_issues = [
+                i for i in result.issues if tool_name in i.message.lower()
+            ]
+            if tool_issues:
+                issue = tool_issues[0]
+                if issue.severity == "error":
+                    table.add_row(tool_name, required_ver, "[red]FAIL[/red]")
+                else:
+                    table.add_row(tool_name, required_ver, "[yellow]WARN[/yellow]")
+            else:
+                table.add_row(tool_name, required_ver, "[green]OK[/green]")
+
+        console.print(table)
+        console.print()
+
+        if result.valid:
+            console.print(
+                Panel(
+                    "[bold green]All system requirements met![/bold green]",
+                    border_style="green",
+                    title="Health Check",
+                )
+            )
+        else:
+            error_count = len(result.errors())
+            warning_count = len(result.warnings())
+            status_lines = f"[bold red]Issues found[/bold red]\n\n"
+            status_lines += f"[red]Errors:[/red] {error_count}\n"
+            status_lines += f"[yellow]Warnings:[/yellow] {warning_count}\n"
+            for issue in result.issues:
+                color = "red" if issue.severity == "error" else "yellow"
+                status_lines += (
+                    f"\n[{color}][{issue.severity.upper()}][/{color}] {issue.message}"
+                )
+                if issue.suggestion:
+                    status_lines += f"\n  [dim]{issue.suggestion}[/dim]"
+
+            console.print(
+                Panel(status_lines, border_style="red", title="Health Check")
+            )
+            raise typer.Exit(1)
+
+    except SystemExit:
+        raise
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@app.command()
+def validate(
+    repo_path: Path = typer.Argument(
+        Path("."), help="Project root (default: current directory)"
+    ),
+    strict: bool = typer.Option(
+        False, "--strict", help="Run strict validation (all warnings become errors)"
+    ),
+) -> None:
+    """
+    Validate project configuration and requirements.
+
+    Runs comprehensive validation including system requirements, project name,
+    project path, config compatibility, filesystem, and git checks.
+
+    Examples:
+        # Validate current directory
+        $ tac-bootstrap validate
+
+        # Validate specific project
+        $ tac-bootstrap validate /path/to/repo
+
+        # Strict mode (warnings become errors)
+        $ tac-bootstrap validate --strict
+    """
+    try:
+        repo_path = repo_path.resolve()
+        console.print(f"[cyan]Validating:[/cyan] {repo_path}\n")
+
+        # Load config
+        config_file = repo_path / "config.yml"
+        if not config_file.exists():
+            console.print(
+                f"[red]Error:[/red] No config.yml found at {repo_path}"
+            )
+            console.print(
+                "[dim]Run 'tac-bootstrap init' to create a new project "
+                "or 'tac-bootstrap add-agentic' to add to existing repo[/dim]"
+            )
+            raise typer.Exit(1)
+
+        try:
+            with open(config_file, "r") as f:
+                raw_config = yaml.safe_load(f)
+            config = TACConfig(**raw_config)
+        except yaml.YAMLError as e:
+            console.print(f"[red]YAML Parse Error:[/red] {e}")
+            raise typer.Exit(1)
+        except Exception as e:
+            console.print(f"[red]Config Validation Error:[/red] {e}")
+            raise typer.Exit(1)
+
+        if strict:
+            config = config.model_copy(update={"validation_mode": "strict"})
+
+        template_repo = TemplateRepository()
+        vs = ValidationService(template_repo)
+        result = vs.run_preflight_checks(config, repo_path)
+
+        level_order = [
+            ValidationLevel.SYSTEM,
+            ValidationLevel.DOMAIN,
+            ValidationLevel.TEMPLATE,
+            ValidationLevel.FILESYSTEM,
+            ValidationLevel.GIT,
+        ]
+
+        has_issues = False
+        for level in level_order:
+            level_issues = [i for i in result.issues if i.level == level]
+            if not level_issues:
+                continue
+            has_issues = True
+            console.print(f"\n[bold]{level.value.upper()} Checks:[/bold]")
+            for issue in level_issues:
+                if issue.severity == "error":
+                    color = "red"
+                    icon = "x"
+                else:
+                    color = "yellow"
+                    icon = "!"
+                console.print(f"  [{color}][{icon}][/{color}] {issue.message}")
+                if issue.suggestion:
+                    console.print(f"      [dim]{issue.suggestion}[/dim]")
+
+        console.print()
+
+        if result.valid and not has_issues:
+            console.print(
+                Panel(
+                    "[bold green]All validations passed![/bold green]\n\n"
+                    f"Project '{config.project.name}' is ready for scaffolding.",
+                    border_style="green",
+                    title="Validation Result",
+                )
+            )
+        elif result.valid:
+            warning_count = len(result.warnings())
+            console.print(
+                Panel(
+                    f"[bold green]Validation passed with {warning_count} "
+                    f"warning(s)[/bold green]\n\n"
+                    f"Project '{config.project.name}' can proceed, "
+                    "but consider addressing the warnings above.",
+                    border_style="yellow",
+                    title="Validation Result",
+                )
+            )
+        else:
+            error_count = len(result.errors())
+            warning_count = len(result.warnings())
+            console.print(
+                Panel(
+                    f"[bold red]Validation failed[/bold red]\n\n"
+                    f"[red]Errors:[/red] {error_count}\n"
+                    f"[yellow]Warnings:[/yellow] {warning_count}\n\n"
+                    "Fix the errors above before proceeding.",
+                    border_style="red",
+                    title="Validation Result",
+                )
+            )
+            raise typer.Exit(1)
+
+    except SystemExit:
+        raise
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+
+@app.command()
+def telemetry(
+    action: str = typer.Argument(
+        ...,
+        help="Action to perform: enable, disable, status, or clear",
+    ),
+) -> None:
+    """
+    Manage CLI telemetry settings.
+
+    TAC Bootstrap includes opt-in anonymous usage tracking to help improve
+    the tool. Telemetry is DISABLED by default and never collects sensitive
+    data (file paths, project names, credentials, or exception messages).
+
+    Examples:
+        $ tac-bootstrap telemetry enable    # Turn on tracking
+        $ tac-bootstrap telemetry disable   # Turn off tracking
+        $ tac-bootstrap telemetry status    # Show current status and stats
+        $ tac-bootstrap telemetry clear     # Delete all collected data
+    """
+    from tac_bootstrap.infrastructure.telemetry import TelemetryService
+
+    service = TelemetryService()
+
+    if action == "enable":
+        service.opt_in()
+        console.print(
+            Panel(
+                "[bold green]Telemetry enabled[/bold green]\n\n"
+                "Anonymous usage data will be collected locally.\n"
+                "No sensitive data (paths, credentials, etc.) is ever tracked.\n"
+                f"Data stored at: [dim]{service.storage_dir}[/dim]",
+                border_style="green",
+                title="Telemetry",
+            )
+        )
+
+    elif action == "disable":
+        service.opt_out()
+        console.print(
+            Panel(
+                "[bold yellow]Telemetry disabled[/bold yellow]\n\n"
+                "No data will be collected.\n"
+                "Use [cyan]tac-bootstrap telemetry clear[/cyan] to delete existing data.",
+                border_style="yellow",
+                title="Telemetry",
+            )
+        )
+
+    elif action == "status":
+        stats = service.get_statistics()
+        if not stats.get("enabled", False):
+            status_text = (
+                "[bold]Status:[/bold] [yellow]Disabled[/yellow]\n\n"
+                "Telemetry is currently disabled.\n"
+                "Use [cyan]tac-bootstrap telemetry enable[/cyan] to opt in."
+            )
+        else:
+            status_text = (
+                f"[bold]Status:[/bold] [green]Enabled[/green]\n\n"
+                f"[cyan]Total Events:[/cyan] {stats.get('total_events', 0)}\n"
+                f"[cyan]Events Today:[/cyan] {stats.get('events_today', 0)}\n"
+                f"[cyan]Log Files:[/cyan] {stats.get('log_files', 0)}\n"
+                f"[cyan]Avg Duration:[/cyan] {stats.get('avg_duration_ms', 0):.1f} ms\n"
+            )
+            commands = stats.get("commands", {})
+            if commands:
+                status_text += "\n[bold]Command Usage:[/bold]\n"
+                for cmd, count in sorted(
+                    commands.items(), key=lambda x: x[1], reverse=True
+                ):
+                    status_text += f"  {cmd}: {count}\n"
+
+            errors = stats.get("errors", {})
+            if errors:
+                status_text += "\n[bold]Error Types:[/bold]\n"
+                for err, count in sorted(
+                    errors.items(), key=lambda x: x[1], reverse=True
+                ):
+                    status_text += f"  {err}: {count}\n"
+
+            status_text += f"\n[dim]Data location: {service.storage_dir}[/dim]"
+
+        console.print(Panel(status_text, border_style="cyan", title="Telemetry Status"))
+
+    elif action == "clear":
+        files_deleted = service.clear_data()
+        console.print(
+            Panel(
+                f"[bold green]Telemetry data cleared[/bold green]\n\n"
+                f"Deleted {files_deleted} file(s) from {service.storage_dir}",
+                border_style="green",
+                title="Telemetry",
+            )
+        )
+
+    else:
+        console.print(
+            f"[red]Error:[/red] Unknown action '{action}'. "
+            "Use: enable, disable, status, or clear"
+        )
         raise typer.Exit(1)
 
 
