@@ -1315,13 +1315,16 @@ async def run_workflow(adw_id: str) -> bool:
             return False
 
         # =====================================================================
-        # Step 4: Fix (only if review found issues)
+        # Step 4: Auto-Remediation Loop (Fix all issues automatically)
         # =====================================================================
         fix_session_id = None
         fix_agent_id = None
+        fix_iteration = 0
+        max_fix_iterations = 5  # Prevent infinite loops
 
-        if verdict == "FAIL":
-            console.print("[yellow]Review found issues - proceeding to fix step[/yellow]")
+        while verdict == "FAIL" and fix_iteration < max_fix_iterations:
+            fix_iteration += 1
+            console.print(f"[yellow]Review found issues - Auto-fix attempt {fix_iteration}/{max_fix_iterations}[/yellow]")
 
             # Find the review file path
             review_path = await extract_review_path(working_dir)
@@ -1337,6 +1340,7 @@ async def run_workflow(adw_id: str) -> bool:
                 )
                 return False
 
+            # Execute fix step
             fix_success, fix_session_id, fix_agent_id = await run_fix_step(
                 adw_id=adw_id,
                 orchestrator_agent_id=orchestrator_agent_id,
@@ -1348,24 +1352,65 @@ async def run_workflow(adw_id: str) -> bool:
             )
 
             if not fix_success:
+                console.print(f"[red]Fix iteration {fix_iteration} failed[/red]")
                 await update_adw_status(
                     adw_id=adw_id,
                     status="failed",
-                    error_message="Fix step failed",
+                    error_message=f"Fix step failed at iteration {fix_iteration}",
                     error_step=STEP_FIX,
                     completed_steps=3,
                 )
                 return False
-        else:
-            console.print("[green]Review passed - skipping fix step[/green]")
-            # Log that fix step was skipped
+
+            # Re-run review to check if issues are resolved
+            console.print(f"[cyan]Re-running review after fix iteration {fix_iteration}...[/cyan]")
+            review_success, review_session_id, review_agent_id, verdict, review_path = await run_review_step(
+                adw_id=adw_id,
+                orchestrator_agent_id=orchestrator_agent_id,
+                user_prompt=prompt,
+                plan_path=plan_path,
+                working_dir=working_dir,
+                model=review_model,
+            )
+
+            if not review_success:
+                console.print("[red]Review step failed after fix[/red]")
+                await update_adw_status(
+                    adw_id=adw_id,
+                    status="failed",
+                    error_message="Review step failed after fix",
+                    error_step=STEP_REVIEW,
+                    completed_steps=3,
+                )
+                return False
+
+            if verdict == "PASS":
+                console.print(f"[green]✅ All issues resolved after {fix_iteration} fix iteration(s)![/green]")
+                await log_system_event(
+                    adw_id=adw_id,
+                    adw_step=STEP_FIX,
+                    level="INFO",
+                    message=f"All issues auto-resolved after {fix_iteration} fix iteration(s)",
+                    metadata={"fix_iterations": fix_iteration, "final_verdict": verdict},
+                )
+                break
+            else:
+                console.print(f"[yellow]Issues still present after fix iteration {fix_iteration} - will retry[/yellow]")
+
+        # Check if we hit max iterations without resolving
+        if verdict == "FAIL" and fix_iteration >= max_fix_iterations:
+            console.print(f"[yellow]⚠️  Reached max fix iterations ({max_fix_iterations}) - proceeding with remaining issues[/yellow]")
             await log_system_event(
                 adw_id=adw_id,
                 adw_step=STEP_FIX,
-                level="INFO",
-                message="Fix step skipped - review passed with no blockers",
-                metadata={"verdict": verdict},
+                level="WARNING",
+                message=f"Reached max fix iterations ({max_fix_iterations}) - some issues may remain",
+                metadata={"fix_iterations": fix_iteration, "verdict": verdict},
             )
+        elif verdict == "PASS":
+            console.print("[green]✅ Review passed - all issues resolved[/green]")
+        else:
+            console.print("[green]✅ Review passed - no issues found[/green]")
 
         # =====================================================================
         # Workflow Completed
