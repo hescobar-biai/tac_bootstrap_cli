@@ -2,6 +2,11 @@
 allowed-tools: Task, Read, Write
 description: End-to-end workflow orchestrating scout, plan, and build phases
 model: sonnet
+# NOTE: Model "sonnet" uses 3-tier resolution:
+#   1. ANTHROPIC_DEFAULT_SONNET_MODEL (env var) - highest priority
+#   2. config.yml agentic.model_policy.sonnet_model - project config
+#   3. Hardcoded default "claude-sonnet-4-5-20250929" - fallback
+# See .claude/MODEL_RESOLUTION.md for details
 ---
 
 # Scout-Plan-Build Orchestration

@@ -3,6 +3,11 @@ allowed-tools: Write, Read, Bash, Grep, Glob, Edit, Task
 description: Fix issues identified in a code review report by implementing recommended solutions
 argument-hint: [user prompt describing work], [path to plan file], [path to review report]
 model: opus
+# NOTE: Model "opus" uses 3-tier resolution:
+#   1. ANTHROPIC_DEFAULT_OPUS_MODEL (env var) - highest priority
+#   2. config.yml agentic.model_policy.opus_model - project config
+#   3. Hardcoded default "claude-opus-4-5-20251101" - fallback
+# See .claude/MODEL_RESOLUTION.md for details
 ---
 
 # Fix Agent

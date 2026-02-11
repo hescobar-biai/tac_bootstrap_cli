@@ -2,6 +2,11 @@
 allowed-tools: Read, Write, Edit, Glob, Grep, MultiEdit
 description: Create implementation plans with simple file exploration workflow
 model: opus
+# NOTE: Model "opus" uses 3-tier resolution:
+#   1. ANTHROPIC_DEFAULT_OPUS_MODEL (env var) - highest priority
+#   2. config.yml agentic.model_policy.opus_model - project config
+#   3. Hardcoded default "claude-opus-4-5-20251101" - fallback
+# See .claude/MODEL_RESOLUTION.md for details
 ---
 
 # Simple Planning Command
