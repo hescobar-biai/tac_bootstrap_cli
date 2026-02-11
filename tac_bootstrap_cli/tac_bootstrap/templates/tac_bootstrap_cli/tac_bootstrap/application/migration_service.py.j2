@@ -1,0 +1,275 @@
+"""
+TAC Bootstrap Migration Service
+
+Provides safe schema migration for config.yml files, including:
+- Version detection and comparison
+- Forward and backward migration application
+- Dry-run previews
+- Automatic backup creation before destructive operations
+- Multi-step migration path resolution
+
+Example usage:
+    from pathlib import Path
+    from tac_bootstrap.application.migration_service import MigrationService
+
+    service = MigrationService(Path("/path/to/project"))
+    current = service.detect_current_version()
+    target = service.get_target_version()
+
+    if service.can_migrate(current, target):
+        success, message = service.apply_migration(target, backup=True)
+"""
+
+from __future__ import annotations
+
+import copy
+import shutil
+from datetime import datetime
+from pathlib import Path
+from typing import List, Tuple
+
+import yaml
+
+from tac_bootstrap.domain.migrations import (
+    Migration,
+    get_latest_version,
+    get_migration_path,
+)
+
+
+def _compare_versions(v1: str, v2: str) -> int:
+    """
+    Compare two schema version strings numerically.
+
+    Returns:
+        -1 if v1 < v2, 0 if v1 == v2, 1 if v1 > v2.
+    """
+    try:
+        int_v1 = int(v1)
+        int_v2 = int(v2)
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Invalid version format: '{v1}' or '{v2}' (must be integers)") from e
+
+    if int_v1 < int_v2:
+        return -1
+    elif int_v1 > int_v2:
+        return 1
+    else:
+        return 0
+
+
+class MigrationService:
+    """
+    Orchestrates schema migrations for TAC Bootstrap config.yml files.
+    """
+
+    def __init__(self, project_path: Path) -> None:
+        self.project_path = project_path
+        self.config_path = project_path / "config.yml"
+
+    def detect_current_version(self) -> str:
+        """Read schema_version from config.yml (default: '1')."""
+        if not self.config_path.exists():
+            return "1"
+        try:
+            config = self.load_config()
+            raw_version = config.get("schema_version", 1)
+            return str(raw_version)
+        except Exception:
+            return "1"
+
+    def get_target_version(self) -> str:
+        """Get latest available schema version."""
+        return get_latest_version()
+
+    def get_migration_path(self, from_version: str, to_version: str) -> List[Migration]:
+        """Find migration steps between versions."""
+        return get_migration_path(from_version, to_version)
+
+    def can_migrate(self, from_version: str, to_version: str) -> bool:
+        """Check if migration path exists."""
+        try:
+            self.get_migration_path(from_version, to_version)
+            return True
+        except ValueError:
+            return False
+
+    def apply_migration(
+        self, to_version: str, backup: bool = True
+    ) -> Tuple[bool, str]:
+        """Apply migrations up to target version."""
+        if not self.config_path.exists():
+            return False, f"Config file not found: {self.config_path}"
+
+        current_version = self.detect_current_version()
+        if current_version == to_version:
+            return True, f"Already at schema version {to_version}. No migration needed."
+
+        try:
+            migrations = self.get_migration_path(current_version, to_version)
+        except ValueError as e:
+            return False, str(e)
+
+        if not migrations:
+            return True, f"No migrations needed (already at version {to_version})."
+
+        if backup:
+            try:
+                backup_path = self.create_backup()
+            except Exception as e:
+                return False, f"Failed to create backup: {e}"
+
+        try:
+            config = self.load_config()
+        except Exception as e:
+            return False, f"Failed to load config: {e}"
+
+        is_forward = _compare_versions(current_version, to_version) < 0
+
+        try:
+            for migration in migrations:
+                if is_forward:
+                    config = migration.forward(config)
+                else:
+                    config = migration.backward(config)
+
+            self.save_config(config)
+
+            direction = "Upgraded" if is_forward else "Rolled back"
+            return True, (
+                f"{direction} schema from version {current_version} to {to_version}. "
+                f"Applied {len(migrations)} migration(s)."
+            )
+        except Exception as e:
+            if backup:
+                try:
+                    self._restore_from_backup(backup_path)
+                except Exception:
+                    pass
+            return False, f"Migration failed: {e}"
+
+    def rollback_migration(
+        self, steps: int = 1, from_backup: bool = True
+    ) -> Tuple[bool, str]:
+        """Rollback N migration steps."""
+        if not self.config_path.exists():
+            return False, f"Config file not found: {self.config_path}"
+
+        if from_backup:
+            backup_path = self._find_latest_backup()
+            if backup_path is not None:
+                try:
+                    self._restore_from_backup(backup_path)
+                    return True, f"Restored config.yml from backup: {backup_path.name}"
+                except Exception as e:
+                    return False, f"Failed to restore from backup: {e}"
+
+        current_version = self.detect_current_version()
+        current_int = int(current_version)
+        target_int = max(1, current_int - steps)
+        target_version = str(target_int)
+
+        if current_version == target_version:
+            return True, f"Already at schema version {target_version}. Nothing to rollback."
+
+        return self.apply_migration(target_version, backup=False)
+
+    def dry_run(self, to_version: str) -> List[str]:
+        """Preview changes without applying."""
+        changes: List[str] = []
+        current_version = self.detect_current_version()
+
+        if current_version == to_version:
+            changes.append(f"Already at schema version {to_version}. No changes needed.")
+            return changes
+
+        try:
+            migrations = self.get_migration_path(current_version, to_version)
+        except ValueError as e:
+            changes.append(f"Error: {e}")
+            return changes
+
+        is_forward = _compare_versions(current_version, to_version) < 0
+        direction = "upgrade" if is_forward else "rollback"
+
+        changes.append(
+            f"Would {direction} schema from version {current_version} to {to_version}"
+        )
+        changes.append(f"Migration steps: {len(migrations)}")
+
+        for i, migration in enumerate(migrations, start=1):
+            if is_forward:
+                changes.append(
+                    f"  Step {i}: {migration.version_from} -> {migration.version_to} "
+                    f"- {migration.description}"
+                )
+            else:
+                changes.append(
+                    f"  Step {i}: {migration.version_to} -> {migration.version_from} "
+                    f"(rollback) - {migration.description}"
+                )
+
+        if self.config_path.exists():
+            try:
+                original_config = self.load_config()
+                preview_config = copy.deepcopy(original_config)
+                for migration in migrations:
+                    if is_forward:
+                        preview_config = migration.forward(preview_config)
+                    else:
+                        preview_config = migration.backward(preview_config)
+
+                added = set(preview_config.keys()) - set(original_config.keys())
+                removed = set(original_config.keys()) - set(preview_config.keys())
+
+                for key in sorted(added):
+                    changes.append(f"  + Add top-level key: '{key}'")
+                for key in sorted(removed):
+                    changes.append(f"  - Remove top-level key: '{key}'")
+
+                for key in sorted(set(preview_config.keys()) & set(original_config.keys())):
+                    if preview_config[key] != original_config[key]:
+                        changes.append(f"  ~ Modify key: '{key}'")
+            except Exception as e:
+                changes.append(f"  (Could not preview field changes: {e})")
+
+        return changes
+
+    def create_backup(self) -> Path:
+        """Create timestamped backup of config.yml."""
+        if not self.config_path.exists():
+            raise FileNotFoundError(f"Config file not found: {self.config_path}")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = self.project_path / f"config.yml.bak.{timestamp}"
+        shutil.copy2(self.config_path, backup_path)
+        return backup_path
+
+    def _find_latest_backup(self) -> Path | None:
+        """Find the most recent config.yml backup."""
+        backups = sorted(
+            self.project_path.glob("config.yml.bak.*"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        return backups[0] if backups else None
+
+    def _restore_from_backup(self, backup_path: Path) -> None:
+        """Restore config.yml from backup."""
+        if not backup_path.exists():
+            raise FileNotFoundError(f"Backup file not found: {backup_path}")
+        shutil.copy2(backup_path, self.config_path)
+
+    def load_config(self) -> dict:
+        """Load YAML config file."""
+        if not self.config_path.exists():
+            raise FileNotFoundError(f"Config file not found: {self.config_path}")
+        with open(self.config_path, "r") as f:
+            config = yaml.safe_load(f)
+        if not isinstance(config, dict):
+            raise ValueError(f"Config file is not a valid YAML mapping: {self.config_path}")
+        return config
+
+    def save_config(self, config: dict) -> None:
+        """Save YAML config file."""
+        with open(self.config_path, "w") as f:
+            yaml.dump(config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)

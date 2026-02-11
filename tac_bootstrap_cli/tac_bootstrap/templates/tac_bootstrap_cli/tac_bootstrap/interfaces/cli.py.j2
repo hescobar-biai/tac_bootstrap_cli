@@ -1,0 +1,110 @@
+{# Template: tac_bootstrap_cli/tac_bootstrap/interfaces/cli.py.j2 #}
+{# Description: CLI telemetry command integration (partial - extends existing cli.py) #}
+{# Note: This template contains the telemetry command to be added to the CLI app. #}
+{#        The full cli.py is not templated as it is the main application entry point. #}
+
+{# === TELEMETRY COMMAND === #}
+{# Add this command to the Typer app alongside existing commands #}
+
+@app.command()
+def telemetry(
+    action: str = typer.Argument(
+        ...,
+        help="Action to perform: enable, disable, status, or clear",
+    ),
+) -> None:
+    """
+    Manage CLI telemetry settings.
+
+    TAC Bootstrap includes opt-in anonymous usage tracking to help improve
+    the tool. Telemetry is DISABLED by default and never collects sensitive
+    data (file paths, project names, credentials, or exception messages).
+
+    Examples:
+        $ {{ config.project.name }} telemetry enable    # Turn on tracking
+        $ {{ config.project.name }} telemetry disable   # Turn off tracking
+        $ {{ config.project.name }} telemetry status    # Show current status and stats
+        $ {{ config.project.name }} telemetry clear     # Delete all collected data
+    """
+    from tac_bootstrap.infrastructure.telemetry import TelemetryService
+
+    service = TelemetryService()
+
+    if action == "enable":
+        service.opt_in()
+        console.print(
+            Panel(
+                "[bold green]Telemetry enabled[/bold green]\n\n"
+                "Anonymous usage data will be collected locally.\n"
+                "No sensitive data (paths, credentials, etc.) is ever tracked.\n"
+                f"Data stored at: [dim]{service.storage_dir}[/dim]",
+                border_style="green",
+                title="Telemetry",
+            )
+        )
+
+    elif action == "disable":
+        service.opt_out()
+        console.print(
+            Panel(
+                "[bold yellow]Telemetry disabled[/bold yellow]\n\n"
+                "No data will be collected.\n"
+                "Use [cyan]tac-bootstrap telemetry clear[/cyan] to delete existing data.",
+                border_style="yellow",
+                title="Telemetry",
+            )
+        )
+
+    elif action == "status":
+        stats = service.get_statistics()
+        if not stats.get("enabled", False):
+            status_text = (
+                "[bold]Status:[/bold] [yellow]Disabled[/yellow]\n\n"
+                "Telemetry is currently disabled.\n"
+                "Use [cyan]tac-bootstrap telemetry enable[/cyan] to opt in."
+            )
+        else:
+            status_text = (
+                f"[bold]Status:[/bold] [green]Enabled[/green]\n\n"
+                f"[cyan]Total Events:[/cyan] {stats.get('total_events', 0)}\n"
+                f"[cyan]Events Today:[/cyan] {stats.get('events_today', 0)}\n"
+                f"[cyan]Log Files:[/cyan] {stats.get('log_files', 0)}\n"
+                f"[cyan]Avg Duration:[/cyan] {stats.get('avg_duration_ms', 0):.1f} ms\n"
+            )
+            commands = stats.get("commands", {})
+            if commands:
+                status_text += "\n[bold]Command Usage:[/bold]\n"
+                for cmd, count in sorted(
+                    commands.items(), key=lambda x: x[1], reverse=True
+                ):
+                    status_text += f"  {cmd}: {count}\n"
+
+            errors = stats.get("errors", {})
+            if errors:
+                status_text += "\n[bold]Error Types:[/bold]\n"
+                for err, count in sorted(
+                    errors.items(), key=lambda x: x[1], reverse=True
+                ):
+                    status_text += f"  {err}: {count}\n"
+
+            status_text += f"\n[dim]Data location: {service.storage_dir}[/dim]"
+
+        console.print(Panel(status_text, border_style="cyan", title="Telemetry Status"))
+
+    elif action == "clear":
+        files_deleted = service.clear_data()
+        console.print(
+            Panel(
+                f"[bold green]Telemetry data cleared[/bold green]\n\n"
+                f"Deleted {files_deleted} file(s) from {service.storage_dir}",
+                border_style="green",
+                title="Telemetry",
+            )
+        )
+
+    else:
+        console.print(
+            f"[red]Error:[/red] Unknown action '{action}'. "
+            "Use: enable, disable, status, or clear"
+        )
+        raise typer.Exit(1)
