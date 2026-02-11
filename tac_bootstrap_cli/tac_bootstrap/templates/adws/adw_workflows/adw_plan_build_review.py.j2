@@ -53,6 +53,7 @@ from adw_modules.adw_logging import (
 )
 from adw_modules.adw_summarizer import summarize_event
 from adw_modules.adw_websockets import broadcast_adw_event_summary_update
+from adw_modules.workflow_ops import get_model_id
 from adw_modules.adw_agent_sdk import (
     query_to_completion,
     quick_prompt,
@@ -978,8 +979,8 @@ async def run_workflow(adw_id: str) -> bool:
     input_data = adw.get("input_data", {})
     prompt = input_data.get("prompt")
     working_dir = input_data.get("working_dir")
-    model = input_data.get("model", ModelName.OPUS.value)
-    review_model = input_data.get("review_model", ModelName.OPUS.value)
+    model = input_data.get("model", get_model_id("opus"))
+    review_model = input_data.get("review_model", get_model_id("opus"))
 
     if not prompt:
         console.print("[red]No prompt found in ADW input_data[/red]")

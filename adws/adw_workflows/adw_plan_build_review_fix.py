@@ -54,6 +54,7 @@ from adw_modules.adw_logging import (
 )
 from adw_modules.adw_summarizer import summarize_event
 from adw_modules.adw_websockets import broadcast_adw_event_summary_update
+from adw_modules.workflow_ops import get_model_id
 from adw_modules.adw_agent_sdk import (
     query_to_completion,
     quick_prompt,
@@ -394,7 +395,7 @@ async def run_plan_step(
     orchestrator_agent_id: str,
     prompt: str,
     working_dir: str,
-    model: str = ModelName.OPUS.value,
+    model: str = None,
 ) -> tuple[bool, str | None, str | None]:
     """Run the /plan step.
 
@@ -402,7 +403,9 @@ async def run_plan_step(
         adw_id: ADW ID for logging
         orchestrator_agent_id: Parent orchestrator agent ID
         prompt: The task prompt to plan
-        working_dir: Working directory for the agent
+        working_dir: Working directory for the agent"""
+    if model is None:
+        model = get_model_id("opus")
         model: Model to use
 
     Returns:
@@ -540,13 +543,15 @@ async def run_plan_step(
 async def extract_plan_path(
     working_dir: str,
     session_id: str | None,
-    model: str = ModelName.OPUS.value,
+    model: str = None,
 ) -> str | None:
     """Use quick_prompt to extract the plan file path.
 
     Args:
         working_dir: Working directory
-        session_id: Session ID from plan step (for context)
+        session_id: Session ID from plan step (for context)"""
+    if model is None:
+        model = get_model_id("opus")
         model: Model to use
 
     Returns:
@@ -608,13 +613,15 @@ async def run_build_step(
     orchestrator_agent_id: str,
     plan_path: str,
     working_dir: str,
-    model: str = ModelName.OPUS.value,
+    model: str = None,
 ) -> tuple[bool, str | None, str | None]:
     """Run the /build step.
 
     Args:
         adw_id: ADW ID for logging
-        orchestrator_agent_id: Parent orchestrator agent ID
+        orchestrator_agent_id: Parent orchestrator agent ID"""
+    if model is None:
+        model = get_model_id("opus")
         plan_path: Path to the plan file
         working_dir: Working directory for the agent
         model: Model to use
@@ -758,7 +765,7 @@ async def run_review_step(
     user_prompt: str,
     plan_path: str,
     working_dir: str,
-    model: str = ModelName.OPUS.value,
+    model: str = None,
 ) -> tuple[bool, str | None, str | None, str | None]:
     """Run the /review step to validate completed work.
 
@@ -767,7 +774,9 @@ async def run_review_step(
         orchestrator_agent_id: Parent orchestrator agent ID
         user_prompt: Original user prompt describing the work
         plan_path: Path to the plan file that was implemented
-        working_dir: Working directory for the agent
+        working_dir: Working directory for the agent"""
+    if model is None:
+        model = get_model_id("opus")
         model: Model to use (defaults to Opus for thorough analysis)
 
     Returns:
@@ -970,7 +979,7 @@ async def run_fix_step(
     plan_path: str,
     review_path: str,
     working_dir: str,
-    model: str = ModelName.OPUS.value,
+    model: str = None,
 ) -> tuple[bool, str | None, str | None]:
     """Run the /fix step to resolve issues found in review.
 
@@ -1180,9 +1189,9 @@ async def run_workflow(adw_id: str) -> bool:
     input_data = adw.get("input_data", {})
     prompt = input_data.get("prompt")
     working_dir = input_data.get("working_dir")
-    model = input_data.get("model", ModelName.OPUS.value)
-    review_model = input_data.get("review_model", ModelName.OPUS.value)
-    fix_model = input_data.get("fix_model", ModelName.OPUS.value)
+    model = input_data.get("model", get_model_id("opus"))
+    review_model = input_data.get("review_model", get_model_id("opus"))
+    fix_model = input_data.get("fix_model", get_model_id("opus"))
 
     if not prompt:
         console.print("[red]No prompt found in ADW input_data[/red]")
