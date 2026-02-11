@@ -369,6 +369,10 @@ class AgenticSpec(BaseModel):
         default=TokenOptimizationConfig(), description="Token usage optimization settings"
     )
 
+    class Config:
+        """Pydantic configuration for AgenticSpec."""
+        protected_namespaces = ()  # Allow 'model_' prefix in field names
+
 
 class ClaudeSettings(BaseModel):
     """
