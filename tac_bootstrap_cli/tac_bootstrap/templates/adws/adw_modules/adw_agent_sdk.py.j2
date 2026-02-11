@@ -41,7 +41,11 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ModelName(str, Enum):
-    """Available Claude models for the Agent SDK."""
+    """Available Claude models for the Agent SDK.
+
+    Note: Values are fallback defaults. Use get_resolved_model_*() functions
+    for runtime configuration support via environment variables or config.yml.
+    """
 
     # Claude 4.5 models (latest)
     OPUS_4_5 = "claude-opus-4-5-20251101"
@@ -52,6 +56,41 @@ class ModelName(str, Enum):
     OPUS = "claude-opus-4-5-20251101"
     SONNET = "claude-sonnet-4-5-20250929"
     HAIKU = "claude-haiku-4-5-20251001"
+
+
+# =============================================================================
+# Model Resolution Functions (3-tier hierarchy support)
+# =============================================================================
+
+
+def get_resolved_model_opus() -> str:
+    """Get Opus model ID with 3-tier resolution (env → config → default).
+
+    Returns:
+        Fully qualified Opus model ID
+    """
+    from .workflow_ops import get_model_id
+    return get_model_id("opus")
+
+
+def get_resolved_model_sonnet() -> str:
+    """Get Sonnet model ID with 3-tier resolution (env → config → default).
+
+    Returns:
+        Fully qualified Sonnet model ID
+    """
+    from .workflow_ops import get_model_id
+    return get_model_id("sonnet")
+
+
+def get_resolved_model_haiku() -> str:
+    """Get Haiku model ID with 3-tier resolution (env → config → default).
+
+    Returns:
+        Fully qualified Haiku model ID
+    """
+    from .workflow_ops import get_model_id
+    return get_model_id("haiku")
 
 
 class SettingSource(str, Enum):

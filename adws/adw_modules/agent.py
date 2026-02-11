@@ -420,11 +420,25 @@ def is_quota_exhausted_error(error_msg: str) -> bool:
 # 2. Context reduction (strip non-critical fields)
 # 3. Aggressive caching (reuse previous results)
 # 4. Return best-effort result instead of failing
-MODEL_FALLBACK_CHAIN: Final[Dict[str, Optional[str]]] = {
-    "opus": "sonnet",
-    "sonnet": "haiku",
-    "haiku": "haiku",  # Try haiku again with degradation (not None)
-}
+def get_model_fallback_chain() -> Dict[str, Optional[str]]:
+    """Get model fallback chain with dynamically resolved model IDs.
+
+    Returns a mapping of model IDs to their fallback models:
+    - Opus → Sonnet
+    - Sonnet → Haiku
+    - Haiku → Haiku (retry, not None)
+    """
+    from .workflow_ops import get_model_id
+
+    opus = get_model_id("opus")
+    sonnet = get_model_id("sonnet")
+    haiku = get_model_id("haiku")
+
+    return {
+        opus: sonnet,
+        sonnet: haiku,
+        haiku: haiku,  # Try haiku again with degradation (not None)
+    }
 
 
 def get_fallback_model(current_model: str) -> Optional[str]:
@@ -432,7 +446,8 @@ def get_fallback_model(current_model: str) -> Optional[str]:
 
     Returns None if there's no fallback available (already at lowest tier).
     """
-    return MODEL_FALLBACK_CHAIN.get(current_model)
+    chain = get_model_fallback_chain()
+    return chain.get(current_model)
 
 
 def prompt_claude_code_with_retry(
@@ -513,7 +528,7 @@ def prompt_claude_code_with_retry(
                 continue
 
             # ALL models exhausted - fail fast with clear message
-            all_models = set(MODEL_FALLBACK_CHAIN.keys())
+            all_models = set(get_model_fallback_chain().keys())
             logger.error(
                 f"❌ All models quota exhausted: {exhausted_models}. "
                 f"Cannot continue - quota reset needed."

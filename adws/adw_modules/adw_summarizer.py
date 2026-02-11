@@ -28,8 +28,21 @@ from typing import Any, Optional
 from claude_agent_sdk import query, ClaudeAgentOptions, AssistantMessage, TextBlock
 
 
-# Fast model for summarization (Haiku for speed and cost)
-FAST_MODEL = "claude-haiku-4-5-20251001"
+def get_fast_model() -> str:
+    """Get fast model ID for summarization and quick operations.
+
+    Uses Haiku by default for speed and cost efficiency, but respects
+    the 3-tier configuration resolution (env vars → config → defaults).
+
+    Returns:
+        Fully qualified model ID string
+    """
+    from .workflow_ops import get_model_id
+    return get_model_id("haiku")
+
+
+# Fast model constant - evaluated at module load time
+FAST_MODEL = get_fast_model()
 
 # Prompt templates (inline to avoid file dependencies)
 EVENT_SUMMARIZER_SYSTEM_PROMPT = """You are a concise log summarizer. Create brief, informative 1-sentence summaries of events. Focus on the key action or information. Keep summaries under 100 characters."""
