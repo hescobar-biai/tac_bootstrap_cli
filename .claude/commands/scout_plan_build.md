@@ -1,7 +1,7 @@
 ---
 allowed-tools: Task, Read, Write
 description: End-to-end workflow orchestrating scout, plan, and build phases
-model: claude-sonnet-4-5-20250929
+model: sonnet
 ---
 
 # Scout-Plan-Build Orchestration

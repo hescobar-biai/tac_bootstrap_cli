@@ -15,6 +15,23 @@ import os
 import sys
 
 
+def get_summarization_model():
+    """
+    Get the model ID for summarization with 3-tier resolution.
+
+    Resolution order:
+    1. Environment variable (ANTHROPIC_DEFAULT_HAIKU_MODEL)
+    2. Hardcoded default
+    """
+    # Tier 1: Environment variable
+    env_model = os.getenv('ANTHROPIC_DEFAULT_HAIKU_MODEL')
+    if env_model:
+        return env_model
+
+    # Tier 2: Hardcoded default
+    return "claude-haiku-4-5-20251001"
+
+
 def generate_event_summary(event_data):
     """
     Generate a natural language summary of the event using Anthropic's API.
@@ -82,7 +99,7 @@ Write a brief, natural language summary that captures what happened."""
         client = anthropic.Anthropic(api_key=api_key)
 
         message = client.messages.create(
-            model="claude-haiku-4-5-20251001",  # Fast model for summaries
+            model=get_summarization_model(),  # Fast model for summaries (dynamically resolved)
             max_tokens=50,
             temperature=0.3,
             messages=[

@@ -5,7 +5,7 @@ allowed-tools:
   - AskUserQuestion
 description: One-shot agent execution pattern for single specialized agent tasks
 argument-hint: "[agent_type] [task_description]"
-model: claude-sonnet-4-5-20250929
+model: sonnet
 category: Orchestrator Commands
 ---
 

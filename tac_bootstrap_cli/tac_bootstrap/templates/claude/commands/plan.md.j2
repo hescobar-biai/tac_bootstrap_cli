@@ -1,7 +1,7 @@
 ---
 allowed-tools: Read, Write, Edit, Glob, Grep, MultiEdit
 description: Create implementation plans with simple file exploration workflow
-model: claude-opus-4-1-20250805
+model: opus
 ---
 
 # Simple Planning Command

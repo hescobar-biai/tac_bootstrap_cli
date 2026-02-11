@@ -1,7 +1,7 @@
 ---
 allowed-tools: Task, Read, Write, Edit, Glob, Grep, WebFetch
 description: Creates concise engineering implementation plan with parallel scout-based codebase exploration
-model: claude-opus-4-1-20250805
+model: opus
 ---
 
 # Purpose

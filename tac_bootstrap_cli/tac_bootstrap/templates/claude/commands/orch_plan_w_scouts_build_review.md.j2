@@ -6,7 +6,7 @@ allowed-tools:
   - AskUserQuestion
 description: Complete workflow orchestrating scout, plan, build, and review phases
 argument-hint: "[task_description]"
-model: claude-sonnet-4-5-20250929
+model: sonnet
 category: Orchestrator Commands
 ---
 

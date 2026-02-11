@@ -5,7 +5,7 @@ allowed-tools:
   - TodoWrite
 description: Simplified workflow orchestrating scout exploration and direct build
 argument-hint: "[task_description]"
-model: claude-sonnet-4-5-20250929
+model: sonnet
 category: Orchestrator Commands
 ---
 
