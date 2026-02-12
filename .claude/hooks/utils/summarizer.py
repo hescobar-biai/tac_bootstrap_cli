@@ -3,6 +3,7 @@
 # requires-python = ">=3.8"
 # dependencies = [
 #     "anthropic",
+#     "pyyaml",
 # ]
 # ///
 
