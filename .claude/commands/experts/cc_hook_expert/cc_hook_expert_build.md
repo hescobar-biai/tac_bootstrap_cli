@@ -4,6 +4,13 @@ description: Build hook implementation following expert plan
 model: sonnet
 ---
 
+# NOTE: Model "sonnet" uses 3-tier resolution:
+#   1. ANTHROPIC_DEFAULT_SONNET_MODEL (env var) - highest priority
+#   2. config.yml agentic.model_policy.sonnet_model - project config
+#   3. Hardcoded default "claude-sonnet-4-5-20250929" - fallback
+# See .claude/MODEL_RESOLUTION.md for details
+
+
 # Purpose
 
 This expert command guides AI agents through the implementation (build) phase of Claude Code hooks. This is the second step in the Plan-Build-Improve workflow cycle for hook development. The agent will execute the implementation plan created in the planning phase, write hook code following established patterns, integrate with settings.json, validate functionality, and troubleshoot issues.

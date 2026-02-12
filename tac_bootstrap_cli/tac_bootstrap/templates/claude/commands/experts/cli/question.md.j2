@@ -1,15 +1,23 @@
+{% raw %}
 ---
 allowed-tools: Bash, Read, Grep, Glob, TodoWrite
-description: Answer questions about {{ config.project.name }} CLI without coding
+description: Answer questions about tac-bootstrap CLI without coding
 argument-hint: [question]
 model: sonnet
 ---
+
+# NOTE: Model "sonnet" uses 3-tier resolution:
+#   1. ANTHROPIC_DEFAULT_SONNET_MODEL (env var) - highest priority
+#   2. config.yml agentic.model_policy.sonnet_model - project config
+#   3. Hardcoded default "claude-sonnet-4-5-20250929" - fallback
+# See .claude/MODEL_RESOLUTION.md for details
+
 
 # CLI Expert: Question Mode
 
 ## Purpose
 
-Answer questions about the {{ config.project.name }} CLI by leveraging the CLI expert's mental model (expertise file) and validating assumptions against the actual codebase.
+Answer questions about the tac-bootstrap CLI by leveraging the CLI expert's mental model (expertise file) and validating assumptions against the actual codebase.
 
 This is a **read-only** command - no code modifications allowed.
 
@@ -17,11 +25,11 @@ This is a **read-only** command - no code modifications allowed.
 
 - **USER_QUESTION**: `$1` (required) - The question to answer
 - **EXPERTISE_PATH**: `.claude/commands/experts/cli/expertise.yaml` (static)
-- **CLI_ROOT**: `{{ config.project.name }}/` (static)
+- **CLI_ROOT**: `tac_bootstrap_cli/tac_bootstrap/` (static)
 
 ## Instructions
 
-You are the CLI Expert for {{ config.project.name }}. You have a deep mental model of the CLI stored in your expertise file.
+You are the CLI Expert for tac-bootstrap. You have a deep mental model of the CLI stored in your expertise file.
 
 **Key Principles:**
 1. Start with expertise (mental model)
@@ -54,7 +62,7 @@ You are the CLI Expert for {{ config.project.name }}. You have a deep mental mod
 1. Based on USER_QUESTION and expertise, identify files to read:
    ```bash
    # Example: If question is about template registration
-   cat {{ config.project.name }}/application/scaffold_service.py
+   cat tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
    ```
 
 2. Cross-reference expertise claims with actual code:
@@ -65,7 +73,7 @@ You are the CLI Expert for {{ config.project.name }}. You have a deep mental mod
 3. Use Grep/Glob if searching is needed:
    ```bash
    # Example: Find all template registrations
-   grep -n "plan.add_file" {{ config.project.name }}/application/scaffold_service.py
+   grep -n "plan.add_file" tac_bootstrap_cli/tac_bootstrap/application/scaffold_service.py
    ```
 
 4. Note any discrepancies:
@@ -202,8 +210,10 @@ plan.add_file(
 ### Additional Notes
 - Use `action="skip_if_exists"` for seed files like expertise.yaml
 - Template variables: `{{ config.project.name }}`, `{{ config.commands.test }}`
-- All templates must be in `{{ config.project.name }}/templates/`
+- All templates must be in `tac_bootstrap_cli/tac_bootstrap/templates/`
 
 ### Expertise Status
 ✅ Expertise is accurate (validated against scaffold_service.py)
 ```
+
+{% endraw %}

@@ -3,6 +3,11 @@ name: build-agent
 description: Use proactively when you need to delegate writing a single file as part of a parallel build workflow. Specialist for implementing one specific file based on detailed instructions and context.
 tools: Write, Read, Edit, Grep, Glob, Bash, TodoWrite
 model: opus
+# NOTE: Model "opus" uses 3-tier resolution:
+#   1. ANTHROPIC_DEFAULT_OPUS_MODEL (env var) - highest priority
+#   2. config.yml agentic.model_policy.opus_model - project config
+#   3. Hardcoded default "claude-opus-4-5-20251101" - fallback
+# See .claude/MODEL_RESOLUTION.md for details
 color: blue
 ---
 

@@ -5,6 +5,13 @@ argument-hint: [question]
 model: sonnet
 ---
 
+# NOTE: Model "sonnet" uses 3-tier resolution:
+#   1. ANTHROPIC_DEFAULT_SONNET_MODEL (env var) - highest priority
+#   2. config.yml agentic.model_policy.sonnet_model - project config
+#   3. Hardcoded default "claude-sonnet-4-5-20250929" - fallback
+# See .claude/MODEL_RESOLUTION.md for details
+
+
 # Commands Expert: Question Mode
 
 ## Purpose
@@ -21,7 +28,7 @@ This is a **read-only** command - no code modifications allowed.
 
 ## Instructions
 
-You are the Commands Expert for {{ config.project.name }}. You have a deep mental model of command structure and patterns stored in your expertise file.
+You are the Commands Expert for tac_bootstrap. You have a deep mental model of command structure and patterns stored in your expertise file.
 
 **Key Principles:**
 1. Start with expertise (mental model)

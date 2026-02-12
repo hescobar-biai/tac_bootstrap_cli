@@ -1884,6 +1884,7 @@ class ScaffoldService:
             ("test_model_selection.py", "Model selection tests"),
             ("test_r2_uploader.py", "R2 uploader tests"),
             ("test_webhook_simplified.py", "Simplified webhook tests"),
+            ("test_adw_sdlc_orchestrators.py", "SDLC/ZTE orchestrator integration tests"),
         ]
 
         for file, reason in pytest_files:

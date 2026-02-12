@@ -1,9 +1,17 @@
+{% raw %}
 ---
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write, TodoWrite
 description: Self-improve Commands expertise by validating against codebase
 argument-hint: [check_git_diff] [focus_area]
 model: sonnet
 ---
+
+# NOTE: Model "sonnet" uses 3-tier resolution:
+#   1. ANTHROPIC_DEFAULT_SONNET_MODEL (env var) - highest priority
+#   2. config.yml agentic.model_policy.sonnet_model - project config
+#   3. Hardcoded default "claude-sonnet-4-5-20250929" - fallback
+# See .claude/MODEL_RESOLUTION.md for details
+
 
 # Commands Expert: Self-Improve Mode
 
@@ -339,7 +347,7 @@ Use complete diffs for comprehensive validation:
    test -f .claude/commands/experts/cli/question.md && echo "✓ Implementation exists"
 
    # Check for Jinja2 variables in templates
-   grep -h "{{ '{{' }}.*config" tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/**/*.j2 | head -10
+   grep -h "{{.*config" tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/**/*.j2 | head -10
    ```
 
 9. **Discover New Information**:
@@ -386,7 +394,7 @@ Create a discrepancies report:
 - [ ] New expert domain: `experts/new-domain/`
       Should be documented in integration_patterns
 
-- [ ] New template variable: `{{ '{{' }} config.new_field {{ '}}' }}`
+- [ ] New template variable: `{{ config.new_field }}`
       Should be documented in dual_strategy section
 
 ### Incorrect Information
@@ -539,12 +547,12 @@ Create a discrepancies report:
        template_location: "tac_bootstrap_cli/tac_bootstrap/templates/claude/commands/"
        implementation_location: ".claude/commands/"
      jinja2_variables:
-       config_object: "{{ '{{' }} config.* {{ '}}' }}"
+       config_object: "{{ config.* }}"
        common_variables:
-         - "{{ '{{' }} config.project.name {{ '}}' }}"
-         - "{{ '{{' }} config.cli.name {{ '}}' }}"
-         - "{{ '{{' }} config.cli.package_name {{ '}}' }}"
-         - "{{ '{{' }} config.commands.* {{ '}}' }}"
+         - "{{ config.project.name }}"
+         - "{{ config.cli.name }}"
+         - "{{ config.cli.package_name }}"
+         - "{{ config.commands.* }}"
      validation:
        check: "Ensure .j2 templates exist for all registered commands"
        check: "Verify implementations match rendered templates"
@@ -788,3 +796,5 @@ Self-improve is successful if:
 4. ✅ All discrepancies documented and addressed
 5. ✅ `last_updated` field updated to current date
 6. ✅ Report is comprehensive and actionable
+
+{% endraw %}

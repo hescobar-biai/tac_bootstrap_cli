@@ -3,6 +3,11 @@ name: data-engineer
 description: Data Engineering Agent specialized in dbt model development, BigQuery query optimization, Cloud Storage management, and data pipeline design for supply chain analytics.
 tools: Bash, Read, Write, Edit, Grep, Glob
 model: opus
+# NOTE: Model "opus" uses 3-tier resolution:
+#   1. ANTHROPIC_DEFAULT_OPUS_MODEL (env var) - highest priority
+#   2. config.yml agentic.model_policy.opus_model - project config
+#   3. Hardcoded default "claude-opus-4-5-20251101" - fallback
+# See .claude/MODEL_RESOLUTION.md for details
 color: green
 ---
 

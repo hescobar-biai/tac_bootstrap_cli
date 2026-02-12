@@ -3,6 +3,11 @@ name: ml-engineer
 description: ML Engineering Agent specialized in demand forecasting, feature engineering, model training/evaluation, and deployment for supply chain optimization.
 tools: Bash, Read, Write, Edit, Grep, Glob, NotebookEdit
 model: opus
+# NOTE: Model "opus" uses 3-tier resolution:
+#   1. ANTHROPIC_DEFAULT_OPUS_MODEL (env var) - highest priority
+#   2. config.yml agentic.model_policy.opus_model - project config
+#   3. Hardcoded default "claude-opus-4-5-20251101" - fallback
+# See .claude/MODEL_RESOLUTION.md for details
 color: purple
 ---
 

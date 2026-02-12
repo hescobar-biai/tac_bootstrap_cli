@@ -4,6 +4,13 @@ description: Review hook changes and update expert knowledge with improvements
 model: sonnet
 ---
 
+# NOTE: Model "sonnet" uses 3-tier resolution:
+#   1. ANTHROPIC_DEFAULT_SONNET_MODEL (env var) - highest priority
+#   2. config.yml agentic.model_policy.sonnet_model - project config
+#   3. Hardcoded default "claude-sonnet-4-5-20250929" - fallback
+# See .claude/MODEL_RESOLUTION.md for details
+
+
 # Purpose
 
 This expert command guides AI agents through the self-improvement phase of the Claude Code hook expert system (Level 7). This command analyzes the last 5 commits on the current branch, filters for changes in expert/automation layers, and generates a structured markdown report with recommendations for updating the plan and build expert prompts. The command is manually triggered via `/cc_hook_expert_improve` and generates report output only (no automatic edits), allowing humans to review and apply improvements to critical expert infrastructure.

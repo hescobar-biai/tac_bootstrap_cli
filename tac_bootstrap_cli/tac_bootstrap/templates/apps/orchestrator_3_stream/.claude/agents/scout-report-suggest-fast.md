@@ -3,6 +3,11 @@ name: scout-report-suggest-fast
 description: Use proactively to scout codebase issues, identify problem locations, and suggest resolutions. Specialist for read-only analysis and reporting without making changes.
 tools: Read, Glob, Grep
 model: haiku
+# NOTE: Model "haiku" uses 3-tier resolution:
+#   1. ANTHROPIC_DEFAULT_HAIKU_MODEL (env var) - highest priority
+#   2. config.yml agentic.model_policy.haiku_model - project config
+#   3. Hardcoded default "claude-haiku-4-5-20251001" - fallback
+# See .claude/MODEL_RESOLUTION.md for details
 color: blue
 ---
 
