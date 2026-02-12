@@ -43,6 +43,49 @@ Transform any repository into an AI-assisted development environment in minutes.
 - **Smart Recommendations** - Auto-suggest improvements and security fixes
 - **Community & Social Features** - Plugin/template sharing, badges, leaderboards
 
+### Celes Stack Extensions (v1.1.0)
+
+#### Domain Skills
+
+| Skill | Command | Description |
+|-------|---------|-------------|
+| BigQuery Ops | `/bigquery-ops` | Manage BigQuery datasets, tables, and queries for supply chain |
+| dbt Workflow | `/dbt-workflow` | Create dbt models with dual-target BigQuery + PostgreSQL |
+| ML Forecast | `/ml-forecast` | Build demand forecasting with LightGBM, Prophet, XGBoost, PyTorch |
+| FastAPI DDD | `/fastapi-ddd` | Generate FastAPI vertical slice DDD components |
+| React Frontend | `/react-frontend` | Generate React 19 components and supply chain dashboards |
+| GCP Infra | `/gcp-infra` | Manage GCP resources with Terraform |
+| AWS Ops | `/aws-ops` | Manage AWS resources with Terraform |
+| Data Pipeline | `/data-pipeline` | Design ETL/ELT pipelines with BigQuery + dbt |
+
+#### New Agents
+
+| Agent | Model | Specialization |
+|-------|-------|---------------|
+| data-engineer | opus | dbt, BigQuery, data pipelines |
+| ml-engineer | opus | Demand forecasting, multi-framework ML |
+| infra-ops | sonnet | GCP/AWS infrastructure, Terraform |
+| frontend-engineer | opus | React 19, TanStack Query, MUI X Data Grid Premium |
+
+#### New Experts
+
+| Expert | Domain | Commands |
+|--------|--------|----------|
+| data-engineering | dbt, BigQuery, ETL | `/experts:data-engineering:question`, `/experts:data-engineering:self-improve` |
+| ml-forecasting | Forecasting, ML | `/experts:ml-forecasting:question`, `/experts:ml-forecasting:self-improve` |
+| gcp-infra | GCP, Terraform | `/experts:gcp-infra:question`, `/experts:gcp-infra:self-improve` |
+| react-frontend | React, dashboards | `/experts:react-frontend:question`, `/experts:react-frontend:self-improve` |
+
+#### Plugin Distribution
+
+The `tac-bootstrap-plugin/` directory provides all 33 skills, 12 agents, and 3 hooks as a distributable Claude Code plugin. Add to any project:
+
+```json
+{
+  "plugins": ["path/to/tac-bootstrap-plugin"]
+}
+```
+
 ## Documentation
 
 | Document | Description |

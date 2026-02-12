@@ -1,0 +1,286 @@
+# ML Forecasting Implementation Expertise
+# Celes Supply Chain - Demand Forecasting, Model Evaluation, Pipeline Design
+
+overview:
+  description: "ML forecasting patterns for supply chain demand prediction using multiple frameworks"
+  primary_frameworks:
+    - "Prophet: Seasonal decomposition with holiday effects"
+    - "LightGBM: Gradient boosting for tabular time series features"
+    - "XGBoost: Regularized gradient boosting for ensemble diversity"
+    - "PyTorch: LSTM and Temporal Fusion Transformer (TFT) for complex patterns"
+    - "scikit-learn: Pipelines, preprocessing, baseline models"
+    - "statsmodels: ARIMA, ETS, Croston's method for intermittent demand"
+  design_principles:
+    - "Always establish naive baselines before complex models"
+    - "Time-based splits only — never random split for time series"
+    - "Evaluate with supply chain metrics (WMAPE, bias, fill rate), not just ML metrics"
+    - "Classify SKUs by demand pattern before model selection"
+    - "Feature engineering drives 80% of forecast accuracy improvement"
+
+sku_classification:
+  syntetos_boylan_croston:
+    description: "Classify SKUs by demand pattern to select appropriate forecasting method"
+    dimensions:
+      adi:
+        name: "Average Demand Interval"
+        formula: "mean time between non-zero demand occurrences"
+        threshold: 1.32
+      cv2:
+        name: "Squared Coefficient of Variation"
+        formula: "variance(demand) / mean(demand)^2"
+        threshold: 0.49
+    categories:
+      smooth:
+        condition: "ADI < 1.32 AND CV2 < 0.49"
+        description: "Regular, predictable demand"
+        recommended_models: ["LightGBM", "Prophet", "XGBoost"]
+        example: "Fast-moving consumer goods, staple items"
+      erratic:
+        condition: "ADI < 1.32 AND CV2 >= 0.49"
+        description: "Regular timing but variable quantity"
+        recommended_models: ["LightGBM with robust features", "XGBoost"]
+        example: "Promotional items, seasonal products"
+      intermittent:
+        condition: "ADI >= 1.32 AND CV2 < 0.49"
+        description: "Sporadic demand with consistent size"
+        recommended_models: ["Croston's method", "SBA (Syntetos-Boylan Approximation)"]
+        example: "Spare parts, specialty items"
+      lumpy:
+        condition: "ADI >= 1.32 AND CV2 >= 0.49"
+        description: "Sporadic demand with variable size"
+        recommended_models: ["TSB (Teunter-Syntetos-Babai)", "Simple averages", "Bootstrap"]
+        example: "Capital equipment parts, rare components"
+
+feature_engineering:
+  lag_features:
+    description: "Historical demand values as predictive features"
+    patterns:
+      - name: "demand_lag_1 to demand_lag_7"
+        purpose: "Capture weekly pattern"
+      - name: "demand_lag_14, demand_lag_21, demand_lag_28"
+        purpose: "Capture bi-weekly and monthly patterns"
+      - name: "demand_lag_364, demand_lag_371"
+        purpose: "Capture year-over-year seasonality"
+    implementation: "df['demand_lag_7'] = df.groupby('sku_id')['quantity'].shift(7)"
+
+  rolling_statistics:
+    description: "Aggregated demand over rolling windows"
+    features:
+      - "rolling_mean_7d: 7-day moving average"
+      - "rolling_mean_28d: 28-day moving average"
+      - "rolling_std_7d: 7-day standard deviation (volatility)"
+      - "rolling_std_28d: 28-day standard deviation"
+      - "rolling_median_14d: 14-day median (robust to outliers)"
+      - "rolling_min_28d, rolling_max_28d: Range indicators"
+    implementation: "df.groupby('sku_id')['quantity'].transform(lambda x: x.rolling(7).mean())"
+
+  calendar_features:
+    description: "Time-based categorical and cyclical features"
+    categorical:
+      - "day_of_week (0-6)"
+      - "month (1-12)"
+      - "week_of_year (1-52)"
+      - "quarter (1-4)"
+      - "is_weekend (bool)"
+      - "is_month_start, is_month_end (bool)"
+    cyclical_encoding:
+      description: "Sine/cosine encoding for cyclical features"
+      formula: "sin(2π * value / period), cos(2π * value / period)"
+      example: "day_sin = sin(2π * day_of_week / 7)"
+    holidays:
+      - "is_holiday (bool)"
+      - "days_to_next_holiday (int)"
+      - "days_since_last_holiday (int)"
+      - "holiday_type (categorical)"
+
+  promotional_features:
+    - "is_promo (bool): Active promotion flag"
+    - "promo_type (categorical): Discount, BOGO, bundle, etc."
+    - "discount_pct (float): Percentage discount"
+    - "days_since_last_promo (int): Recency of last promotion"
+    - "promo_duration_days (int): Length of current promotion"
+    - "promo_lift_history (float): Average historical lift for this promo type"
+
+  price_features:
+    - "unit_price (float): Current selling price"
+    - "price_ratio_to_avg (float): price / historical_avg_price"
+    - "price_change_pct (float): Percentage change from previous period"
+    - "competitor_price_ratio (float): price / competitor_price (if available)"
+
+  inventory_signals:
+    - "days_of_supply (float): on_hand / avg_daily_demand"
+    - "stockout_last_7d (bool): Whether stockout occurred recently"
+    - "fill_rate_30d (float): Recent fulfillment performance"
+    - "in_transit_qty (int): Pending replenishment"
+
+evaluation_metrics:
+  primary:
+    mape:
+      name: "Mean Absolute Percentage Error"
+      formula: "mean(|actual - forecast| / actual) * 100"
+      strengths: "Intuitive percentage interpretation"
+      weaknesses: "Undefined when actual = 0, biased toward under-forecasting"
+      threshold: "< 20% is good, < 10% is excellent for supply chain"
+    wmape:
+      name: "Weighted Mean Absolute Percentage Error"
+      formula: "sum(|actual - forecast|) / sum(actual) * 100"
+      strengths: "Handles zero actuals, volume-weighted"
+      weaknesses: "Dominated by high-volume SKUs"
+      preferred: true
+      reason: "Best single metric for supply chain forecasting"
+    bias:
+      name: "Forecast Bias"
+      formula: "mean(forecast - actual)"
+      interpretation:
+        positive: "Over-forecasting (excess inventory risk)"
+        negative: "Under-forecasting (stockout risk)"
+      threshold: "Should be within ±5% of mean demand"
+      critical: true
+      reason: "Bias directly impacts inventory investment and service levels"
+
+  supply_chain_specific:
+    fill_rate:
+      name: "Simulated Fill Rate"
+      description: "Fulfillment rate if ordering was based on forecast"
+      formula: "min(on_hand + forecast_driven_order, actual_demand) / actual_demand"
+    otif:
+      name: "On-Time In-Full"
+      description: "End-to-end delivery performance"
+      formula: "deliveries_on_time_and_complete / total_deliveries"
+    coverage:
+      name: "Forecast Coverage"
+      description: "Percentage of SKUs meeting accuracy threshold"
+      formula: "count(SKUs with MAPE < threshold) / total_SKUs"
+    value_weighted_accuracy:
+      name: "Value-Weighted Forecast Accuracy"
+      description: "Accuracy weighted by revenue contribution"
+      formula: "sum((1 - APE_i) * revenue_i) / sum(revenue_i)"
+
+  baseline_models:
+    naive:
+      description: "Last observed value as forecast"
+      formula: "forecast_t = actual_{t-1}"
+      use: "Lower bound for any model to beat"
+    seasonal_naive:
+      description: "Same period last year"
+      formula: "forecast_t = actual_{t-365}"
+      use: "Baseline for seasonal products"
+    moving_average:
+      description: "Average of last N periods"
+      formula: "forecast_t = mean(actual_{t-N:t-1})"
+      use: "Simple smoothing baseline"
+
+model_configurations:
+  prophet:
+    use_case: "Business-level forecasts with strong seasonality"
+    key_parameters:
+      - "seasonality_mode: 'multiplicative' for growing trends, 'additive' for stable"
+      - "changepoint_prior_scale: 0.05 (default) to 0.5 (more flexible)"
+      - "holidays: Custom holiday dataframe for country/industry"
+      - "add_regressors: External features (promotions, price, events)"
+    training_pattern: |
+      from prophet import Prophet
+      model = Prophet(
+          seasonality_mode='multiplicative',
+          yearly_seasonality=True,
+          weekly_seasonality=True,
+          daily_seasonality=False,
+          changepoint_prior_scale=0.1
+      )
+      model.add_regressor('is_promo')
+      model.fit(train_df[['ds', 'y', 'is_promo']])
+
+  lightgbm:
+    use_case: "SKU-level forecasts with rich feature sets"
+    key_parameters:
+      - "objective: 'regression' or 'tweedie' for zero-inflated"
+      - "num_leaves: 31-127 (complexity control)"
+      - "learning_rate: 0.01-0.1"
+      - "min_child_samples: 20-100 (prevent overfitting)"
+      - "feature_fraction: 0.7-0.9 (column subsampling)"
+      - "n_estimators: 500-2000 with early stopping"
+    hyperparameter_tuning: "Optuna with TimeSeriesSplit cross-validation"
+
+  xgboost:
+    use_case: "Ensemble diversity, regularization control"
+    key_parameters:
+      - "objective: 'reg:squarederror'"
+      - "max_depth: 4-8"
+      - "learning_rate: 0.01-0.1"
+      - "reg_alpha: L1 regularization"
+      - "reg_lambda: L2 regularization"
+      - "subsample: 0.7-0.9"
+
+  pytorch_lstm:
+    use_case: "Complex temporal patterns with covariates"
+    architecture:
+      - "Input: sequence of (lag_features + covariates) over lookback window"
+      - "LSTM layers: 1-3 layers, 64-256 hidden units"
+      - "Output: forecast horizon values"
+    training:
+      - "Batch size: 32-128"
+      - "Learning rate: 1e-3 with ReduceLROnPlateau"
+      - "Early stopping on validation loss"
+      - "Sequence length: 28-90 days lookback"
+
+  statsmodels_croston:
+    use_case: "Intermittent demand (spare parts, specialty items)"
+    variants:
+      - "Croston's original: Separate exponential smoothing for demand size and interval"
+      - "SBA: Syntetos-Boylan Approximation (bias-corrected)"
+      - "TSB: Teunter-Syntetos-Babai (includes probability of zero demand)"
+
+ensemble_methods:
+  stacking:
+    description: "Meta-learner trained on base model predictions"
+    base_models: ["LightGBM", "XGBoost", "Prophet"]
+    meta_learner: "Ridge regression or LightGBM"
+    pattern: "Train base models on fold 1, predict fold 2 for meta-learner training"
+  blending:
+    description: "Weighted average of model predictions"
+    methods:
+      - "Equal weights: Simple average"
+      - "Inverse error weights: 1/WMAPE normalization"
+      - "Optimal weights: Minimize validation WMAPE"
+  model_selection:
+    description: "Best model per SKU class or individual SKU"
+    approach: "Select model with lowest validation WMAPE per SBC category"
+
+cross_validation:
+  time_series_split:
+    description: "Expanding window cross-validation"
+    pattern: "Train on [0:t], validate on [t:t+h], expand t forward"
+    n_splits: 3-5
+    gap: "0 or forecast_horizon to prevent leakage"
+  sliding_window:
+    description: "Fixed-size training window"
+    pattern: "Train on [t-w:t], validate on [t:t+h], slide forward"
+    use_case: "When recent data is more relevant than distant history"
+
+deployment:
+  batch:
+    description: "Scheduled pipeline generating forecasts periodically"
+    schedule: "Daily or weekly depending on business cadence"
+    output: "Forecast table in BigQuery partitioned by forecast_date"
+    monitoring: "Compare forecast vs actuals as actuals arrive"
+  online:
+    description: "Real-time inference API for dynamic adjustments"
+    use_case: "Promotional demand response, supply disruption re-planning"
+    stack: "FastAPI + model artifacts in Cloud Storage"
+  shadow:
+    description: "New model running parallel to production"
+    purpose: "Validate new model performance before switching"
+    duration: "2-4 weeks of parallel operation"
+    switch_criteria: "New model WMAPE < production model WMAPE by >2%"
+
+best_practices:
+  - "Always split by time, never randomly — respect temporal ordering"
+  - "Monitor bias separately from accuracy — they solve different problems"
+  - "Use WMAPE over MAPE for supply chain — handles zero demand gracefully"
+  - "Establish baseline before complex models — naive and seasonal naive"
+  - "Feature importance analysis after training — prune irrelevant features"
+  - "Version training data alongside model artifacts"
+  - "Log all experiments with hyperparameters and metrics"
+  - "Re-train models on a regular cadence (weekly or monthly)"
+  - "Monitor for concept drift — demand patterns change over time"
+  - "Separate model for each SBC category, not one model for all SKUs"

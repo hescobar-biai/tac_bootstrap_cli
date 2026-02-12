@@ -123,6 +123,72 @@ def migrate_v2_to_v1(config: dict) -> dict:
 
 
 # ============================================================================
+# MIGRATION FUNCTIONS: v2 -> v3
+# ============================================================================
+
+
+def migrate_v2_to_v3(config: dict) -> dict:
+    """
+    Migrate config from schema v2 to v3.
+
+    Changes:
+        - Sets schema_version to 3.
+        - Adds optional data_engineering, ml, and infrastructure sections (null by default).
+
+    Args:
+        config: Raw config dictionary at schema v2.
+
+    Returns:
+        Transformed config dictionary at schema v3.
+    """
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    config["schema_version"] = 3
+
+    # Add optional Celes stack sections (null = disabled)
+    if "data_engineering" not in config:
+        config["data_engineering"] = None
+    if "ml" not in config:
+        config["ml"] = None
+    if "infrastructure" not in config:
+        config["infrastructure"] = None
+
+    # Update metadata
+    if config.get("metadata"):
+        config["metadata"]["last_upgrade"] = now_iso
+        config["metadata"]["schema_version"] = 3
+
+    return config
+
+
+def migrate_v3_to_v2(config: dict) -> dict:
+    """
+    Rollback config from schema v3 to v2.
+
+    Changes:
+        - Sets schema_version back to 2.
+        - Removes data_engineering, ml, and infrastructure sections.
+
+    Args:
+        config: Raw config dictionary at schema v3.
+
+    Returns:
+        Transformed config dictionary at schema v2.
+    """
+    config["schema_version"] = 2
+
+    config.pop("data_engineering", None)
+    config.pop("ml", None)
+    config.pop("infrastructure", None)
+
+    # Update metadata
+    if config.get("metadata"):
+        config["metadata"]["schema_version"] = 2
+
+    return config
+
+
+# ============================================================================
 # MIGRATION REGISTRY
 # ============================================================================
 
@@ -136,14 +202,14 @@ MIGRATION_REGISTRY: Dict[str, Migration] = {
         forward=migrate_v1_to_v2,
         backward=migrate_v2_to_v1,
     ),
-    # Future migrations go here, e.g.:
-    # "2->3": Migration(
-    #     version_from="2",
-    #     version_to="3",
-    #     description="...",
-    #     forward=migrate_v2_to_v3,
-    #     backward=migrate_v3_to_v2,
-    # ),
+    "2->3": Migration(
+        version_from="2",
+        version_to="3",
+        description="Add optional data_engineering, ml, and infrastructure config sections "
+        "for Celes stack support",
+        forward=migrate_v2_to_v3,
+        backward=migrate_v3_to_v2,
+    ),
 }
 
 

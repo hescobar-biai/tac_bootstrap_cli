@@ -1,0 +1,346 @@
+# React Frontend Implementation Expertise
+# Celes Supply Chain - React 19, TanStack Query, MUI X Data Grid Premium, TailwindCSS 4.1
+
+overview:
+  description: "React frontend patterns for supply chain analytics dashboards and data-heavy applications"
+  tech_stack:
+    core:
+      - "React 19: Functional components, hooks, Suspense, Server Components awareness"
+      - "TypeScript: Strict mode, discriminated unions, utility types"
+      - "Vite: Build tool with HMR and optimized bundling"
+    data:
+      - "TanStack Query v5: Server state management with caching and background refetch"
+      - "Ky: HTTP client wrapping fetch with retry, hooks, and interceptors"
+      - "Valibot: Runtime schema validation for API responses"
+    ui:
+      - "MUI X Data Grid Premium: Enterprise data tables with sorting, filtering, grouping, export"
+      - "TailwindCSS 4.1: Utility-first styling with custom theme tokens"
+      - "Recharts: Composable charting for time series and KPIs"
+    forms:
+      - "React Hook Form: Performant form state management"
+      - "Valibot resolver: Schema-based form validation"
+    testing:
+      - "Vitest: Unit and integration testing"
+      - "React Testing Library: Component behavior testing"
+      - "Playwright: E2E browser automation"
+  design_principles:
+    - "Server state in TanStack Query, local state in useState/useReducer"
+    - "Composition over inheritance — compose components and hooks"
+    - "Colocation — keep related files together (component, hook, types, tests)"
+    - "Named exports only — no default exports"
+    - "Barrel files (index.ts) for clean imports"
+
+component_architecture:
+  atomic_design:
+    atoms:
+      description: "Smallest UI building blocks"
+      examples: ["Button", "Input", "Badge", "Chip", "Tooltip", "Spinner"]
+      location: "src/components/atoms/"
+    molecules:
+      description: "Combinations of atoms forming functional units"
+      examples: ["SearchBar", "FilterChip", "KPICard", "StatusBadge"]
+      location: "src/components/molecules/"
+    organisms:
+      description: "Complex UI sections with business logic"
+      examples: ["DemandTable", "InventoryDashboard", "OrderTimeline", "ForecastChart"]
+      location: "src/components/organisms/"
+    templates:
+      description: "Page layouts with slot-based composition"
+      examples: ["DashboardLayout", "DetailLayout", "FormLayout"]
+      location: "src/components/templates/"
+    pages:
+      description: "Route-level components wiring data to templates"
+      examples: ["DemandPage", "InventoryPage", "OrdersPage", "SettingsPage"]
+      location: "src/pages/"
+
+  file_structure:
+    pattern: "Feature-based colocation"
+    example:
+      directory: "src/features/demand/"
+      files:
+        - "DemandTable.tsx: Main component"
+        - "useDemandData.ts: Data fetching hook"
+        - "demandApi.ts: API client functions"
+        - "demandTypes.ts: TypeScript interfaces"
+        - "demandSchema.ts: Valibot validation schemas"
+        - "DemandTable.test.tsx: Component tests"
+        - "index.ts: Barrel exports"
+
+  conventions:
+    naming:
+      components: "PascalCase (DemandTable.tsx)"
+      hooks: "camelCase with use prefix (useDemandData.ts)"
+      utils: "camelCase (formatCurrency.ts)"
+      types: "camelCase with Types suffix (demandTypes.ts)"
+      constants: "SCREAMING_SNAKE_CASE"
+    exports: "Named exports only — barrel files for directory exports"
+    props:
+      pattern: "Interface with Props suffix"
+      example: |
+        interface DemandTableProps {
+          filters: DemandFilters
+          onRowClick?: (row: DemandRow) => void
+        }
+
+data_fetching:
+  tanstack_query:
+    version: "v5"
+    core_patterns:
+      query_key_factory:
+        description: "Centralized, type-safe query key management"
+        pattern: |
+          export const demandKeys = {
+            all: ['demand'] as const,
+            lists: () => [...demandKeys.all, 'list'] as const,
+            list: (filters: DemandFilters) => [...demandKeys.lists(), filters] as const,
+            details: () => [...demandKeys.all, 'detail'] as const,
+            detail: (id: string) => [...demandKeys.details(), id] as const,
+          }
+      use_query:
+        description: "Data fetching with caching"
+        pattern: |
+          function useDemandList(filters: DemandFilters) {
+            return useQuery({
+              queryKey: demandKeys.list(filters),
+              queryFn: () => demandApi.list(filters),
+              staleTime: 5 * 60 * 1000,
+            })
+          }
+      use_mutation:
+        description: "Data modification with cache invalidation"
+        pattern: |
+          function useUpdateDemand() {
+            const queryClient = useQueryClient()
+            return useMutation({
+              mutationFn: demandApi.update,
+              onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: demandKeys.lists() })
+              },
+            })
+          }
+      use_infinite_query:
+        description: "Paginated data loading"
+        use_case: "Long lists, infinite scroll"
+    configuration:
+      staleTime: "5 minutes for dashboard data, 30 seconds for real-time"
+      gcTime: "10 minutes (garbage collection)"
+      retry: "3 retries with exponential backoff"
+      refetchOnWindowFocus: "true for dashboards, false for forms"
+
+  api_client:
+    library: "Ky (fetch wrapper)"
+    configuration: |
+      import ky from 'ky'
+      export const api = ky.create({
+        prefixUrl: import.meta.env.VITE_API_URL,
+        timeout: 30000,
+        retry: { limit: 2, methods: ['get'] },
+        hooks: {
+          beforeRequest: [addAuthHeader],
+          afterResponse: [handleUnauthorized],
+        },
+      })
+    patterns:
+      - "Typed API functions per domain"
+      - "Valibot parse on response for runtime validation"
+      - "Error boundary integration for failed requests"
+
+  validation:
+    library: "Valibot"
+    pattern: |
+      import * as v from 'valibot'
+      const DemandRowSchema = v.object({
+        id: v.string(),
+        skuId: v.string(),
+        quantity: v.number(),
+        date: v.string(),
+      })
+      type DemandRow = v.InferOutput<typeof DemandRowSchema>
+
+data_table:
+  library: "MUI X Data Grid Premium"
+  wrapper: "DataTable.Root"
+  features:
+    - "Server-side sorting, filtering, pagination"
+    - "Column grouping and pinning"
+    - "Row grouping and tree data"
+    - "Excel and CSV export"
+    - "Custom cell renderers"
+    - "Inline editing"
+  pattern: |
+    <DataTable.Root
+      rows={data}
+      columns={columns}
+      loading={isLoading}
+      pagination
+      paginationMode="server"
+      sortingMode="server"
+      filterMode="server"
+      onPaginationModelChange={setPagination}
+      onSortModelChange={setSort}
+      onFilterModelChange={setFilter}
+      slots={{ toolbar: CustomToolbar }}
+      exportOptions={['csv', 'excel']}
+    />
+  column_definition: |
+    const columns: GridColDef[] = [
+      { field: 'skuId', headerName: 'SKU', width: 120, filterable: true },
+      { field: 'quantity', headerName: 'Qty', type: 'number', width: 100 },
+      {
+        field: 'status',
+        headerName: 'Status',
+        renderCell: (params) => <StatusBadge status={params.value} />,
+      },
+    ]
+
+styling:
+  tailwindcss:
+    version: "4.1"
+    theme:
+      configuration: "@theme directive in CSS for design tokens"
+      tokens:
+        colors: "Brand palette, semantic colors (success, warning, error, info)"
+        spacing: "4px grid (p-1=4px, p-2=8px, p-4=16px)"
+        typography: "Font sizes, weights, line heights"
+        breakpoints: "sm:640px, md:768px, lg:1024px, xl:1280px"
+    patterns:
+      responsive: "Mobile-first with sm:, md:, lg: breakpoints"
+      dark_mode: "dark: variant on all components"
+      conditional: "className with clsx or template literals"
+    example: |
+      <div className="flex flex-col gap-4 p-4 md:flex-row md:items-center">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Demand Dashboard
+        </h1>
+      </div>
+
+state_management:
+  server_state:
+    tool: "TanStack Query"
+    rule: "ALL API data lives in TanStack Query — never in useState"
+  local_state:
+    simple: "useState for component-scoped UI state"
+    complex: "useReducer for multi-field form state or complex transitions"
+  shared:
+    tool: "React Context or Zustand"
+    use_cases:
+      - "Theme/dark mode toggle"
+      - "User session/auth state"
+      - "Global UI state (sidebar open, notifications)"
+    anti_patterns:
+      - "Never store API data in Context — use TanStack Query"
+      - "Never use Context for frequently changing values — causes re-renders"
+
+supply_chain_ui_patterns:
+  inventory_dashboard:
+    components:
+      - "FilterBar: SKU search, warehouse select, date range"
+      - "KPIRow: On-hand total, in-transit, days-of-supply, stockout count"
+      - "InventoryTable: DataTable.Root with SKU details, color-coded stock levels"
+      - "TrendChart: Line chart showing inventory over time"
+    interactions:
+      - "Click row → detail panel with movement history"
+      - "Filter change → instant table + chart update"
+      - "Export → CSV/Excel download"
+
+  demand_forecast:
+    components:
+      - "ForecastChart: Actuals line + forecast line + confidence band"
+      - "AccuracyTable: WMAPE, bias, coverage by SKU category"
+      - "ModelSelector: Toggle between forecast models"
+    chart_config:
+      type: "ComposedChart (Recharts)"
+      series:
+        - "Area: Confidence band (P10-P90)"
+        - "Line: Actual demand (solid)"
+        - "Line: Forecast (dashed)"
+
+  order_tracker:
+    components:
+      - "OrderTimeline: Horizontal stepper showing order milestones"
+      - "OrderTable: DataTable.Root with status filters"
+      - "StatusBadge: Color-coded order status"
+    statuses: ["created", "confirmed", "shipped", "in_transit", "delivered", "cancelled"]
+
+  kpi_cards:
+    layout: "Grid of 4-6 cards in responsive row"
+    card_structure:
+      - "Title: Metric name"
+      - "Value: Large formatted number"
+      - "Trend: Arrow up/down with percentage change"
+      - "Sparkline: Mini chart showing 30-day trend"
+    metrics:
+      - "Fill Rate: percentage with green/red indicator"
+      - "OTIF: percentage with target line"
+      - "Inventory Turnover: ratio with industry benchmark"
+      - "Stockout Rate: percentage (lower is better)"
+
+forms:
+  library: "React Hook Form + Valibot"
+  pattern: |
+    const schema = v.object({
+      skuId: v.pipe(v.string(), v.minLength(1, 'SKU is required')),
+      quantity: v.pipe(v.number(), v.minValue(0, 'Must be positive')),
+    })
+
+    function DemandForm() {
+      const { register, handleSubmit, formState } = useForm({
+        resolver: valibotResolver(schema),
+      })
+      return (
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Input {...register('skuId')} error={formState.errors.skuId?.message} />
+          <Input {...register('quantity', { valueAsNumber: true })} />
+          <Button type="submit" loading={mutation.isPending}>Save</Button>
+        </form>
+      )
+    }
+
+testing:
+  unit:
+    tool: "Vitest + React Testing Library"
+    patterns:
+      - "Test behavior, not implementation"
+      - "Use screen queries (getByRole, getByText)"
+      - "Mock API calls with MSW (Mock Service Worker)"
+      - "Test loading, error, and success states"
+  e2e:
+    tool: "Playwright"
+    patterns:
+      - "Page Object Model for reusable interactions"
+      - "Visual regression with screenshot comparison"
+      - "Network interception for deterministic tests"
+
+performance:
+  patterns:
+    - "React.memo for expensive pure components"
+    - "useMemo for computed values from props"
+    - "useCallback for stable function references"
+    - "React.lazy + Suspense for code splitting"
+    - "Virtual scrolling for lists > 100 items"
+    - "Image lazy loading with loading='lazy'"
+  anti_patterns:
+    - "Don't memoize everything — only measurably slow renders"
+    - "Don't use useEffect for derived state — use useMemo"
+    - "Don't fetch in useEffect — use TanStack Query"
+
+accessibility:
+  requirements:
+    - "Semantic HTML elements (nav, main, section, button)"
+    - "ARIA attributes where semantic HTML is insufficient"
+    - "Keyboard navigation for all interactive elements"
+    - "Focus management for modals and dynamic content"
+    - "Color contrast ratio >= 4.5:1 for text"
+    - "Screen reader testing with VoiceOver/NVDA"
+
+best_practices:
+  - "Server state in TanStack Query — never in useState for API data"
+  - "Named exports only — enables tree shaking and refactoring"
+  - "Colocate files by feature — not by type (no 'components/' 'hooks/' directories)"
+  - "Type all props with interfaces — use discriminated unions for variants"
+  - "Handle all states: loading, error, success (empty is success substate)"
+  - "Use Suspense boundaries for loading — not isLoading checks everywhere"
+  - "Keep components under 200 lines — extract hooks and sub-components"
+  - "Validate API responses at runtime with Valibot — don't trust 'any'"
+  - "Use CSS custom properties via TailwindCSS @theme for theming"
+  - "Test user behavior, not internal component state"

@@ -1,0 +1,270 @@
+# Data Engineering Implementation Expertise
+# Celes Supply Chain - dbt, BigQuery, Cloud Storage, ETL/ELT Patterns
+
+overview:
+  description: "Data engineering patterns for supply chain analytics using dbt, BigQuery, and Cloud Storage"
+  primary_tools:
+    - "dbt (data build tool) with dual-target: dbt-bigquery and dbt-postgres"
+    - "Google BigQuery for analytical data warehouse"
+    - "Google Cloud Storage for data lake and staging"
+    - "Cloud Composer (Airflow) for orchestration"
+  design_principles:
+    - "ELT over ETL: transform in the warehouse, not in flight"
+    - "Idempotent pipelines: safe to re-run at any time"
+    - "Schema-on-read for raw layer, schema-on-write for marts"
+    - "Incremental processing where possible"
+
+dbt_conventions:
+  project_structure:
+    models_directory: "models/"
+    layers:
+      staging:
+        prefix: "stg_"
+        purpose: "1:1 with source tables, rename columns, cast types, no joins"
+        location: "models/staging/{source_name}/"
+        materialization: "view"
+        example: "stg_orders.sql, stg_inventory_snapshots.sql"
+      intermediate:
+        prefix: "int_"
+        purpose: "Business logic transformations, joins between staging models"
+        location: "models/intermediate/{domain}/"
+        materialization: "ephemeral or table"
+        example: "int_demand_daily.sql, int_inventory_enriched.sql"
+      marts:
+        facts:
+          prefix: "fct_"
+          purpose: "Grain-level business events (orders, shipments, demand)"
+          location: "models/marts/{domain}/"
+          materialization: "table or incremental"
+          example: "fct_demand.sql, fct_orders.sql, fct_shipments.sql"
+        dimensions:
+          prefix: "dim_"
+          purpose: "Descriptive attributes (products, locations, suppliers)"
+          location: "models/marts/{domain}/"
+          materialization: "table"
+          example: "dim_products.sql, dim_locations.sql, dim_suppliers.sql"
+        metrics:
+          prefix: "mrt_"
+          purpose: "Pre-aggregated KPI tables for dashboards"
+          location: "models/marts/metrics/"
+          materialization: "table"
+          example: "mrt_fill_rate_weekly.sql, mrt_inventory_turnover.sql"
+
+  naming_conventions:
+    models: "snake_case, prefixed by layer (stg_, int_, fct_, dim_, mrt_)"
+    columns: "snake_case, consistent across models"
+    sources: "Defined in _sources.yml per source system"
+    tests: "Defined in schema.yml alongside model definitions"
+    macros: "snake_case, prefixed by domain if specific"
+
+  testing_strategy:
+    schema_tests:
+      - "not_null: All primary keys and critical business fields"
+      - "unique: Primary keys, natural keys"
+      - "accepted_values: Status fields, category fields"
+      - "relationships: Foreign key references between models"
+    data_tests:
+      - "Freshness checks on source tables"
+      - "Row count thresholds for critical models"
+      - "Custom tests for business rule validation"
+
+  dual_target_support:
+    approach: "Use target.type conditional in macros for adapter-specific SQL"
+    bigquery_specifics:
+      - "TIMESTAMP_TRUNC for date truncation"
+      - "SAFE_CAST for type conversion"
+      - "ARRAY and STRUCT types"
+      - "Partition and cluster config in model config"
+    postgres_specifics:
+      - "DATE_TRUNC for date truncation"
+      - "CAST with explicit error handling"
+      - "Standard SQL arrays"
+      - "Table partitioning via PARTITION BY RANGE"
+    cross_database_macros:
+      - "{{ dbt.date_trunc('day', 'timestamp_col') }}"
+      - "{{ dbt.safe_cast('col', 'integer') }}"
+      - "{{ dbt.concat(['col1', 'col2']) }}"
+
+bigquery_optimization:
+  partitioning:
+    purpose: "Reduce query cost and improve performance by scanning only relevant data"
+    strategies:
+      time_based:
+        description: "Partition by DATE or TIMESTAMP column"
+        best_for: "Time-series data (demand, orders, inventory snapshots)"
+        columns: ["order_date", "snapshot_date", "ship_date", "created_at"]
+        config: |
+          {{ config(
+            materialized='incremental',
+            partition_by={'field': 'order_date', 'data_type': 'date'},
+            cluster_by=['sku_id', 'location_id']
+          ) }}
+      integer_range:
+        description: "Partition by integer range"
+        best_for: "ID-based lookups with known ranges"
+
+  clustering:
+    purpose: "Colocate related rows for faster filter/join performance"
+    max_columns: 4
+    order_matters: "First column has strongest clustering effect"
+    common_patterns:
+      demand_table: ["sku_id", "location_id", "channel"]
+      inventory_table: ["warehouse_id", "sku_id"]
+      orders_table: ["customer_id", "sku_id", "status"]
+      shipments_table: ["origin_id", "destination_id", "carrier"]
+
+  materialized_views:
+    purpose: "Pre-compute expensive aggregations for dashboard queries"
+    use_cases:
+      - "Weekly demand aggregation by SKU and location"
+      - "Monthly inventory turnover by warehouse"
+      - "Rolling 30-day fill rate by supplier"
+    limitations:
+      - "Max 20 materialized views per dataset"
+      - "Must use supported SQL subset"
+      - "Cannot reference other materialized views"
+
+  cost_optimization:
+    query_patterns:
+      - "Always use partition pruning (WHERE date_col BETWEEN ...)"
+      - "Avoid SELECT * in production queries"
+      - "Use LIMIT in development and exploration"
+      - "Prefer approximate aggregation functions (APPROX_COUNT_DISTINCT)"
+    storage:
+      - "Set partition expiration for transient data"
+      - "Use long-term storage pricing (auto after 90 days unmodified)"
+      - "Archive unused tables to Cloud Storage (BigQuery export)"
+    slot_management:
+      estimation: "bytes_scanned / bytes_per_slot_second"
+      reservations: "Flat-rate for predictable workloads > $10K/month"
+      on_demand: "Best for variable or low-volume workloads"
+
+cloud_storage:
+  bucket_design:
+    naming: "gs://{project}-{env}-{domain}/"
+    examples:
+      - "gs://celes-prod-raw-data/"
+      - "gs://celes-prod-demand/"
+      - "gs://celes-staging-ml-artifacts/"
+    structure:
+      raw: "gs://{bucket}/raw/{source}/{date}/ -- Landing zone for ingested data"
+      processed: "gs://{bucket}/processed/{domain}/{date}/ -- Cleaned and validated"
+      archived: "gs://{bucket}/archive/{domain}/{year}/ -- Historical cold storage"
+
+  lifecycle_rules:
+    hot_to_nearline: "After 30 days for infrequently accessed data"
+    nearline_to_coldline: "After 90 days for archival data"
+    coldline_to_archive: "After 365 days for compliance retention"
+    auto_delete: "After retention period expires (configurable)"
+
+  event_driven:
+    notifications: "Pub/Sub notifications on object finalize"
+    triggers:
+      - "New file arrival -> Cloud Function -> BigQuery load"
+      - "New file arrival -> Pub/Sub -> Dataflow pipeline"
+      - "New file arrival -> Cloud Composer task sensor"
+
+  file_formats:
+    preferred:
+      - "Parquet: Columnar, compressed, schema-embedded (best for analytics)"
+      - "JSONL: Line-delimited JSON (best for streaming/API data)"
+      - "Avro: Binary, schema evolution support (best for Kafka/Pub/Sub)"
+    avoid:
+      - "CSV: No schema, encoding issues, slow to parse"
+      - "Excel: Binary, unreliable parsing"
+
+pipeline_design:
+  principles:
+    idempotency:
+      description: "Every pipeline run produces the same result regardless of how many times it runs"
+      patterns:
+        - "MERGE/UPSERT instead of INSERT for incremental loads"
+        - "DELETE + INSERT for full refresh with date partition"
+        - "Use execution_date as partition key"
+    backfill:
+      description: "Support re-processing historical data"
+      patterns:
+        - "Parameterized date range in all pipeline tasks"
+        - "Separate backfill DAG or parameterized main DAG"
+        - "Partition-level granularity for selective reprocessing"
+
+  orchestration:
+    tool: "Cloud Composer (managed Airflow)"
+    dag_patterns:
+      elt_pipeline:
+        description: "Extract -> Load -> Transform"
+        tasks:
+          - "sensor_new_files: Wait for source data arrival"
+          - "load_to_bigquery: BQ load from GCS (bq load or external table)"
+          - "dbt_run_staging: dbt run --select staging.{source}"
+          - "dbt_run_marts: dbt run --select marts.{domain}"
+          - "dbt_test: dbt test --select {domain}"
+          - "notify_completion: Slack/email notification"
+      ml_pipeline:
+        description: "Feature -> Train -> Evaluate -> Deploy"
+        tasks:
+          - "extract_features: BigQuery -> feature store"
+          - "train_model: Model training with selected framework"
+          - "evaluate_model: Calculate metrics against holdout"
+          - "deploy_model: Conditional deploy if metrics pass gates"
+
+  data_quality:
+    frameworks:
+      - "dbt tests (schema.yml): Built-in and custom tests"
+      - "Great Expectations: Complex validation rules"
+      - "BigQuery Data Quality Tasks: Native BQ validation"
+    checks:
+      completeness: "NOT NULL assertions, row count thresholds"
+      uniqueness: "Primary key uniqueness, natural key uniqueness"
+      consistency: "Cross-table referential integrity"
+      freshness: "Source freshness monitoring (dbt source freshness)"
+      accuracy: "Range checks, format validation, business rule assertions"
+
+supply_chain_data_models:
+  core_entities:
+    sku_master:
+      grain: "One row per SKU"
+      key_fields: ["sku_id", "description", "category", "subcategory", "uom", "lead_time_days", "moq", "safety_stock"]
+      update_frequency: "Daily or on-change"
+    demand:
+      grain: "One row per SKU per location per date"
+      key_fields: ["sku_id", "location_id", "date", "quantity", "channel", "is_promo"]
+      partition_by: "date"
+      cluster_by: ["sku_id", "location_id"]
+    inventory:
+      grain: "One row per SKU per warehouse per snapshot_date"
+      key_fields: ["sku_id", "warehouse_id", "snapshot_date", "on_hand", "in_transit", "allocated", "available"]
+      partition_by: "snapshot_date"
+      cluster_by: ["warehouse_id", "sku_id"]
+    purchase_orders:
+      grain: "One row per PO line item"
+      key_fields: ["po_id", "line_id", "sku_id", "supplier_id", "order_date", "expected_date", "quantity", "unit_cost"]
+      partition_by: "order_date"
+    shipments:
+      grain: "One row per shipment"
+      key_fields: ["shipment_id", "origin", "destination", "ship_date", "arrival_date", "carrier", "status"]
+      partition_by: "ship_date"
+
+  key_metrics:
+    fill_rate: "units_fulfilled / units_ordered"
+    inventory_turnover: "cogs_period / avg_inventory_value"
+    stockout_rate: "days_out_of_stock / total_days"
+    otif: "on_time_in_full_deliveries / total_deliveries"
+    days_of_supply: "on_hand_qty / avg_daily_demand"
+    carrying_cost: "avg_inventory_value * carrying_cost_rate"
+
+best_practices:
+  - "Always define sources in _sources.yml with freshness monitoring"
+  - "Use incremental models for large fact tables (>1M rows)"
+  - "Document all models with description blocks in schema.yml"
+  - "Tag models by domain for selective dbt runs"
+  - "Use dbt packages: dbt-utils, dbt-expectations, dbt-date"
+  - "Version control all SQL and pipeline definitions"
+  - "Monitor pipeline SLAs with alerting on delays"
+  - "Maintain data dictionary alongside dbt documentation"
+
+known_patterns:
+  - "Demand data arrives daily via CSV/Parquet from ERP systems"
+  - "Inventory snapshots captured nightly from WMS"
+  - "Purchase orders synced from procurement system via API"
+  - "All timestamps stored in UTC, converted to local timezone in marts"

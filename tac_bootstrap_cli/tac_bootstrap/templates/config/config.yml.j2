@@ -135,6 +135,83 @@ bootstrap:
   readme: {{ config.bootstrap.readme | lower }}
   backup_retention: {{ config.bootstrap.backup_retention | default(3) }}  # Number of backups to keep during upgrade (1-10)
 
+# Optional: Data Engineering Configuration
+{% if config.data_engineering %}
+data_engineering:
+  enabled: {{ config.data_engineering.enabled | lower }}
+{% if config.data_engineering.dbt %}
+  dbt:
+    project_name: "{{ config.data_engineering.dbt.project_name }}"
+    default_target: "{{ config.data_engineering.dbt.default_target }}"
+    default_schema: "{{ config.data_engineering.dbt.default_schema }}"
+{% if config.data_engineering.dbt.targets %}
+    targets:
+{% for target in config.data_engineering.dbt.targets %}
+      - name: "{{ target.name }}"
+        adapter: "{{ target.adapter }}"
+{% if target.project_id %}
+        project_id: "{{ target.project_id }}"
+{% endif %}
+{% if target.dataset %}
+        dataset: "{{ target.dataset }}"
+{% endif %}
+{% if target.host %}
+        host: "{{ target.host }}"
+{% endif %}
+{% if target.dbname %}
+        dbname: "{{ target.dbname }}"
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if config.data_engineering.bigquery %}
+  bigquery:
+    project_id: "{{ config.data_engineering.bigquery.project_id }}"
+    dataset: "{{ config.data_engineering.bigquery.dataset }}"
+    location: "{{ config.data_engineering.bigquery.location }}"
+{% endif %}
+{% if config.data_engineering.cloud_storage %}
+  cloud_storage:
+    bucket: "{{ config.data_engineering.cloud_storage.bucket }}"
+    region: "{{ config.data_engineering.cloud_storage.region }}"
+{% endif %}
+{% endif %}
+
+# Optional: ML/Forecasting Configuration
+{% if config.ml %}
+ml:
+  enabled: {{ config.ml.enabled | lower }}
+{% if config.ml.frameworks %}
+  frameworks:
+{% for fw in config.ml.frameworks %}
+    - "{{ fw.value }}"
+{% endfor %}
+{% endif %}
+  pipeline_type: "{{ config.ml.pipeline_type }}"
+{% if config.ml.metrics %}
+  metrics:
+{% for metric in config.ml.metrics %}
+    - "{{ metric }}"
+{% endfor %}
+{% endif %}
+{% if config.ml.experiment_tracking %}
+  experiment_tracking: "{{ config.ml.experiment_tracking }}"
+{% endif %}
+{% endif %}
+
+# Optional: Infrastructure Configuration
+{% if config.infrastructure %}
+infrastructure:
+  cloud_provider: "{{ config.infrastructure.cloud_provider }}"
+  iac_tool: "{{ config.infrastructure.iac_tool }}"
+{% if config.infrastructure.regions %}
+  regions:
+{% for key, value in config.infrastructure.regions.items() %}
+    {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+{% endif %}
+
 # TAC Bootstrap Metadata (auto-generated)
 {% if config.metadata %}
 metadata:
