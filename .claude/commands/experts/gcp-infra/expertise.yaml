@@ -1,0 +1,279 @@
+# GCP Infrastructure Implementation Expertise
+# Celes Supply Chain - Cloud Infrastructure, Terraform, IAM, Cost Optimization
+
+overview:
+  description: "GCP infrastructure patterns for supply chain analytics platforms"
+  primary_services:
+    - "BigQuery: Analytical data warehouse for demand, inventory, and supply chain data"
+    - "Cloud Storage: Data lake for raw files, ML artifacts, and backups"
+    - "Cloud Run: Serverless container hosting for APIs and microservices"
+    - "Cloud Composer: Managed Airflow for data pipeline orchestration"
+    - "Pub/Sub: Event-driven messaging for pipeline triggers"
+    - "Secret Manager: Secure storage for API keys and credentials"
+  iac_tool: "Terraform with Google provider"
+  design_principles:
+    - "Infrastructure as Code: All resources defined in Terraform"
+    - "Least Privilege: Minimal IAM permissions per service"
+    - "Environment Separation: dev/staging/prod via workspaces or projects"
+    - "Cost Awareness: Right-size resources, use lifecycle rules, monitor spend"
+
+terraform_patterns:
+  project_structure:
+    root_module:
+      files:
+        - "main.tf: Provider configuration and module calls"
+        - "variables.tf: Input variable declarations with types and descriptions"
+        - "outputs.tf: Output values for cross-module references"
+        - "versions.tf: Required providers and versions"
+        - "terraform.tfvars: Environment-specific values (not committed)"
+        - "backend.tf: Remote state configuration"
+    child_modules:
+      location: "modules/{resource_type}/"
+      structure:
+        - "main.tf: Resource definitions"
+        - "variables.tf: Module inputs"
+        - "outputs.tf: Module outputs"
+        - "README.md: Module documentation"
+
+  state_management:
+    backend: "Google Cloud Storage"
+    configuration: |
+      terraform {
+        backend "gcs" {
+          bucket  = "celes-terraform-state"
+          prefix  = "env/${var.environment}"
+        }
+      }
+    best_practices:
+      - "Enable versioning on state bucket"
+      - "Use object lock for state corruption protection"
+      - "Separate state per environment (dev, staging, prod)"
+      - "Never edit state manually — use terraform state commands"
+
+  naming_conventions:
+    resources: "{provider}_{service}_{purpose}"
+    variables: "snake_case with descriptive names"
+    outputs: "{resource_type}_{attribute}"
+    tags:
+      required:
+        - "project: Project name"
+        - "environment: dev, staging, prod"
+        - "managed_by: terraform"
+        - "team: Team owning the resource"
+      optional:
+        - "cost_center: Budget allocation"
+        - "ttl: Time-to-live for temporary resources"
+
+gcp_resources:
+  bigquery:
+    datasets:
+      configuration:
+        - "location: US or regional (us-central1)"
+        - "default_table_expiration_ms: Auto-expire tables (dev only)"
+        - "default_partition_expiration_ms: Expire old partitions"
+        - "access: IAM bindings for dataset-level access"
+      terraform_example: |
+        resource "google_bigquery_dataset" "demand" {
+          dataset_id    = "demand_${var.environment}"
+          location      = var.bq_location
+          description   = "Supply chain demand data"
+          labels = {
+            environment = var.environment
+            domain      = "demand"
+          }
+        }
+    tables:
+      partitioning:
+        - "time_partitioning: By DATE/TIMESTAMP column"
+        - "range_partitioning: By integer range"
+      clustering: "Up to 4 columns for query optimization"
+      schema: "Defined in JSON schema files or inline"
+
+  cloud_storage:
+    buckets:
+      naming: "{project}-{env}-{purpose}"
+      configuration:
+        - "location: Dual-region or multi-region for HA"
+        - "storage_class: STANDARD, NEARLINE, COLDLINE, ARCHIVE"
+        - "versioning: Enable for data protection"
+        - "uniform_bucket_level_access: Always enable (recommended)"
+      lifecycle_rules:
+        - action: "SetStorageClass"
+          condition: "age > 30"
+          target: "NEARLINE"
+        - action: "SetStorageClass"
+          condition: "age > 90"
+          target: "COLDLINE"
+        - action: "Delete"
+          condition: "age > 365"
+          purpose: "Compliance-driven retention"
+
+  cloud_run:
+    services:
+      configuration:
+        - "image: Container image from Artifact Registry"
+        - "min_instances: 0 (dev), 1+ (prod) for cold start control"
+        - "max_instances: Based on expected load"
+        - "concurrency: 80-250 per instance"
+        - "timeout: 300s default, up to 3600s"
+        - "memory: 256Mi-8Gi based on workload"
+        - "cpu: 1-8 cores"
+      environment:
+        - "Config via env vars from Secret Manager references"
+        - "Never hardcode credentials in container images"
+      networking:
+        - "VPC connector for private resource access"
+        - "Ingress: internal-only for backend services"
+        - "Custom domains with managed SSL certificates"
+
+  cloud_composer:
+    purpose: "Managed Airflow for data pipeline orchestration"
+    configuration:
+      - "Environment size: small/medium/large"
+      - "Python packages: Install via pypi_packages config"
+      - "Airflow overrides: Core settings via airflow_config_overrides"
+    dag_deployment: "DAGs synced from GCS bucket (auto-detected)"
+
+  pub_sub:
+    topics:
+      naming: "{domain}-{event}-{env}"
+      examples:
+        - "demand-file-arrival-prod"
+        - "forecast-complete-prod"
+        - "inventory-snapshot-prod"
+    subscriptions:
+      types:
+        - "Push: HTTP endpoint (Cloud Run, Cloud Functions)"
+        - "Pull: Worker-based processing (GKE, Compute Engine)"
+      configuration:
+        - "ack_deadline_seconds: 10-600"
+        - "message_retention_duration: 7 days default"
+        - "dead_letter_topic: For failed message handling"
+
+  secret_manager:
+    purpose: "Centralized secret storage for all services"
+    patterns:
+      - "One secret per credential (not bundled)"
+      - "Version labels for rotation tracking"
+      - "IAM: secretAccessor role per consuming service"
+    terraform: |
+      resource "google_secret_manager_secret" "db_password" {
+        secret_id = "db-password-${var.environment}"
+        replication { auto {} }
+      }
+
+iam:
+  principles:
+    - "Least Privilege: Grant minimum permissions needed"
+    - "Non-Authoritative: Use google_*_iam_member, not google_*_iam_policy"
+    - "Service Account per Service: Each workload gets its own SA"
+    - "No Service Account Keys: Use workload identity or default credentials"
+    - "Time-Bound: Use IAM conditions for temporary access"
+
+  common_roles:
+    bigquery:
+      - "roles/bigquery.dataViewer: Read access to datasets"
+      - "roles/bigquery.dataEditor: Read/write access to datasets"
+      - "roles/bigquery.jobUser: Run queries"
+      - "roles/bigquery.user: List datasets + run queries"
+    cloud_storage:
+      - "roles/storage.objectViewer: Read objects"
+      - "roles/storage.objectCreator: Write objects"
+      - "roles/storage.objectAdmin: Full object control"
+    cloud_run:
+      - "roles/run.invoker: Call the service"
+      - "roles/run.developer: Deploy and manage services"
+    secret_manager:
+      - "roles/secretmanager.secretAccessor: Read secret values"
+
+  workload_identity:
+    purpose: "Allow GKE/Cloud Run workloads to use SA without keys"
+    pattern: |
+      resource "google_service_account_iam_member" "workload_identity" {
+        service_account_id = google_service_account.app.name
+        role               = "roles/iam.workloadIdentityUser"
+        member             = "serviceAccount:${var.project}.svc.id.goog[${var.namespace}/${var.k8s_sa}]"
+      }
+
+  audit:
+    - "Review IAM bindings quarterly"
+    - "Use Policy Analyzer to identify unused permissions"
+    - "Enable Cloud Audit Logs for all admin activities"
+    - "Alert on IAM policy changes via Cloud Monitoring"
+
+networking:
+  vpc:
+    purpose: "Private networking for database and internal services"
+    components:
+      - "VPC with custom subnets per region"
+      - "Private Google Access for GCP service connectivity"
+      - "VPC Serverless Connector for Cloud Run → private resources"
+      - "Cloud NAT for outbound internet from private instances"
+  firewall:
+    principles:
+      - "Default deny all ingress"
+      - "Allow only necessary ports and source ranges"
+      - "Use service account-based rules over IP-based"
+      - "Tag resources for firewall rule targeting"
+
+cost_optimization:
+  bigquery:
+    strategies:
+      - "Flat-rate reservations for predictable workloads (> $10K/month)"
+      - "On-demand for variable/low-volume workloads"
+      - "Partition expiration to auto-delete old data"
+      - "Long-term storage pricing (auto after 90 days)"
+      - "BI Engine reservation for dashboard acceleration"
+    monitoring:
+      - "INFORMATION_SCHEMA.JOBS for query cost analysis"
+      - "Slot utilization monitoring via Cloud Monitoring"
+
+  cloud_run:
+    strategies:
+      - "Min instances = 0 for dev environments"
+      - "Right-size CPU and memory per service"
+      - "CPU allocation: only during request processing (default)"
+      - "Concurrency tuning to maximize instance utilization"
+
+  cloud_storage:
+    strategies:
+      - "Lifecycle rules for automatic tier transitions"
+      - "Autoclass for unpredictable access patterns"
+      - "Dual-region only when HA is required"
+
+  general:
+    - "Committed Use Discounts (CUDs) for sustained workloads"
+    - "Budget alerts at 50%, 80%, 100% of monthly target"
+    - "Label everything for cost attribution"
+    - "Review and delete unused resources monthly"
+    - "Use Recommender API for right-sizing suggestions"
+
+monitoring:
+  cloud_monitoring:
+    metrics:
+      - "BigQuery: slot_utilization, query_count, bytes_billed"
+      - "Cloud Run: request_count, request_latency, instance_count"
+      - "Cloud Storage: object_count, total_bytes, request_count"
+    alerting:
+      - "Error rate > 1% on Cloud Run services"
+      - "BigQuery slot utilization > 80%"
+      - "Cloud Storage budget threshold exceeded"
+      - "IAM policy changes (audit log trigger)"
+
+  cloud_logging:
+    - "Structured logging in JSON format"
+    - "Log sinks to BigQuery for analytics"
+    - "Log-based metrics for custom monitoring"
+    - "Retention: 30 days default, export to GCS for long-term"
+
+best_practices:
+  - "Always use Terraform for resource provisioning — no manual console changes"
+  - "Enable uniform bucket-level access on all Cloud Storage buckets"
+  - "Use Secret Manager for all credentials — never environment variables for secrets"
+  - "Tag all resources with project, environment, team, and managed_by labels"
+  - "Set up budget alerts before provisioning expensive resources"
+  - "Use VPC Service Controls for sensitive data perimeters"
+  - "Enable Cloud Audit Logs for compliance"
+  - "Review and rotate service account keys (if any) every 90 days"
+  - "Use Workload Identity over service account keys whenever possible"
+  - "Document all infrastructure decisions in ADRs"
