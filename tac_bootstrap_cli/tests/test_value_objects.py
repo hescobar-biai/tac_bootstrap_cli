@@ -245,7 +245,7 @@ class TestSemanticVersion:
 
     def test_less_than_comparison(self):
         """Test less than comparison."""
-        assert SemanticVersion("1.0.0") < SemanticVersion("2.0.0")
+        assert SemanticVersion("1.1.0") < SemanticVersion("2.0.0")
         assert SemanticVersion("1.2.3") < SemanticVersion("1.2.4")
         assert SemanticVersion("0.2.0") < SemanticVersion("0.10.2")
         assert not (SemanticVersion("1.2.3") < SemanticVersion("1.2.3"))
@@ -260,12 +260,12 @@ class TestSemanticVersion:
         """Test less than or equal comparison."""
         assert SemanticVersion("0.10.2") <= SemanticVersion("0.10.2")
         assert SemanticVersion("1.2.3") <= SemanticVersion("1.2.3")
-        assert not (SemanticVersion("2.0.0") <= SemanticVersion("1.0.0"))
+        assert not (SemanticVersion("2.0.0") <= SemanticVersion("1.1.0"))
 
     def test_greater_than_comparison(self):
         """Test greater than comparison."""
         assert SemanticVersion("0.10.2") > SemanticVersion("0.2.0")
-        assert SemanticVersion("2.0.0") > SemanticVersion("1.0.0")
+        assert SemanticVersion("2.0.0") > SemanticVersion("1.1.0")
         assert SemanticVersion("1.2.4") > SemanticVersion("1.2.3")
         assert not (SemanticVersion("1.2.3") > SemanticVersion("1.2.3"))
 
@@ -273,18 +273,18 @@ class TestSemanticVersion:
         """Test greater than comparison with string."""
         v1 = SemanticVersion("0.10.2")
         assert v1 > "0.2.0"
-        assert not (v1 > "1.0.0")
+        assert not (v1 > "1.1.0")
 
     def test_greater_than_or_equal_comparison(self):
         """Test greater than or equal comparison."""
         assert SemanticVersion("0.10.2") >= SemanticVersion("0.10.2")
         assert SemanticVersion("1.2.3") >= SemanticVersion("1.2.3")
-        assert not (SemanticVersion("1.0.0") >= SemanticVersion("2.0.0"))
+        assert not (SemanticVersion("1.1.0") >= SemanticVersion("2.0.0"))
 
     def test_comparison_major_version(self):
         """Test that major version takes precedence in comparison."""
         assert SemanticVersion("2.0.0") > SemanticVersion("1.9.9")
-        assert SemanticVersion("1.0.0") > SemanticVersion("0.10.2")
+        assert SemanticVersion("1.1.0") > SemanticVersion("0.10.2")
 
     def test_comparison_minor_version(self):
         """Test that minor version is considered when major is equal."""
@@ -348,7 +348,7 @@ class TestSemanticVersion:
         """Test edge case with large version numbers."""
         v = SemanticVersion("999.888.777")
         assert v.tuple == (999, 888, 777)
-        assert v > "1.0.0"
+        assert v > "1.1.0"
 
     def test_non_string_type_rejection(self):
         """Test that non-string types are rejected."""
@@ -366,7 +366,7 @@ class TestSemanticVersion:
     def test_sorting(self):
         """Test that versions can be sorted correctly."""
         versions = [
-            SemanticVersion("1.0.0"),
+            SemanticVersion("1.1.0"),
             SemanticVersion("0.10.2"),
             SemanticVersion("0.10.2"),
             SemanticVersion("1.2.3"),
@@ -377,7 +377,7 @@ class TestSemanticVersion:
             SemanticVersion("0.1.0"),
             SemanticVersion("0.10.2"),
             SemanticVersion("0.10.2"),
-            SemanticVersion("1.0.0"),
+            SemanticVersion("1.1.0"),
             SemanticVersion("1.2.3"),
         ]
 

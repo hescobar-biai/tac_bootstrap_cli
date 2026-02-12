@@ -31,7 +31,7 @@ class CommunityItem(BaseModel):
     author: str = Field(default="anonymous", description="Author identifier")
     category: str = Field(default="general", description="Category")
     tags: List[str] = Field(default_factory=list, description="Tags")
-    version: str = Field(default="1.0.0", description="Item version")
+    version: str = Field(default="1.1.0", description="Item version")
     created_at: str = Field(default="", description="Creation timestamp")
     downloads: int = Field(default=0, description="Download count")
     rating: float = Field(default=0.0, description="Average rating (0-5)")
@@ -171,7 +171,7 @@ BUILT_IN_TEMPLATES: List[CommunityItem] = [
         author="tac-team",
         category="authentication",
         tags=["fastapi", "auth", "jwt", "rbac", "python"],
-        version="1.0.0",
+        version="1.1.0",
         downloads=150,
         rating=4.5,
     ),
@@ -182,7 +182,7 @@ BUILT_IN_TEMPLATES: List[CommunityItem] = [
         author="tac-team",
         category="frontend",
         tags=["nextjs", "react", "dashboard", "typescript"],
-        version="1.0.0",
+        version="1.1.0",
         downloads=120,
         rating=4.3,
     ),
@@ -193,7 +193,7 @@ BUILT_IN_TEMPLATES: List[CommunityItem] = [
         author="tac-team",
         category="infrastructure",
         tags=["gateway", "microservice", "api", "rate-limit"],
-        version="1.0.0",
+        version="1.1.0",
         downloads=85,
         rating=4.7,
     ),
@@ -204,7 +204,7 @@ BUILT_IN_TEMPLATES: List[CommunityItem] = [
         author="tac-team",
         category="architecture",
         tags=["cqrs", "event-sourcing", "ddd", "architecture"],
-        version="1.0.0",
+        version="1.1.0",
         downloads=95,
         rating=4.6,
     ),
@@ -215,7 +215,7 @@ BUILT_IN_TEMPLATES: List[CommunityItem] = [
         author="tac-team",
         category="communication",
         tags=["websocket", "chat", "real-time", "plugin"],
-        version="1.0.0",
+        version="1.1.0",
         downloads=60,
         rating=4.2,
     ),
@@ -226,7 +226,7 @@ BUILT_IN_TEMPLATES: List[CommunityItem] = [
         author="tac-team",
         category="storage",
         tags=["s3", "upload", "file", "storage", "plugin"],
-        version="1.0.0",
+        version="1.1.0",
         downloads=75,
         rating=4.4,
     ),

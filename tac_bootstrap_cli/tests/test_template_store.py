@@ -45,7 +45,7 @@ def sample_template() -> TemplateMetadata:
         id="test/my-template",
         name="My Template",
         description="A test template for unit testing",
-        version="1.0.0",
+        version="1.1.0",
         author="Test Author",
         tags=["python", "fastapi", "test"],
     )
@@ -104,7 +104,7 @@ class TestTemplateMetadata:
 
     def test_valid_template(self):
         """Valid template data should create metadata."""
-        t = TemplateMetadata(id="user/template", name="Template", version="1.0.0")
+        t = TemplateMetadata(id="user/template", name="Template", version="1.1.0")
         assert t.id == "user/template"
         assert t.downloads == 0
         assert t.rating == 0.0
@@ -117,7 +117,7 @@ class TestTemplateMetadata:
     def test_defaults(self):
         """Default values should be applied."""
         t = TemplateMetadata(id="test", name="Test")
-        assert t.version == "1.0.0"
+        assert t.version == "1.1.0"
         assert t.author == ""
         assert t.tags == []
         assert t.installed is False

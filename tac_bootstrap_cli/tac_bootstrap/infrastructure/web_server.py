@@ -66,7 +66,7 @@ def create_app() -> Any:
     app = FastAPI(
         title="TAC Bootstrap Dashboard",
         description="Web dashboard for managing TAC Bootstrap projects",
-        version="1.0.0",
+        version="1.1.0",
     )
 
     # CORS middleware for frontend access

@@ -514,7 +514,7 @@ class TestFilesystemValidation:
 
         # Create .tac_config.yaml
         tac_config = output_dir / ".tac_config.yaml"
-        tac_config.write_text("version: 1.0.0")
+        tac_config.write_text("version: 1.1.0")
 
         result = validation_service.validate_pre_scaffold(sample_valid_config, output_dir)
 

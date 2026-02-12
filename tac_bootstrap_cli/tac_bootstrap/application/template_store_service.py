@@ -216,7 +216,7 @@ class TemplateStoreService:
         name: str,
         description: str = "",
         author: str = "",
-        version: str = "1.0.0",
+        version: str = "1.1.0",
         tags: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """

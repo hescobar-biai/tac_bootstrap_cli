@@ -44,7 +44,7 @@ class TemplateMetadata(BaseModel):
     id: str = Field(..., description="Unique template ID (author/name format)")
     name: str = Field(..., description="Human-readable template name")
     description: str = Field(default="", description="Template description")
-    version: str = Field(default="1.0.0", description="Semantic version")
+    version: str = Field(default="1.1.0", description="Semantic version")
     author: str = Field(default="", description="Template author")
     downloads: int = Field(default=0, description="Download count", ge=0)
     rating: float = Field(default=0.0, description="Average rating (1-5)", ge=0.0, le=5.0)
@@ -404,7 +404,7 @@ class TemplateStore:
                 id="tac/fastapi-starter",
                 name="FastAPI Starter",
                 description="Production-ready FastAPI template with DDD architecture",
-                version="1.0.0",
+                version="1.1.0",
                 author="TAC Bootstrap Team",
                 tags=["python", "fastapi", "ddd", "api", "starter"],
             ),
@@ -412,7 +412,7 @@ class TemplateStore:
                 id="tac/nextjs-starter",
                 name="Next.js Starter",
                 description="Next.js template with TypeScript and Tailwind CSS",
-                version="1.0.0",
+                version="1.1.0",
                 author="TAC Bootstrap Team",
                 tags=["typescript", "nextjs", "react", "frontend", "starter"],
             ),
@@ -420,7 +420,7 @@ class TemplateStore:
                 id="tac/fullstack-starter",
                 name="Fullstack Starter",
                 description="FastAPI backend + Next.js frontend with orchestrator",
-                version="1.0.0",
+                version="1.1.0",
                 author="TAC Bootstrap Team",
                 tags=["python", "typescript", "fastapi", "nextjs", "fullstack"],
             ),
@@ -428,7 +428,7 @@ class TemplateStore:
                 id="tac/cli-starter",
                 name="CLI Tool Starter",
                 description="Python CLI tool template with Typer and Rich",
-                version="1.0.0",
+                version="1.1.0",
                 author="TAC Bootstrap Team",
                 tags=["python", "cli", "typer", "rich", "starter"],
             ),
@@ -436,7 +436,7 @@ class TemplateStore:
                 id="tac/microservice-starter",
                 name="Microservice Starter",
                 description="Microservice template with Docker, health checks, and observability",
-                version="1.0.0",
+                version="1.1.0",
                 author="TAC Bootstrap Team",
                 tags=["python", "docker", "microservice", "api", "observability"],
             ),
