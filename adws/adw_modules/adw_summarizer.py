@@ -77,10 +77,11 @@ async def fast_claude_query(
         Text response from Claude
     """
     try:
-        # Pass ANTHROPIC_API_KEY explicitly
+        # Pass Anthropic config explicitly
         env_vars = {}
-        if "ANTHROPIC_API_KEY" in os.environ:
-            env_vars["ANTHROPIC_API_KEY"] = os.environ["ANTHROPIC_API_KEY"]
+        for key in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL"):
+            if key in os.environ:
+                env_vars[key] = os.environ[key]
 
         options = ClaudeAgentOptions(
             model=model,

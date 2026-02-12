@@ -1586,6 +1586,7 @@ class ScaffoldService:
             ("expose_webhook.sh", "Expose webhook endpoint"),
             ("reset_db.sh", "Reset database script"),
             ("stop_apps.sh", "Stop all application processes"),
+            ("sync_model_config.py", "Sync model configuration across .claude/ commands and agents"),
         ]
 
         for script, reason in scripts:

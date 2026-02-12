@@ -6,7 +6,9 @@ import os
 import re
 import sys
 import uuid
+import yaml
 from datetime import datetime
+from pathlib import Path
 from typing import Any, TypeVar, Type, Union, Dict, Optional
 
 T = TypeVar('T')
@@ -208,36 +210,81 @@ def check_env_vars(logger: Optional[logging.Logger] = None) -> None:
         sys.exit(1)
 
 
+def _load_model_policy() -> Dict[str, Any]:
+    """Load model_policy from config.yml (Tier 2 fallback).
+
+    Returns:
+        Dictionary with model_policy fields, or empty dict if not found.
+    """
+    try:
+        config_path = Path(__file__).parent.parent.parent / "config.yml"
+        if not config_path.exists():
+            config_path = Path.cwd() / "config.yml"
+        if config_path.exists():
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            return data.get("agentic", {}).get("model_policy", {})
+    except Exception:
+        pass
+    return {}
+
+
+def _resolve(env_var: str, config_key: str = None, policy: Dict[str, Any] = None) -> Optional[str]:
+    """Resolve a value with 2-tier: env var -> config.yml. Skips ${VAR} literals."""
+    value = os.getenv(env_var)
+    if value:
+        return value
+    if config_key and policy:
+        cfg_value = policy.get(config_key)
+        if cfg_value and not (isinstance(cfg_value, str) and cfg_value.startswith("${")):
+            return cfg_value
+    return None
+
+
 def get_safe_subprocess_env() -> Dict[str, str]:
     """Get filtered environment variables safe for subprocess execution.
-    
-    Returns only the environment variables needed for ADW workflows based on
-    .env.sample configuration. This prevents accidental exposure of sensitive
-    credentials to subprocesses.
-    
+
+    Resolves values with 2-tier priority: env var -> config.yml.
+    This prevents accidental exposure of sensitive credentials to subprocesses
+    while ensuring config.yml fallbacks reach Claude Code subprocesses.
+
     Returns:
         Dictionary containing only required environment variables
     """
+    policy = _load_model_policy()
+
     safe_env_vars = {
-        # Anthropic Configuration (required)
+        # Anthropic Configuration (required - supports non-Anthropic providers)
+        # Credentials: env-only (no config.yml fallback for security)
         "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY"),
-        
+        "ANTHROPIC_AUTH_TOKEN": os.getenv("ANTHROPIC_AUTH_TOKEN"),
+
+        # Anthropic API Base URL: env -> config.yml
+        "ANTHROPIC_BASE_URL": _resolve("ANTHROPIC_BASE_URL", "base_url", policy),
+
+        # Claude Model Overrides: env -> config.yml
+        "ANTHROPIC_MODEL": os.getenv("ANTHROPIC_MODEL"),
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": _resolve("ANTHROPIC_DEFAULT_OPUS_MODEL", "opus_model", policy),
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": _resolve("ANTHROPIC_DEFAULT_SONNET_MODEL", "sonnet_model", policy),
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": _resolve("ANTHROPIC_DEFAULT_HAIKU_MODEL", "haiku_model", policy),
+        "CLAUDE_CODE_SUBAGENT_MODEL": _resolve("CLAUDE_CODE_SUBAGENT_MODEL", "subagent_model", policy),
+
         # GitHub Configuration (optional)
         # GITHUB_PAT is optional - if not set, will use default gh auth
         "GITHUB_PAT": os.getenv("GITHUB_PAT"),
-        
+
         # Claude Code Configuration
         "CLAUDE_CODE_PATH": os.getenv("CLAUDE_CODE_PATH", "claude"),
         "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": os.getenv(
             "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR", "true"
         ),
-        
+
         # Agent Cloud Sandbox Environment (optional)
         "E2B_API_KEY": os.getenv("E2B_API_KEY"),
-        
+
         # Cloudflare tunnel token (optional)
         "CLOUDFLARED_TUNNEL_TOKEN": os.getenv("CLOUDFLARED_TUNNEL_TOKEN"),
-        
+
         # Essential system environment variables
         "HOME": os.getenv("HOME"),
         "USER": os.getenv("USER"),
@@ -246,11 +293,11 @@ def get_safe_subprocess_env() -> Dict[str, str]:
         "TERM": os.getenv("TERM"),
         "LANG": os.getenv("LANG"),
         "LC_ALL": os.getenv("LC_ALL"),
-        
+
         # Python-specific variables that subprocesses might need
         "PYTHONPATH": os.getenv("PYTHONPATH"),
         "PYTHONUNBUFFERED": "1",  # Useful for subprocess output
-        
+
         # Working directory tracking
         "PWD": os.getcwd(),
     }

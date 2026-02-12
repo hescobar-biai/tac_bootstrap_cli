@@ -64,14 +64,31 @@ def prompt_llm(prompt_text):
     """
     load_dotenv()
 
-    api_key = os.getenv("ANTHROPIC_API_KEY")
+    api_key = os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN")
     if not api_key:
         return None
 
     try:
         import anthropic
 
-        client = anthropic.Anthropic(api_key=api_key)
+        # Resolve base_url: env var -> config.yml
+        base_url = os.getenv("ANTHROPIC_BASE_URL")
+        if not base_url:
+            try:
+                config_paths = [
+                    Path.cwd() / "config.yml",
+                    Path(__file__).parent.parent.parent.parent.parent / "config.yml",
+                ]
+                for cp in config_paths:
+                    if cp.exists():
+                        with open(cp) as f:
+                            cfg = yaml.safe_load(f) or {}
+                        base_url = cfg.get("agentic", {}).get("model_policy", {}).get("base_url")
+                        if base_url:
+                            break
+            except Exception:
+                pass
+        client = anthropic.Anthropic(api_key=api_key, base_url=base_url) if base_url else anthropic.Anthropic(api_key=api_key)
 
         message = client.messages.create(
             model=get_haiku_model(),  # Fastest Anthropic model (dynamically resolved)
@@ -97,14 +114,14 @@ def generate_completion_message():
 
     if engineer_name:
         name_instruction = f"Sometimes (about 30% of the time) include the engineer's name '{engineer_name}' in a natural way."
-        examples = f"""Examples of the style:
+        examples = f"""Examples of the style: 
 - Standard: "Work complete!", "All done!", "Task finished!", "Ready for your next move!"
 - Personalized: "{engineer_name}, all set!", "Ready for you, {engineer_name}!", "Complete, {engineer_name}!", "{engineer_name}, we're done!" """
     else:
         name_instruction = ""
         examples = """Examples of the style: "Work complete!", "All done!", "Task finished!", "Ready for your next move!" """
 
-    prompt = f"""Generate a short, friendly completion message for when an AI coding assistant finishes a task.
+    prompt = f"""Generate a short, friendly completion message for when an AI coding assistant finishes a task. 
 
 Requirements:
 - Keep it under 10 words

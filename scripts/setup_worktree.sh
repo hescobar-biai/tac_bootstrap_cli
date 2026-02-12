@@ -91,6 +91,12 @@ if [ -d "$PARENT_DIR/.claude" ] && [ ! -e "$WORKTREE_PATH/.claude" ]; then
     echo "  Copied .claude/ directory"
 fi
 
+# 5. Sync model configuration in worktree (resolves env var / config.yml models)
+if [ -f "$PARENT_DIR/scripts/sync_model_config.py" ]; then
+    (cd "$WORKTREE_PATH" && python "$PARENT_DIR/scripts/sync_model_config.py" --apply) 2>/dev/null
+    echo "  Synced model configuration"
+fi
+
 # 6. Install backend dependencies if applicable
 if [ -f "$WORKTREE_PATH/app/server/pyproject.toml" ]; then
     echo "  Installing backend dependencies..."

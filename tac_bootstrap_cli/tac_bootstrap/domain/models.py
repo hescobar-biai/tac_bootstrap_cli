@@ -315,6 +315,18 @@ class ModelPolicy(BaseModel):
         description="Fully qualified Haiku model ID (e.g., claude-haiku-4-5-20251001)",
     )
 
+    # Optional: Claude Code subagent model override
+    subagent_model: Optional[str] = Field(
+        default=None,
+        description="Model for Claude Code subagents (CLAUDE_CODE_SUBAGENT_MODEL)",
+    )
+
+    # Optional: Custom API base URL (for proxies or alternative endpoints)
+    base_url: Optional[str] = Field(
+        default=None,
+        description="Custom Anthropic API base URL (e.g., https://your-proxy.example.com)",
+    )
+
 
 class TokenOptimizationConfig(BaseModel):
     """

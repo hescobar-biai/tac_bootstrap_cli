@@ -56,6 +56,18 @@ agentic:
     opus_model: "{{ config.agentic.model_policy.opus_model | default('claude-opus-4-5-20251101') }}"
     sonnet_model: "{{ config.agentic.model_policy.sonnet_model | default('claude-sonnet-4-5-20250929') }}"
     haiku_model: "{{ config.agentic.model_policy.haiku_model | default('claude-haiku-4-5-20251001') }}"
+    # Optional: Claude Code subagent model override
+{% if config.agentic.model_policy.subagent_model %}
+    subagent_model: "{{ config.agentic.model_policy.subagent_model }}"
+{% else %}
+    # subagent_model: "claude-sonnet-4-5-20250929"
+{% endif %}
+    # Optional: Custom API base URL (for proxies or alternative endpoints)
+{% if config.agentic.model_policy.base_url %}
+    base_url: "{{ config.agentic.model_policy.base_url }}"
+{% else %}
+    # base_url: "https://your-proxy.example.com"
+{% endif %}
   worktrees:
     enabled: {{ config.agentic.worktrees.enabled | lower }}
     max_parallel: {{ config.agentic.worktrees.max_parallel }}

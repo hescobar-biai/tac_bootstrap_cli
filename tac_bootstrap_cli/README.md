@@ -1,4 +1,4 @@
-# TAC Bootstrap CLI v1.0.0
+# TAC Bootstrap CLI v1.1.0
 
 **Complete AI-powered project scaffolding and agentic development platform**
 
@@ -6,7 +6,7 @@ CLI to bootstrap Agentic Layer for Claude Code with TAC (Tactical Agentic Coding
 
 Transform any repository into an AI-assisted development environment in minutes.
 
-## ✨ 100% Feature Complete (v1.0.0)
+## ✨ 100% Feature Complete (v1.1.0)
 
 ### Core Features
 - **Quick Setup**: Add complete agentic layer to any project in minutes
@@ -101,7 +101,7 @@ The `tac-bootstrap-plugin/` directory provides all 33 skills, 12 agents, and 3 h
 ### Global Install (Recommended)
 
 ```bash
-git clone --branch v1.0.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
+git clone --branch v1.1.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
 make install-dev
 
@@ -115,7 +115,7 @@ tac-bootstrap --help
 ### Development Install
 
 ```bash
-git clone --branch v1.0.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
+git clone --branch v1.1.0 --depth 1 https://github.com/celes-app/tac-cli-dist.git
 cd tac-cli-dist
 make install-dev
 
@@ -1105,8 +1105,17 @@ Token usage is tracked and logged in:
 
 | Variable | Description |
 |----------|-------------|
-| `ANTHROPIC_API_KEY` | API key for programmatic mode |
+| `ANTHROPIC_API_KEY` | API key for Anthropic (or compatible provider) |
 | `GITHUB_PAT` | GitHub Personal Access Token for integration |
+
+#### Optional: Anthropic API Configuration
+
+| Variable | Description |
+|----------|-------------|
+| `ANTHROPIC_AUTH_TOKEN` | Alternative auth token (use instead of `ANTHROPIC_API_KEY`, not both) |
+| `ANTHROPIC_BASE_URL` | Custom API base URL for proxies or non-Anthropic providers |
+| `ANTHROPIC_MODEL` | Override the main model used by Claude Code |
+| `CLAUDE_CODE_SUBAGENT_MODEL` | Override the model used by Claude Code subagents |
 
 #### Optional: Claude Model Configuration
 
@@ -1135,6 +1144,11 @@ export ANTHROPIC_DEFAULT_HAIKU_MODEL="claude-haiku-4-5-20251001"
 # Run workflow with custom models
 uv run adws/adw_sdlc_iso.py --issue 123
 
+# Use a non-Anthropic provider (e.g., Kimi)
+export ANTHROPIC_BASE_URL="https://api.kimi.example.com"
+export ANTHROPIC_AUTH_TOKEN="sk-..."
+uv run adws/adw_sdlc_iso.py --issue 125
+
 # Use different models for cost optimization (testing)
 export ANTHROPIC_DEFAULT_OPUS_MODEL="claude-haiku-4-5-20251001"
 export ANTHROPIC_DEFAULT_SONNET_MODEL="claude-haiku-4-5-20251001"
@@ -1153,6 +1167,10 @@ agentic:
     opus_model: "claude-opus-4-5-20251101"
     sonnet_model: "claude-sonnet-4-5-20250929"
     haiku_model: "claude-haiku-4-5-20251001"
+    # Optional: Claude Code subagent model
+    # subagent_model: "claude-sonnet-4-5-20250929"
+    # Optional: Custom API base URL (for proxies or non-Anthropic providers)
+    # base_url: "https://your-proxy.example.com"
 ```
 
 **Resolution Order (Example):**
@@ -1165,16 +1183,19 @@ Workflow calls: get_model_id("opus")
    → If not set: continue to step 2
   ↓
 2. Check config.yml: agentic.model_policy.opus_model
-   → If set: use this value
+   → If set: use this value (skips unresolved ${VAR} literals)
    → If not set: continue to step 3
   ↓
 3. Use hardcoded default: "claude-opus-4-5-20251101"
 ```
 
+The same 2-tier resolution (env → config.yml) applies to `ANTHROPIC_BASE_URL` and `CLAUDE_CODE_SUBAGENT_MODEL`. Credentials (`ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`) are env-only for security.
+
 **Benefits:**
 
 - **Flexibility**: Change models without redeploying code
 - **Multi-Environment**: Use different models for dev/staging/prod
+- **Non-Anthropic Providers**: Support for alternative LLM providers via `ANTHROPIC_BASE_URL`
 - **Cost Optimization**: Quick switch to cheaper models for testing
 - **Backward Compatible**: No changes required if using defaults
 
@@ -1246,7 +1267,7 @@ uv run scripts/gen_docstring_jsdocs.py --provider api --dry-run
 | `--public-only` | false | Skip private functions/methods |
 | `--dry-run` | false | Preview changes without writing |
 
-## What's New in v1.0.0
+## What's New in v1.1.0
 
 This release marks **100% feature completeness** with all 20 planned features fully implemented:
 
@@ -1261,12 +1282,12 @@ This release marks **100% feature completeness** with all 20 planned features fu
 - 🚀 **Production Ready** - Zero breaking changes, fully backward compatible
 
 ### Migration from Earlier Versions
-- ✅ All projects generated with v0.x are automatically upgraded to v1.0.0 schema
+- ✅ All projects generated with v0.x are automatically upgraded to v1.1.0 schema
 - ✅ Use `tac-bootstrap migrate . 2` for manual schema upgrades
 - ✅ Full rollback support available
 
 ### Configuration Reference
-All v1.0.0 features are configured through `config.yml` and CLI commands. See [MODEL_CONFIGURATION.md](../MODEL_CONFIGURATION.md) for model configuration details.
+All v1.1.0 features are configured through `config.yml` and CLI commands. See [MODEL_CONFIGURATION.md](../MODEL_CONFIGURATION.md) for model configuration details.
 
 ## Development
 

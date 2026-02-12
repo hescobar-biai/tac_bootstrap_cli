@@ -1,0 +1,273 @@
+#!/usr/bin/env python3
+"""Sync model configuration across .claude/ commands and agents.
+
+Applies 3-tier model resolution to all .md files with model: frontmatter:
+  1. Environment variable (ANTHROPIC_DEFAULT_{TYPE}_MODEL) - highest priority
+  2. config.yml (agentic.model_policy.{type}_model) - medium priority
+  3. Hardcoded defaults - fallback
+
+Usage:
+  python scripts/sync_model_config.py              # Dry-run (show what would change)
+  python scripts/sync_model_config.py --apply      # Apply changes
+  python scripts/sync_model_config.py --verbose     # Show resolution details
+
+This script updates the `model:` field in YAML frontmatter of .md files
+under .claude/commands/ and .claude/agents/ so that Claude Code uses the
+correct model ID at runtime.
+"""
+
+import os
+import re
+import sys
+import yaml
+from pathlib import Path
+from typing import Optional
+
+# ============================================================================
+# 3-Tier Model Resolution (same logic as adws/adw_modules/workflow_ops.py)
+# ============================================================================
+
+HARDCODED_DEFAULTS = {
+    "opus": "claude-opus-4-5-20251101",
+    "sonnet": "claude-sonnet-4-5-20250929",
+    "haiku": "claude-haiku-4-5-20251001",
+}
+
+# Aliases that map to model types
+MODEL_ALIASES = {
+    "opus": "opus",
+    "sonnet": "sonnet",
+    "haiku": "haiku",
+}
+
+
+def load_config() -> dict:
+    """Load config.yml from project root."""
+    script_dir = Path(__file__).parent
+    config_path = script_dir.parent / "config.yml"
+
+    if not config_path.exists():
+        return {}
+
+    with open(config_path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
+def get_model_id(model_type: str) -> str:
+    """Get fully qualified model ID with 3-tier resolution.
+
+    Resolution order:
+    1. Environment variable (ANTHROPIC_DEFAULT_{TYPE}_MODEL)
+    2. Config file (config.yml: agentic.model_policy.{type}_model)
+    3. Hardcoded default
+    """
+    model_type = model_type.lower()
+
+    # Resolve alias
+    if model_type in MODEL_ALIASES:
+        model_type = MODEL_ALIASES[model_type]
+
+    # If it's already a fully-qualified model ID, return as-is
+    if model_type.startswith("claude-"):
+        return model_type
+
+    # Tier 1: Environment variable
+    env_var = f"ANTHROPIC_DEFAULT_{model_type.upper()}_MODEL"
+    env_value = os.getenv(env_var)
+    if env_value:
+        return env_value
+
+    # Tier 2: Config file
+    config = load_config()
+    model_policy = config.get("agentic", {}).get("model_policy", {})
+    config_value = model_policy.get(f"{model_type}_model")
+    if config_value and not (isinstance(config_value, str) and config_value.startswith("${")):
+        return config_value
+
+    # Tier 3: Hardcoded defaults
+    return HARDCODED_DEFAULTS.get(model_type, HARDCODED_DEFAULTS["sonnet"])
+
+
+def get_resolution_source(model_type: str) -> str:
+    """Determine which tier resolved the model (for verbose output)."""
+    model_type = model_type.lower()
+    if model_type in MODEL_ALIASES:
+        model_type = MODEL_ALIASES[model_type]
+
+    if model_type.startswith("claude-"):
+        return "already fully-qualified"
+
+    env_var = f"ANTHROPIC_DEFAULT_{model_type.upper()}_MODEL"
+    if os.getenv(env_var):
+        return f"env: {env_var}"
+
+    config = load_config()
+    model_policy = config.get("agentic", {}).get("model_policy", {})
+    if model_policy.get(f"{model_type}_model"):
+        return f"config.yml: agentic.model_policy.{model_type}_model"
+
+    return "hardcoded default"
+
+
+# ============================================================================
+# Frontmatter Parsing
+# ============================================================================
+
+FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---", re.DOTALL)
+MODEL_LINE_RE = re.compile(r"^(model:\s*)(.+)$", re.MULTILINE)
+# Matches: # NOTE: Model "sonnet" uses 3-tier resolution:
+NOTE_ALIAS_RE = re.compile(r'^# NOTE: Model ["\'](\w+)["\'] uses 3-tier resolution', re.MULTILINE)
+
+
+def parse_frontmatter_model(content: str) -> Optional[str]:
+    """Extract the model: value from YAML frontmatter."""
+    fm_match = FRONTMATTER_RE.match(content)
+    if not fm_match:
+        return None
+
+    fm_text = fm_match.group(1)
+    model_match = MODEL_LINE_RE.search(fm_text)
+    if not model_match:
+        return None
+
+    return model_match.group(2).strip().strip('"').strip("'")
+
+
+def parse_note_alias(content: str) -> Optional[str]:
+    """Extract the original model alias from the NOTE comment.
+
+    Every file with model: has a NOTE like:
+      # NOTE: Model "sonnet" uses 3-tier resolution:
+
+    This preserves the original alias (opus/sonnet/haiku) even after
+    the model: field has been overwritten with a fully-qualified ID.
+    This makes the sync idempotent - it always re-resolves from the alias.
+    """
+    match = NOTE_ALIAS_RE.search(content)
+    if match:
+        return match.group(1).lower()
+    return None
+
+
+def update_frontmatter_model(content: str, new_model: str) -> str:
+    """Update the model: field in YAML frontmatter."""
+    fm_match = FRONTMATTER_RE.match(content)
+    if not fm_match:
+        return content
+
+    fm_text = fm_match.group(1)
+
+    def replace_model(m):
+        return f"{m.group(1)}{new_model}"
+
+    new_fm = MODEL_LINE_RE.sub(replace_model, fm_text)
+
+    return content[: fm_match.start(1)] + new_fm + content[fm_match.end(1) :]
+
+
+# ============================================================================
+# File Discovery
+# ============================================================================
+
+
+def find_md_files(claude_dir: Path) -> list[Path]:
+    """Find all .md files in .claude/commands/ and .claude/agents/."""
+    files = []
+    for subdir in ["commands", "agents"]:
+        target = claude_dir / subdir
+        if target.exists():
+            files.extend(sorted(target.rglob("*.md")))
+    return files
+
+
+# ============================================================================
+# Main
+# ============================================================================
+
+
+def main():
+    apply = "--apply" in sys.argv
+    verbose = "--verbose" in sys.argv
+
+    # Find project root
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+    claude_dir = project_root / ".claude"
+
+    if not claude_dir.exists():
+        print("Error: .claude/ directory not found")
+        sys.exit(1)
+
+    md_files = find_md_files(claude_dir)
+    if not md_files:
+        print("No .md files found in .claude/commands/ or .claude/agents/")
+        return
+
+    changes = []
+    skipped = []
+    already_current = []
+
+    for md_path in md_files:
+        content = md_path.read_text(encoding="utf-8")
+        current_model = parse_frontmatter_model(content)
+
+        if current_model is None:
+            skipped.append(md_path)
+            continue
+
+        # Use the NOTE comment alias as source of truth (survives overwrites).
+        # Falls back to the frontmatter model: value for files without NOTE.
+        note_alias = parse_note_alias(content)
+        resolve_from = note_alias or current_model
+
+        # Resolve the alias to a fully-qualified ID via 3-tier
+        resolved_model = get_model_id(resolve_from)
+
+        # Check if already up-to-date
+        if current_model == resolved_model:
+            already_current.append((md_path, current_model))
+            continue
+
+        rel_path = md_path.relative_to(project_root)
+        source = get_resolution_source(resolve_from) if verbose else ""
+        changes.append((md_path, rel_path, current_model, resolved_model, source))
+
+    # Print summary
+    mode = "APPLY" if apply else "DRY-RUN"
+    print(f"\n{'=' * 60}")
+    print(f"  Model Config Sync ({mode})")
+    print(f"{'=' * 60}")
+    print(f"  Files scanned:  {len(md_files)}")
+    print(f"  To update:      {len(changes)}")
+    print(f"  Already current: {len(already_current)}")
+    print(f"  No model field: {len(skipped)}")
+    print(f"{'=' * 60}\n")
+
+    if changes:
+        for md_path, rel_path, old, new, source in changes:
+            source_info = f" ({source})" if source else ""
+            print(f"  {rel_path}")
+            print(f"    {old} -> {new}{source_info}")
+
+            if apply:
+                content = md_path.read_text(encoding="utf-8")
+                updated = update_frontmatter_model(content, new)
+                md_path.write_text(updated, encoding="utf-8")
+
+        print()
+        if apply:
+            print(f"Updated {len(changes)} file(s).")
+        else:
+            print("Run with --apply to write changes.")
+    else:
+        print("All model fields are already up-to-date.")
+
+    if verbose and already_current:
+        print(f"\nAlready current ({len(already_current)}):")
+        for md_path, model in already_current:
+            rel_path = md_path.relative_to(project_root)
+            print(f"  {rel_path}: {model}")
+
+
+if __name__ == "__main__":
+    main()
