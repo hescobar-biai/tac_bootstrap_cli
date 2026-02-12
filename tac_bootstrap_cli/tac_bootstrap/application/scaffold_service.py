@@ -158,6 +158,10 @@ class ScaffoldService:
             (".claude/commands/experts/commands", "Commands expert: .claude/commands structure"),
             (".claude/commands/experts/database", "Database expert: schema and operations"),
             (".claude/commands/experts/websocket", "WebSocket expert: real-time communication"),
+            (".claude/commands/experts/data-engineering", "Data engineering expert: dbt, BigQuery, ETL"),
+            (".claude/commands/experts/ml-forecasting", "ML forecasting expert: demand forecasting, models"),
+            (".claude/commands/experts/gcp-infra", "GCP infrastructure expert: Terraform, IAM, Cloud"),
+            (".claude/commands/experts/react-frontend", "React frontend expert: components, dashboards"),
             (".claude/agents", "Agent definitions"),
             (".claude/output-styles", "Output style presets"),
             (".claude/status_lines", "Claude Code status line definitions"),
@@ -574,6 +578,11 @@ class ScaffoldService:
             ("playwright-validator.md", "Playwright E2E validation agent"),
             ("scout-report-suggest.md", "Codebase scouting and analysis agent"),
             ("scout-report-suggest-fast.md", "Fast codebase scouting agent (haiku)"),
+            # Celes stack agents (v1.1.0)
+            ("data-engineer.md", "Data engineering agent (dbt, BigQuery, pipelines)"),
+            ("ml-engineer.md", "ML engineering agent (demand forecasting, multi-framework)"),
+            ("infra-ops.md", "Infrastructure operations agent (GCP/AWS, Terraform)"),
+            ("frontend-engineer.md", "Frontend engineering agent (React 19, TanStack Query)"),
         ]
         for agent, reason in agents:
             plan.add_file(
@@ -1256,6 +1265,18 @@ class ScaffoldService:
             ("experts/adw/plan_build_improve.md", "ADW expert plan-build-improve workflow"),
         ])
 
+        # --- Celes Stack Experts (v1.1.0) ---
+        expert_commands.extend([
+            ("experts/data-engineering/question.md", "Data engineering expert question prompt"),
+            ("experts/data-engineering/self-improve.md", "Data engineering expert self-improve workflow"),
+            ("experts/ml-forecasting/question.md", "ML forecasting expert question prompt"),
+            ("experts/ml-forecasting/self-improve.md", "ML forecasting expert self-improve workflow"),
+            ("experts/gcp-infra/question.md", "GCP infrastructure expert question prompt"),
+            ("experts/gcp-infra/self-improve.md", "GCP infrastructure expert self-improve workflow"),
+            ("experts/react-frontend/question.md", "React frontend expert question prompt"),
+            ("experts/react-frontend/self-improve.md", "React frontend expert self-improve workflow"),
+        ])
+
         # Register all expert command .md files
         for cmd, reason in expert_commands:
             plan.add_file(
@@ -1272,6 +1293,11 @@ class ScaffoldService:
             ("commands", "Commands expert expertise seed file"),
             ("database", "Database expert expertise seed file"),
             ("websocket", "WebSocket expert expertise seed file"),
+            # Celes stack experts (v1.1.0)
+            ("data-engineering", "Data engineering expert expertise seed file"),
+            ("ml-forecasting", "ML forecasting expert expertise seed file"),
+            ("gcp-infra", "GCP infrastructure expert expertise seed file"),
+            ("react-frontend", "React frontend expert expertise seed file"),
         ]
         for domain, reason in expertise_files:
             plan.add_file(
