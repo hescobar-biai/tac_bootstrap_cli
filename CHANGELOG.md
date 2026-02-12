@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-02-12
+
+### Added
+- 8 new Claude Code Skills for Celes stack: bigquery-ops, dbt-workflow, ml-forecast, fastapi-ddd, react-frontend, gcp-infra, aws-ops, data-pipeline
+- 3 new specialized agents: data-engineer (opus), ml-engineer (opus), infra-ops (sonnet)
+- 1 additional agent: frontend-engineer (opus) for React 19/TanStack Query/MUI X Data Grid
+- 4 new self-improving expert systems: data-engineering, ml-forecasting, gcp-infra, react-frontend
+- Claude Code Plugin structure (tac-bootstrap-plugin/) for team distribution with 33 skills, 12 agents, 3 hooks
+- Pydantic models for data_engineering, ml, and infrastructure config sections (7 new models)
+- Schema migration v2 to v3 with new optional config sections and rollback support
+- Jinja2 templates for all new skills, agents, and experts (synced for new projects)
+- dbt dual-target support (BigQuery + PostgreSQL) in skills and config
+- ML multi-framework support (Prophet, LightGBM, XGBoost, PyTorch, scikit-learn, statsmodels)
+- config.yml.j2 conditional rendering for data_engineering, ml, infrastructure sections
+- scaffold_service.py registration for all new agents, experts, and expertise seeds
+
+### Changed
+- CLI README.md updated with Celes Stack Extensions section (skills, agents, experts tables)
+
 ## [1.0.0] - 2026-02-10
 
 ### 🎉 TAC Bootstrap CLI - Complete Release (100% Completeness)
