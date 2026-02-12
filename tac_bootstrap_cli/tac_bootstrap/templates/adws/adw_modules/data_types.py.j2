@@ -191,7 +191,7 @@ class AgentPromptRequest(BaseModel):
     prompt: str
     adw_id: str
     agent_name: str = "ops"
-    model: Literal["sonnet", "opus", "haiku"] = "sonnet"
+    model: str = "sonnet"  # Accepts aliases ("sonnet") or full IDs ("claude-sonnet-4-5-20250929") or custom models
     dangerously_skip_permissions: bool = False
     output_file: str
     working_dir: Optional[str] = None
@@ -232,7 +232,7 @@ class AgentTemplateRequest(BaseModel):
     slash_command: SlashCommand
     args: List[str]
     adw_id: str
-    model: Literal["sonnet", "opus", "haiku"] = "sonnet"
+    model: str = "sonnet"  # Accepts aliases ("sonnet") or full IDs ("claude-sonnet-4-5-20250929") or custom models
     working_dir: Optional[str] = None
     ai_docs_context: Optional[str] = None  # TAC-9: Optional documentation context
 
