@@ -103,6 +103,17 @@ class PackageManager(str, Enum):
     GRADLE = "gradle"
 
 
+class MLFramework(str, Enum):
+    """Supported ML frameworks for demand forecasting."""
+
+    LIGHTGBM = "lightgbm"
+    PROPHET = "prophet"
+    XGBOOST = "xgboost"
+    PYTORCH = "pytorch"
+    SKLEARN = "sklearn"
+    STATSMODELS = "statsmodels"
+
+
 class ProjectMode(str, Enum):
     """Project initialization mode."""
 
@@ -596,6 +607,99 @@ class SystemRequirement(BaseModel):
 
 
 # ============================================================================
+# DATA ENGINEERING, ML, AND INFRASTRUCTURE MODELS
+# ============================================================================
+
+
+class DbtTargetConfig(BaseModel):
+    """Configuration for a single dbt target (BigQuery or PostgreSQL)."""
+
+    name: str = Field(..., description="Target name (e.g., 'dev', 'prod')")
+    adapter: str = Field(..., description="dbt adapter: 'dbt-bigquery' or 'dbt-postgres'")
+    project_id: Optional[str] = Field(default=None, description="GCP project ID (BigQuery)")
+    dataset: Optional[str] = Field(default=None, description="BigQuery dataset name")
+    host: Optional[str] = Field(default=None, description="PostgreSQL host")
+    dbname: Optional[str] = Field(default=None, description="PostgreSQL database name")
+
+    model_config = {"extra": "ignore"}
+
+
+class DbtConfig(BaseModel):
+    """dbt project configuration with dual-target support."""
+
+    project_name: str = Field(..., description="dbt project name")
+    targets: List[DbtTargetConfig] = Field(default_factory=list, description="dbt targets")
+    default_target: str = Field(default="dev", description="Default target name")
+    default_schema: str = Field(default="public", description="Default schema")
+
+    model_config = {"extra": "ignore"}
+
+
+class BigQueryConfig(BaseModel):
+    """BigQuery dataset configuration."""
+
+    project_id: str = Field(..., description="GCP project ID")
+    dataset: str = Field(..., description="Default dataset name")
+    location: str = Field(default="US", description="Dataset location")
+
+    model_config = {"extra": "ignore"}
+
+
+class CloudStorageConfig(BaseModel):
+    """Google Cloud Storage configuration."""
+
+    bucket: str = Field(..., description="Default GCS bucket name")
+    region: str = Field(default="us-central1", description="Bucket region")
+
+    model_config = {"extra": "ignore"}
+
+
+class DataEngineeringConfig(BaseModel):
+    """Data engineering configuration for dbt, BigQuery, and Cloud Storage."""
+
+    enabled: bool = Field(default=False, description="Enable data engineering features")
+    dbt: Optional[DbtConfig] = Field(default=None, description="dbt configuration")
+    bigquery: Optional[BigQueryConfig] = Field(default=None, description="BigQuery configuration")
+    cloud_storage: Optional[CloudStorageConfig] = Field(
+        default=None, description="Cloud Storage configuration"
+    )
+
+    model_config = {"extra": "ignore"}
+
+
+class MLConfig(BaseModel):
+    """ML/forecasting configuration for multi-framework support."""
+
+    enabled: bool = Field(default=False, description="Enable ML features")
+    frameworks: List[MLFramework] = Field(
+        default_factory=list, description="Enabled ML frameworks"
+    )
+    pipeline_type: str = Field(default="batch", description="Pipeline type: batch, online, shadow")
+    metrics: List[str] = Field(
+        default_factory=lambda: ["wmape", "bias", "fill_rate"],
+        description="Evaluation metrics to track",
+    )
+    experiment_tracking: Optional[str] = Field(
+        default=None, description="Experiment tracking tool (e.g., 'mlflow', 'wandb')"
+    )
+
+    model_config = {"extra": "ignore"}
+
+
+class InfrastructureConfig(BaseModel):
+    """Infrastructure configuration for cloud providers and IaC."""
+
+    cloud_provider: str = Field(default="gcp", description="Primary cloud provider: gcp, aws")
+    iac_tool: str = Field(default="terraform", description="IaC tool: terraform, pulumi")
+    regions: Dict[str, str] = Field(
+        default_factory=lambda: {"primary": "us-central1"},
+        description="Named region mappings",
+    )
+
+    model_config = {"extra": "ignore"}
+
+
+# ============================================================================
 # ROOT MODEL - Complete Configuration
 # ============================================================================
 
@@ -661,6 +765,15 @@ class TACConfig(BaseModel):
     )
     metadata: BootstrapMetadata | None = Field(
         default=None, description="Bootstrap generation metadata for audit trail"
+    )
+    data_engineering: Optional[DataEngineeringConfig] = Field(
+        default=None, description="Data engineering configuration (dbt, BigQuery, GCS)"
+    )
+    ml: Optional[MLConfig] = Field(
+        default=None, description="ML/forecasting configuration"
+    )
+    infrastructure: Optional[InfrastructureConfig] = Field(
+        default=None, description="Infrastructure configuration (GCP, AWS, Terraform)"
     )
     validation_mode: str = Field(
         default="standard",

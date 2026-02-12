@@ -1,0 +1,1 @@
+../../.claude/hooks/universal_hook_logger.py

@@ -1,0 +1,1 @@
+../../.claude/hooks/dangerous_command_blocker.py

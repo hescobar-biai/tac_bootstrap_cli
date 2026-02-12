@@ -1,0 +1,1 @@
+../../.claude/agents/scout-report-suggest.md
