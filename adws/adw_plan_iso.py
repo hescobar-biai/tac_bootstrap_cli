@@ -61,7 +61,7 @@ from adw_modules.workflow_ops import (
     format_file_references_for_context,
     AGENT_PLANNER,
 )
-from adw_modules.utils import setup_logger, check_env_vars
+from adw_modules.utils import setup_logger, check_env_vars, strip_code_fences
 from adw_modules.data_types import GitHubIssue, IssueClassSlashCommand
 from adw_modules.worktree_ops import (
     create_worktree,
@@ -115,7 +115,7 @@ def main():
     # Ensure state has the adw_id field
     if not state.get("adw_id"):
         state.update(adw_id=adw_id)
-    
+
     # Track that this ADW workflow has run
     state.append_adw_id("adw_plan_iso")
 
@@ -249,7 +249,7 @@ def main():
         logger.info(f"Loading AI documentation for {len(topics)} topic(s): {', '.join(topics)}")
         make_issue_comment(
             issue_number,
-            format_issue_message(adw_id, "ops", f"📚 Loading AI documentation: {', '.join(topics)} "),
+            format_issue_message(adw_id, "ops", f"📚 Loading AI documentation: {', '.join(topics)} (TAC-9 optimized)"),
         )
 
         # Load each topic and concatenate results
@@ -577,8 +577,8 @@ Focus on: state management, worktree isolation, GitHub integration patterns."""
 
     # Get the plan file path directly from response
     logger.info("Getting plan file path")
-    plan_file_path = plan_response.output.strip()
-    
+    plan_file_path = strip_code_fences(plan_response.output)
+
     # Validate the path exists (within worktree)
     if not plan_file_path:
         error = "No plan file path returned from planning agent"
@@ -588,7 +588,7 @@ Focus on: state management, worktree isolation, GitHub integration patterns."""
             format_issue_message(adw_id, "ops", f"❌ {error}"),
         )
         sys.exit(1)
-    
+
     # Check if file exists in worktree
     worktree_plan_path = os.path.join(worktree_path, plan_file_path)
     if not os.path.exists(worktree_plan_path):

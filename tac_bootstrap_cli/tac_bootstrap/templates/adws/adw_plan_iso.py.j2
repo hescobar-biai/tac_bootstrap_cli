@@ -61,7 +61,7 @@ from adw_modules.workflow_ops import (
     format_file_references_for_context,
     AGENT_PLANNER,
 )
-from adw_modules.utils import setup_logger, check_env_vars
+from adw_modules.utils import setup_logger, check_env_vars, strip_code_fences
 from adw_modules.data_types import GitHubIssue, IssueClassSlashCommand
 from adw_modules.worktree_ops import (
     create_worktree,
@@ -577,7 +577,7 @@ Focus on: state management, worktree isolation, GitHub integration patterns."""
 
     # Get the plan file path directly from response
     logger.info("Getting plan file path")
-    plan_file_path = plan_response.output.strip()
+    plan_file_path = strip_code_fences(plan_response.output)
 
     # Validate the path exists (within worktree)
     if not plan_file_path:

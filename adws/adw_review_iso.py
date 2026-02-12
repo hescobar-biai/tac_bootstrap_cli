@@ -48,7 +48,7 @@ from adw_modules.workflow_ops import (
     consult_expert,
     improve_expert_knowledge,
 )
-from adw_modules.utils import setup_logger, parse_json, check_env_vars
+from adw_modules.utils import setup_logger, parse_json, check_env_vars, strip_code_fences
 from adw_modules.data_types import (
     AgentTemplateRequest,
     ReviewResult,
@@ -246,7 +246,7 @@ def resolve_blocker_issues(
             continue
         
         # Extract plan file path
-        plan_file = plan_response.output.strip()
+        plan_file = strip_code_fences(plan_response.output)
         
         # Implement the patch
         logger.info(f"Implementing patch from plan: {plan_file}")

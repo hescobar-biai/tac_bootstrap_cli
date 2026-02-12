@@ -19,6 +19,14 @@ def make_adw_id() -> str:
     return str(uuid.uuid4())[:8]
 
 
+def strip_code_fences(text: str) -> str:
+    """Strip markdown code fences from LLM output that should be a plain value."""
+    text = text.strip()
+    text = re.sub(r"^```\w*\n?", "", text)
+    text = re.sub(r"\n?```$", "", text)
+    return text.strip()
+
+
 def get_target_branch(config_path: str = None) -> str:
     """Get target branch from config.yml, default to 'main'.
 
