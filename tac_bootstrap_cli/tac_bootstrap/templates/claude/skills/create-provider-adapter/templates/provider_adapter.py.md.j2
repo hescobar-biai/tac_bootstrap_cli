@@ -1,0 +1,94 @@
+{% raw %}
+# Provider Adapter Template
+
+**File**: `src/provider/infrastructure/adapters/{{provider_name}}.py`
+
+```python
+"""
+IDK: llm-provider, {{provider_name}}, adapter, infrastructure
+
+Module: {{provider_name}}
+
+Responsibility:
+- Implement LLMProvider interface for {{provider_class}}
+- Handle authentication and SDK initialization
+- Map responses to domain LLMResponse
+- Map SDK errors to domain exceptions
+- Measure latency for every request
+
+Invariants:
+- All API calls are async
+- Latency measured via time.monotonic()
+- Token counts extracted from response metadata
+- Credentials never hardcoded
+"""
+
+import time
+import structlog
+
+from src.provider.domain.interfaces.llm_provider import LLMProvider, LLMRequest, LLMResponse
+
+logger = structlog.get_logger(__name__)
+
+
+class {{provider_class}}(LLMProvider):
+    """
+    IDK: llm-provider, {{provider_name}}, async-execution
+
+    Responsibility:
+    - Execute LLM requests against {{provider_name}} API
+    - Handle {{auth_type}} authentication
+    - Map responses and errors to domain types
+
+    Invariants:
+    - Implements LLMProvider interface fully
+    - All calls are async and non-blocking
+    - Errors mapped to domain exception hierarchy
+    """
+
+    name = "{{provider_name}}"
+
+    def __init__(self, config: {{config_class}}) -> None:
+        self._config = config
+        {{sdk_initialization}}
+
+    async def execute(self, request: LLMRequest) -> LLMResponse:
+        """Execute an LLM request."""
+        start_time = time.monotonic()
+        try:
+            {{sdk_call}}
+            latency_ms = int((time.monotonic() - start_time) * 1000)
+
+            return LLMResponse(
+                content={{response_content}},
+                model=request.model,
+                provider=self.name,
+                tokens_input={{input_tokens}},
+                tokens_output={{output_tokens}},
+                latency_ms=latency_ms,
+                finish_reason={{finish_reason}},
+                raw_response={{raw_response}},
+            )
+        except Exception as e:
+            latency_ms = int((time.monotonic() - start_time) * 1000)
+            logger.error("provider_request_failed", provider=self.name, error=str(e), latency_ms=latency_ms)
+            raise self._map_error(e) from e
+
+    async def health_check(self) -> bool:
+        """Check provider availability."""
+        try:
+            {{health_check_impl}}
+            return True
+        except Exception:
+            return False
+
+    def get_available_models(self) -> list[str]:
+        """Return list of supported models."""
+        return {{model_list}}
+
+    def _map_error(self, error: Exception) -> Exception:
+        """Map SDK-specific errors to domain exceptions."""
+        {{error_mapping}}
+```
+
+{% endraw %}

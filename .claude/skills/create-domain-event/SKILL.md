@@ -1,0 +1,69 @@
+---
+name: create-domain-event
+description: Generate domain event classes with optional handlers and tests. Use when implementing event-driven communication between bounded contexts or tracking business-significant occurrences. Triggers on requests like "create event", "add domain event", "new event handler".
+---
+
+# Create Domain Event
+
+Generate domain event classes + optional handlers + tests following DDD event patterns.
+
+## Quick Start
+
+1. **Gather event info**: Name, aggregate, payload fields
+2. **Generate event classes**: Frozen Pydantic models named in past tense
+3. **Generate handlers** (optional): Event subscribers
+4. **Generate tests**: Unit tests for events and handlers
+
+For detailed steps, see [WORKFLOW.md](WORKFLOW.md).
+
+## Architecture Overview
+
+```
+src/
+├── shared/
+│   └── domain/
+│       └── events.py                          # DomainEvent base, EventBus
+└── {bounded_context}/
+    └── domain/
+        └── events/
+            ├── __init__.py
+            └── {aggregate}_events.py          # Event classes
+    └── application/
+        └── event_handlers/
+            └── {aggregate}_handlers.py        # Event handlers
+tests/
+└── unit/
+    └── {bounded_context}/
+        └── domain/
+            └── test_{aggregate}_events.py
+```
+
+## Placeholders
+
+| Placeholder | Description | Example |
+|-------------|-------------|---------|
+| `{{event_name}}` | PascalCase past-tense event | `PromptCreated` |
+| `{{aggregate_name}}` | Aggregate that emits event | `Prompt` |
+| `{{bounded_context}}` | Bounded context name | `prompt` |
+| `{{payload_fields}}` | Event data fields | `prompt_id: str, name: str` |
+
+## Templates Reference
+
+- [domain_event.py.md](templates/domain_event.py.md) - Event classes
+- [event_handler.py.md](templates/event_handler.py.md) - Event handlers
+- [event_test.py.md](templates/event_test.py.md) - Unit tests
+
+## Event Naming Convention
+
+- Events MUST be named in **past tense** (e.g., `PromptCreated`, not `CreatePrompt`)
+- Events MUST be **immutable** (`ConfigDict(frozen=True)`)
+- Events carry **event_id**, **occurred_at**, and optional **correlation_id**
+- Events reference the aggregate via its ID, not the full aggregate
+
+## Best Practices
+
+1. **Past tense**: `EntityCreated`, `OrderShipped`, `PaymentFailed`
+2. **Immutable**: Use `ConfigDict(frozen=True)`
+3. **Self-contained**: Include all data handlers need (avoid fetching)
+4. **Aggregate ID**: Reference aggregates by ID, not object reference
+5. **Correlation**: Support correlation_id for tracing

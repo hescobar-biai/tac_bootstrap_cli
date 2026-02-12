@@ -1,0 +1,65 @@
+# Cache Test Template
+
+**File**: `tests/unit/{{bounded_context}}/infrastructure/test_{{cache_name}}_cache.py`
+
+```python
+"""{{cache_class}}Cache unit tests."""
+
+import pytest
+import time
+
+from src.{{bounded_context}}.infrastructure.cache.{{cache_name}}_cache import {{cache_class}}Cache
+
+
+class Test{{cache_class}}Cache:
+    @pytest.fixture
+    def cache(self):
+        return {{cache_class}}Cache(max_size=10, ttl_seconds=None)
+
+    @pytest.fixture
+    def ttl_cache(self):
+        return {{cache_class}}Cache(max_size=10, ttl_seconds=1)
+
+    def test_put_and_get(self, cache):
+        cache.put({"key": "a"}, "value_a")
+        assert cache.get({"key": "a"}) == "value_a"
+
+    def test_get_missing_returns_none(self, cache):
+        assert cache.get({"key": "missing"}) is None
+
+    def test_lru_eviction(self, cache):
+        for i in range(15):
+            cache.put({"key": str(i)}, f"value_{i}")
+        assert cache.stats.size == 10
+        assert cache.get({"key": "0"}) is None  # Evicted
+        assert cache.get({"key": "14"}) is not None  # Still present
+
+    def test_ttl_expiry(self, ttl_cache):
+        ttl_cache.put({"key": "a"}, "value")
+        assert ttl_cache.get({"key": "a"}) == "value"
+        time.sleep(1.1)
+        assert ttl_cache.get({"key": "a"}) is None
+
+    def test_stats_tracking(self, cache):
+        cache.put({"key": "a"}, "value")
+        cache.get({"key": "a"})  # hit
+        cache.get({"key": "b"})  # miss
+        stats = cache.stats
+        assert stats.hits == 1
+        assert stats.misses == 1
+        assert stats.size == 1
+
+    def test_invalidate(self, cache):
+        cache.put({"key": "a"}, "value")
+        cache.invalidate({"key": "a"})
+        assert cache.get({"key": "a"}) is None
+
+    def test_clear(self, cache):
+        cache.put({"key": "a"}, "value")
+        cache.clear()
+        assert cache.stats.size == 0
+
+    def test_deterministic_keys(self, cache):
+        cache.put({"b": 2, "a": 1}, "value")
+        assert cache.get({"a": 1, "b": 2}) == "value"  # Same key regardless of order
+```

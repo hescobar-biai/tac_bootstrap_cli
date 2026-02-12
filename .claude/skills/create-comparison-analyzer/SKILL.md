@@ -1,0 +1,79 @@
+---
+name: create-comparison-analyzer
+description: Generate evaluation analyzer service with metric value objects, ranking logic, endpoint, and tests. Use when implementing model comparison or evaluation features. Triggers on requests like "create analyzer", "add comparison metric", "new evaluation analyzer".
+---
+
+# Create Comparison Analyzer
+
+Generate evaluation analyzer service + metric VOs + ranking + endpoint + tests for model comparison features.
+
+## Input
+
+Configuration is read from the invoking spec's frontmatter or project context:
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| `source_dir` | Root source directory | `src/` |
+| `capability` | Capability/module name | `evaluation` |
+| `analyzer_name` | Name of the analyzer | `token_usage` |
+| `metric_type` | Type of metric measured | `token`, `latency`, `cost` |
+| `test_dir` | Directory for tests | `tests/unit/` |
+
+If no spec is provided, ask the user for analyzer name, metric type, and ranking criteria.
+
+## Quick Start
+
+1. **Gather analyzer info**: Name, metric type, metric fields, ranking criteria
+2. **Generate metric VOs**: Frozen Pydantic models for metrics
+3. **Generate analyzer service**: Computation and ranking logic
+4. **Generate endpoint**: API route for the analyzer
+5. **Generate tests**: Unit tests for computation accuracy
+
+For detailed steps, see [WORKFLOW.md](WORKFLOW.md).
+
+## Architecture Overview
+
+```
+<source-dir>/
+└── <capability>/
+    ├── domain/
+    │   └── value_objects/
+    │       ├── {metric_type}_metrics.py       # Metric VOs
+    │       └── {analyzer_name}_result.py      # Result VO
+    ├── application/
+    │   └── services/
+    │       └── {analyzer_name}_analyzer.py    # Analyzer service
+    └── api/
+        └── routes/
+            └── {analyzer_name}_routes.py      # API endpoint
+<test-dir>/
+└── <capability>/
+    └── application/
+        └── test_{analyzer_name}_analyzer.py
+```
+
+## Placeholders
+
+| Placeholder | Description | Example |
+|-------------|-------------|---------|
+| `{{analyzer_name}}` | snake_case analyzer | `token_usage` |
+| `{{analyzer_class}}` | PascalCase class | `TokenUsageAnalyzer` |
+| `{{metric_type}}` | Type of metric | `token`, `latency`, `cost` |
+| `{{metric_fields}}` | Metric VO fields | `total_input: int, total_output: int` |
+| `{{ranking_criteria}}` | How to rank results | `by_efficiency`, `by_cost` |
+
+## Templates Reference
+
+- [analyzer_service.py.md](templates/analyzer_service.py.md) - Analyzer service
+- [analysis_metrics_vo.py.md](templates/analysis_metrics_vo.py.md) - Metric VOs
+- [analysis_endpoint.py.md](templates/analysis_endpoint.py.md) - API endpoint
+- [analyzer_test.py.md](templates/analyzer_test.py.md) - Unit tests
+
+## Common Pattern
+
+All analyzers follow the same pattern:
+1. Receive list of execution results
+2. Extract relevant metric from each result
+3. Compute aggregate statistics (min, max, avg, variance)
+4. Rank results by specified criteria
+5. Return structured analysis result

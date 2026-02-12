@@ -1,0 +1,93 @@
+-- Fact model template
+-- File: models/marts/fct_<event_or_process>.sql
+--
+-- Fact models represent events or transactions at the most granular level.
+-- They join staging/intermediate models and compute business metrics.
+-- Every fact model must have a primary key.
+--
+-- Materialization: table or incremental
+
+{{
+    config(
+        materialized='table'
+        -- For incremental:
+        -- materialized='incremental',
+        -- unique_key='<primary_key>',
+        -- incremental_strategy='merge'
+    )
+}}
+
+-- Import CTEs: one per upstream model
+with stg_primary as (
+
+    select * from {{ ref('stg_<source>__<primary_table>') }}
+
+),
+
+stg_secondary as (
+
+    select * from {{ ref('stg_<source>__<secondary_table>') }}
+
+),
+
+stg_tertiary as (
+
+    select * from {{ ref('stg_<source>__<tertiary_table>') }}
+
+),
+
+-- Business logic: join upstream models
+joined as (
+
+    select
+        stg_primary.<primary_key>,
+        stg_primary.<dimension_1>,
+        stg_secondary.<dimension_2>,
+        stg_tertiary.<dimension_3>,
+        stg_primary.<metric_field_1>,
+        stg_secondary.<metric_field_2>,
+        stg_primary.created_at
+
+    from stg_primary
+
+    inner join stg_secondary
+        on stg_primary.<join_key> = stg_secondary.<join_key>
+
+    left join stg_tertiary
+        on stg_primary.<join_key_2> = stg_tertiary.<join_key_2>
+
+    -- For incremental models:
+    -- {% if is_incremental() %}
+    -- where stg_primary.created_at > (select max(created_at) from {{ this }})
+    -- {% endif %}
+
+),
+
+-- Final CTE: compute metrics, add surrogate keys
+final as (
+
+    select
+        -- Primary key
+        -- {{ generate_surrogate_key(['<field_1>', '<field_2>']) }} as <fact_id>,
+
+        -- Foreign keys
+        joined.<primary_key>,
+
+        -- Dimensions
+        joined.<dimension_1>,
+        joined.<dimension_2>,
+        joined.<dimension_3>,
+
+        -- Metrics
+        joined.<metric_field_1>,
+        joined.<metric_field_2>,
+        joined.<metric_field_1> * joined.<metric_field_2> as <computed_metric>,
+
+        -- Timestamps
+        joined.created_at
+
+    from joined
+
+)
+
+select * from final

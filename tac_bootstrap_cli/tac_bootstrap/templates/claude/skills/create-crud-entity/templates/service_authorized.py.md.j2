@@ -1,0 +1,556 @@
+{% raw %}
+# Service Template (Authorized)
+
+Template for creating application services **with authorization** that handle:
+- Row-level access control (filter by owner/group/organization)
+- Field-level access control (hide/mask sensitive fields)
+- Audit trail (created_by, updated_by)
+
+## Usage
+
+Replace placeholders:
+- `{{EntityName}}` - PascalCase entity name (e.g., `Product`)
+- `{{entity_name}}` - snake_case entity name (e.g., `product`)
+- `{{capability}}` - snake_case capability (e.g., `product_catalog`)
+- `{{resource_type}}` - Resource type for permissions (e.g., `product`)
+- `{{access_scope}}` - Default access scope (OWNER, GROUP, or ORGANIZATION)
+
+## Template
+
+```python
+"""
+IDK: use-case, orchestration, {{entity_name}}-service, authorization, rbac
+
+Module: service
+
+Responsibility:
+- Orchestrate {{EntityName}} business logic with authorization
+- Enforce row-level access control (RBAC)
+- Filter responses by field-level permissions
+- Manage authorized entity lifecycle operations
+- Track ownership and audit trail
+
+Invariants:
+- All operations filter by user's access scope
+- Superusers bypass access controls
+- Field-level permissions applied to responses
+- Audit fields always populated
+- Authorization context required for all mutations
+
+Related Docs:
+- docs/{{capability}}/application/service.md
+- docs/authorization/row-level-security.md
+- docs/authorization/field-level-permissions.md
+"""
+
+from datetime import datetime, UTC
+
+from shared.api.exceptions import EntityNotFoundError, DuplicateEntityError, ForbiddenError
+from shared.api.responses import PaginatedResponse
+
+from authorization.application.authorization_service import AuthorizationService, AuthorizationContext
+from authorization.domain.enums import AccessScope
+
+from ..domain.{{entity_name}} import {{EntityName}}
+from ..infrastructure.repository import {{EntityName}}Repository
+from ..infrastructure.models import {{EntityName}}Model
+from .schemas import {{EntityName}}Create, {{EntityName}}Update, {{EntityName}}Response
+
+
+class {{EntityName}}Service:
+    """
+    IDK: use-case, orchestration, {{entity_name}}-service, authorization, rbac
+
+    Responsibility:
+    - Orchestrate {{EntityName}} operations with authorization
+    - Enforce row-level access control by scope
+    - Filter response fields by permissions
+    - Manage ownership and audit trail
+
+    Invariants:
+    - DEFAULT_ACCESS_SCOPE determines visibility
+    - Superusers bypass all restrictions
+    - All mutations require AuthorizationContext
+    - Field filtering applied to all responses
+
+    Collaborators:
+    - {{EntityName}}Repository: authorized data access
+    - AuthorizationService: permission filtering
+    - AuthorizationContext: user permissions
+
+    Related Docs:
+    - docs/{{capability}}/application/service.md
+    - docs/authorization/service-integration.md
+    """
+
+    # Default access scope for this entity
+    DEFAULT_ACCESS_SCOPE = AccessScope.{{access_scope}}  # OWNER, GROUP, or ORGANIZATION
+    RESOURCE_TYPE = "{{resource_type}}"
+
+    def __init__(
+        self,
+        repository: {{EntityName}}Repository,
+        auth_service: AuthorizationService | None = None
+    ):
+        """
+        IDK: service-initialization, dependency-injection, authorization-wiring
+
+        Responsibility:
+        - Initialize service with repository and auth service
+        - Configure resource type and access scope
+
+        Inputs:
+        - repository ({{EntityName}}Repository): authorized data access
+        - auth_service (AuthorizationService | None): field permission service
+
+        Related Docs:
+        - docs/{{capability}}/application/service-setup.md
+        """
+        self.repository = repository
+        self.auth_service = auth_service
+
+    def create(
+        self,
+        data: {{EntityName}}Create,
+        context: AuthorizationContext
+    ) -> {{EntityName}}Response:
+        """
+        IDK: create-operation, authorization, ownership-tracking
+
+        Responsibility:
+        - Create {{EntityName}} with ownership
+        - Filter writable fields by permissions
+        - Set owner and audit fields
+        - Return field-filtered response
+
+        Invariants:
+        - Duplicate codes rejected
+        - Owner set to context.user_id
+        - Audit fields populated
+        - Response filtered by permissions
+
+        Inputs:
+        - data ({{EntityName}}Create): creation payload
+        - context (AuthorizationContext): user authorization
+
+        Outputs:
+        - {{EntityName}}Response: created entity (field-filtered)
+
+        Failure Modes:
+        - DuplicateEntityError: code already exists
+
+        Related Docs:
+        - docs/{{capability}}/application/create.md
+        """
+        # Check for duplicate code
+        existing = self.repository.get_by_code(data.code)
+        if existing:
+            raise DuplicateEntityError(f"{{EntityName}} with code '{data.code}' already exists")
+
+        # Filter writable fields
+        create_data = data.model_dump()
+        if self.auth_service:
+            create_data = self.auth_service.filter_update_fields(
+                context=context,
+                resource_type=self.RESOURCE_TYPE,
+                data=create_data
+            )
+
+        # Create domain entity with ownership
+        entity = {{EntityName}}(
+            **create_data,
+            owner=context.user_id,
+            organization_id=context.organization_id,
+            created_by=context.user_id,
+            updated_by=context.user_id,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+
+        # Convert to ORM model and save
+        db_model = self._to_model(entity)
+        saved = self.repository.create(db_model)
+
+        # Filter response fields
+        return self._to_response(saved, context)
+
+    def get_by_id(
+        self,
+        entity_id: str,
+        context: AuthorizationContext
+    ) -> {{EntityName}}Response:
+        """Get {{EntityName}} by ID with access control."""
+        # Use authorized repository method
+        entity = self.repository.get_by_id_authorized(
+            entity_id=entity_id,
+            user_id=context.user_id,
+            organization_id=context.organization_id,
+            group_paths=context.group_paths,
+            access_scope=self.DEFAULT_ACCESS_SCOPE,
+            is_superuser=context.is_superuser,
+        )
+
+        if not entity:
+            # Check if entity exists but user doesn't have access
+            exists = self.repository.get_by_id(entity_id)
+            if exists:
+                raise ForbiddenError(f"Access denied to {{EntityName}} '{entity_id}'")
+            raise EntityNotFoundError(f"{{EntityName}} with ID '{entity_id}' not found")
+
+        return self._to_response(entity, context)
+
+    def get_all(
+        self,
+        context: AuthorizationContext,
+        page: int = 1,
+        page_size: int = 20,
+        filters: dict | None = None,
+        sort_by: str | None = None,
+        sort_order: str = "asc"
+    ) -> PaginatedResponse[{{EntityName}}Response]:
+        """Get paginated list filtered by user's access scope."""
+        items, total = self.repository.get_all_authorized(
+            user_id=context.user_id,
+            organization_id=context.organization_id,
+            group_paths=context.group_paths,
+            access_scope=self.DEFAULT_ACCESS_SCOPE,
+            is_superuser=context.is_superuser,
+            page=page,
+            page_size=page_size,
+            filters=filters or {},
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
+
+        return PaginatedResponse(
+            items=[self._to_response(item, context) for item in items],
+            total=total,
+            page=page,
+            page_size=page_size,
+            pages=(total + page_size - 1) // page_size
+        )
+
+    def update(
+        self,
+        entity_id: str,
+        data: {{EntityName}}Update,
+        context: AuthorizationContext
+    ) -> {{EntityName}}Response:
+        """Update {{EntityName}} with access control and field filtering."""
+        # Verify access
+        existing = self.repository.get_by_id_authorized(
+            entity_id=entity_id,
+            user_id=context.user_id,
+            organization_id=context.organization_id,
+            group_paths=context.group_paths,
+            access_scope=self.DEFAULT_ACCESS_SCOPE,
+            is_superuser=context.is_superuser,
+        )
+
+        if not existing:
+            exists = self.repository.get_by_id(entity_id)
+            if exists:
+                raise ForbiddenError(f"Access denied to {{EntityName}} '{entity_id}'")
+            raise EntityNotFoundError(f"{{EntityName}} with ID '{entity_id}' not found")
+
+        # Filter writable fields
+        update_data = data.model_dump(exclude_unset=True)
+        if self.auth_service:
+            update_data = self.auth_service.filter_update_fields(
+                context=context,
+                resource_type=self.RESOURCE_TYPE,
+                data=update_data
+            )
+
+        # Add audit trail
+        update_data["updated_by"] = context.user_id
+
+        updated = self.repository.update(entity_id, update_data)
+        return self._to_response(updated, context)
+
+    def delete(
+        self,
+        entity_id: str,
+        context: AuthorizationContext
+    ) -> bool:
+        """Delete {{EntityName}} with access control."""
+        # Verify access
+        existing = self.repository.get_by_id_authorized(
+            entity_id=entity_id,
+            user_id=context.user_id,
+            organization_id=context.organization_id,
+            group_paths=context.group_paths,
+            access_scope=self.DEFAULT_ACCESS_SCOPE,
+            is_superuser=context.is_superuser,
+        )
+
+        if not existing:
+            exists = self.repository.get_by_id(entity_id)
+            if exists:
+                raise ForbiddenError(f"Access denied to {{EntityName}} '{entity_id}'")
+            raise EntityNotFoundError(f"{{EntityName}} with ID '{entity_id}' not found")
+
+        return self.repository.soft_delete(entity_id)
+
+    def _to_model(self, entity: {{EntityName}}) -> {{EntityName}}Model:
+        """Convert domain entity to ORM model."""
+        return {{EntityName}}Model(**entity.model_dump())
+
+    def _to_response(
+        self,
+        entity: {{EntityName}}Model,
+        context: AuthorizationContext
+    ) -> {{EntityName}}Response:
+        """Convert to response with field filtering."""
+        data = {{EntityName}}Response.model_validate(entity).model_dump()
+
+        # Apply field-level permissions
+        if self.auth_service:
+            data = self.auth_service.filter_response_fields(
+                context=context,
+                resource_type=self.RESOURCE_TYPE,
+                data=data
+            )
+
+        return {{EntityName}}Response(**data)
+```
+
+## Example: Product Service (Authorized)
+
+```python
+"""Product service implementation with authorization."""
+
+from datetime import datetime, UTC
+
+from shared.api.exceptions import EntityNotFoundError, DuplicateEntityError, ForbiddenError
+from shared.api.responses import PaginatedResponse
+
+from authorization.application.authorization_service import AuthorizationService, AuthorizationContext
+from authorization.domain.enums import AccessScope
+
+from ..domain.product import Product
+from ..infrastructure.repository import ProductRepository
+from ..infrastructure.models import ProductModel
+from .schemas import ProductCreate, ProductUpdate, ProductResponse
+
+
+class ProductService:
+    """Service for Product business logic with authorization."""
+
+    DEFAULT_ACCESS_SCOPE = AccessScope.ORGANIZATION  # Products visible to all org users
+    RESOURCE_TYPE = "product"
+
+    def __init__(
+        self,
+        repository: ProductRepository,
+        auth_service: AuthorizationService | None = None
+    ):
+        self.repository = repository
+        self.auth_service = auth_service
+
+    def create(
+        self,
+        data: ProductCreate,
+        context: AuthorizationContext
+    ) -> ProductResponse:
+        """Create a new Product with ownership tracking."""
+        existing = self.repository.get_by_code(data.code)
+        if existing:
+            raise DuplicateEntityError(f"Product with code '{data.code}' already exists")
+
+        create_data = data.model_dump()
+        if self.auth_service:
+            create_data = self.auth_service.filter_update_fields(
+                context=context,
+                resource_type=self.RESOURCE_TYPE,
+                data=create_data
+            )
+
+        entity = Product(
+            **create_data,
+            owner=context.user_id,
+            organization_id=context.organization_id,
+            created_by=context.user_id,
+            updated_by=context.user_id,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+
+        db_model = self._to_model(entity)
+        saved = self.repository.create(db_model)
+
+        return self._to_response(saved, context)
+
+    def get_by_id(
+        self,
+        entity_id: str,
+        context: AuthorizationContext
+    ) -> ProductResponse:
+        """Get Product by ID with access control."""
+        entity = self.repository.get_by_id_authorized(
+            entity_id=entity_id,
+            user_id=context.user_id,
+            organization_id=context.organization_id,
+            group_paths=context.group_paths,
+            access_scope=self.DEFAULT_ACCESS_SCOPE,
+            is_superuser=context.is_superuser,
+        )
+
+        if not entity:
+            exists = self.repository.get_by_id(entity_id)
+            if exists:
+                raise ForbiddenError(f"Access denied to Product '{entity_id}'")
+            raise EntityNotFoundError(f"Product with ID '{entity_id}' not found")
+
+        return self._to_response(entity, context)
+
+    def get_all(
+        self,
+        context: AuthorizationContext,
+        page: int = 1,
+        page_size: int = 20,
+        filters: dict | None = None,
+        sort_by: str | None = None,
+        sort_order: str = "asc"
+    ) -> PaginatedResponse[ProductResponse]:
+        """Get paginated list filtered by user's access scope."""
+        items, total = self.repository.get_all_authorized(
+            user_id=context.user_id,
+            organization_id=context.organization_id,
+            group_paths=context.group_paths,
+            access_scope=self.DEFAULT_ACCESS_SCOPE,
+            is_superuser=context.is_superuser,
+            page=page,
+            page_size=page_size,
+            filters=filters or {},
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
+
+        return PaginatedResponse(
+            items=[self._to_response(item, context) for item in items],
+            total=total,
+            page=page,
+            page_size=page_size,
+            pages=(total + page_size - 1) // page_size
+        )
+
+    def update(
+        self,
+        entity_id: str,
+        data: ProductUpdate,
+        context: AuthorizationContext
+    ) -> ProductResponse:
+        """Update Product with access control."""
+        existing = self.repository.get_by_id_authorized(
+            entity_id=entity_id,
+            user_id=context.user_id,
+            organization_id=context.organization_id,
+            group_paths=context.group_paths,
+            access_scope=self.DEFAULT_ACCESS_SCOPE,
+            is_superuser=context.is_superuser,
+        )
+
+        if not existing:
+            exists = self.repository.get_by_id(entity_id)
+            if exists:
+                raise ForbiddenError(f"Access denied to Product '{entity_id}'")
+            raise EntityNotFoundError(f"Product with ID '{entity_id}' not found")
+
+        update_data = data.model_dump(exclude_unset=True)
+        if self.auth_service:
+            update_data = self.auth_service.filter_update_fields(
+                context=context,
+                resource_type=self.RESOURCE_TYPE,
+                data=update_data
+            )
+
+        update_data["updated_by"] = context.user_id
+        updated = self.repository.update(entity_id, update_data)
+
+        return self._to_response(updated, context)
+
+    def delete(
+        self,
+        entity_id: str,
+        context: AuthorizationContext
+    ) -> bool:
+        """Delete Product with access control."""
+        existing = self.repository.get_by_id_authorized(
+            entity_id=entity_id,
+            user_id=context.user_id,
+            organization_id=context.organization_id,
+            group_paths=context.group_paths,
+            access_scope=self.DEFAULT_ACCESS_SCOPE,
+            is_superuser=context.is_superuser,
+        )
+
+        if not existing:
+            exists = self.repository.get_by_id(entity_id)
+            if exists:
+                raise ForbiddenError(f"Access denied to Product '{entity_id}'")
+            raise EntityNotFoundError(f"Product with ID '{entity_id}' not found")
+
+        return self.repository.soft_delete(entity_id)
+
+    def _to_model(self, entity: Product) -> ProductModel:
+        """Convert domain entity to ORM model."""
+        return ProductModel(**entity.model_dump())
+
+    def _to_response(
+        self,
+        entity: ProductModel,
+        context: AuthorizationContext
+    ) -> ProductResponse:
+        """Convert to response with field filtering."""
+        data = ProductResponse.model_validate(entity).model_dump()
+
+        if self.auth_service:
+            data = self.auth_service.filter_response_fields(
+                context=context,
+                resource_type=self.RESOURCE_TYPE,
+                data=data
+            )
+
+        return ProductResponse(**data)
+
+    # Custom business methods with authorization
+    def approve(
+        self,
+        entity_id: str,
+        context: AuthorizationContext
+    ) -> ProductResponse:
+        """Approve a product (requires 'product:approve' permission)."""
+        return self.update(
+            entity_id,
+            ProductUpdate(status="approved"),
+            context
+        )
+```
+
+## Access Scope Configuration
+
+Choose the default access scope based on your business requirements:
+
+| Scope | Use Case |
+|-------|----------|
+| `OWNER` | Private data (user settings, drafts) |
+| `GROUP` | Team data (department reports, team tasks) |
+| `ORGANIZATION` | Shared data (products, customers) |
+
+## Dependencies Factory Update
+
+Update `core/dependencies.py`:
+
+```python
+from authorization.application.authorization_service import AuthorizationService
+
+def get_{{entity_name}}_service() -> {{EntityName}}Service:
+    """Factory for {{EntityName}}Service with authorization."""
+    db = get_db()
+    repository = {{EntityName}}Repository(db)
+    auth_service = get_authorization_service()  # Include auth service
+    return {{EntityName}}Service(repository, auth_service)
+```
+
+{% endraw %}

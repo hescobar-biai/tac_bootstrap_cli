@@ -1,0 +1,144 @@
+{% raw %}
+-- Data Mart: DM_Supply_Chain
+-- Grain: one row per product-warehouse combination
+-- Schema: 40_dwagg_supply_chain_{env}
+-- Purpose: Key supply chain KPIs for dashboards and reporting
+-- Materialization: table
+-- Tags: aggregations, supply_chain
+
+{{
+    config(
+        materialized='table',
+        tags=['aggregations', 'supply_chain']
+    )
+}}
+
+with invoices as (
+
+    select * from {{ ref('stg_agg_Invoices') }}
+
+),
+
+stocks as (
+
+    select * from {{ ref('stg_Stocks') }}
+
+),
+
+products as (
+
+    select * from {{ ref('stg_Products') }}
+
+),
+
+warehouses as (
+
+    select * from {{ ref('stg_Warehouses') }}
+
+),
+
+-- Join all dimensions
+joined as (
+
+    select
+        products.product_id,
+        products.product_name,
+        products.category,
+        products.abc_class,
+        warehouses.warehouse_id,
+        warehouses.warehouse_name,
+
+        -- Sales metrics (from aggregated invoices)
+        COALESCE(invoices.total_quantity, 0) as total_units_sold,
+        COALESCE(invoices.total_amount, 0) as total_revenue,
+        COALESCE(invoices.avg_daily_demand, 0) as avg_daily_demand,
+
+        -- Inventory metrics
+        COALESCE(stocks.quantity_on_hand, 0) as quantity_on_hand,
+        COALESCE(stocks.quantity_in_transit, 0) as quantity_in_transit,
+        COALESCE(stocks.reorder_point, 0) as reorder_point,
+
+        -- Product attributes
+        products.unit_cost,
+        products.lead_time_days
+
+    from products
+
+    inner join warehouses
+        on TRUE  -- cartesian for all product-warehouse combos
+
+    left join invoices
+        on products.product_id = invoices.product_id
+        and warehouses.warehouse_id = invoices.warehouse_id
+
+    left join stocks
+        on products.product_id = stocks.product_id
+        and warehouses.warehouse_id = stocks.warehouse_id
+
+),
+
+-- Compute supply chain KPIs
+final as (
+
+    select
+        -- Surrogate key
+        FARM_FINGERPRINT(
+            CONCAT(
+                CAST(product_id AS STRING), '|',
+                CAST(warehouse_id AS STRING)
+            )
+        ) as surrogate_key,
+
+        -- Dimensions
+        product_id,
+        product_name,
+        category,
+        abc_class,
+        warehouse_id,
+        warehouse_name,
+
+        -- Volume metrics
+        total_units_sold,
+        total_revenue,
+        avg_daily_demand,
+        quantity_on_hand,
+        quantity_in_transit,
+
+        -- Supply chain KPIs
+        SAFE_DIVIDE(
+            total_units_sold,
+            NULLIF(quantity_on_hand, 0)
+        ) as inventory_turnover,
+
+        SAFE_DIVIDE(
+            quantity_on_hand,
+            NULLIF(avg_daily_demand, 0)
+        ) as days_of_supply,
+
+        CASE
+            WHEN quantity_on_hand <= reorder_point THEN TRUE
+            ELSE FALSE
+        END as is_below_reorder_point,
+
+        CASE
+            WHEN quantity_on_hand = 0 AND avg_daily_demand > 0 THEN TRUE
+            ELSE FALSE
+        END as is_stockout,
+
+        SAFE_DIVIDE(
+            total_revenue - (total_units_sold * unit_cost),
+            NULLIF(total_revenue, 0)
+        ) as gross_margin,
+
+        -- Coverage
+        SAFE_DIVIDE(
+            quantity_on_hand + quantity_in_transit,
+            NULLIF(avg_daily_demand, 0)
+        ) as coverage_days
+
+    from joined
+
+)
+
+select * from final
+{% endraw %}

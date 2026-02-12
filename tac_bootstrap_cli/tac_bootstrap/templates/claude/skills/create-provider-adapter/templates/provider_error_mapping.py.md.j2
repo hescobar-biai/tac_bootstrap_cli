@@ -1,0 +1,42 @@
+{% raw %}
+# Provider Error Mapping Template
+
+**File**: `src/provider/infrastructure/adapters/{{provider_name}}_errors.py`
+
+```python
+"""
+IDK: error-mapping, {{provider_name}}, exception-translation
+
+Responsibility:
+- Map {{provider_name}} SDK exceptions to domain exceptions
+- Preserve error context and details
+"""
+
+from src.shared.domain.exceptions.common import (
+    InfrastructureException,
+)
+
+
+class ProviderRateLimitError(InfrastructureException):
+    """Provider rate limit exceeded."""
+    pass
+
+
+class ProviderAuthenticationError(InfrastructureException):
+    """Provider authentication failed."""
+    pass
+
+
+class ProviderUnavailableError(InfrastructureException):
+    """Provider service unavailable."""
+    pass
+
+
+def map_{{provider_name}}_error(error: Exception) -> Exception:
+    """Map {{provider_name}} SDK error to domain exception."""
+    error_str = str(error)
+    {{error_mapping_rules}}
+    return InfrastructureException(f"{{provider_class}} error: {error_str}")
+```
+
+{% endraw %}

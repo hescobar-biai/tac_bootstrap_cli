@@ -1,0 +1,754 @@
+{% raw %}
+# React Frontend Reference — Celes Stack
+
+Comprehensive patterns and conventions for building React 19 applications at Celes. Covers the complete stack: TypeScript strict, TanStack Query/Router/Form, Zustand, MUI X Data Grid Premium (DataTable.Root), Ky HTTP client, TailwindCSS 4.1 custom theme, Valibot validation, react-i18next, and testing.
+
+---
+
+## Table of Contents
+
+1. [Technologies & Versions](#technologies--versions)
+2. [Code Organization](#code-organization)
+3. [DataTable.Root Composition Pattern](#datableroot-composition-pattern)
+4. [Data Management (Ky + TanStack Query)](#data-management-ky--tanstack-query)
+5. [State Management (Zustand + TanStack Query)](#state-management-zustand--tanstack-query)
+6. [Routing (TanStack Router)](#routing-tanstack-router)
+7. [Forms & Validation (TanStack Form + Valibot)](#forms--validation-tanstack-form--valibot)
+8. [Styling (TailwindCSS 4.1 Custom Theme)](#styling-tailwindcss-41-custom-theme)
+9. [Internationalization (react-i18next)](#internationalization-react-i18next)
+10. [Testing (Vitest + RTL + Playwright + MSW)](#testing-vitest--rtl--playwright--msw)
+11. [Accessibility](#accessibility)
+12. [Performance](#performance)
+13. [TypeScript Conventions](#typescript-conventions)
+14. [Anti-patterns Summary](#anti-patterns-summary)
+
+---
+
+## Technologies & Versions
+
+| Technology              | Version  | Purpose                                |
+| ----------------------- | -------- | -------------------------------------- |
+| React                   | 19.x     | UI framework (functional components)   |
+| TypeScript              | 5.9+     | Strict mode, no `any`                  |
+| Vite (rolldown-vite)    | 7.2+     | Build tool, code splitting             |
+| TanStack Query          | 5.90+    | Server state management & caching      |
+| TanStack Router         | 1.132+   | Type-safe file-based routing           |
+| TanStack Form           | latest   | Form state management                  |
+| TanStack Virtual        | latest   | List virtualization (>50 items)        |
+| Zustand                 | 5.x      | Client state with localStorage persist |
+| MUI                     | 7.x      | Component library                      |
+| MUI X Data Grid Premium | 8.19+    | Advanced data tables                   |
+| TailwindCSS             | 4.1      | Utility-first styling (custom theme)   |
+| Ky                      | 1.14+    | HTTP client (NOT axios, NOT raw fetch) |
+| Valibot                 | latest   | Schema validation (runtime)            |
+| Firebase/Firestore      | latest   | Real-time data & auth                  |
+| react-i18next           | latest   | Internationalization (ES/EN)           |
+| clsx                    | latest   | Conditional class names                |
+| @tabler/icons-react     | latest   | Icon library                           |
+| Motion (framer-motion)  | latest   | Animations                             |
+| Biome + ESLint          | latest   | Linting and formatting                 |
+| Vitest                  | latest   | Unit/integration test runner           |
+| React Testing Library   | latest   | Component testing                      |
+| Playwright              | latest   | E2E testing                            |
+| MSW                     | latest   | API mocking for tests                  |
+| LaunchDarkly            | latest   | Feature flags                          |
+| Bugsnag                 | latest   | Error reporting                        |
+| Mixpanel                | latest   | Analytics                              |
+
+---
+
+## Code Organization
+
+### Project Structure
+
+```
+src/
+├── components/          # Global reusable components
+│   └── UI/
+│       └── DataTable/   # DataTable.Root composition
+├── hooks/               # Global hooks
+├── lib/
+│   ├── api.ts           # Ky HTTP client configuration
+│   ├── queryClient.ts   # TanStack Query client
+│   ├── queryKeys.ts     # Query key constants
+│   └── tanstackForm.ts  # Form infrastructure (useAppForm)
+├── pages/               # Feature modules
+│   ├── Administration/
+│   ├── Dashboard/
+│   ├── Planning/
+│   ├── ReportsAndAnalitycs/
+│   ├── WorkArea/
+│   ├── DynamicPage/
+│   └── LoginPage/
+├── routes/              # TanStack Router files (file-based)
+├── types/
+│   └── apiContracts.ts  # API type definitions
+├── utils/
+│   └── dataGrid/        # DataGrid utilities
+├── providers/           # Context providers
+├── theme/               # MUI theme configuration
+└── index.css            # Tailwind config + custom theme
+```
+
+### Module Structure
+
+```
+src/pages/{Module}/
+├── helpers.tsx                    # Module-level helpers
+├── common/                        # Shared within module
+│   ├── helpers.ts
+│   ├── types.ts
+│   ├── hooks/                     # Shared hooks (non-query)
+│   ├── queries/                   # Shared query/mutation hooks
+│   └── ComponentName.tsx          # Simple shared component
+├── {SubModule}/                   # Sub-module (multiple pages)
+│   ├── helpers.ts
+│   ├── hooks/
+│   └── {SubModule}{Feature}Page/  # Page folder
+│       ├── index.ts               # Exports ONLY the component
+│       ├── {PageName}.tsx
+│       ├── queries.ts             # queryOptions/mutationOptions
+│       ├── helpers.ts             # Form schemas, utilities
+│       ├── components/            # Local components (flat files)
+│       └── hooks/                 # Local hooks
+```
+
+### File Placement Rules
+
+| Type               | Location                              |
+| ------------------ | ------------------------------------- |
+| Page               | `src/pages/{Module}/{PageName}/`      |
+| Page structure     | Always: `index.ts` + `{PageName}.tsx` |
+| Route (lazy)       | `src/routes/_layout.{path}.index.lazy.tsx` |
+| Route (loader)     | `src/routes/_layout.{path}.index.tsx` (only if `validateSearch`/`loader` needed) |
+| Page-local comp    | `{Page}/components/Component.tsx`     |
+| Module-shared comp | `{Module}/common/Component.tsx`       |
+| Global comp (rare) | `src/components/`                     |
+| Page-local hook    | `{Page}/hooks/useHook.ts`            |
+| Module query/mut   | `{Module}/common/queries/`            |
+| Global hook        | `src/hooks/`                          |
+| API types          | `src/types/apiContracts.ts`           |
+| Form schemas       | `{Page}/helpers.ts` or `{Module}/helpers.ts` |
+| E2E tests          | `src/e2e/tests/{PageName}/`           |
+| Unit tests         | Co-located: `Component.test.tsx`      |
+
+### Naming Conventions
+
+| Type           | Pattern                  | Example                            |
+| -------------- | ------------------------ | ---------------------------------- |
+| Page           | `{Module}{Feature}Page`  | `WorkAreaProcurementPage.tsx`      |
+| Component      | `PascalCase`             | `OrderStatusBadge.tsx`             |
+| Hook           | `use{Name}`              | `useProcurementData.ts`            |
+| Query options  | `{entity}QueryOptions`   | `scenariosQueryOptions`            |
+| Mutation opts  | `{action}{Entity}MutationOptions` | `createCampaignMutationOptions` |
+| Helpers        | `helpers.ts`             | `helpers.ts`                       |
+| Types          | `types.ts`               | `types.ts`                         |
+| E2E test       | `{PageName}.spec.ts`     | `WorkAreaProcurementPage.spec.ts`  |
+
+### index.ts Rule
+
+Export ONLY the main component. Do NOT export helpers, types, or hooks:
+
+```typescript
+// Correct
+export { WorkAreaProcurementPage } from './WorkAreaProcurementPage'
+
+// Wrong - never export internals from index.ts
+export type { PageProps } from './types'
+```
+
+---
+
+## DataTable.Root Composition Pattern
+
+**CRITICAL: ALWAYS use `DataTable.Root` — NEVER use `DataGridPremium` directly.**
+
+The project uses a mandatory composition pattern that wraps MUI X Data Grid Premium providing:
+- State persistence (column order, widths, filters) via IndexedDB
+- Standardized toolbar/pagination components
+- Quick search functionality
+- Consistent styling and behavior
+
+### Required Structure
+
+```tsx
+import { DataTable } from '~/components/UI/DataTable'
+
+<DataTable.Root
+  tableId="unique-stable-id"           // REQUIRED - stable identifier
+  rows={data}
+  columns={columns}
+  pagination
+  paginationMode="server"              // or "client"
+  paginationModel={paginationModel}
+  onPaginationModelChange={setPaginationModel}
+  sortingMode="server"                 // or "client"
+  sortModel={sortModel}
+  onSortModelChange={handleSortModelChange}
+  rowCount={totalCount}                // for server pagination
+  loading={isLoading}
+  isLoadingFirstTime={isPending}
+>
+  <div className="h-full overflow-auto">
+    <DataTable.Box>
+      <DataTable.Toolbar>
+        <DataTable.ExportButton onClick={handleExport} />
+        <DataTable.QuickSearch />
+        <DataTable.ColumnsPanelButton />
+        {/* Custom toolbar content */}
+      </DataTable.Toolbar>
+
+      <DataTable.Table />
+    </DataTable.Box>
+
+    <DataTable.Footer>
+      <DataTable.Pagination />
+    </DataTable.Footer>
+  </div>
+</DataTable.Root>
+```
+
+### Column Processing
+
+```typescript
+import { processApiColumns, wrapActionsColDef, GRID_ACTIONS_FIELD } from '~/utils/dataGrid'
+
+// Map API columns to GridColDef
+const columns = useMemo(
+  () =>
+    processApiColumns(apiColumns, {
+      defaultColDefProps: { flex: 1 },
+      specificField: {
+        name: { minWidth: 200 },
+        status: { width: 120 },
+      },
+    }),
+  [apiColumns],
+)
+
+// Actions column (always pin right)
+const getActions = (params: GridRowParams) => [
+  <GridActionsCellItem icon={<IconEdit />} label="Edit" onClick={() => handleEdit(params.row)} />,
+  <GridActionsCellItem icon={<IconTrash />} label="Delete" onClick={() => handleDelete(params.row)} />,
+]
+columns.push(wrapActionsColDef({ getActions, minWidth: 75 }))
+// initialState={{ pinnedColumns: { right: [GRID_ACTIONS_FIELD] } }}
+```
+
+### Pagination Hooks
+
+```typescript
+// URL-persisted pagination (preferred for pages)
+import { useSearchPaginationModel } from '~/utils/dataGrid'
+const { paginationModel, setPaginationModel } = useSearchPaginationModel({ initialPageSize: 25 })
+
+// Local state pagination (for modals/dialogs)
+import { usePaginationModel } from '~/utils/dataGrid'
+const { paginationModel, setPaginationModel, resetPage } = usePaginationModel(25)
+```
+
+### Sorting Hooks
+
+```typescript
+// localStorage-persisted sorting
+import { useSortModelPersisted } from '~/utils/dataGrid'
+const { sortModel, handleSortModelChange } = useSortModelPersisted('my-table-sort')
+
+// URL-persisted with calculated columns support
+import { useSearchSortModelWithCalculateColumns } from '~/utils/dataGrid'
+const { sortModel, sortItemCalculated, handleSortModelChange } = useSearchSortModelWithCalculateColumns()
+// Use sortingMode={sortItemCalculated ? 'client' : 'server'}
+```
+
+### Bulk Editing
+
+```typescript
+import { useDataGridBulkEditHelpers } from '~/hooks/useDataGridBulkEditHelpers'
+
+const { processRowUpdate, hasUnsavedRows, unsavedRows, discardChanges, cellModesModel, setCellModesModel } =
+  useDataGridBulkEditHelpers({ rows: data, getRowId: (row) => row.id })
+
+<DataTable.Root
+  processRowUpdate={processRowUpdate}
+  onProcessRowUpdateError={(error) => console.error('Error:', error)}
+  cellModesModel={cellModesModel}
+  onCellModesModelChange={setCellModesModel}
+/>
+```
+
+---
+
+## Data Management (Ky + TanStack Query)
+
+### Ky HTTP Client
+
+API instance configured in `src/lib/api.ts`. Always use Ky — never axios or raw fetch.
+
+```typescript
+import { api, stringifySearchParams } from '~/lib/api'
+
+// GET request
+const data = (await api.get('inventory/items/', { searchParams }).json()) as ApiResponse<Item[]>
+
+// POST request
+const result = (await api.post('inventory/items/', { json: payload }).json()) as ApiResponse
+
+// PATCH request
+const updated = (await api.patch(`inventory/items/${id}`, { json: changes }).json()) as ApiResponse
+```
+
+### queryOptions Pattern
+
+Store in dedicated `queries.ts` files. Naming: `{entity}QueryOptions` (NO `get` prefix).
+
+```typescript
+import { queryOptions } from '@tanstack/react-query'
+import { api, stringifySearchParams } from '~/lib/api'
+import { INVENTORY } from '~/lib/queryKeys'
+import type { ApiResponse, InventoryItem } from '~/types/apiContracts'
+
+/**
+ * Query options for fetching inventory items.
+ * @param params - Filter and pagination parameters
+ */
+export const inventoryQueryOptions = (params: InventoryParams) =>
+  queryOptions({
+    queryKey: [INVENTORY, params],
+    queryFn: async () => {
+      const searchParams = stringifySearchParams(params)
+      const response = (await api
+        .get('inventory/items/', { searchParams })
+        .json()) as ApiResponse<InventoryItem[]>
+      return response.data
+    },
+  })
+```
+
+### mutationOptions Pattern
+
+```typescript
+import { api } from '~/lib/api'
+import { queryClient } from '~/lib/queryClient'
+import { INVENTORY } from '~/lib/queryKeys'
+import { mutationOptions } from '~/utils/tanstackQuery'
+
+/**
+ * Mutation options for creating an inventory item.
+ * Invalidates inventory cache on success.
+ */
+export const createInventoryMutationOptions = mutationOptions({
+  mutationFn: async (item: CreateInventoryPayload) => {
+    const res = (await api
+      .post('inventory/items/', { json: item })
+      .json()) as ApiResponse
+    return res.data
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: [INVENTORY] })
+  },
+})
+```
+
+### Query Key Hierarchy
+
+```typescript
+// Always hierarchical: ['resource', id, 'sub-resource']
+['inventory']
+['inventory', params]
+['inventory', itemId]
+['inventory', itemId, 'history']
+```
+
+Import from `~/lib/queryKeys`:
+```typescript
+import { INVENTORY, CAMPAIGNS, SCENARIOS } from '~/lib/queryKeys'
+```
+
+### State Management Strategy
+
+| State Type      | Solution       | Example                                 |
+| --------------- | -------------- | --------------------------------------- |
+| Server data     | TanStack Query | Inventory list, forecast data           |
+| UI preferences  | Zustand        | Dark mode, sidebar open, selected theme |
+| Form state      | TanStack Form  | Form values, validation                 |
+| Component local | React useState | Modal open, tooltip visible             |
+
+### Zustand Store Pattern
+
+```typescript
+import { create } from 'zustand'
+import { persist, devtools } from 'zustand/middleware'
+
+interface FilterStore {
+  search: string
+  warehouse: string | null
+  setSearch: (search: string) => void
+  setWarehouse: (warehouse: string | null) => void
+  reset: () => void
+}
+
+export const useFilterStore = create<FilterStore>()(
+  devtools(
+    persist(
+      (set) => ({
+        search: '',
+        warehouse: null,
+        setSearch: (search) => set({ search }),
+        setWarehouse: (warehouse) => set({ warehouse }),
+        reset: () => set({ search: '', warehouse: null }),
+      }),
+      { name: 'filter-store' }
+    ),
+    { name: 'FilterStore' }
+  )
+)
+```
+
+---
+
+## Routing (TanStack Router)
+
+### File-Based Routing
+
+```
+src/routes/
+├── __root.tsx                    # Root layout
+├── _layout/                      # Authenticated layout
+│   ├── route.tsx
+│   └── _layout.dashboard.index.lazy.tsx
+├── _layout.work-area.procurement.index.lazy.tsx
+├── _layout.work-area.procurement.index.tsx     # Only if validateSearch needed
+└── login/route.tsx
+```
+
+**NEVER edit `routeTree.gen.ts`** — it's auto-generated.
+
+### Type-Safe Navigation
+
+```typescript
+import { Link, useNavigate } from '@tanstack/react-router'
+
+<Link to="/users/$userId" params={{ userId: '123' }}>View User</Link>
+
+const navigate = useNavigate()
+navigate({ to: '/products', search: { category: 'electronics', page: 1 } })
+```
+
+### Search Params with Valibot
+
+```typescript
+import * as v from 'valibot'
+
+const searchSchema = v.object({
+  page: v.optional(v.pipe(v.number(), v.minValue(0)), 0),
+  pageSize: v.optional(v.pipe(v.number(), v.minValue(1)), 25),
+  sortField: v.optional(v.string()),
+  sortDirection: v.optional(v.picklist(['asc', 'desc'])),
+})
+
+export const Route = createFileRoute('/products')({
+  validateSearch: searchSchema,
+})
+
+function ProductsPage() {
+  const { page, pageSize } = Route.useSearch()  // Fully typed
+}
+```
+
+---
+
+## Forms & Validation (TanStack Form + Valibot)
+
+**CRITICAL: Validation schemas MUST live in `helpers.ts` — NEVER inline in components.**
+
+### Schema Definition (helpers.ts)
+
+```typescript
+import * as v from 'valibot'
+
+export const campaignFormSchema = v.object({
+  name: v.pipe(v.string(), v.minLength(1, 'Name is required')),
+  startDate: v.pipe(v.string(), v.minLength(1, 'Start date is required')),
+  endDate: v.pipe(v.string(), v.minLength(1, 'End date is required')),
+  discountPercent: v.pipe(v.number(), v.minValue(0), v.maxValue(100)),
+})
+
+export type CampaignFormValues = v.InferOutput<typeof campaignFormSchema>
+```
+
+### Form Component
+
+```typescript
+import { useAppForm } from '~/lib/tanstackForm'
+import { type CampaignFormValues, campaignFormSchema } from './helpers'
+
+function CampaignForm() {
+  const form = useAppForm({
+    defaultValues: { name: '', startDate: '', endDate: '', discountPercent: 0 },
+    validators: { onChange: campaignFormSchema },
+  })
+
+  return (
+    <form onSubmit={form.handleSubmit}>
+      {/* form fields */}
+    </form>
+  )
+}
+```
+
+Form infrastructure: `src/lib/tanstackForm.ts` provides `createFormHook`, `fieldComponents`, `useAppForm`.
+
+---
+
+## Styling (TailwindCSS 4.1 Custom Theme)
+
+### Custom Color Palette (MANDATORY)
+
+**ALWAYS use Celes custom colors. NEVER use Tailwind defaults.**
+
+| Token          | Usage                              |
+| -------------- | ---------------------------------- |
+| `night-*`      | Text, borders, dark backgrounds    |
+| `seasalt`      | Light background                   |
+| `ghostwhite`   | Card/panel background              |
+| `orangepeel-*` | Primary accent, CTAs               |
+| `emerald-*`    | Success, positive trends           |
+| `bittersweet-*`| Error, negative trends, warnings   |
+| `primary`      | Primary brand color                |
+
+### Custom Typography (MANDATORY)
+
+**ALWAYS use Celes typography classes. NEVER use Tailwind defaults.**
+
+| Class            | Instead of      | Usage          |
+| ---------------- | --------------- | -------------- |
+| `text-title-1`   | `text-2xl`      | Page titles    |
+| `text-title-2`   | `text-xl`       | Section titles |
+| `text-body-1`    | `text-base`     | Body text      |
+| `text-body-2`    | `text-sm`       | Secondary text |
+| `text-caption-1` | `text-xs`       | Captions, meta |
+
+### Class Merging
+
+Always use `clsx` for conditional classes:
+
+```typescript
+import clsx from 'clsx'
+
+<div className={clsx(
+  'rounded-lg border p-4',
+  isActive ? 'border-orangepeel-500 bg-orangepeel-50' : 'border-night-200 bg-ghostwhite',
+  disabled && 'opacity-50 cursor-not-allowed',
+  className,
+)} />
+```
+
+### Styling Anti-patterns
+
+- NEVER: `gray-*`, `neutral-*`, `slate-*` (use `night-*`)
+- NEVER: `text-sm`, `text-base`, `text-lg` (use `text-body-1`, `text-body-2`)
+- NEVER: arbitrary values like `w-[8px]`, `h-[100px]` (use spacing units)
+- NEVER: inline styles when Tailwind classes exist
+
+---
+
+## Internationalization (react-i18next)
+
+### Translation Usage
+
+```typescript
+import { useTranslation } from 'react-i18next'
+
+function MyComponent() {
+  const { t } = useTranslation('workArea')
+
+  return (
+    <>
+      <h1>{t('pageTitle')}</h1>
+      <p>{t('welcome', { name: 'John' })}</p>
+      <button>{t('common:action.save')}</button>
+    </>
+  )
+}
+```
+
+### Translation Structure
+
+```
+public/locales/
+├── en/
+│   ├── common.json
+│   ├── dashboard.json
+│   ├── planning.json
+│   └── workArea.json
+└── es/
+    ├── common.json
+    ├── dashboard.json
+    ├── planning.json
+    └── workArea.json
+```
+
+### Rules
+
+- NEVER hardcode user-facing strings
+- NEVER manually edit `@types/i18next-resources.d.ts` (auto-generated)
+- Run `pnpm gen-i18n` after adding/modifying translation keys
+- Use interpolation: `t('greeting', { name })`, NOT string concatenation
+- Use namespaces organized by feature
+
+---
+
+## Testing (Vitest + RTL + Playwright + MSW)
+
+### Query Priority (Accessibility First)
+
+```typescript
+// 1. Best — accessible by everyone
+getByRole('button', { name: 'Submit' })
+getByRole('textbox', { name: 'Email' })
+
+// 2. Good — accessible by label
+getByLabelText('Email address')
+
+// 3. Acceptable — visible text
+getByText('Welcome back')
+
+// 4. Last resort — test IDs
+getByTestId('submit-button')
+```
+
+### Test Pattern
+
+```typescript
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+
+describe('LoginForm', () => {
+  it('submits form with valid credentials', async () => {
+    const user = userEvent.setup()
+    render(<LoginForm />)
+
+    await user.type(screen.getByRole('textbox', { name: /email/i }), 'test@example.com')
+    await user.type(screen.getByLabelText(/password/i), 'password123')
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/welcome/i)).toBeInTheDocument()
+    })
+  })
+})
+```
+
+### Test Organization
+
+- Co-locate: `Component.test.tsx` next to `Component.tsx`
+- E2E: `src/e2e/tests/{PageName}/{PageName}.spec.ts` + `mockData.ts`
+- Mocks: `src/mocks/handlers.ts`
+- Test behavior, not implementation
+- Always test: loading state, error state, empty state, success state
+- Use MSW for API mocking (network level interception)
+- 100% coverage target for new code
+
+---
+
+## Accessibility
+
+### Standards
+
+- WCAG 2.1 AA minimum compliance
+- ARIA 1.2 only when semantic HTML is insufficient
+
+### Rules
+
+- Use semantic HTML: `<button>`, `<nav>`, `<main>`, `<header>`, `<footer>`
+- Use `useId()` for label associations (React 19)
+- All interactive elements must be keyboard accessible
+- Minimum 4.5:1 contrast ratio for normal text
+- Don't rely on color alone for information
+- Escape key closes modals/menus
+- Skip navigation links for main content
+
+### Anti-patterns
+
+- NEVER: `<div onClick>` (use `<button>`)
+- NEVER: `<a>` without href for buttons
+- NEVER: Remove focus outlines without alternatives
+- NEVER: Missing form labels
+- NEVER: Array indices as list keys (use database IDs)
+
+---
+
+## Performance
+
+### Optimization Rules
+
+- Virtualize lists with >50 items (TanStack Virtual)
+- Lazy load routes and heavy components (`React.lazy` + `Suspense`)
+- React 19 with React Compiler: use `'use memo'` directive instead of manual `useMemo`/`useCallback`
+- Only add manual memoization AFTER profiling confirms need
+- Clean up timers/subscriptions in `useEffect`
+- Batch API requests when possible
+- Configure appropriate `staleTime` for queries
+
+### Checklist
+
+- [ ] Lists >50 items virtualized?
+- [ ] Routes lazy loaded?
+- [ ] Heavy components code-split?
+- [ ] useEffect cleanups in place?
+- [ ] API calls batched when possible?
+- [ ] Loading states for all async operations?
+
+---
+
+## TypeScript Conventions
+
+### Strict Rules
+
+- **No `any`** — use `unknown` + type guards
+- Type inference preferred over explicit annotations
+- `interface` for props and object shapes
+- `type` for unions, intersections, utility types
+- JSDoc on all exports
+- Infer types from Valibot schemas: `v.InferOutput<typeof schema>`
+
+### API Types
+
+```typescript
+// src/types/apiContracts.ts
+interface ApiResponse<T = unknown> {
+  data: T
+  message?: string
+  status: string
+}
+```
+
+---
+
+## Anti-patterns Summary
+
+### Critical (NEVER do these)
+
+- Use `DataGridPremium` directly (ALWAYS use `DataTable.Root`)
+- Use `any` type (use `unknown` + type guards)
+- Use Tailwind default colors (`gray-*`, `neutral-*`)
+- Use Tailwind default typography (`text-sm`, `text-base`)
+- Hardcode user-facing strings (use `useTranslation`)
+- Define form schemas inline in components (use `helpers.ts`)
+- Use axios or raw fetch (use Ky)
+- Edit `routeTree.gen.ts` (auto-generated)
+- Edit `@types/i18next-resources.d.ts` (auto-generated)
+- Use array indices as list keys (use database IDs)
+- Omit `tableId` prop on DataTable.Root
+- Use `window.location` for SPA navigation (use `Link`/`useNavigate`)
+
+### Discouraged (Avoid unless profiling confirms need)
+
+- Premature `useMemo`/`useCallback` (React Compiler handles this)
+- `React.memo` on cheap components
+- Snapshot tests without clear purpose
+- Over-mocking in tests (test real behavior)
+- Prop drilling for global state (use Zustand)
+- Storing server data in Zustand (use TanStack Query)
+- `@ts-ignore` without explanation
+{% endraw %}

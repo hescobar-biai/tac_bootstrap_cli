@@ -1,0 +1,118 @@
+# LRU Cache Template
+
+**File**: `src/{{bounded_context}}/infrastructure/cache/{{cache_name}}_cache.py`
+
+```python
+"""
+IDK: cache, lru, thread-safe, {{cache_name}}
+
+Responsibility:
+- Thread-safe LRU cache for {{cached_type}}
+- Respect max_size with LRU eviction
+- Optional TTL enforcement
+- Deterministic cache keys
+
+Invariants:
+- Thread-safe via RLock
+- Max size enforced via LRU eviction
+- TTL checked on every get()
+- Stats tracked (hits, misses)
+"""
+
+import hashlib
+import json
+import time
+from collections import OrderedDict
+from threading import RLock
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict
+
+
+class CacheEntry(BaseModel):
+    """Single cache entry with metadata."""
+
+    model_config = ConfigDict(frozen=True)
+
+    value: Any
+    created_at: float
+
+    def is_expired(self, ttl_seconds: int) -> bool:
+        return time.time() - self.created_at > ttl_seconds
+
+
+class CacheStats(BaseModel):
+    """Cache statistics."""
+
+    model_config = ConfigDict(frozen=True)
+
+    size: int
+    max_size: int
+    hits: int
+    misses: int
+    hit_rate: float
+
+
+class {{cache_class}}Cache:
+    """Thread-safe LRU cache for {{cached_type}}."""
+
+    def __init__(self, max_size: int = {{max_size}}, ttl_seconds: int | None = {{ttl_seconds}}) -> None:
+        self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
+        self._max_size = max_size
+        self._ttl_seconds = ttl_seconds
+        self._lock = RLock()
+        self._hits = 0
+        self._misses = 0
+
+    def get(self, key_data: {{key_type}}) -> {{cached_type}} | None:
+        """Get cached value by key data."""
+        key = self._hash_key(key_data)
+        with self._lock:
+            if key not in self._cache:
+                self._misses += 1
+                return None
+            entry = self._cache[key]
+            if self._ttl_seconds and entry.is_expired(self._ttl_seconds):
+                del self._cache[key]
+                self._misses += 1
+                return None
+            self._cache.move_to_end(key)
+            self._hits += 1
+            return entry.value
+
+    def put(self, key_data: {{key_type}}, value: {{cached_type}}) -> None:
+        """Store value in cache."""
+        key = self._hash_key(key_data)
+        with self._lock:
+            while len(self._cache) >= self._max_size:
+                self._cache.popitem(last=False)
+            self._cache[key] = CacheEntry(value=value, created_at=time.time())
+
+    def invalidate(self, key_data: {{key_type}}) -> None:
+        """Remove specific entry."""
+        key = self._hash_key(key_data)
+        with self._lock:
+            self._cache.pop(key, None)
+
+    def clear(self) -> None:
+        """Clear all entries."""
+        with self._lock:
+            self._cache.clear()
+
+    @property
+    def stats(self) -> CacheStats:
+        with self._lock:
+            total = self._hits + self._misses
+            return CacheStats(
+                size=len(self._cache),
+                max_size=self._max_size,
+                hits=self._hits,
+                misses=self._misses,
+                hit_rate=self._hits / total if total > 0 else 0.0,
+            )
+
+    def _hash_key(self, key_data: {{key_type}}) -> str:
+        """Compute deterministic hash for key data."""
+        serialized = json.dumps(key_data, sort_keys=True, default=str)
+        return hashlib.sha256(serialized.encode()).hexdigest()
+```

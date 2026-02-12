@@ -1,0 +1,69 @@
+---
+name: create-domain-service
+description: Generate application-layer services (non-CRUD) with dependency injection, async methods, and tests. Use when creating orchestration services, domain services, or application services that don't follow the standard CRUD entity pattern. Triggers on requests like "create service", "add domain service", "new application service".
+---
+
+# Create Domain Service
+
+Generate application-layer services with dependency injection, async methods, and unit tests.
+
+## Quick Start
+
+1. **Gather service info**: Name, bounded context, dependencies, methods
+2. **Generate service**: Create async service class with DI
+3. **Generate tests**: Create unit tests with mocked dependencies
+4. **Register**: Add to dependency injection container
+
+For detailed steps, see [WORKFLOW.md](WORKFLOW.md).
+
+## Architecture Overview
+
+Services live in the application layer of their bounded context:
+
+```
+src/
+└── {bounded_context}/
+    ├── application/
+    │   └── services/
+    │       └── {service_name}.py      # Service implementation
+    └── domain/
+        └── interfaces/
+            └── {service_name}_interface.py  # Optional ABC
+tests/
+└── unit/
+    └── {bounded_context}/
+        └── application/
+            └── test_{service_name}.py
+```
+
+## Placeholders
+
+| Placeholder | Description | Example |
+|-------------|-------------|---------|
+| `{{service_name}}` | snake_case service name | `comparison_service` |
+| `{{service_class}}` | PascalCase service class | `ComparisonService` |
+| `{{bounded_context}}` | snake_case bounded context | `evaluation` |
+| `{{dependencies}}` | Constructor dependencies | `repository: PromptRepository` |
+| `{{methods}}` | Service method signatures | `async def compare(...)` |
+
+## Templates Reference
+
+- [domain_service.py.md](templates/domain_service.py.md) - Service implementation
+- [domain_service_test.py.md](templates/domain_service_test.py.md) - Unit tests
+
+## When to Use
+
+Use `create-domain-service` instead of `create-crud-entity` when:
+- The service orchestrates logic across multiple entities
+- No standard CRUD operations are needed
+- The service wraps external API interactions
+- The service implements complex business rules
+
+## Best Practices
+
+1. **Async**: All service methods should be `async`
+2. **DI**: Accept dependencies via constructor, not global imports
+3. **Single responsibility**: One service per business concern
+4. **Return types**: Return value objects or DTOs, not ORM models
+5. **Error handling**: Raise domain-specific exceptions
+6. **Testing**: Mock all dependencies, test business logic in isolation

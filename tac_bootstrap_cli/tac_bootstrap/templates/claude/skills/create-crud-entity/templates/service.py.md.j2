@@ -1,0 +1,625 @@
+{% raw %}
+# Service Template
+
+Template for creating application services that orchestrate business logic.
+
+## Usage
+
+Replace placeholders:
+- `{{EntityName}}` - PascalCase entity name (e.g., `Product`)
+- `{{entity_name}}` - snake_case entity name (e.g., `product`)
+- `{{capability}}` - snake_case capability name (e.g., `product_catalog`)
+
+## Template (Using BaseService)
+
+```python
+"""
+IDK: use-case, orchestration, {{entity_name}}-service
+
+Module: service
+
+Responsibility:
+- Orchestrate {{EntityName}} business logic
+- Coordinate between domain and infrastructure layers
+- Enforce business rules and validations
+- Manage entity lifecycle operations
+
+Invariants:
+- All mutations enforce duplicate code check
+- Audit fields (created_by, updated_by) always populated
+- Soft delete by default (state=2)
+- Entity version incremented on updates
+
+Related Docs:
+- docs/{{capability}}/application/service.md
+- docs/shared/application/base-service.md
+"""
+
+from shared.application.base_service import BaseService
+from ..domain.{{entity_name}} import {{EntityName}}
+from ..infrastructure.repository import {{EntityName}}Repository
+from ..infrastructure.models import {{EntityName}}Model
+from .schemas import {{EntityName}}Create, {{EntityName}}Update, {{EntityName}}Response
+
+
+class {{EntityName}}Service(BaseService[
+    {{EntityName}}Create,
+    {{EntityName}}Update,
+    {{EntityName}}Response,
+    {{EntityName}}Model,
+    {{EntityName}}
+]):
+    """
+    IDK: use-case, orchestration, {{entity_name}}-service
+
+    Responsibility:
+    - Orchestrate {{EntityName}} business operations
+    - Enforce business rules and validations
+    - Coordinate repository and domain interactions
+    - Provide CRUD and lifecycle operations
+
+    Invariants:
+    - Extends BaseService with generic CRUD
+    - Duplicate codes prevented
+    - Soft delete preserves data (state=2)
+    - Audit trail maintained
+
+    Inherited Methods:
+    - create(data, user_id) -> Creates entity with duplicate check
+    - get_by_id(id) -> Gets entity by ID
+    - get_by_code(code) -> Gets entity by code
+    - get_all(page, page_size, filters, sort_by, sort_order) -> Paginated list
+    - update(id, data, user_id) -> Updates entity
+    - delete(id, user_id) -> Soft deletes (state=2)
+    - hard_delete(id) -> Permanently deletes
+    - activate(id, user_id) -> Sets state=1
+    - deactivate(id, user_id) -> Sets state=0
+    - restore(id, user_id) -> Restores soft-deleted
+
+    Collaborators:
+    - {{EntityName}}Repository: data access
+    - {{EntityName}}: domain model
+    - {{EntityName}}Response: DTOs
+
+    Related Docs:
+    - docs/{{capability}}/application/service.md
+    - docs/shared/application/base-service.md
+    """
+
+    def __init__(self, repository: {{EntityName}}Repository):
+        """
+        IDK: service-initialization, dependency-injection
+
+        Responsibility:
+        - Initialize service with repository
+        - Configure base service with type parameters
+
+        Inputs:
+        - repository ({{EntityName}}Repository): data access layer
+
+        Related Docs:
+        - docs/{{capability}}/application/service-setup.md
+        """
+        super().__init__(
+            repository=repository,
+            response_class={{EntityName}}Response,
+            domain_class={{EntityName}},
+            entity_name="{{EntityName}}",
+            model_class={{EntityName}}Model,
+        )
+
+    # Add custom business methods below
+```
+
+## Example: Product Service
+
+```python
+"""
+IDK: use-case, orchestration, product-service
+
+Module: service
+
+Responsibility:
+- Orchestrate product business logic
+- Manage product lifecycle and inventory
+- Enforce product business rules
+- Coordinate product operations
+
+Invariants:
+- Product codes must be unique
+- Unit prices must be non-negative
+- Stock adjustments tracked with audit trail
+- Availability controls catalog visibility
+
+Related Docs:
+- docs/product_catalog/application/service.md
+"""
+
+from shared.application.base_service import BaseService
+from shared.application.base_schema import PaginatedResponse
+from ..domain.product import Product
+from ..infrastructure.repository import ProductRepository
+from ..infrastructure.models import ProductModel
+from .schemas import ProductCreate, ProductUpdate, ProductResponse
+
+
+class ProductService(BaseService[
+    ProductCreate,
+    ProductUpdate,
+    ProductResponse,
+    ProductModel,
+    Product
+]):
+    """
+    IDK: use-case, orchestration, product-service
+
+    Responsibility:
+    - Orchestrate product business operations
+    - Manage inventory and pricing
+    - Enforce product availability rules
+    - Provide product search and filtering
+
+    Invariants:
+    - Product codes and SKUs unique
+    - Prices non-negative
+    - Stock quantities non-negative
+    - Soft delete preserves product history
+
+    Collaborators:
+    - ProductRepository: product data access
+    - Product: product domain model
+    - ProductResponse: product DTOs
+
+    Related Docs:
+    - docs/product_catalog/application/service.md
+    - docs/product_catalog/domain/product.md
+    """
+
+    def __init__(self, repository: ProductRepository):
+        """
+        IDK: service-initialization, dependency-injection
+
+        Responsibility:
+        - Initialize product service
+        - Configure base service for products
+
+        Inputs:
+        - repository (ProductRepository): product data access
+        """
+        super().__init__(
+            repository=repository,
+            response_class=ProductResponse,
+            domain_class=Product,
+            entity_name="Product",
+            model_class=ProductModel,
+        )
+
+    def get_available(self) -> list[ProductResponse]:
+        """
+        IDK: product-query, availability-filter, catalog-visibility
+
+        Responsibility:
+        - Get all available products
+        - Filter by availability and active state
+        - Support catalog display
+
+        Invariants:
+        - Returns only is_available=True
+        - Returns only state=1 (active)
+
+        Outputs:
+        - list[ProductResponse]: available products
+
+        Related Docs:
+        - docs/product_catalog/application/queries.md
+        """
+        items = self.repository.get_available()
+        return [ProductResponse.model_validate(item) for item in items]
+
+    def get_by_category(
+        self,
+        category: str,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> PaginatedResponse[ProductResponse]:
+        """
+        IDK: product-query, category-filter, pagination
+
+        Responsibility:
+        - Get products by category with pagination
+        - Support category browsing
+        - Return paginated results
+
+        Inputs:
+        - category (str): product category
+        - page (int): page number (default: 1)
+        - page_size (int): items per page (default: 20)
+
+        Outputs:
+        - PaginatedResponse[ProductResponse]: paginated products
+
+        Related Docs:
+        - docs/product_catalog/application/queries.md
+        """
+        return self.get_all(
+            page=page,
+            page_size=page_size,
+            filters={"category": category},
+        )
+
+    def update_stock(
+        self,
+        entity_id: str,
+        quantity: int,
+        user_id: str | None = None,
+    ) -> ProductResponse:
+        """
+        IDK: inventory-management, stock-adjustment, business-operation
+
+        Responsibility:
+        - Update product stock quantity
+        - Track who made the change (audit)
+        - Return updated product
+
+        Invariants:
+        - Quantity can be any integer
+        - Audit trail updated
+        - Version incremented
+
+        Inputs:
+        - entity_id (str): product ID
+        - quantity (int): new stock quantity
+        - user_id (str | None): user making change
+
+        Outputs:
+        - ProductResponse: updated product
+
+        Failure Modes:
+        - EntityNotFoundError: product not found
+
+        Related Docs:
+        - docs/product_catalog/application/inventory.md
+        """
+        return self.update(
+            entity_id,
+            ProductUpdate(stock_quantity=quantity),
+            user_id=user_id,
+        )
+
+    def check_low_stock(self, threshold: int = 10) -> list[ProductResponse]:
+        """
+        IDK: inventory-alert, stock-monitoring, business-query
+
+        Responsibility:
+        - Find products below stock threshold
+        - Support inventory alerts
+        - Enable restocking workflows
+
+        Invariants:
+        - Threshold defaults to 10
+        - Returns only available products
+
+        Inputs:
+        - threshold (int): stock level threshold (default: 10)
+
+        Outputs:
+        - list[ProductResponse]: low-stock products
+
+        Related Docs:
+        - docs/product_catalog/application/inventory.md
+        """
+        items = self.repository.get_low_stock(threshold)
+        return [ProductResponse.model_validate(item) for item in items]
+
+    def mark_unavailable(
+        self,
+        entity_id: str,
+        user_id: str | None = None,
+    ) -> ProductResponse:
+        """
+        IDK: availability-control, catalog-management, business-operation
+
+        Responsibility:
+        - Mark product as unavailable
+        - Hide from catalog without deleting
+        - Track who made change
+
+        Invariants:
+        - Product remains in database
+        - Audit trail updated
+        - is_available set to False
+
+        Inputs:
+        - entity_id (str): product ID
+        - user_id (str | None): user making change
+
+        Outputs:
+        - ProductResponse: updated product
+
+        Failure Modes:
+        - EntityNotFoundError: product not found
+
+        Related Docs:
+        - docs/product_catalog/application/availability.md
+        """
+        return self.update(
+            entity_id,
+            ProductUpdate(is_available=False),
+            user_id=user_id,
+        )
+```
+
+## Custom Business Methods Pattern
+
+Add domain-specific methods to your service:
+
+```python
+def apply_discount(
+    self,
+    entity_id: str,
+    percentage: float,
+    user_id: str | None = None,
+) -> ProductResponse:
+    """
+    IDK: pricing, discount-calculation, business-rule
+
+    Responsibility:
+    - Apply percentage discount to product
+    - Validate discount range
+    - Update price with audit trail
+
+    Invariants:
+    - percentage between 0 and 100
+    - price remains non-negative
+    - audit trail updated
+
+    Inputs:
+    - entity_id (str): product ID
+    - percentage (float): discount (0-100)
+    - user_id (str | None): user applying discount
+
+    Outputs:
+    - ProductResponse: product with discounted price
+
+    Failure Modes:
+    - EntityNotFoundError: product not found
+    - ValueError: invalid percentage
+    """
+    # Get current product
+    product = self.repository.get_by_id(entity_id)
+    if not product:
+        raise EntityNotFoundError(f"Product '{entity_id}' not found")
+
+    # Validate percentage
+    if percentage < 0 or percentage > 100:
+        raise ValueError("Discount must be between 0 and 100")
+
+    # Calculate new price
+    new_price = product.unit_price * (1 - percentage / 100)
+
+    # Update via service to maintain audit trail
+    return self.update(
+        entity_id,
+        ProductUpdate(unit_price=new_price),
+        user_id=user_id,
+    )
+```
+
+## Cross-Capability References
+
+When validating references to other entities:
+
+```python
+from shared.api.exceptions import ReferenceError
+
+class OrderService:
+    """
+    IDK: use-case, orchestration, order-service, cross-capability
+
+    Responsibility:
+    - Orchestrate order operations
+    - Validate cross-capability references
+    - Coordinate with product and customer services
+    """
+
+    def __init__(
+        self,
+        order_repository: OrderRepository,
+        product_repository: ProductRepository,  # Cross-capability
+        customer_repository: CustomerRepository,  # Cross-capability
+    ):
+        """
+        IDK: service-initialization, cross-capability-wiring
+
+        Responsibility:
+        - Wire multiple repositories for cross-capability validation
+        """
+        self.order_repo = order_repository
+        self.product_repo = product_repository
+        self.customer_repo = customer_repository
+
+    def create(
+        self,
+        data: OrderCreate,
+        user_id: str | None = None
+    ) -> OrderResponse:
+        """
+        IDK: order-creation, reference-validation, cross-capability
+
+        Responsibility:
+        - Create order with cross-capability validation
+        - Verify product and customer exist
+        - Enforce business rules
+
+        Failure Modes:
+        - ReferenceError: referenced entity not found or invalid
+        """
+        # Validate product exists and is available
+        product = self.product_repo.get_by_id(data.product_id)
+        if not product:
+            raise ReferenceError(f"Product '{data.product_id}' not found")
+        if product.state != 1:
+            raise ReferenceError(f"Product '{data.product_id}' is not active")
+        if not product.is_available:
+            raise ReferenceError(f"Product '{data.product_id}' is not available")
+
+        # Validate customer exists
+        if not self.customer_repo.exists(data.customer_id):
+            raise ReferenceError(f"Customer '{data.customer_id}' not found")
+
+        # Proceed with creation...
+```
+
+## Delete Behavior Summary
+
+| Method | Behavior | State | Use Case |
+|--------|----------|-------|----------|
+| `delete()` | Soft delete | `state=2` | Default, preserves data for audit/recovery |
+| `hard_delete()` | Permanent delete | Removed from DB | GDPR compliance, cleanup |
+| `deactivate()` | Temporary disable | `state=0` | Temporarily hide without deleting |
+| `activate()` | Re-enable | `state=1` | Restore deactivated entity |
+| `restore()` | Undo soft delete | `state=1` | Recover soft-deleted entity |
+
+## Best Practices
+
+1. **Use BaseService** - Don't reimplement CRUD operations
+2. **Add custom methods** - Domain-specific operations as service methods
+3. **Validate in service** - Business rule validation before persistence
+4. **Audit trail** - Always pass user_id for tracking
+5. **Use exceptions** - Raise domain exceptions (EntityNotFoundError, etc.)
+6. **Cross-capability** - Validate references through repositories
+7. **Return DTOs** - Convert models to response schemas
+
+## Anti-Patterns to Avoid
+
+**Don't bypass repository:**
+```python
+# BAD: Direct database access
+def get_product(self, id: str):
+    return db.query(ProductModel).filter(id=id).first()
+
+# GOOD: Use repository
+def get_product(self, id: str):
+    return self.repository.get_by_id(id)
+```
+
+**Don't skip validation:**
+```python
+# BAD: No business rule validation
+def update_price(self, id: str, price: float):
+    return self.update(id, ProductUpdate(unit_price=price))
+
+# GOOD: Validate business rules
+def update_price(self, id: str, price: float, user_id: str):
+    if price < 0:
+        raise ValueError("Price cannot be negative")
+    return self.update(id, ProductUpdate(unit_price=price), user_id)
+```
+
+**Don't put infrastructure in service:**
+```python
+# BAD: Infrastructure concerns in service
+def send_email_after_create(self, data: ProductCreate):
+    product = self.create(data)
+    smtp.send_email(...)  # Infrastructure!
+    return product
+
+# GOOD: Emit domain event, let infrastructure handle
+def create(self, data: ProductCreate):
+    product = super().create(data)
+    event_bus.publish(ProductCreated(product.id))
+    return product
+```
+
+## Testing Services
+
+```python
+# tests/unit/{{capability}}/application/test_service.py
+import pytest
+from unittest.mock import Mock
+
+from shared.api.exceptions import EntityNotFoundError, DuplicateEntityError
+from {{capability}}.application.service import {{EntityName}}Service
+from {{capability}}.application.schemas import {{EntityName}}Create, {{EntityName}}Update
+
+
+@pytest.fixture
+def mock_repository():
+    """Create mock repository."""
+    return Mock()
+
+
+@pytest.fixture
+def service(mock_repository):
+    """Create service with mock repository."""
+    return {{EntityName}}Service(repository=mock_repository)
+
+
+def test_create_success(service, mock_repository):
+    """Test successful entity creation."""
+    # Arrange
+    mock_repository.get_by_code.return_value = None  # No duplicate
+    mock_repository.create.return_value = Mock(
+        id="test-id",
+        code="TEST-001",
+        name="Test Entity",
+    )
+
+    data = {{EntityName}}Create(
+        code="TEST-001",
+        name="Test Entity",
+    )
+
+    # Act
+    result = service.create(data, user_id="user123")
+
+    # Assert
+    assert result.code == "TEST-001"
+    mock_repository.create.assert_called_once()
+
+
+def test_create_duplicate_code(service, mock_repository):
+    """Test creation fails with duplicate code."""
+    # Arrange
+    mock_repository.get_by_code.return_value = Mock(code="TEST-001")
+
+    data = {{EntityName}}Create(
+        code="TEST-001",
+        name="Test Entity",
+    )
+
+    # Act & Assert
+    with pytest.raises(DuplicateEntityError):
+        service.create(data)
+
+
+def test_get_by_id_not_found(service, mock_repository):
+    """Test get_by_id raises when entity not found."""
+    # Arrange
+    mock_repository.get_by_id.return_value = None
+
+    # Act & Assert
+    with pytest.raises(EntityNotFoundError):
+        service.get_by_id("nonexistent-id")
+
+
+def test_update_success(service, mock_repository):
+    """Test successful update."""
+    # Arrange
+    mock_repository.get_by_id.return_value = Mock(id="test-id")
+    mock_repository.update.return_value = Mock(
+        id="test-id",
+        name="Updated Name",
+    )
+
+    data = {{EntityName}}Update(name="Updated Name")
+
+    # Act
+    result = service.update("test-id", data, user_id="user123")
+
+    # Assert
+    assert result.name == "Updated Name"
+    mock_repository.update.assert_called_once()
+```
+
+{% endraw %}

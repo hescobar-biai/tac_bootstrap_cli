@@ -1,0 +1,70 @@
+# Provider Test Template
+
+**File**: `tests/unit/provider/infrastructure/test_{{provider_name}}.py`
+
+```python
+"""{{provider_class}} unit tests."""
+
+import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from src.provider.infrastructure.adapters.{{provider_name}} import {{provider_class}}
+from src.provider.infrastructure.config.{{provider_name}}_config import {{config_class}}
+
+
+class Test{{provider_class}}:
+    """Test suite for {{provider_class}}."""
+
+    @pytest.fixture
+    def config(self):
+        """Create test config."""
+        return {{config_class}}({{test_config_params}})
+
+    @pytest.fixture
+    def provider(self, config):
+        """Create provider with test config."""
+        return {{provider_class}}(config)
+
+    @pytest.mark.asyncio
+    async def test_execute_success(self, provider):
+        """Test successful execution returns LLMResponse."""
+        # Arrange
+        {{mock_sdk_success}}
+
+        # Act
+        result = await provider.execute({{test_request}})
+
+        # Assert
+        assert result.provider == "{{provider_name}}"
+        assert result.latency_ms > 0
+        assert result.tokens_input >= 0
+        assert result.tokens_output >= 0
+
+    @pytest.mark.asyncio
+    async def test_execute_error_maps_to_domain_exception(self, provider):
+        """Test SDK errors are mapped to domain exceptions."""
+        # Arrange
+        {{mock_sdk_error}}
+
+        # Act & Assert
+        with pytest.raises({{expected_domain_exception}}):
+            await provider.execute({{test_request}})
+
+    def test_get_available_models(self, provider):
+        """Test available models list."""
+        models = provider.get_available_models()
+        assert isinstance(models, list)
+        assert len(models) > 0
+
+    @pytest.mark.asyncio
+    async def test_health_check_success(self, provider):
+        """Test health check returns True when healthy."""
+        {{mock_health_success}}
+        assert await provider.health_check() is True
+
+    @pytest.mark.asyncio
+    async def test_health_check_failure(self, provider):
+        """Test health check returns False when unhealthy."""
+        {{mock_health_failure}}
+        assert await provider.health_check() is False
+```

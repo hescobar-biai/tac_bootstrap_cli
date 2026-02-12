@@ -1,0 +1,53 @@
+# Middleware / Decorator Creation Workflow
+
+## Pre-flight Checklist
+
+```
+Middleware Information:
+- [ ] Name: e.g., MetricsMiddleware, TracingMiddleware
+- [ ] Type: FastAPI Middleware or Provider Decorator
+- [ ] Concern: logging, metrics, tracing, rate limiting, etc.
+- [ ] Pre-hook logic: what to do before the main call
+- [ ] Post-hook logic: what to do after the main call
+- [ ] Configuration: what settings control the behavior
+```
+
+## Step 1: Create Configuration (Optional)
+
+**File**: `src/shared/infrastructure/config/{middleware_name}_config.py`
+
+Use template: [templates/middleware_config.py.md](templates/middleware_config.py.md)
+
+## Step 2: Create Middleware or Decorator
+
+**For FastAPI Middleware**:
+**File**: `src/shared/presentation/middleware/{middleware_name}.py`
+Use template: [templates/fastapi_middleware.py.md](templates/fastapi_middleware.py.md)
+
+**For Provider Decorator**:
+**File**: `src/shared/infrastructure/decorators/{decorator_name}.py`
+Use template: [templates/provider_decorator.py.md](templates/provider_decorator.py.md)
+
+## Step 3: Create Unit Tests
+
+**File**: `tests/unit/shared/presentation/test_{middleware_name}.py` or `tests/unit/shared/infrastructure/test_{decorator_name}.py`
+
+Use template: [templates/middleware_test.py.md](templates/middleware_test.py.md)
+
+## Step 4: Register
+
+**Middleware**: Add to `src/main.py`:
+```python
+app.add_middleware({{MiddlewareClass}})
+```
+
+**Decorator**: Wrap provider in factory:
+```python
+provider = {{DecoratorClass}}(base_provider, config)
+```
+
+## Step 5: Validation
+
+```bash
+uv run pytest tests/unit/shared/ -v -k "{{middleware_name}}"
+```

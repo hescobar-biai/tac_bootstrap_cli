@@ -1,0 +1,196 @@
+---
+name: fastapi-ddd
+description: "Generates and maintains FastAPI services with Domain-Driven Design patterns. Use when creating new endpoints, domains, vertical slices, Alembic migrations, or refactoring existing services following DDD architecture."
+---
+
+# FastAPI DDD Skill
+
+Generate and maintain FastAPI services using Domain-Driven Design (DDD) patterns. This skill provides scaffolding for vertical slices, async SQLAlchemy repositories, service layers with domain events, Alembic migrations, and dependency injection.
+
+## Instructions
+
+### Prerequisites
+
+- Python 3.10+
+- FastAPI with async support
+- SQLAlchemy 2.0+ (async engine)
+- Alembic for database migrations
+- Pydantic v2 for schemas and validation
+
+### Workflow: Scaffold a New Vertical Slice
+
+When the user asks to create a new domain, feature, or endpoint, follow these steps in order:
+
+1. **Determine the domain name and bounded context**:
+   - Ask the user for the entity name (e.g., `Order`, `Product`, `User`)
+   - Identify the aggregate root and any value objects
+   - Confirm the bounded context (e.g., `catalog`, `billing`, `identity`)
+
+2. **Create the directory structure**:
+   ```
+   src/<bounded_context>/
+   ├── domain/
+   │   ├── __init__.py
+   │   ├── entities.py          # Domain entities and aggregate roots
+   │   └── value_objects.py     # Value objects (immutable)
+   ├── application/
+   │   ├── __init__.py
+   │   ├── services.py          # Application services (use cases)
+   │   └── events.py            # Domain events
+   ├── infrastructure/
+   │   ├── __init__.py
+   │   ├── repositories.py      # SQLAlchemy repository implementations
+   │   └── models.py            # SQLAlchemy ORM models
+   ├── interfaces/
+   │   ├── __init__.py
+   │   ├── routes.py            # FastAPI router with endpoints
+   │   ├── schemas.py           # Pydantic request/response schemas
+   │   └── dependencies.py      # FastAPI dependency injection
+   └── __init__.py
+   ```
+
+3. **Scaffold domain entities** using [templates/entity.py](templates/entity.py):
+   - Define the aggregate root with identity and business rules
+   - Create value objects for domain concepts
+   - Add domain validation methods
+
+4. **Scaffold repository layer** using [templates/repository.py](templates/repository.py):
+   - Implement the abstract repository interface
+   - Create the async SQLAlchemy concrete repository
+   - Include standard CRUD plus domain-specific queries
+
+5. **Scaffold application service** using [templates/service.py](templates/service.py):
+   - Wrap repository calls in use-case methods
+   - Emit domain events where appropriate
+   - Handle cross-cutting concerns (logging, error translation)
+
+6. **Scaffold API routes** using [templates/routes.py](templates/routes.py):
+   - Create a FastAPI `APIRouter` with CRUD endpoints
+   - Use dependency injection for services and database sessions
+   - Apply proper HTTP status codes and error responses
+
+7. **Scaffold Pydantic schemas** using [templates/schemas.py](templates/schemas.py):
+   - Define `Create`, `Update`, `Response`, and `List` schemas
+   - Use Pydantic v2 `model_config` for ORM mode
+   - Separate read models from write models (CQRS)
+
+8. **Generate Alembic migration** (if database changes):
+   ```bash
+   alembic revision --autogenerate -m "add <entity_name> table"
+   alembic upgrade head
+   ```
+
+9. **Wire dependencies**:
+   - Register the router in the main FastAPI application
+   - Configure dependency injection for the session and repository
+   - Add any middleware or event handlers
+
+10. **Verify the implementation**:
+    - Run type checks: `mypy src/<bounded_context>/`
+    - Run tests: `pytest tests/<bounded_context>/`
+    - Start the server and test with `/docs` Swagger UI
+
+### Supporting Reference
+
+For detailed DDD patterns, naming conventions, and advanced topics (CQRS, domain events, aggregate roots), read [reference.md](reference.md).
+
+### Alembic Migration Generation
+
+When adding or modifying database tables:
+
+1. Ensure the SQLAlchemy model is imported in `alembic/env.py` target metadata
+2. Run autogenerate:
+   ```bash
+   alembic revision --autogenerate -m "descriptive migration message"
+   ```
+3. Review the generated migration file for correctness
+4. Apply the migration:
+   ```bash
+   alembic upgrade head
+   ```
+
+### Async SQLAlchemy Patterns
+
+- Always use `async_sessionmaker` and `AsyncSession` from `sqlalchemy.ext.asyncio`
+- Use `select()` statements instead of legacy `session.query()`
+- Wrap database calls in `async with session.begin():` for transaction management
+- Use `selectinload()` or `joinedload()` for eager loading relationships
+
+### Dependency Injection
+
+FastAPI's `Depends()` is the primary DI mechanism:
+
+```python
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with async_session_factory() as session:
+        yield session
+
+async def get_repository(db: AsyncSession = Depends(get_db)) -> OrderRepository:
+    return OrderRepository(db)
+
+async def get_service(repo: OrderRepository = Depends(get_repository)) -> OrderService:
+    return OrderService(repo)
+```
+
+## Examples
+
+### Example 1: Create a New "Product" Domain
+
+User request:
+```
+Create a Product domain with name, price, and category fields. Include full CRUD endpoints.
+```
+
+You would:
+1. Create directory structure under `src/catalog/`
+2. Scaffold `domain/entities.py` with `Product` aggregate root containing `name: str`, `price: Decimal`, `category: str`
+3. Scaffold `infrastructure/repositories.py` with `ProductRepository` using async SQLAlchemy
+4. Scaffold `application/services.py` with `ProductService` wrapping CRUD operations
+5. Scaffold `interfaces/routes.py` with `GET /products`, `GET /products/{id}`, `POST /products`, `PUT /products/{id}`, `DELETE /products/{id}`
+6. Scaffold `interfaces/schemas.py` with `ProductCreate`, `ProductUpdate`, `ProductResponse`, `ProductList`
+7. Generate Alembic migration: `alembic revision --autogenerate -m "add products table"`
+8. Register router in `main.py`: `app.include_router(product_router, prefix="/api/v1")`
+9. Run `mypy` and `pytest` to verify
+
+### Example 2: Add a New Endpoint to an Existing Domain
+
+User request:
+```
+Add a search endpoint to the Product domain that filters by category and price range.
+```
+
+You would:
+1. Read the existing `src/catalog/` domain files to understand the current structure
+2. Add `search` method to `ProductRepository`:
+   ```python
+   async def search(self, category: str | None, min_price: Decimal | None, max_price: Decimal | None) -> list[Product]:
+   ```
+3. Add `search_products` use case to `ProductService`
+4. Add `GET /products/search` route with query parameters
+5. Add `ProductSearchParams` schema for query validation
+6. Run tests to verify the new endpoint
+
+### Example 3: Generate an Alembic Migration for Schema Changes
+
+User request:
+```
+Add a "sku" field to the Product entity and a unique constraint on it.
+```
+
+You would:
+1. Update `domain/entities.py` to add `sku: str` to the `Product` entity
+2. Update `infrastructure/models.py` to add the `sku` column with unique constraint:
+   ```python
+   sku: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+   ```
+3. Update `interfaces/schemas.py` to include `sku` in create/update/response schemas
+4. Generate migration:
+   ```bash
+   alembic revision --autogenerate -m "add sku column to products with unique constraint"
+   ```
+5. Review the migration file for correct column definition and constraint
+6. Apply: `alembic upgrade head`
+7. Update tests to include `sku` in test data

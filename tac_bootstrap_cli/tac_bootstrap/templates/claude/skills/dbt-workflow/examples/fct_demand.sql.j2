@@ -1,0 +1,144 @@
+{% raw %}
+-- Fact model: fct_demand
+-- Grain: one row per order line item (product-order combination)
+-- Purpose: Captures demand signals by joining orders, line items, and products.
+--          Used for demand forecasting, inventory planning, and sales analysis.
+-- Materialization: incremental (merge on demand_id)
+
+{{
+    config(
+        materialized='incremental',
+        unique_key='demand_id',
+        incremental_strategy='merge',
+        on_schema_change='append_new_columns'
+    )
+}}
+
+with orders as (
+
+    select * from {{ ref('stg_shopify__orders') }}
+    where is_cancelled = false
+
+),
+
+order_items as (
+
+    select * from {{ ref('stg_shopify__order_items') }}
+
+),
+
+products as (
+
+    select * from {{ ref('stg_shopify__products') }}
+
+),
+
+-- Join order items with orders and products
+joined as (
+
+    select
+        order_items.order_item_id,
+        order_items.order_id,
+        order_items.product_id,
+        order_items.variant_id,
+        orders.customer_id,
+        orders.store_id,
+
+        -- Order dimensions
+        orders.order_status,
+        orders.order_channel,
+        orders.ship_to_country,
+        orders.currency_code,
+
+        -- Product dimensions
+        products.product_name,
+        products.category,
+        products.subcategory,
+        products.brand,
+        products.sku,
+
+        -- Demand metrics
+        order_items.quantity,
+        order_items.unit_price,
+        order_items.discount_amount as item_discount_amount,
+
+        -- Timestamps
+        orders.created_at as ordered_at,
+        orders.processed_at
+
+    from order_items
+
+    inner join orders
+        on order_items.order_id = orders.order_id
+
+    left join products
+        on order_items.product_id = products.product_id
+
+    {% if is_incremental() %}
+        where orders.created_at > (select max(ordered_at) from {{ this }})
+    {% endif %}
+
+),
+
+-- Compute demand metrics
+final as (
+
+    select
+        -- Surrogate key
+        {{ dbt_utils.generate_surrogate_key(['order_id', 'product_id', 'variant_id']) }} as demand_id,
+
+        -- Keys
+        order_item_id,
+        order_id,
+        product_id,
+        variant_id,
+        customer_id,
+        store_id,
+
+        -- Order dimensions
+        order_status,
+        order_channel,
+        ship_to_country,
+        currency_code,
+
+        -- Product dimensions
+        product_name,
+        category,
+        subcategory,
+        brand,
+        sku,
+
+        -- Demand quantity
+        quantity as units_demanded,
+
+        -- Revenue metrics
+        unit_price,
+        item_discount_amount,
+        (quantity * unit_price) as gross_revenue,
+        (quantity * unit_price) - item_discount_amount as net_revenue,
+
+        -- Date dimensions (cross-database compatible)
+        {% if target.type == 'bigquery' %}
+            date(ordered_at) as demand_date,
+            extract(year from ordered_at) as demand_year,
+            extract(month from ordered_at) as demand_month,
+            extract(isoweek from ordered_at) as demand_week,
+            extract(dayofweek from ordered_at) as demand_day_of_week
+        {% elif target.type == 'postgres' %}
+            ordered_at::date as demand_date,
+            extract(year from ordered_at)::int as demand_year,
+            extract(month from ordered_at)::int as demand_month,
+            extract(week from ordered_at)::int as demand_week,
+            extract(dow from ordered_at)::int as demand_day_of_week
+        {% endif %},
+
+        -- Timestamps
+        ordered_at,
+        processed_at
+
+    from joined
+
+)
+
+select * from final
+{% endraw %}

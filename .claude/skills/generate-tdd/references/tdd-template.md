@@ -1,0 +1,431 @@
+# TDD Template
+
+> Source: `projects/plan/documentation-framework/templates/TDD.template.md`
+
+Use this template as the starting point. Replace all `[FILL IN]` markers with project-specific content. Every section must have implementation-ready detail.
+
+---
+
+# Technical Design Document — [PROJECT NAME]
+
+> **Version**: 1.0
+> **Last Updated**: [YYYY-MM-DD]
+> **Audience**: Development Team
+> **Purpose**: HOW to build every component — the complete technical blueprint
+
+---
+
+## 1. Tech Stack & Versions
+
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| **Backend** | Python | 3.12 |
+| | FastAPI | [FILL IN: e.g., 0.115.0] |
+| | Uvicorn | [FILL IN] |
+| | Pydantic / pydantic-settings | [FILL IN] |
+| | [FILL IN: Domain-specific client library] | [FILL IN] |
+| | httpx | [FILL IN] |
+| **Frontend** | Next.js | [FILL IN: e.g., 16.x] |
+| | React | [FILL IN] |
+| | TypeScript | 5 |
+| | Tailwind CSS | 4 |
+| | Recharts | [FILL IN] |
+| | Lucide React | [FILL IN] |
+| | date-fns | [FILL IN] |
+| | clsx | [FILL IN] |
+| | tailwind-merge | [FILL IN] |
+| **Database** | [FILL IN: e.g., PostgreSQL 16] | [FILL IN] |
+| **Infra** | Docker Compose | 3.8 |
+
+> Add or remove rows as needed. Pin exact versions for reproducibility.
+
+---
+
+## 2. Project Structure
+
+```
+[project-name]/
+├── .env / .env.example
+├── docker-compose.yml
+│
+├── backend/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── run.py
+│   └── app/
+│       ├── __init__.py
+│       ├── main.py
+│       ├── core/
+│       │   ├── __init__.py
+│       │   ├── config.py
+│       │   └── [FILL IN: client/connection modules]
+│       ├── models/
+│       │   ├── __init__.py
+│       │   └── schemas.py
+│       ├── services/
+│       │   ├── __init__.py
+│       │   └── [FILL IN: domain service modules]
+│       └── api/
+│           └── v1/
+│               ├── __init__.py
+│               └── endpoints/
+│                   ├── __init__.py
+│                   ├── health.py
+│                   └── [FILL IN: domain endpoint modules]
+│
+├── frontend/
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── next.config.ts
+│   ├── app/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── globals.css
+│   │   └── [FILL IN: page directories]
+│   ├── components/
+│   │   ├── [FILL IN: shared components]
+│   │   ├── ui/
+│   │   │   └── [FILL IN: base UI components]
+│   │   ├── charts/
+│   │   │   └── [FILL IN: visualization components]
+│   │   └── tables/
+│   │       └── [FILL IN: table components]
+│   ├── hooks/
+│   │   └── [FILL IN: custom hooks]
+│   └── lib/
+│       ├── api.ts
+│       └── utils.ts
+│
+└── projects/plan/
+    ├── PRD.md
+    ├── TDD.md
+    ├── STANDARDS.md
+    ├── ROADMAP.md
+    └── adr/
+```
+
+> Expand this tree to show every file. Each file listed here MUST appear in a Roadmap phase.
+
+---
+
+## 3. Environment Configuration
+
+### `.env` Variables
+
+```env
+# App
+APP_NAME=[FILL IN]
+APP_VERSION=1.0.0
+DEBUG=True
+
+# [FILL IN: Primary data source]
+[FILL IN: Connection variables for your data source]
+
+# Database
+[FILL IN: Database connection variables if applicable]
+
+# CORS
+CORS_ORIGINS=["http://localhost:3000","http://localhost:8000"]
+
+# [FILL IN: Domain-specific constants]
+[FILL IN: Pricing, thresholds, limits, etc.]
+```
+
+### Backend Config Class (`core/config.py`)
+
+[FILL IN: Describe your Pydantic BaseSettings class. Include:
+- Key fields and their types
+- Computed properties
+- Environment-specific logic
+- How sensitive values are handled]
+
+### Frontend Config
+
+- `next.config.ts`: `output: "standalone"` for Docker
+- API base: `process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"`
+- `tsconfig.json`: path alias `@/*` maps to `"./*"`
+
+---
+
+## 4. Docker Compose Stack
+
+[FILL IN: Number] services on a shared bridge network `[FILL IN]-network`:
+
+| Service | Image | Port | Depends On | Notes |
+|---------|-------|------|------------|-------|
+| [FILL IN] | [FILL IN] | [FILL IN] | — | [FILL IN: Healthcheck details] |
+| `backend` | ./backend/Dockerfile | 8000 | [FILL IN] | [FILL IN: Volume mounts, env] |
+| `frontend` | ./frontend/Dockerfile | 3000 | backend | `NEXT_PUBLIC_API_URL=http://localhost:8000` |
+
+[FILL IN: Named volumes, network configuration, restart policies]
+
+---
+
+## 5. Backend — Detailed Component Specifications
+
+### 5.1 Data Source Client (`core/[FILL IN]_client.py`)
+
+[FILL IN: Describe your primary data source client. Include:
+- Class name and singleton pattern
+- Constructor (authentication, connection setup)
+- Core methods with signatures
+- Error handling approach
+- Module-level factory function]
+
+### 5.2 Domain Utilities (`services/[FILL IN].py`)
+
+[FILL IN: Describe utility/calculation functions. Include:
+- Function signatures with types
+- Calculation formulas
+- Formatting functions
+- Constants used]
+
+### 5.3 Query/Data Access Layer (`services/[FILL IN].py`)
+
+[FILL IN: Describe your query templates or ORM models. Include:
+- Template/query listing with parameters
+- Common patterns (CTEs, JOINs, filters)
+- Builder functions with signatures
+- Filter injection strategy]
+
+### 5.4 Domain Service (`services/[FILL IN]_service.py`)
+
+[FILL IN: Describe your main service class. Include:
+- Class name and singleton pattern
+- Method listing with: template used, parameters, return type
+- Common method pattern (defaults, query building, execution, formatting)
+- Dependency injection setup]
+
+### 5.5 Response Models (`models/schemas.py`)
+
+[FILL IN: List all Pydantic models with their key fields]
+
+| Model | Key Fields |
+|-------|-----------|
+| [FILL IN] | [FILL IN] |
+| [FILL IN] | [FILL IN] |
+| `ErrorResponse` | error, detail? |
+| `HealthResponse` | status, [FILL IN]_connected, version |
+
+### 5.6 API Endpoints (`api/v1/endpoints/`)
+
+**Router prefix:** `/api/v1/[FILL IN]` (tag: "[FILL IN]")
+
+[FILL IN: Common query params, DI pattern]
+
+| # | Method | Path | Response Model | Extra Params | Validation |
+|---|--------|------|---------------|--------------|------------|
+| 1 | GET | [FILL IN] | [FILL IN] | [FILL IN] | [FILL IN] |
+| 2 | GET | [FILL IN] | [FILL IN] | [FILL IN] | [FILL IN] |
+
+> Add rows for every endpoint. Include health and root endpoints.
+
+**Health Router:**
+
+| Method | Path | Response |
+|--------|------|----------|
+| GET | `/api/v1/health` | `HealthResponse` |
+| GET | `/` | `{service, version, docs_url}` |
+
+[FILL IN: Helper/validation functions used across endpoints]
+
+### 5.7 FastAPI App Factory (`main.py`)
+
+```python
+def create_application() -> FastAPI:
+    app = FastAPI(
+        title="[FILL IN]",
+        version=settings.APP_VERSION,
+        docs_url="/docs", redoc_url="/redoc",
+        openapi_url="/api/v1/openapi.json"
+    )
+    app.add_middleware(CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
+    app.include_router(health_router)
+    app.include_router([FILL IN]_router, prefix="/api/v1")
+
+    @app.on_event("startup")
+    async def startup(): log "Application starting"
+
+    @app.on_event("shutdown")
+    async def shutdown(): log "Application shutting down"
+
+    return app
+
+app = create_application()
+```
+
+---
+
+## 6. Frontend — Detailed Component Specifications
+
+### 6.1 Shared Utilities (`lib/utils.ts`)
+
+```typescript
+cn(...inputs: ClassValue[]) -> string          // clsx + twMerge
+formatCurrency(value: number) -> string         // "$1,234.56"
+formatNumber(value: number) -> string           // "1,234"
+[FILL IN: Additional utility functions specific to your domain]
+```
+
+### 6.2 API Client (`lib/api.ts`)
+
+[FILL IN: List all TypeScript interfaces (mirrors of backend models)]
+
+[FILL IN: List all async API functions with their endpoints]
+
+Error handling: `handleResponse<T>(response)` throws on non-OK status.
+
+### 6.3 Custom Hooks
+
+[FILL IN: Describe each custom hook with signature, state, and return value]
+
+### 6.4 Base UI Components (`components/ui/`)
+
+[FILL IN: Describe each base component. For each include:
+- Props interface
+- Variants/sizes
+- Key Tailwind classes
+- Dark mode support]
+
+### 6.5 Filter Components (`components/`)
+
+[FILL IN: Describe each filter/input component. For each include:
+- State managed
+- Callback signature
+- UI behavior (dropdown, click-outside, etc.)
+- Data fetching (if dynamic)]
+
+### 6.6 Display Components
+
+[FILL IN: Describe layout and display components (navbar, summary cards, icons, etc.)]
+
+### 6.7 Chart Components (`components/charts/`)
+
+[FILL IN: Describe each chart. For each include:
+- Recharts component used (LineChart, BarChart, PieChart)
+- Data shape
+- Axes configuration
+- Features (tooltip, legend, responsive container)]
+
+### 6.8 Domain-Specific Components
+
+[FILL IN: Describe components unique to your domain (e.g., label tables, drill-down views)]
+
+### 6.9 Table Components (`components/tables/`)
+
+[FILL IN: Describe data table components with columns, sort defaults, row interactions]
+
+---
+
+## 7. Frontend Pages — Data Flow & State
+
+### 7.1 [FILL IN: Page Name] (`/[FILL IN]`)
+
+**State:**
+
+```
+[FILL IN: List all useState variables with types]
+```
+
+**Data Fetching:**
+
+```
+[FILL IN: useEffect dependencies and API calls]
+```
+
+**Computed (useMemo):**
+
+[FILL IN: Derived data transformations]
+
+**Sections:**
+
+1. [FILL IN: Page layout sections in order]
+
+### 7.2 [FILL IN: Page Name] (`/[FILL IN]`)
+
+[FILL IN: Same structure as 7.1]
+
+> Add more page sections as needed. Every page in the project structure must have a specification here.
+
+---
+
+## 8. Styling & Design System
+
+- **Framework**: Tailwind CSS v4 (utility-first, no component library)
+- **Dark Mode**: CSS variables in `:root` / `.dark`, `prefers-color-scheme: dark`
+- **Colors**: Primary=[FILL IN], Success=green, Warning=amber, Error=red, Neutral=slate scale
+- **Fonts**: [FILL IN: Font family] — Google Fonts
+- **Layout**: max-w-7xl container centered, responsive grid
+- **Dropdowns**: z-50, absolute positioning, click-outside-close pattern
+- **Loading**: centered spinner animation
+- **Error**: red border/bg alert box
+
+---
+
+## 9. Key Architectural Patterns
+
+[FILL IN: List the core architectural patterns used in this project. For each, provide a one-line explanation of WHY it's used.]
+
+1. **[FILL IN: Pattern Name]**: [FILL IN: What it does and why]
+2. **FastAPI depends services**: Both data client and domain service use depends pattern
+3. **React State-Driven Fetching**: `useEffect` dependencies on filter state trigger cascading API calls
+4. **[FILL IN: Auth strategy]**: [FILL IN: Description]
+5. **No External State Management**: Pure React hooks (useState/useEffect/useMemo)
+6. **[FILL IN: Caching strategy]**: [FILL IN: Description]
+
+---
+
+## 10. Verification Plan
+
+1. **Backend health**: `curl http://localhost:8000/api/v1/health` returns `{"status": "healthy", ...}`
+2. **API docs**: Open `http://localhost:8000/docs` shows Swagger UI with all endpoints
+3. **Frontend rendering**: Open `http://localhost:3000` loads expected landing page
+4. [FILL IN: Domain-specific verification steps]
+5. [FILL IN: Filter interaction verification]
+6. [FILL IN: Chart rendering verification]
+7. [FILL IN: Table sorting verification]
+8. [FILL IN: Key feature verification]
+9. **Docker stack**: `docker compose up --build` starts all services, health checks pass
+10. **Dark mode**: Toggle system preference causes UI to adapt colors
+
+---
+
+## Example: Celes Cost TDD (Key Sections)
+
+Below are key sections from the completed celes-cost TDD to illustrate the expected quality:
+
+### Tech Stack (example excerpt)
+
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| **Backend** | Python | 3.12 |
+| | FastAPI | 0.115.0 |
+| | google-cloud-bigquery | 3.26.0 |
+| **Frontend** | Next.js | 16.1.6 |
+| | React | 19.2.3 |
+| | Recharts | 3.7.0 |
+| **Database** | PostgreSQL | 16 (alpine) |
+
+### Response Models (example excerpt)
+
+| Model | Key Fields |
+|-------|-----------|
+| `CostSummaryResponse` | total_cost, total_jobs, total_tib, cache_hit_rate, period |
+| `CostTrendResponse` | date, cost, jobs, tib |
+| `TopQueryResponse` | query_preview, user_email, cost, duration_seconds, bytes_billed |
+| `HealthResponse` | status, bigquery_connected, version |
+
+### API Endpoints (example excerpt)
+
+| # | Method | Path | Response Model |
+|---|--------|------|---------------|
+| 1 | GET | `/costs/summary` | `CostSummaryResponse` |
+| 2 | GET | `/costs/trends` | `List[CostTrendResponse]` |
+| 3 | GET | `/costs/top-queries` | `List[TopQueryResponse]` |
+| 10 | GET | `/costs/clients` | `List[ClientResponse]` |

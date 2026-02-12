@@ -1,0 +1,192 @@
+---
+name: ml-forecast
+description: "Builds and optimizes demand forecasting models using LightGBM, Prophet, XGBoost, PyTorch, scikit-learn, and statsmodels. Use when creating ML pipelines, training models, evaluating forecasts, implementing feature engineering, or building ensemble models for supply chain prediction."
+context: fork
+agent: ml-engineer
+---
+
+# ML Demand Forecasting
+
+Build production-quality demand forecasting pipelines for supply chain prediction using multiple ML frameworks.
+
+## Instructions
+
+### 1. Understand the Forecasting Problem
+
+Before writing any code, clarify these requirements:
+
+- **Granularity**: SKU-level, category-level, or store-SKU combination
+- **Horizon**: How far ahead to forecast (7, 14, 28, 90 days)
+- **Frequency**: Daily, weekly, or monthly
+- **Data availability**: Historical sales, promotions, holidays, weather, inventory
+- **Business metrics**: Which supply chain KPIs matter (fill rate, OTIF, bias)
+
+### 2. Select the Right Framework
+
+Choose based on data characteristics and requirements:
+
+| Framework | Best For | When to Use |
+|-----------|----------|-------------|
+| **LightGBM/XGBoost** | Tabular data with many features | Large datasets, promotional effects, many external regressors |
+| **Prophet** | Seasonal time series | Strong seasonality, holiday effects, quick prototyping |
+| **PyTorch (LSTM/TFT)** | Complex temporal patterns | Multi-horizon, multivariate, when gradient-based models shine |
+| **statsmodels (ARIMA/ETS)** | Classical statistical models | Baseline models, low-volume SKUs, interpretability needs |
+| **scikit-learn** | Standard ML pipelines | Feature preprocessing, model selection, ensemble methods |
+
+For detailed framework-specific patterns and API references, see [reference.md](reference.md).
+
+### 3. Feature Engineering Workflow
+
+Build features in this order:
+
+1. **Lag features**: Create lagged values of the target variable
+   - Short-term: 1, 2, 3, 7 days
+   - Medium-term: 14, 21, 28 days
+   - Long-term: 56, 90 days (for seasonal products)
+
+2. **Rolling statistics**: Compute over windows aligned to business cycles
+   - Rolling mean, std, min, max over 7, 14, 28-day windows
+   - Rolling quantiles (25th, 75th) for demand variability
+   - Expanding mean for long-term trend
+
+3. **Calendar features**: Encode temporal patterns
+   - `day_of_week`, `day_of_month`, `week_of_year`, `month`, `quarter`
+   - `is_weekend`, `is_month_start`, `is_month_end`
+   - `is_holiday` (country-specific using the `holidays` library)
+
+4. **Promotional and event flags**: Binary or categorical indicators
+   - `is_promotion`, `promotion_type`, `discount_depth`
+   - `days_since_last_promo`, `days_until_next_promo`
+
+5. **Price features**: Price elasticity signals
+   - Current price, price ratio to historical average
+   - Competitor price differential (if available)
+
+Use the base pipeline template at [templates/train_pipeline.py](templates/train_pipeline.py) as a starting point.
+
+### 4. Train-Validate-Test Split Strategy
+
+Always use **time-based splits** for forecasting -- never random splits:
+
+```
+|--- Training ---|--- Validation ---|--- Test ---|
+   oldest data      recent data       newest data
+```
+
+- **Training**: All data up to cutoff minus validation window
+- **Validation**: Last N periods before test (same length as forecast horizon)
+- **Test**: Most recent N periods (held out, never seen during development)
+
+For walk-forward validation, use expanding or sliding windows.
+
+### 5. Model Training and Tuning
+
+1. **Start with a baseline**: Naive forecast (last value, seasonal naive, moving average)
+2. **Train single models**: LightGBM or Prophet as primary
+3. **Hyperparameter tuning**: Use Optuna for Bayesian optimization
+4. **Ensemble if needed**: Stack or blend top models for improved accuracy
+
+### 6. Evaluation with Supply Chain Metrics
+
+Go beyond standard ML metrics. Use supply chain-specific measures:
+
+- **MAPE**: Mean Absolute Percentage Error (watch for zero-demand SKUs)
+- **WMAPE**: Weighted MAPE (volume-weighted, preferred for SKU portfolios)
+- **Bias**: Systematic over/under forecasting (critical for inventory planning)
+- **Fill Rate**: Percentage of demand met from available stock
+- **OTIF**: On-Time In-Full delivery percentage
+
+Use the evaluation script at [templates/evaluate.py](templates/evaluate.py) for standardized metric computation and visualization.
+
+### 7. Output Artifacts
+
+Every forecasting pipeline should produce:
+
+- Trained model artifacts (`.pkl`, `.joblib`, or framework-specific format)
+- Feature importance rankings
+- Validation metrics report (per-SKU and aggregate)
+- Forecast vs actuals visualization
+- Residual analysis plots
+
+## Examples
+
+### Example 1: LightGBM Demand Forecast Pipeline
+
+User request:
+```
+Build a LightGBM model to forecast daily demand for 500 SKUs with 14-day horizon
+```
+
+You would:
+1. Read the data schema and understand available columns
+2. Use [templates/train_pipeline.py](templates/train_pipeline.py) as the base structure
+3. Implement feature engineering with lag, rolling, and calendar features
+4. Configure LightGBM with time-based cross-validation
+5. Tune hyperparameters with Optuna (n_estimators, learning_rate, num_leaves, etc.)
+6. Evaluate using WMAPE and bias from [templates/evaluate.py](templates/evaluate.py)
+7. Generate per-SKU forecast accuracy breakdown
+
+See the complete working example at [examples/demand_forecast_lightgbm.py](examples/demand_forecast_lightgbm.py).
+
+### Example 2: Prophet Seasonal Forecast
+
+User request:
+```
+Use Prophet to forecast weekly sales with holiday effects and trend changepoints
+```
+
+You would:
+1. Prepare data in Prophet's required format (`ds`, `y` columns)
+2. Configure seasonal components (weekly, yearly, custom Fourier order)
+3. Add holiday effects using country-specific holiday calendars
+4. Set changepoint detection for trend shifts (e.g., COVID impact)
+5. Add external regressors for promotions or price
+6. Cross-validate with Prophet's built-in `cross_validation()` and `performance_metrics()`
+7. Visualize components: trend, seasonality, holidays, residuals
+
+See the complete working example at [examples/demand_forecast_prophet.py](examples/demand_forecast_prophet.py).
+
+### Example 3: Ensemble Model (Stacking)
+
+User request:
+```
+Build an ensemble that combines LightGBM, XGBoost, and Prophet forecasts
+```
+
+You would:
+1. Train individual models independently on the same training data
+2. Generate out-of-fold predictions from each model on validation data
+3. Build a meta-learner (Ridge regression or LightGBM) using stacked predictions as features
+4. Optionally add weighted blending as an alternative: `final = w1*lgb + w2*xgb + w3*prophet`
+5. Optimize weights using scipy.optimize.minimize on validation WMAPE
+6. Evaluate the ensemble against individual models on the held-out test set
+7. Report per-model contribution and ensemble improvement
+
+```python
+from sklearn.linear_model import Ridge
+import numpy as np
+
+# Stacking: use validation predictions as meta-features
+meta_features = np.column_stack([
+    lgb_val_preds,
+    xgb_val_preds,
+    prophet_val_preds,
+])
+
+meta_model = Ridge(alpha=1.0)
+meta_model.fit(meta_features, y_val)
+
+# Final prediction on test
+meta_test = np.column_stack([lgb_test, xgb_test, prophet_test])
+ensemble_preds = meta_model.predict(meta_test)
+```
+
+## Supporting Files
+
+| File | Purpose |
+|------|---------|
+| [reference.md](reference.md) | Multi-framework API patterns, feature engineering recipes, metrics formulas |
+| [templates/train_pipeline.py](templates/train_pipeline.py) | Base sklearn-compatible training pipeline with time-based splits |
+| [templates/evaluate.py](templates/evaluate.py) | Supply chain metrics computation and visualization |
+| [examples/demand_forecast_lightgbm.py](examples/demand_forecast_lightgbm.py) | Complete LightGBM forecasting example |
+| [examples/demand_forecast_prophet.py](examples/demand_forecast_prophet.py) | Complete Prophet forecasting example |

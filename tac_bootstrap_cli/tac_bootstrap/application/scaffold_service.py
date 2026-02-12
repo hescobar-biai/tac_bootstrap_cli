@@ -165,6 +165,58 @@ class ScaffoldService:
             (".claude/skills/meta-skill", "Meta-skill for creating new skills"),
             (".claude/skills/meta-skill/docs", "Meta-skill documentation resources"),
             (".claude/skills/start-orchestrator", "Start orchestrator skill"),
+            # Documentation & planning skills (from celes-support)
+            (".claude/skills/generate-prd", "PRD generation skill"),
+            (".claude/skills/generate-prd/references", "PRD templates"),
+            (".claude/skills/generate-adrs", "ADR generation skill"),
+            (".claude/skills/generate-adrs/references", "ADR common decisions"),
+            (".claude/skills/generate-tdd", "TDD generation skill"),
+            (".claude/skills/generate-tdd/references", "TDD templates"),
+            (".claude/skills/generate-roadmap", "Roadmap generation skill"),
+            (".claude/skills/generate-roadmap/references", "Roadmap templates"),
+            (".claude/skills/generate-tasks", "Task generation skill"),
+            (".claude/skills/generate-tasks/references", "Task generation templates"),
+            (".claude/skills/generating-fractal-docs", "Fractal documentation skill"),
+            (".claude/skills/generating-fractal-docs/scripts", "Fractal docs scripts"),
+            (".claude/skills/product-issues", "Product issue classification skill"),
+            (".claude/skills/product-issues/reference", "Issue type templates"),
+            # DDD pattern skills (from celes-support)
+            (".claude/skills/create-crud-entity", "CRUD entity generation skill"),
+            (".claude/skills/create-crud-entity/shared", "Shared base classes"),
+            (".claude/skills/create-crud-entity/templates", "CRUD entity templates"),
+            (".claude/skills/create-domain-service", "Domain service skill"),
+            (".claude/skills/create-domain-service/templates", "Domain service templates"),
+            (".claude/skills/create-value-object", "Value object skill"),
+            (".claude/skills/create-value-object/templates", "Value object templates"),
+            (".claude/skills/create-domain-event", "Domain event skill"),
+            (".claude/skills/create-domain-event/templates", "Domain event templates"),
+            (".claude/skills/create-provider-adapter", "Provider adapter skill"),
+            (".claude/skills/create-provider-adapter/templates", "Provider adapter templates"),
+            (".claude/skills/create-strategy-pattern", "Strategy pattern skill"),
+            (".claude/skills/create-strategy-pattern/templates", "Strategy pattern templates"),
+            (".claude/skills/create-caching-layer", "Caching layer skill"),
+            (".claude/skills/create-caching-layer/templates", "Caching templates"),
+            (".claude/skills/create-middleware-decorator", "Middleware decorator skill"),
+            (".claude/skills/create-middleware-decorator/templates", "Middleware templates"),
+            (".claude/skills/create-comparison-analyzer", "Comparison analyzer skill"),
+            (".claude/skills/create-comparison-analyzer/templates", "Analyzer templates"),
+            # Frontend scaffolding skills (from celes-support)
+            (".claude/skills/scaffold-ui-component", "UI component scaffolding skill"),
+            (".claude/skills/scaffold-chart-component", "Chart component scaffolding skill"),
+            (".claude/skills/scaffold-chart-component/references", "Chart patterns"),
+            (".claude/skills/scaffold-frontend-page", "Frontend page scaffolding skill"),
+            (".claude/skills/scaffold-frontend-page/references", "Page patterns"),
+            # Infrastructure scaffolding skills (from celes-support)
+            (".claude/skills/scaffold-docker-stack", "Docker stack scaffolding skill"),
+            (".claude/skills/scaffold-docker-stack/assets", "Docker template assets"),
+            (".claude/skills/scaffold-backend-service", "Backend service scaffolding skill"),
+            (".claude/skills/scaffold-backend-service/references", "Backend service patterns"),
+            (".claude/skills/scaffold-project", "Project orchestrator skill"),
+            (".claude/skills/scaffold-project/references", "Project phase map"),
+            # Meta skills (from celes-support)
+            (".claude/skills/skill-creator", "Skill creation guide"),
+            (".claude/skills/skill-creator/references", "Skill creator references"),
+            (".claude/skills/skill-creator/scripts", "Skill creator scripts"),
             (".claude/hooks", "Execution hooks"),
             (".claude/hooks/utils", "Hook utilities"),
             (".claude/hooks/utils/llm", "LLM provider utilities"),
@@ -604,6 +656,541 @@ class ScaffoldService:
             template="claude/skills/start-orchestrator/SKILL.md.j2",
             reason="Skill for launching orchestrator services",
         )
+
+        # ============================================================================
+        # CELES STACK SKILLS (v1.1.0)
+        # ============================================================================
+        # Specialized skills for the Celes supply chain AI stack:
+        # bigquery-ops, dbt-workflow, ml-forecast, fastapi-ddd,
+        # react-frontend, gcp-infra, aws-ops, data-pipeline
+        # ============================================================================
+
+        # --- bigquery-ops: BigQuery datasets, tables, and queries ---
+        _bq_files = [
+            ("SKILL.md", "BigQuery operations skill"),
+            ("reference.md", "BigQuery best practices reference"),
+            ("examples/supply_chain_queries.sql", "Supply chain BigQuery query examples"),
+        ]
+        for fname, reason in _bq_files:
+            plan.add_file(
+                f".claude/skills/bigquery-ops/{fname}",
+                action=action,
+                template=f"claude/skills/bigquery-ops/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- dbt-workflow: dbt models, tests, dual-target BQ+PG ---
+        _dbt_files = [
+            ("SKILL.md", "dbt workflow skill"),
+            ("reference.md", "dbt conventions and patterns reference"),
+            ("templates/stg_template.sql", "dbt staging model template"),
+            ("templates/fct_template.sql", "dbt fact model template"),
+            ("templates/schema_template.yml", "dbt schema YAML template"),
+            ("examples/stg_orders.sql", "dbt staging model example"),
+            ("examples/fct_demand.sql", "dbt fact model example"),
+            ("examples/dim_products.sql", "dbt dimension model example"),
+            ("templates/agg_template.sql", "dbt aggregation model template"),
+            ("examples/stg_products.sql", "dbt staging products example"),
+            ("examples/dm_supply_chain.sql", "dbt supply chain data mart example"),
+        ]
+        for fname, reason in _dbt_files:
+            plan.add_file(
+                f".claude/skills/dbt-workflow/{fname}",
+                action=action,
+                template=f"claude/skills/dbt-workflow/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- ml-forecast: ML/forecasting multi-framework ---
+        _ml_files = [
+            ("SKILL.md", "ML forecasting skill"),
+            ("reference.md", "ML forecasting patterns reference"),
+            ("templates/train_pipeline.py", "ML training pipeline template"),
+            ("templates/evaluate.py", "ML evaluation pipeline template"),
+            ("examples/demand_forecast_lightgbm.py", "LightGBM forecasting example"),
+            ("examples/demand_forecast_prophet.py", "Prophet forecasting example"),
+        ]
+        for fname, reason in _ml_files:
+            plan.add_file(
+                f".claude/skills/ml-forecast/{fname}",
+                action=action,
+                template=f"claude/skills/ml-forecast/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- fastapi-ddd: FastAPI + Domain-Driven Design ---
+        _fastapi_files = [
+            ("SKILL.md", "FastAPI DDD skill"),
+            ("reference.md", "FastAPI DDD patterns reference"),
+            ("templates/entity.py", "DDD entity template"),
+            ("templates/repository.py", "DDD repository template"),
+            ("templates/service.py", "DDD service template"),
+            ("templates/routes.py", "FastAPI routes template"),
+            ("templates/schemas.py", "Pydantic schemas template"),
+        ]
+        for fname, reason in _fastapi_files:
+            plan.add_file(
+                f".claude/skills/fastapi-ddd/{fname}",
+                action=action,
+                template=f"claude/skills/fastapi-ddd/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- react-frontend: React 19 + Celes stack ---
+        _react_files = [
+            ("SKILL.md", "React frontend skill (Celes stack)"),
+            ("reference.md", "React frontend comprehensive reference"),
+            ("templates/Component.tsx", "React component template (Celes theme)"),
+            ("templates/useDataHook.ts", "Ky + TanStack Query data hook template"),
+            ("templates/DashboardPage.tsx", "Dashboard page with DataTable.Root template"),
+        ]
+        for fname, reason in _react_files:
+            plan.add_file(
+                f".claude/skills/react-frontend/{fname}",
+                action=action,
+                template=f"claude/skills/react-frontend/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- gcp-infra: GCP infrastructure ---
+        _gcp_files = [
+            ("SKILL.md", "GCP infrastructure skill"),
+            ("reference.md", "GCP infrastructure patterns reference"),
+            ("templates/main.tf", "Terraform main configuration template"),
+            ("templates/bigquery.tf", "Terraform BigQuery resources template"),
+            ("templates/storage.tf", "Terraform Cloud Storage template"),
+            ("templates/cloudrun.tf", "Terraform Cloud Run template"),
+            ("templates/iam_member.tf", "Terraform IAM member module template"),
+            ("templates/iam_service_account.tf", "Terraform service account module template"),
+            ("templates/iam_role.tf", "Terraform custom IAM role module template"),
+        ]
+        for fname, reason in _gcp_files:
+            plan.add_file(
+                f".claude/skills/gcp-infra/{fname}",
+                action=action,
+                template=f"claude/skills/gcp-infra/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- aws-ops: AWS infrastructure ---
+        _aws_files = [
+            ("SKILL.md", "AWS operations skill"),
+            ("reference.md", "AWS operations patterns reference"),
+        ]
+        for fname, reason in _aws_files:
+            plan.add_file(
+                f".claude/skills/aws-ops/{fname}",
+                action=action,
+                template=f"claude/skills/aws-ops/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- data-pipeline: ETL/ELT workflows ---
+        _pipeline_files = [
+            ("SKILL.md", "Data pipeline skill"),
+            ("reference.md", "Data pipeline patterns reference"),
+            ("templates/dag_template.py", "Airflow DAG template"),
+            ("templates/loader.py", "BigQuery data loader template"),
+        ]
+        for fname, reason in _pipeline_files:
+            plan.add_file(
+                f".claude/skills/data-pipeline/{fname}",
+                action=action,
+                template=f"claude/skills/data-pipeline/{fname}.j2",
+                reason=reason,
+            )
+
+        # ============================================================================
+        # Skills imported from celes-support: documentation, DDD patterns,
+        # frontend scaffolding, infrastructure, and meta skills
+        # ============================================================================
+
+        # --- generate-prd: Product Requirements Documents ---
+        _prd_files = [
+            ("SKILL.md", "PRD generation skill"),
+            ("references/prd-template.md", "PRD template"),
+        ]
+        for fname, reason in _prd_files:
+            plan.add_file(
+                f".claude/skills/generate-prd/{fname}",
+                action=action,
+                template=f"claude/skills/generate-prd/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- generate-adrs: Architecture Decision Records ---
+        _adrs_files = [
+            ("SKILL.md", "ADR generation skill"),
+            ("references/common-decisions.md", "ADR common decisions catalog"),
+        ]
+        for fname, reason in _adrs_files:
+            plan.add_file(
+                f".claude/skills/generate-adrs/{fname}",
+                action=action,
+                template=f"claude/skills/generate-adrs/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- generate-tdd: Technical Design Documents ---
+        _tdd_files = [
+            ("SKILL.md", "TDD generation skill"),
+            ("references/tdd-template.md", "TDD template"),
+        ]
+        for fname, reason in _tdd_files:
+            plan.add_file(
+                f".claude/skills/generate-tdd/{fname}",
+                action=action,
+                template=f"claude/skills/generate-tdd/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- generate-roadmap: Implementation roadmaps ---
+        _roadmap_files = [
+            ("SKILL.md", "Roadmap generation skill"),
+            ("references/roadmap-template.md", "Roadmap template"),
+        ]
+        for fname, reason in _roadmap_files:
+            plan.add_file(
+                f".claude/skills/generate-roadmap/{fname}",
+                action=action,
+                template=f"claude/skills/generate-roadmap/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- generate-tasks: Task generation from roadmap ---
+        _tasks_files = [
+            ("SKILL.md", "Task generation skill"),
+            ("references/skill-mapping.md", "Skill-to-task mapping reference"),
+            ("references/inline-skill-context-template.md", "Inline skill context template"),
+            ("references/execution-template.md", "Execution plan template"),
+        ]
+        for fname, reason in _tasks_files:
+            plan.add_file(
+                f".claude/skills/generate-tasks/{fname}",
+                action=action,
+                template=f"claude/skills/generate-tasks/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- generating-fractal-docs: Fractal documentation generation ---
+        _fractal_docs = [
+            ("SKILL.md", "Fractal documentation skill"),
+            ("FLAGS.md", "Fractal docs feature flags"),
+            ("RUNBOOK.md", "Fractal docs runbook"),
+        ]
+        for fname, reason in _fractal_docs:
+            plan.add_file(
+                f".claude/skills/generating-fractal-docs/{fname}",
+                action=action,
+                template=f"claude/skills/generating-fractal-docs/{fname}.j2",
+                reason=reason,
+            )
+        _fractal_scripts = [
+            ("scripts/run_generators.sh", "Documentation generator runner script"),
+            ("scripts/gen_docstring_jsdocs.py", "Docstring/JSDoc generator"),
+            ("scripts/gen_docs_fractal.py", "Fractal documentation generator"),
+        ]
+        for fname, reason in _fractal_scripts:
+            plan.add_file(
+                f".claude/skills/generating-fractal-docs/{fname}",
+                action=action,
+                template=f"claude/skills/generating-fractal-docs/{fname}.j2",
+                reason=reason,
+                executable=True,
+            )
+
+        # --- product-issues: Issue classification and templates ---
+        _issues_files = [
+            ("SKILL.md", "Product issue classification skill"),
+            ("reference/feature.md", "Feature issue template"),
+            ("reference/bug.md", "Bug issue template"),
+            ("reference/chore.md", "Chore issue template"),
+            ("reference/refactor.md", "Refactor issue template"),
+            ("reference/perf.md", "Performance issue template"),
+        ]
+        for fname, reason in _issues_files:
+            plan.add_file(
+                f".claude/skills/product-issues/{fname}",
+                action=action,
+                template=f"claude/skills/product-issues/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- create-crud-entity: CRUD entity generation (DDD vertical slice) ---
+        _crud_files = [
+            ("SKILL.md", "CRUD entity generation skill"),
+            ("WORKFLOW.md", "CRUD entity workflow guide"),
+            ("DOCUMENTATION_STANDARDS.md", "Documentation standards for entities"),
+        ]
+        _crud_shared = [
+            "alembic.py.md", "base_entity.py.md", "base_repository.py.md",
+            "base_repository_async.py.md", "base_schema.py.md", "base_service.py.md",
+            "config.py.md", "database.py.md", "dependencies.py.md",
+            "exceptions.py.md", "health.py.md", "responses.py.md",
+        ]
+        _crud_templates = [
+            "domain_entity.py.md", "domain_events.py.md", "orm_model.py.md",
+            "repository.py.md", "repository_authorized.py.md", "routes.py.md",
+            "routes_authorized.py.md", "schemas.py.md", "service.py.md",
+            "service_authorized.py.md", "tests.py.md", "value_objects.py.md",
+        ]
+        for fname, reason in _crud_files:
+            plan.add_file(
+                f".claude/skills/create-crud-entity/{fname}",
+                action=action,
+                template=f"claude/skills/create-crud-entity/{fname}.j2",
+                reason=reason,
+            )
+        for fname in _crud_shared:
+            plan.add_file(
+                f".claude/skills/create-crud-entity/shared/{fname}",
+                action=action,
+                template=f"claude/skills/create-crud-entity/shared/{fname}.j2",
+                reason=f"Shared base: {fname}",
+            )
+        for fname in _crud_templates:
+            plan.add_file(
+                f".claude/skills/create-crud-entity/templates/{fname}",
+                action=action,
+                template=f"claude/skills/create-crud-entity/templates/{fname}.j2",
+                reason=f"CRUD template: {fname}",
+            )
+
+        # --- create-domain-service: Non-CRUD domain services ---
+        _dsvc_files = [
+            ("SKILL.md", "Domain service creation skill"),
+            ("WORKFLOW.md", "Domain service workflow"),
+            ("templates/domain_service.py.md", "Domain service template"),
+            ("templates/domain_service_test.py.md", "Domain service test template"),
+        ]
+        for fname, reason in _dsvc_files:
+            plan.add_file(
+                f".claude/skills/create-domain-service/{fname}",
+                action=action,
+                template=f"claude/skills/create-domain-service/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- create-value-object: Frozen Pydantic value objects ---
+        _vo_files = [
+            ("SKILL.md", "Value object creation skill"),
+            ("WORKFLOW.md", "Value object workflow"),
+            ("templates/value_object.py.md", "Value object template"),
+            ("templates/value_object_test.py.md", "Value object test template"),
+        ]
+        for fname, reason in _vo_files:
+            plan.add_file(
+                f".claude/skills/create-value-object/{fname}",
+                action=action,
+                template=f"claude/skills/create-value-object/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- create-domain-event: Domain events and handlers ---
+        _event_files = [
+            ("SKILL.md", "Domain event creation skill"),
+            ("WORKFLOW.md", "Domain event workflow"),
+            ("templates/domain_event.py.md", "Domain event template"),
+            ("templates/event_handler.py.md", "Event handler template"),
+            ("templates/event_test.py.md", "Event test template"),
+        ]
+        for fname, reason in _event_files:
+            plan.add_file(
+                f".claude/skills/create-domain-event/{fname}",
+                action=action,
+                template=f"claude/skills/create-domain-event/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- create-provider-adapter: LLM provider adapters ---
+        _adapter_files = [
+            ("SKILL.md", "Provider adapter creation skill"),
+            ("WORKFLOW.md", "Provider adapter workflow"),
+            ("templates/provider_adapter.py.md", "Provider adapter template"),
+            ("templates/provider_config.py.md", "Provider config template"),
+            ("templates/provider_error_mapping.py.md", "Provider error mapping template"),
+            ("templates/provider_test.py.md", "Provider adapter test template"),
+        ]
+        for fname, reason in _adapter_files:
+            plan.add_file(
+                f".claude/skills/create-provider-adapter/{fname}",
+                action=action,
+                template=f"claude/skills/create-provider-adapter/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- create-strategy-pattern: Strategy pattern scaffolding ---
+        _strategy_files = [
+            ("SKILL.md", "Strategy pattern creation skill"),
+            ("WORKFLOW.md", "Strategy pattern workflow"),
+            ("templates/strategy_interface.py.md", "Strategy interface template"),
+            ("templates/strategy_concrete.py.md", "Strategy concrete template"),
+            ("templates/strategy_factory.py.md", "Strategy factory template"),
+            ("templates/strategy_test.py.md", "Strategy test template"),
+        ]
+        for fname, reason in _strategy_files:
+            plan.add_file(
+                f".claude/skills/create-strategy-pattern/{fname}",
+                action=action,
+                template=f"claude/skills/create-strategy-pattern/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- create-caching-layer: LRU + Redis caching ---
+        _cache_files = [
+            ("SKILL.md", "Caching layer creation skill"),
+            ("WORKFLOW.md", "Caching layer workflow"),
+            ("templates/lru_cache.py.md", "LRU cache template"),
+            ("templates/async_cache_wrapper.py.md", "Async cache wrapper template"),
+            ("templates/redis_cache.py.md", "Redis cache template"),
+            ("templates/cache_warmer.py.md", "Cache warmer template"),
+            ("templates/cache_test.py.md", "Cache test template"),
+        ]
+        for fname, reason in _cache_files:
+            plan.add_file(
+                f".claude/skills/create-caching-layer/{fname}",
+                action=action,
+                template=f"claude/skills/create-caching-layer/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- create-middleware-decorator: Middleware and decorators ---
+        _middleware_files = [
+            ("SKILL.md", "Middleware decorator creation skill"),
+            ("WORKFLOW.md", "Middleware decorator workflow"),
+            ("templates/fastapi_middleware.py.md", "FastAPI middleware template"),
+            ("templates/provider_decorator.py.md", "Provider decorator template"),
+            ("templates/middleware_config.py.md", "Middleware config template"),
+            ("templates/middleware_test.py.md", "Middleware test template"),
+        ]
+        for fname, reason in _middleware_files:
+            plan.add_file(
+                f".claude/skills/create-middleware-decorator/{fname}",
+                action=action,
+                template=f"claude/skills/create-middleware-decorator/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- create-comparison-analyzer: Evaluation analyzer service ---
+        _analyzer_files = [
+            ("SKILL.md", "Comparison analyzer creation skill"),
+            ("WORKFLOW.md", "Comparison analyzer workflow"),
+            ("templates/analysis_metrics_vo.py.md", "Analysis metrics value object template"),
+            ("templates/analyzer_service.py.md", "Analyzer service template"),
+            ("templates/analysis_endpoint.py.md", "Analysis endpoint template"),
+            ("templates/analyzer_test.py.md", "Analyzer test template"),
+        ]
+        for fname, reason in _analyzer_files:
+            plan.add_file(
+                f".claude/skills/create-comparison-analyzer/{fname}",
+                action=action,
+                template=f"claude/skills/create-comparison-analyzer/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- scaffold-ui-component: React UI component scaffolding ---
+        plan.add_file(
+            ".claude/skills/scaffold-ui-component/SKILL.md",
+            action=action,
+            template="claude/skills/scaffold-ui-component/SKILL.md.j2",
+            reason="UI component scaffolding skill",
+        )
+
+        # --- scaffold-chart-component: Chart component scaffolding ---
+        _chart_files = [
+            ("SKILL.md", "Chart component scaffolding skill"),
+            ("references/chart-patterns.md", "Chart patterns reference"),
+        ]
+        for fname, reason in _chart_files:
+            plan.add_file(
+                f".claude/skills/scaffold-chart-component/{fname}",
+                action=action,
+                template=f"claude/skills/scaffold-chart-component/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- scaffold-frontend-page: Frontend page scaffolding ---
+        _page_files = [
+            ("SKILL.md", "Frontend page scaffolding skill"),
+            ("references/page-pattern.md", "Page patterns reference"),
+        ]
+        for fname, reason in _page_files:
+            plan.add_file(
+                f".claude/skills/scaffold-frontend-page/{fname}",
+                action=action,
+                template=f"claude/skills/scaffold-frontend-page/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- scaffold-docker-stack: Docker Compose stack scaffolding ---
+        _docker_files = [
+            ("SKILL.md", "Docker stack scaffolding skill"),
+            ("assets/docker-compose.template.yml", "Docker Compose template"),
+            ("assets/backend.Dockerfile.template", "Backend Dockerfile template"),
+            ("assets/frontend.Dockerfile.template", "Frontend Dockerfile template"),
+            ("assets/env.example.template", "Environment variables example template"),
+        ]
+        for fname, reason in _docker_files:
+            plan.add_file(
+                f".claude/skills/scaffold-docker-stack/{fname}",
+                action=action,
+                template=f"claude/skills/scaffold-docker-stack/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- scaffold-backend-service: Backend service scaffolding ---
+        _backend_files = [
+            ("SKILL.md", "Backend service scaffolding skill"),
+            ("references/patterns.md", "Backend service patterns reference"),
+        ]
+        for fname, reason in _backend_files:
+            plan.add_file(
+                f".claude/skills/scaffold-backend-service/{fname}",
+                action=action,
+                template=f"claude/skills/scaffold-backend-service/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- scaffold-project: Master project orchestrator ---
+        _project_files = [
+            ("SKILL.md", "Project orchestrator skill"),
+            ("references/phase-map.md", "Project scaffolding phase map"),
+        ]
+        for fname, reason in _project_files:
+            plan.add_file(
+                f".claude/skills/scaffold-project/{fname}",
+                action=action,
+                template=f"claude/skills/scaffold-project/{fname}.j2",
+                reason=reason,
+            )
+
+        # --- skill-creator: Skill creation guide and tools ---
+        _creator_docs = [
+            ("SKILL.md", "Skill creator guide"),
+            ("LICENSE.txt", "Skill creator license"),
+            ("references/workflows.md", "Skill creation workflows"),
+            ("references/output-patterns.md", "Skill output patterns"),
+        ]
+        for fname, reason in _creator_docs:
+            plan.add_file(
+                f".claude/skills/skill-creator/{fname}",
+                action=action,
+                template=f"claude/skills/skill-creator/{fname}.j2",
+                reason=reason,
+            )
+        _creator_scripts = [
+            ("scripts/init_skill.py", "Skill initialization script"),
+            ("scripts/package_skill.py", "Skill packaging script"),
+            ("scripts/quick_validate.py", "Skill quick validation script"),
+        ]
+        for fname, reason in _creator_scripts:
+            plan.add_file(
+                f".claude/skills/skill-creator/{fname}",
+                action=action,
+                template=f"claude/skills/skill-creator/{fname}.j2",
+                reason=reason,
+                executable=True,
+            )
 
         # ============================================================================
         # TAC-13: AGENT EXPERT COMMANDS

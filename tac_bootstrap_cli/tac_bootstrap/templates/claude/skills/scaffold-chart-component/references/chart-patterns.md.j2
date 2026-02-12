@@ -1,0 +1,188 @@
+{% raw %}
+# Chart Patterns Reference
+
+## Table of Contents
+- [LineChart: Trend with Dual Y-Axis](#linechart-trend-with-dual-y-axis)
+- [BarChart: Category Breakdown](#barchart-category-breakdown)
+
+---
+
+## LineChart: Trend with Dual Y-Axis
+
+Source: `<charts-dir>/trend-chart.tsx`
+
+This pattern shows a LineChart with two metrics on separate Y-axes (primary value on left, percentage on right).
+
+```tsx
+"use client";
+
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+} from "recharts";
+import { formatValue, formatDate } from "<utils-path>";
+
+// 1. Data interface — matches API response shape
+interface TrendData {
+  period: string;        // ISO date string from API
+  primary_value: number;
+  secondary_value: number;
+  item_count: number;
+  hit_rate: number;      // 0-100 percentage
+}
+
+// 2. Props — data array + optional height override
+interface TrendChartProps {
+  data: TrendData[];
+  height?: number;
+}
+
+export function TrendChart({ data, height = 300 }: TrendChartProps) {
+  // 3. Transform data — pre-format dates for display
+  const chartData = data.map((item) => ({
+    ...item,
+    formattedDate: formatDate(item.period),
+  }));
+
+  return (
+    // 4. ResponsiveContainer — always wrap, width 100%, explicit height
+    <ResponsiveContainer width="100%" height={height}>
+      <LineChart data={chartData}>
+        {/* 5. Grid — uses className for dark mode */}
+        <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
+
+        {/* 6. X-Axis — formattedDate display, currentColor for theme */}
+        <XAxis
+          dataKey="formattedDate"
+          className="text-sm text-slate-600 dark:text-slate-400"
+          tick={{ fill: "currentColor" }}
+        />
+
+        {/* 7. Left Y-Axis — value formatting */}
+        <YAxis
+          className="text-sm text-slate-600 dark:text-slate-400"
+          tick={{ fill: "currentColor" }}
+          tickFormatter={(value) => formatValue(value)}
+        />
+
+        {/* 8. Tooltip — dark mode colors, per-metric formatting */}
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "rgba(15, 23, 42, 0.9)",
+            border: "1px solid rgba(71, 85, 105, 0.5)",
+            borderRadius: "8px",
+            color: "#e2e8f0",
+          }}
+          itemStyle={{ color: "#e2e8f0" }}
+          labelStyle={{ color: "#94a3b8" }}
+          formatter={(value: number | undefined, name?: string) => {
+            const val = value ?? 0;
+            if (name === "Primary") return [formatValue(val), name];
+            if (name === "Hit Rate") return [`${val.toFixed(1)}%`, name];
+            return [val, name];
+          }}
+          labelFormatter={(label) => `Date: ${label}`}
+        />
+
+        <Legend />
+
+        {/* 9. Primary line — blue, left axis (default) */}
+        <Line
+          type="monotone"
+          dataKey="primary_value"
+          name="Primary"
+          stroke="#2563eb"
+          strokeWidth={2}
+          dot={{ r: 4 }}
+          activeDot={{ r: 6 }}
+        />
+
+        {/* 10. Secondary line — emerald, RIGHT axis */}
+        <Line
+          type="monotone"
+          dataKey="hit_rate"
+          name="Hit Rate"
+          stroke="#10b981"
+          strokeWidth={2}
+          dot={{ r: 4 }}
+          activeDot={{ r: 6 }}
+          yAxisId="right"
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+```
+
+Key annotations:
+- **Dual Y-axis**: Add `yAxisId="right"` to secondary Line; add `<YAxis yAxisId="right" orientation="right" />` for the second axis
+- **Data transform**: Pre-compute `formattedDate` in map rather than in XAxis tickFormatter
+- **Tooltip formatter**: Switch on `name` to format each metric differently
+
+---
+
+## BarChart: Category Breakdown
+
+Source: `<charts-dir>/breakdown-chart.tsx`
+
+This pattern shows a horizontal BarChart for category comparison.
+
+```tsx
+"use client";
+
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts";
+import { formatValue } from "<utils-path>";
+
+interface BreakdownData {
+  name: string;
+  value: number;
+}
+
+interface BreakdownChartProps {
+  data: BreakdownData[];
+  height?: number;
+}
+
+export function BreakdownChart({ data, height = 300 }: BreakdownChartProps) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={data} layout="vertical" margin={{ left: 20 }}>
+        <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
+        <XAxis
+          type="number"
+          className="text-sm text-slate-600 dark:text-slate-400"
+          tick={{ fill: "currentColor" }}
+          tickFormatter={(value) => formatValue(value)}
+        />
+        <YAxis
+          type="category"
+          dataKey="name"
+          className="text-sm text-slate-600 dark:text-slate-400"
+          tick={{ fill: "currentColor" }}
+          width={120}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "rgba(15, 23, 42, 0.9)",
+            border: "1px solid rgba(71, 85, 105, 0.5)",
+            borderRadius: "8px",
+            color: "#e2e8f0",
+          }}
+          itemStyle={{ color: "#e2e8f0" }}
+          labelStyle={{ color: "#94a3b8" }}
+          formatter={(value: number) => [formatValue(value), "Value"]}
+        />
+        <Bar dataKey="value" fill="#2563eb" radius={[0, 4, 4, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+```
+
+Key annotations:
+- **Vertical layout**: `layout="vertical"` on BarChart, swap XAxis/YAxis types
+- **Bar radius**: `radius={[0, 4, 4, 0]}` rounds right corners only
+- **Margin**: `margin={{ left: 20 }}` gives room for long category labels
+
+{% endraw %}

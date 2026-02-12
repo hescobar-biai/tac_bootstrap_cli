@@ -1,0 +1,47 @@
+{% raw %}
+# Event Handler Template
+
+**File**: `src/{{bounded_context}}/application/event_handlers/{{aggregate_name_snake}}_handlers.py`
+
+```python
+"""
+IDK: event-handler, {{aggregate_name_snake}}, subscriber
+
+Responsibility:
+- Handle {{aggregate_name}} domain events
+- Execute side effects in response to events
+"""
+
+import structlog
+
+from src.shared.domain.events import on_event, on_event_async
+from src.{{bounded_context}}.domain.events.{{aggregate_name_snake}}_events import (
+    {{aggregate_name}}Created,
+    {{aggregate_name}}Updated,
+    {{aggregate_name}}Deleted,
+)
+
+logger = structlog.get_logger(__name__)
+
+
+@on_event({{aggregate_name}}Created)
+def log_{{aggregate_name_snake}}_created(event: {{aggregate_name}}Created) -> None:
+    """Log when {{aggregate_name}} is created."""
+    logger.info(
+        "{{aggregate_name_snake}}_created",
+        {{aggregate_id_field}}=event.{{aggregate_id_field}},
+        event_id=event.event_id,
+    )
+
+
+@on_event({{aggregate_name}}Updated)
+def log_{{aggregate_name_snake}}_updated(event: {{aggregate_name}}Updated) -> None:
+    """Log when {{aggregate_name}} is updated."""
+    logger.info(
+        "{{aggregate_name_snake}}_updated",
+        {{aggregate_id_field}}=event.{{aggregate_id_field}},
+        changed_fields=event.changed_fields,
+    )
+```
+
+{% endraw %}

@@ -1,0 +1,64 @@
+{% raw %}
+# Provider Adapter Creation Workflow
+
+## Pre-flight Checklist
+
+```
+Provider Information:
+- [ ] Provider name (snake_case): e.g., vertex_ai, openrouter, bedrock
+- [ ] SDK package: e.g., google-cloud-aiplatform, httpx, boto3
+- [ ] Auth type: service_account | api_key | iam_role
+- [ ] Available models list
+- [ ] Special features (multimodal, function calling, JSON mode, etc.)
+```
+
+## Step 1: Install SDK
+
+```bash
+uv add {{sdk_package}}
+```
+
+## Step 2: Create Provider Config
+
+**File**: `src/provider/infrastructure/config/{{provider_name}}_config.py`
+
+Use template: [templates/provider_config.py.md](templates/provider_config.py.md)
+
+## Step 3: Create Provider Adapter
+
+**File**: `src/provider/infrastructure/adapters/{{provider_name}}.py`
+
+Use template: [templates/provider_adapter.py.md](templates/provider_adapter.py.md)
+
+**Checklist**:
+- [ ] Implements `LLMProvider` interface
+- [ ] `async execute(request) -> LLMResponse`
+- [ ] `async health_check() -> bool`
+- [ ] `get_available_models() -> list[str]`
+- [ ] Latency measured with `time.monotonic()`
+- [ ] Token counts extracted from response metadata
+- [ ] Error mapping to domain exceptions
+
+## Step 4: Create Error Mapping
+
+**File**: `src/provider/infrastructure/adapters/{{provider_name}}_errors.py` (or inline in adapter)
+
+Use template: [templates/provider_error_mapping.py.md](templates/provider_error_mapping.py.md)
+
+## Step 5: Create Unit Tests
+
+**File**: `tests/unit/provider/infrastructure/test_{{provider_name}}.py`
+
+Use template: [templates/provider_test.py.md](templates/provider_test.py.md)
+
+## Step 6: Register Provider
+
+Add to provider registry or factory.
+
+## Step 7: Validation
+
+```bash
+uv run pytest tests/unit/provider/infrastructure/test_{{provider_name}}.py -v
+```
+
+{% endraw %}

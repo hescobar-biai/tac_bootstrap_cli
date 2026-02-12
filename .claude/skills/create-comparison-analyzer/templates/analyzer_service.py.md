@@ -1,0 +1,79 @@
+# Analyzer Service Template
+
+**File**: `src/evaluation/application/services/{{analyzer_name}}_analyzer.py`
+
+```python
+"""
+IDK: analyzer, {{analyzer_name}}, evaluation, comparison
+
+Responsibility:
+- Analyze {{metric_type}} metrics across execution results
+- Compute aggregate statistics
+- Rank models by {{ranking_criteria}}
+"""
+
+import statistics
+import structlog
+
+logger = structlog.get_logger(__name__)
+
+
+class {{analyzer_class}}:
+    """
+    Analyzes {{metric_type}} across multi-model execution results.
+
+    Receives execution results and computes:
+    - Per-model {{metric_type}} metrics
+    - Aggregate statistics (min, max, mean, variance)
+    - Rankings by {{ranking_criteria}}
+    """
+
+    def analyze(self, results: list) -> dict:
+        """
+        Analyze {{metric_type}} from execution results.
+
+        Args:
+            results: List of execution results with {{metric_type}} data
+
+        Returns:
+            Analysis with metrics, statistics, and rankings
+        """
+        if len(results) < 2:
+            return {"comparable": False, "reason": "Need at least 2 results"}
+
+        successful = [r for r in results if r.get("status") == "success"]
+        if len(successful) < 2:
+            return {"comparable": False, "reason": "Need at least 2 successful results"}
+
+        metrics = self._extract_metrics(successful)
+        stats = self._compute_statistics(metrics)
+        rankings = self._compute_rankings(successful)
+
+        return {
+            "comparable": True,
+            "metrics": metrics,
+            "statistics": stats,
+            "rankings": rankings,
+        }
+
+    def _extract_metrics(self, results: list) -> dict:
+        """Extract {{metric_type}} metrics per model."""
+        {{extract_implementation}}
+
+    def _compute_statistics(self, metrics: dict) -> dict:
+        """Compute aggregate statistics."""
+        values = list(metrics.values())
+        if not values:
+            return {}
+        flat = [v if isinstance(v, (int, float)) else 0 for v in values]
+        return {
+            "min": min(flat),
+            "max": max(flat),
+            "mean": statistics.mean(flat),
+            "variance": statistics.variance(flat) if len(flat) > 1 else 0.0,
+        }
+
+    def _compute_rankings(self, results: list) -> list:
+        """Rank results by {{ranking_criteria}}."""
+        {{ranking_implementation}}
+```

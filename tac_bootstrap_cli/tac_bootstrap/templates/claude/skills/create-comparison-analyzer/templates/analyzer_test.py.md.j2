@@ -1,0 +1,52 @@
+{% raw %}
+# Analyzer Test Template
+
+**File**: `tests/unit/evaluation/application/test_{{analyzer_name}}_analyzer.py`
+
+```python
+"""{{analyzer_class}} unit tests."""
+
+import pytest
+
+from src.evaluation.application.services.{{analyzer_name}}_analyzer import {{analyzer_class}}
+
+
+class Test{{analyzer_class}}:
+    @pytest.fixture
+    def analyzer(self):
+        return {{analyzer_class}}()
+
+    def test_analyze_with_valid_results(self, analyzer):
+        results = [
+            {"status": "success", "provider": "a", "model": "m1", {{test_metric_a}}},
+            {"status": "success", "provider": "b", "model": "m2", {{test_metric_b}}},
+        ]
+        analysis = analyzer.analyze(results)
+        assert analysis["comparable"] is True
+        assert "metrics" in analysis
+        assert "rankings" in analysis
+
+    def test_analyze_insufficient_results(self, analyzer):
+        results = [{"status": "success", "provider": "a", "model": "m1"}]
+        analysis = analyzer.analyze(results)
+        assert analysis["comparable"] is False
+
+    def test_analyze_all_failed(self, analyzer):
+        results = [
+            {"status": "failed", "provider": "a", "model": "m1"},
+            {"status": "failed", "provider": "b", "model": "m2"},
+        ]
+        analysis = analyzer.analyze(results)
+        assert analysis["comparable"] is False
+
+    def test_rankings_order(self, analyzer):
+        """Test that rankings are correctly ordered."""
+        results = [
+            {"status": "success", "provider": "slow", "model": "m1", {{test_metric_slow}}},
+            {"status": "success", "provider": "fast", "model": "m2", {{test_metric_fast}}},
+        ]
+        analysis = analyzer.analyze(results)
+        assert analysis["comparable"] is True
+```
+
+{% endraw %}

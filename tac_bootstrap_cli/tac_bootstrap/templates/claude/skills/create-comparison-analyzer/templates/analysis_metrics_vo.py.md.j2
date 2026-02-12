@@ -1,0 +1,39 @@
+{% raw %}
+# Analysis Metrics Value Object Template
+
+**File**: `src/evaluation/domain/value_objects/{{metric_type}}_metrics.py`
+
+```python
+"""
+IDK: value-object, {{metric_type}}-metrics, evaluation, immutable
+
+Responsibility:
+- Represent {{metric_type}} measurements
+- Provide computed statistics
+"""
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class {{metric_class}}(BaseModel):
+    """Immutable {{metric_type}} metrics for a single model result."""
+
+    model_config = ConfigDict(frozen=True)
+
+    provider: str
+    model: str
+    {{metric_fields}}
+
+
+class {{metric_class}}Summary(BaseModel):
+    """Aggregate {{metric_type}} statistics across models."""
+
+    model_config = ConfigDict(frozen=True)
+
+    per_model: tuple[{{metric_class}}, ...] = Field(default_factory=tuple)
+    best: str | None = None
+    worst: str | None = None
+    {{summary_fields}}
+```
+
+{% endraw %}

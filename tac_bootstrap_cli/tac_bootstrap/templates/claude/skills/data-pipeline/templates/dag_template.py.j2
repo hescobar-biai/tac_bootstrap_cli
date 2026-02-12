@@ -1,0 +1,298 @@
+{% raw %}
+"""
+Airflow DAG Template for Cloud Composer
+
+This template provides a production-ready DAG skeleton for ETL/ELT pipelines
+running on Google Cloud Composer. It includes:
+
+- Data ingestion from Cloud Storage to BigQuery
+- dbt transformation execution (staging, marts)
+- dbt test execution for data quality gates
+- BigQuery validation queries
+- Slack alerting on failure and success
+
+Usage:
+    1. Copy this file to your Cloud Composer DAGs folder
+    2. Update the configuration variables in the CONFIG section below
+    3. Customize task definitions to match your pipeline requirements
+    4. Deploy to Cloud Composer:
+       gcloud composer environments storage dags import \
+         --environment my-composer-env \
+         --location us-central1 \
+         --source dag_template.py
+"""
+
+from __future__ import annotations
+
+from datetime import datetime, timedelta
+
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
+from airflow.providers.google.cloud.operators.bigquery import (
+    BigQueryInsertJobOperator,
+)
+from airflow.providers.google.cloud.transfers.gcs_to_bigquery import (
+    GCSToBigQueryOperator,
+)
+
+# ---------------------------------------------------------------------------
+# CONFIG - Update these values for your pipeline
+# ---------------------------------------------------------------------------
+
+DAG_ID = "my_elt_pipeline"
+DESCRIPTION = "ELT pipeline: GCS -> BigQuery -> dbt transformations"
+SCHEDULE_INTERVAL = "0 6 * * *"  # Daily at 06:00 UTC
+START_DATE = datetime(2025, 1, 1)
+CATCHUP = False  # Set True to backfill historical dates on first enable
+
+# GCP Configuration
+GCP_PROJECT = "my-gcp-project"
+GCS_BUCKET = "my-data-bucket"
+BQ_DATASET = "analytics"
+
+# dbt Configuration
+DBT_PROJECT_DIR = "/home/airflow/gcs/dags/dbt_project"
+DBT_PROFILES_DIR = "/home/airflow/gcs/dags/dbt_project"
+
+# Alerting
+SLACK_CONN_ID = "slack_webhook"  # Airflow connection ID for Slack webhook
+ALERT_EMAILS = ["data-team@example.com"]
+
+# ---------------------------------------------------------------------------
+# ALERTING CALLBACKS
+# ---------------------------------------------------------------------------
+
+
+def slack_alert_on_failure(context: dict) -> None:
+    """Send a Slack notification when a task fails.
+
+    Args:
+        context: Airflow context dictionary provided automatically by the
+            task instance on failure.
+    """
+    try:
+        from airflow.providers.slack.hooks.slack_webhook import SlackWebhookHook
+
+        hook = SlackWebhookHook(slack_webhook_conn_id=SLACK_CONN_ID)
+        ti = context["task_instance"]
+        message = (
+            f":red_circle: *Task Failed*\n"
+            f"*DAG*: {ti.dag_id}\n"
+            f"*Task*: {ti.task_id}\n"
+            f"*Execution Date*: {context['ds']}\n"
+            f"*Log URL*: {ti.log_url}"
+        )
+        hook.send(text=message)
+    except Exception as exc:  # noqa: BLE001
+        print(f"Slack alert failed: {exc}")
+
+
+def slack_alert_on_success(context: dict) -> None:
+    """Send a Slack notification when the DAG completes successfully.
+
+    Args:
+        context: Airflow context dictionary provided automatically by the
+            DAG on success.
+    """
+    try:
+        from airflow.providers.slack.hooks.slack_webhook import SlackWebhookHook
+
+        hook = SlackWebhookHook(slack_webhook_conn_id=SLACK_CONN_ID)
+        dag_run = context["dag_run"]
+        duration = dag_run.end_date - dag_run.start_date if dag_run.end_date else "N/A"
+        message = (
+            f":white_check_mark: *DAG Succeeded*\n"
+            f"*DAG*: {context['dag'].dag_id}\n"
+            f"*Execution Date*: {context['ds']}\n"
+            f"*Duration*: {duration}"
+        )
+        hook.send(text=message)
+    except Exception as exc:  # noqa: BLE001
+        print(f"Slack alert failed: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# DEFAULT ARGS
+# ---------------------------------------------------------------------------
+
+default_args = {
+    "owner": "data-engineering",
+    "depends_on_past": False,
+    "email": ALERT_EMAILS,
+    "email_on_failure": True,
+    "email_on_retry": False,
+    "retries": 2,
+    "retry_delay": timedelta(minutes=5),
+    "retry_exponential_backoff": True,
+    "max_retry_delay": timedelta(minutes=30),
+    "execution_timeout": timedelta(hours=2),
+    "on_failure_callback": slack_alert_on_failure,
+}
+
+# ---------------------------------------------------------------------------
+# DAG DEFINITION
+# ---------------------------------------------------------------------------
+
+with DAG(
+    dag_id=DAG_ID,
+    default_args=default_args,
+    description=DESCRIPTION,
+    schedule_interval=SCHEDULE_INTERVAL,
+    start_date=START_DATE,
+    catchup=CATCHUP,
+    max_active_runs=1,
+    tags=["elt", "bigquery", "dbt"],
+    on_success_callback=slack_alert_on_success,
+) as dag:
+
+    # ----- Task 1: Load raw data from Cloud Storage to BigQuery -----
+
+    load_raw_data = GCSToBigQueryOperator(
+        task_id="load_raw_data",
+        bucket=GCS_BUCKET,
+        source_objects=["raw/events/dt={{ ds }}/*.parquet"],
+        destination_project_dataset_table=(
+            f"{GCP_PROJECT}.{BQ_DATASET}.raw_events${{{{ ds_nodash }}}}"
+        ),
+        source_format="PARQUET",
+        write_disposition="WRITE_TRUNCATE",
+        autodetect=True,
+        time_partitioning={
+            "type": "DAY",
+            "field": "event_date",
+        },
+        cluster_fields=["event_type", "user_id"],
+    )
+
+    # ----- Task 2: Validate raw data load -----
+
+    validate_load = BigQueryInsertJobOperator(
+        task_id="validate_raw_load",
+        configuration={
+            "query": {
+                "query": f"""
+                    SELECT
+                        CASE
+                            WHEN COUNT(*) > 0 THEN 'PASS'
+                            ELSE ERROR(
+                                CONCAT('No rows loaded for partition ', '{{{{ ds }}}}')
+                            )
+                        END AS validation_result
+                    FROM `{GCP_PROJECT}.{BQ_DATASET}.raw_events`
+                    WHERE DATE(_PARTITIONTIME) = '{{{{ ds }}}}'
+                """,
+                "useLegacySql": False,
+            }
+        },
+    )
+
+    # ----- Task 3: Run dbt staging models -----
+
+    dbt_run_staging = BashOperator(
+        task_id="dbt_run_staging",
+        bash_command=(
+            f"cd {DBT_PROJECT_DIR} && "
+            f"dbt run --profiles-dir {DBT_PROFILES_DIR} "
+            "--select staging "
+            "--vars '{\"run_date\": \"{{ ds }}\"}'"
+        ),
+        env={
+            "DBT_PROFILES_DIR": DBT_PROFILES_DIR,
+        },
+    )
+
+    # ----- Task 4: Run dbt tests on staging -----
+
+    dbt_test_staging = BashOperator(
+        task_id="dbt_test_staging",
+        bash_command=(
+            f"cd {DBT_PROJECT_DIR} && "
+            f"dbt test --profiles-dir {DBT_PROFILES_DIR} "
+            "--select staging"
+        ),
+        env={
+            "DBT_PROFILES_DIR": DBT_PROFILES_DIR,
+        },
+    )
+
+    # ----- Task 5: Run dbt mart models -----
+
+    dbt_run_marts = BashOperator(
+        task_id="dbt_run_marts",
+        bash_command=(
+            f"cd {DBT_PROJECT_DIR} && "
+            f"dbt run --profiles-dir {DBT_PROFILES_DIR} "
+            "--select marts "
+            "--vars '{\"run_date\": \"{{ ds }}\"}'"
+        ),
+        env={
+            "DBT_PROFILES_DIR": DBT_PROFILES_DIR,
+        },
+    )
+
+    # ----- Task 6: Run all dbt tests -----
+
+    dbt_test_all = BashOperator(
+        task_id="dbt_test_all",
+        bash_command=(
+            f"cd {DBT_PROJECT_DIR} && "
+            f"dbt test --profiles-dir {DBT_PROFILES_DIR}"
+        ),
+        env={
+            "DBT_PROFILES_DIR": DBT_PROFILES_DIR,
+        },
+    )
+
+    # ----- Task 7: Final BigQuery validation -----
+
+    def validate_final_output(**context: dict) -> None:
+        """Run final validation queries against the mart tables.
+
+        Checks row counts and data freshness to ensure the pipeline
+        produced expected results.
+
+        Args:
+            **context: Airflow context dictionary.
+
+        Raises:
+            ValueError: If validation checks fail.
+        """
+        from google.cloud import bigquery
+
+        client = bigquery.Client(project=GCP_PROJECT)
+        ds = context["ds"]
+
+        # Check that the mart table has rows for the execution date
+        query = f"""
+            SELECT COUNT(*) AS row_count
+            FROM `{GCP_PROJECT}.{BQ_DATASET}.fct_daily_active_users`
+            WHERE activity_date = '{ds}'
+        """
+        results = list(client.query(query).result())
+        row_count = results[0].row_count
+
+        if row_count == 0:
+            raise ValueError(
+                f"Validation failed: fct_daily_active_users has 0 rows for {ds}"
+            )
+
+        print(f"Validation passed: {row_count} rows in fct_daily_active_users for {ds}")
+
+    validate_output = PythonOperator(
+        task_id="validate_final_output",
+        python_callable=validate_final_output,
+    )
+
+    # ----- Task Dependencies -----
+    # Pipeline: load -> validate -> staging -> test -> marts -> test -> validate
+    (
+        load_raw_data
+        >> validate_load
+        >> dbt_run_staging
+        >> dbt_test_staging
+        >> dbt_run_marts
+        >> dbt_test_all
+        >> validate_output
+    )
+{% endraw %}

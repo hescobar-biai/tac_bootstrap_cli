@@ -1,0 +1,75 @@
+{% raw %}
+---
+name: create-value-object
+description: Generate frozen Pydantic value objects with validators and unit tests. Use when creating immutable domain concepts, typed wrappers, or self-validating data types. Triggers on requests like "create value object", "add VO for", "new domain type", or "generate typed wrapper".
+---
+
+# Create Value Object
+
+Generate frozen Pydantic value objects with validators and unit tests following DDD patterns.
+
+## Quick Start
+
+1. **Gather VO info**: Name, fields, validators, bounded context
+2. **Generate value object**: Create frozen Pydantic model using templates
+3. **Generate tests**: Create unit tests for validation and immutability
+4. **Register**: Import in capability's `domain/value_objects/` package
+
+For detailed steps, see [WORKFLOW.md](WORKFLOW.md).
+
+## Architecture Overview
+
+Value objects live in the domain layer of their bounded context:
+
+```
+src/
+└── {bounded_context}/
+    └── domain/
+        └── value_objects/
+            ├── __init__.py
+            └── {vo_name}.py          # Value object module
+tests/
+└── unit/
+    └── {bounded_context}/
+        └── domain/
+            └── test_{vo_name}.py      # Value object tests
+```
+
+## Value Object Principles
+
+- **Immutable**: `ConfigDict(frozen=True)` prevents mutation after creation
+- **Self-validating**: Invalid states cannot be created (`model_validator`)
+- **No identity**: Equality is based on all attributes, not an ID
+- **Side-effect free**: Methods return new instances, never modify state
+
+## Placeholders
+
+| Placeholder | Description | Example |
+|-------------|-------------|---------|
+| `{{vo_name}}` | snake_case VO name | `retry_config` |
+| `{{vo_class}}` | PascalCase VO class name | `RetryConfig` |
+| `{{bounded_context}}` | snake_case bounded context | `provider` |
+| `{{fields}}` | Field definitions with types | `max_retries: int = 3` |
+| `{{validators}}` | Validation rules | `max_retries must be >= 0` |
+
+## Templates Reference
+
+- [value_object.py.md](templates/value_object.py.md) - Value object implementation
+- [value_object_test.py.md](templates/value_object_test.py.md) - Unit tests
+
+## Base Class Reference
+
+All value objects use Pydantic `BaseModel` with `ConfigDict(frozen=True)` from `pydantic`. They align with the patterns in `src/shared/domain/base_entity.py` but do NOT extend `Entity` (value objects have no identity).
+
+## Best Practices
+
+1. **Naming**: Use domain language (e.g., `RetryConfig`, not `RetryData`)
+2. **Validation**: Put all validation in `model_validator(mode="after")`
+3. **Normalization**: Use `model_validator(mode="before")` for input normalization
+4. **Properties**: Add computed properties for derived values
+5. **String representation**: Override `__str__` for human-readable output
+6. **Operators**: Override `__add__`, `__sub__`, etc. where mathematically meaningful
+7. **Factory methods**: Add classmethods like `zero()`, `default()` for common instances
+8. **Testing**: Test valid creation, invalid creation (raises ValueError), immutability, equality
+
+{% endraw %}

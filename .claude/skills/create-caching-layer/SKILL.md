@@ -1,0 +1,63 @@
+---
+name: create-caching-layer
+description: Generate thread-safe LRU cache with async wrapper, optional Redis backend, warmup service, and tests. Use when adding caching to performance-critical paths like schema compilation, token counting, or provider responses. Triggers on requests like "create cache", "add caching", "implement LRU cache".
+---
+
+# Create Caching Layer
+
+Generate thread-safe LRU cache + async wrapper + optional Redis + warmup + tests.
+
+## Quick Start
+
+1. **Gather cache info**: Name, cached type, max size, TTL
+2. **Generate LRU cache**: Thread-safe in-memory cache
+3. **Generate async wrapper**: Async-safe cache with compile locks
+4. **Generate Redis cache** (optional): Distributed cache layer
+5. **Generate warmer** (optional): Cache pre-population service
+6. **Generate tests**: Unit tests for cache behavior
+
+For detailed steps, see [WORKFLOW.md](WORKFLOW.md).
+
+## Architecture Overview
+
+```
+src/
+└── {bounded_context}/
+    └── infrastructure/
+        └── cache/
+            ├── {cache_name}_cache.py           # Thread-safe LRU
+            ├── async_{cache_name}_cache.py      # Async wrapper
+            ├── redis_{cache_name}_cache.py      # Redis backend (optional)
+            └── {cache_name}_warmer.py           # Cache warmup (optional)
+tests/
+└── unit/
+    └── {bounded_context}/
+        └── infrastructure/
+            └── test_{cache_name}_cache.py
+```
+
+## Placeholders
+
+| Placeholder | Description | Example |
+|-------------|-------------|---------|
+| `{{cache_name}}` | snake_case cache name | `schema` |
+| `{{cached_type}}` | Type being cached | `Type[BaseModel]` |
+| `{{max_size}}` | Default max entries | `1000` |
+| `{{ttl_seconds}}` | Default TTL (None=no expiry) | `3600` |
+
+## Templates Reference
+
+- [lru_cache.py.md](templates/lru_cache.py.md) - Thread-safe LRU cache
+- [async_cache_wrapper.py.md](templates/async_cache_wrapper.py.md) - Async wrapper
+- [redis_cache.py.md](templates/redis_cache.py.md) - Redis backend
+- [cache_warmer.py.md](templates/cache_warmer.py.md) - Cache warmup
+- [cache_test.py.md](templates/cache_test.py.md) - Unit tests
+
+## Invariants
+
+- Cache MUST be thread-safe (RLock for sync, asyncio.Lock for async)
+- Cache MUST respect max_size (LRU eviction)
+- Cache key MUST be deterministic for identical inputs
+- TTL MUST be enforced when configured
+- Cache MUST NOT grow unbounded
+- Redis failures MUST fallback to local cache gracefully

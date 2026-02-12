@@ -1,0 +1,41 @@
+{% raw %}
+# Strategy Interface Template
+
+**File**: `src/{{bounded_context}}/domain/strategies/{{strategy_name}}_strategy.py`
+
+```python
+"""
+IDK: strategy-pattern, {{strategy_name}}, interface, domain
+
+Responsibility:
+- Define contract for interchangeable {{strategy_name}} algorithms
+- Enable runtime strategy selection
+
+Invariants:
+- All implementations must honor this interface
+- Strategy selection is via factory, not direct instantiation
+"""
+
+from abc import ABC, abstractmethod
+
+
+class {{strategy_class}}(ABC):
+    """
+    Abstract strategy for {{strategy_name}}.
+
+    Concrete implementations provide different algorithms
+    for the same operation.
+    """
+
+    @abstractmethod
+    {{method_signature}}:
+        """Execute the strategy algorithm."""
+        ...
+
+    @property
+    def name(self) -> str:
+        """Strategy identifier for factory lookup."""
+        return self.__class__.__name__
+```
+
+{% endraw %}

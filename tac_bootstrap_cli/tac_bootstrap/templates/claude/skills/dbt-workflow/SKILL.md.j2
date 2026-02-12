@@ -1,0 +1,249 @@
+{% raw %}
+---
+name: dbt-workflow
+description: "Creates and manages dbt models, tests, and documentation with dual-target support for BigQuery and PostgreSQL. Use when building data transformations, creating staging/mart models, debugging dbt runs, or generating schema.yml files."
+disable-model-invocation: true
+allowed-tools: Bash(dbt *), Read, Write, Edit, Grep, Glob
+---
+
+# dbt Workflow
+
+Scaffold, build, test, and document dbt models following analytics engineering best practices with dual-target support for BigQuery and PostgreSQL.
+
+## Instructions
+
+### Prerequisites
+
+- dbt Core or dbt Cloud CLI installed and configured
+- A `profiles.yml` with at least one target (BigQuery and/or PostgreSQL)
+- A dbt project initialized (`dbt_project.yml` exists)
+- Source tables defined in a `_sources.yml` file
+
+Before starting any work, read the conventions in [reference.md](reference.md) for naming rules, layer patterns, and cross-database macro guidance.
+
+### Workflow
+
+#### 1. Identify the Model Layer
+
+Determine which layer the requested model belongs to:
+
+| Layer | Prefix | Purpose | Directory |
+|-------|--------|---------|-----------|
+| Staging | `stg_` | 1:1 with source tables, rename and cast | `models/staging/<source>/` |
+| Intermediate | `int_` | Business logic joins between staging models | `models/intermediate/` |
+| Facts | `fct_` | Event/transactional grain tables | `models/marts/` |
+| Dimensions | `dim_` | Slowly changing descriptive entities | `models/marts/` |
+
+#### 2. Scaffold the Model SQL
+
+Use the appropriate template from [templates/](templates/):
+
+- **Staging models**: Use [templates/stg_template.sql](templates/stg_template.sql) -- one CTE for source, one for renaming/casting.
+- **Fact models**: Use [templates/fct_template.sql](templates/fct_template.sql) -- joins staging models, computes metrics.
+- **Schema definitions**: Use [templates/schema_template.yml](templates/schema_template.yml) -- tests, descriptions, column docs.
+
+For concrete implementations, review the examples in [examples/](examples/).
+
+#### 3. Handle Cross-Database Compatibility
+
+When the project targets both BigQuery and PostgreSQL, use conditional logic based on `target.type`:
+
+```sql
+{% if target.type == 'bigquery' %}
+    timestamp_trunc(created_at, day)
+{% elif target.type == 'postgres' %}
+    date_trunc('day', created_at)
+{% endif %}
+```
+
+Wrap reusable cross-database logic in macros under `macros/cross_db/`. See [reference.md](reference.md) for the full pattern.
+
+#### 4. Generate schema.yml
+
+Every model directory must have a `schema.yml` (or `_<layer>__models.yml`) file containing:
+
+- Model-level description
+- Column-level descriptions for all columns
+- Tests: `not_null` and `unique` on primary keys at minimum
+- `relationships` tests for foreign keys
+- `accepted_values` tests for enum/status columns
+
+Use `dbt docs generate` after adding models to verify documentation coverage.
+
+#### 5. Validate with dbt Commands
+
+Run these commands in order to verify the implementation:
+
+```bash
+dbt compile --select <model_name>       # Verify SQL compiles
+dbt run --select <model_name>           # Execute the model
+dbt test --select <model_name>          # Run associated tests
+dbt docs generate                        # Regenerate documentation
+```
+
+For debugging failures:
+
+```bash
+dbt debug                                # Check connection and config
+dbt run --select <model_name> --full-refresh  # Rebuild incremental models
+dbt ls --select +<model_name>            # Show upstream dependencies
+dbt ls --select <model_name>+            # Show downstream dependencies
+```
+
+#### 6. Analyze Lineage
+
+Before modifying existing models, understand the dependency graph:
+
+```bash
+dbt ls --select +<model_name>+          # Full upstream + downstream lineage
+dbt ls --resource-type source            # List all sources
+dbt ls --select tag:finance              # Filter by tag
+```
+
+Use `dbt docs serve` to open the interactive lineage graph in a browser.
+
+### Dual-Target Configuration
+
+For projects that run on both BigQuery and PostgreSQL, configure `profiles.yml` with two targets:
+
+```yaml
+my_project:
+  target: dev  # default target
+  outputs:
+    dev:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: "{{ env_var('DBT_PG_USER') }}"
+      pass: "{{ env_var('DBT_PG_PASS') }}"
+      dbname: analytics
+      schema: dev
+      threads: 4
+
+    prod:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('DBT_BQ_PROJECT') }}"
+      dataset: analytics
+      threads: 8
+      location: US
+```
+
+Run against a specific target with `--target`:
+
+```bash
+dbt run --target dev     # PostgreSQL
+dbt run --target prod    # BigQuery
+```
+
+### Supporting Files Reference
+
+| File | Purpose |
+|------|---------|
+| [reference.md](reference.md) | Naming conventions, layer patterns, testing, cross-DB macros |
+| [templates/stg_template.sql](templates/stg_template.sql) | Staging model scaffold |
+| [templates/fct_template.sql](templates/fct_template.sql) | Fact model scaffold with joins and metrics |
+| [templates/schema_template.yml](templates/schema_template.yml) | schema.yml scaffold with tests |
+| [examples/stg_orders.sql](examples/stg_orders.sql) | Staging model for an orders table |
+| [examples/fct_demand.sql](examples/fct_demand.sql) | Fact model for demand analysis |
+| [examples/dim_products.sql](examples/dim_products.sql) | Dimension model for products |
+
+## Examples
+
+### Example 1: Create a Staging Model for a New Source Table
+
+User request:
+```
+Create a staging model for the raw_payments table from Stripe
+```
+
+You would:
+1. Read [reference.md](reference.md) for naming conventions
+2. Read [templates/stg_template.sql](templates/stg_template.sql) for the scaffold
+3. Create `models/staging/stripe/stg_stripe__payments.sql`:
+   ```sql
+   with source as (
+       select * from {{ source('stripe', 'raw_payments') }}
+   ),
+   renamed as (
+       select
+           -- ids
+           id as payment_id,
+           order_id,
+
+           -- dimensions
+           payment_method,
+           status as payment_status,
+
+           -- metrics
+           amount / 100.0 as amount_usd,
+
+           -- timestamps
+           created as created_at,
+           updated as updated_at
+       from source
+   )
+   select * from renamed
+   ```
+4. Create or update `models/staging/stripe/_stripe__models.yml` with column descriptions and tests
+5. Run `dbt compile --select stg_stripe__payments` to verify
+6. Run `dbt run --select stg_stripe__payments` to materialize
+7. Run `dbt test --select stg_stripe__payments` to validate tests
+
+### Example 2: Build a Fact Model Joining Multiple Staging Tables
+
+User request:
+```
+Create a fact model for demand that joins orders, order items, and products
+```
+
+You would:
+1. Read [reference.md](reference.md) and [examples/fct_demand.sql](examples/fct_demand.sql) for the pattern
+2. Identify upstream staging models: `stg_orders`, `stg_order_items`, `stg_products`
+3. Verify upstream models exist: `dbt ls --select stg_orders stg_order_items stg_products`
+4. Create `models/marts/fct_demand.sql` with:
+   - One CTE per staging model reference
+   - A `joined` CTE that combines them
+   - A `final` CTE that computes demand metrics (quantity, revenue, etc.)
+   - Cross-database date functions if needed (see [reference.md](reference.md))
+5. Add to `models/marts/_marts__models.yml` with `not_null` on `demand_id`, `unique` on `demand_id`, and `relationships` tests to staging tables
+6. Run the full validation chain:
+   ```bash
+   dbt run --select +fct_demand    # Build with all upstream dependencies
+   dbt test --select fct_demand    # Test the fact model
+   ```
+
+### Example 3: Debug a Failing dbt Test
+
+User request:
+```
+My not_null test on fct_revenue.customer_id is failing, help me fix it
+```
+
+You would:
+1. Check the compiled test SQL:
+   ```bash
+   dbt compile --select test_name
+   ```
+2. Read the compiled SQL in `target/compiled/` to understand the test query
+3. Use Grep to find the model definition:
+   ```
+   Grep for "fct_revenue" in models/
+   ```
+4. Read the model SQL and trace which CTE produces `customer_id`
+5. Check if the issue is:
+   - A LEFT JOIN introducing NULLs (should be INNER JOIN, or add a WHERE filter)
+   - Missing COALESCE for optional fields
+   - Source data quality issue (add a `where customer_id is not null` filter in staging)
+6. Fix the model SQL and re-run:
+   ```bash
+   dbt run --select fct_revenue
+   dbt test --select fct_revenue
+   ```
+7. If the NULLs are expected, update the test in schema.yml to use `where` config:
+   ```yaml
+   - not_null:
+       config:
+         where: "order_status != 'cancelled'"
+   ```
+{% endraw %}

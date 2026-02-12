@@ -1,0 +1,92 @@
+-- Aggregation / Data Mart template
+-- File: models/datawarehouse/<domain>/DM_<MartName>.sql
+--
+-- Aggregation models join staging/enrichment models and compute
+-- supply chain KPIs at a defined grain.
+-- Schema: 40_dwagg_<domain>_{env}
+--
+-- Materialization: table (always)
+
+{{
+    config(
+        materialized='table',
+        tags=['aggregations']
+    )
+}}
+
+-- Import CTEs: one per upstream model
+with invoices as (
+
+    select * from {{ ref('stg_Invoices') }}
+
+),
+
+products as (
+
+    select * from {{ ref('stg_Products') }}
+
+),
+
+stocks as (
+
+    select * from {{ ref('stg_Stocks') }}
+
+),
+
+-- Business logic: join and aggregate
+joined as (
+
+    select
+        products.product_id,
+        products.product_name,
+        products.category,
+        -- Aggregate metrics
+        SUM(invoices.quantity) as total_units_sold,
+        SUM(invoices.total_amount) as total_revenue,
+        AVG(stocks.quantity_on_hand) as avg_inventory,
+        COUNT(DISTINCT invoices.invoice_id) as transaction_count
+
+    from invoices
+
+    inner join products
+        on invoices.product_id = products.product_id
+
+    left join stocks
+        on products.product_id = stocks.product_id
+
+    group by 1, 2, 3
+
+),
+
+-- Final CTE: compute KPIs
+final as (
+
+    select
+        -- Surrogate key
+        FARM_FINGERPRINT(
+            CONCAT(
+                CAST(product_id AS STRING), '|',
+                CAST(category AS STRING)
+            )
+        ) as surrogate_key,
+
+        -- Dimensions
+        product_id,
+        product_name,
+        category,
+
+        -- Volume metrics
+        total_units_sold,
+        total_revenue,
+        avg_inventory,
+        transaction_count,
+
+        -- Supply chain KPIs
+        SAFE_DIVIDE(total_units_sold, avg_inventory) as inventory_turnover,
+        SAFE_DIVIDE(total_revenue - (avg_inventory * total_units_sold), total_revenue) as gross_margin
+
+    from joined
+
+)
+
+select * from final

@@ -1,0 +1,66 @@
+# Schema template
+# File: models/<layer>/_<layer>__models.yml
+#
+# Every model directory must have a schema.yml with:
+# - Model-level description
+# - Column descriptions for ALL columns
+# - not_null + unique tests on primary keys
+# - relationships tests on foreign keys
+# - accepted_values on enum/status columns
+
+version: 2
+
+models:
+  - name: <model_name>
+    description: >
+      <Brief description of what this model represents, its grain,
+      and its primary use case.>
+    config:
+      tags: ['<layer>', '<domain>']
+      # materialized: table  # Override dbt_project.yml if needed
+
+    columns:
+      # -- Primary Key --
+      - name: <primary_key_id>
+        description: "Primary key - <description of what this identifies>"
+        data_tests:
+          - not_null
+          - unique
+
+      # -- Foreign Keys --
+      - name: <foreign_key_id>
+        description: "FK to <referenced_model>"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('<referenced_model>')
+              field: <foreign_key_id>
+
+      # -- Dimensions --
+      - name: <dimension_column>
+        description: "<What this dimension represents>"
+        data_tests:
+          - not_null
+
+      # -- Enum / Status Columns --
+      - name: <status_column>
+        description: "<What this status represents>"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['value_1', 'value_2', 'value_3']
+
+      # -- Metrics --
+      - name: <metric_column>
+        description: "<What this metric measures, including units>"
+        data_tests:
+          - not_null
+
+      # -- Timestamps --
+      - name: created_at
+        description: "Timestamp when the record was created in the source system"
+        data_tests:
+          - not_null
+
+      - name: updated_at
+        description: "Timestamp when the record was last updated in the source system"

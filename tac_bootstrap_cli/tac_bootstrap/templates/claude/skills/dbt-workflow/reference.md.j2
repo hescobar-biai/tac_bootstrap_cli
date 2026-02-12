@@ -1,0 +1,494 @@
+{% raw %}
+# dbt Conventions Reference -- Celes lake_house (BigQuery)
+
+## Table of Contents
+- [Project Configuration and Multi-Tenancy](#project-configuration-and-multi-tenancy)
+- [Six-Layer Architecture](#six-layer-architecture)
+- [dbt_project.yml Configuration](#dbt_projectyml-configuration)
+- [External Tables (GCS Parquet to BigQuery)](#external-tables-gcs-parquet-to-bigquery)
+- [FARM_FINGERPRINT Surrogate Keys](#farm_fingerprint-surrogate-keys)
+- [Staging Layer Pattern (20_staging)](#staging-layer-pattern-20_staging)
+- [Enrichment Layer Pattern (30_enrichment)](#enrichment-layer-pattern-30_enrichment)
+- [Aggregation/Data Mart Pattern (40_dwagg)](#aggregationdata-mart-pattern-40_dwagg)
+- [BigQuery-Specific SQL Functions](#bigquery-specific-sql-functions)
+- [Supply Chain Domain Models](#supply-chain-domain-models)
+- [Testing Patterns](#testing-patterns)
+- [Materialization Strategy](#materialization-strategy)
+- [Selectors and Tags](#selectors-and-tags)
+- [profiles.yml Configuration](#profilesyml-configuration)
+- [Common dbt Commands](#common-dbt-commands)
+
+---
+
+## Project Configuration and Multi-Tenancy
+
+**BigQuery exclusively** via `dbt-bigquery`. No PostgreSQL target.
+
+- **Project name**: `lake_house` | **Adapter**: `dbt-bigquery` (only)
+- **Multi-tenancy**: `env_var('client')` -- each client gets isolated schemas
+
+```bash
+export client=acme_corp
+export GCP_PROJECT_ID=celes-data-platform
+```
+
+Every schema and external table path uses `{{ var('client') }}` for tenant isolation.
+
+---
+
+## Six-Layer Architecture
+
+Six numbered layers (not the standard 4-layer pattern). Numeric prefixes enforce execution order.
+
+```
+10_ingestion  --> External tables from GCS parquet files      (ephemeral)
+15_wrangling  --> Light cleaning and initial transformations   (view)
+20_staging    --> Clean, rename, type-cast, add surrogate keys (view)
+30_enrichment --> Business logic joins and enrichment          (table)
+40_dwagg      --> Data warehouse aggregations and KPIs         (table)
+50_serving    --> Final consumption-ready models                (table)
+```
+
+### Schema Naming: `{number}_{layer}_{domain}_{env}`
+
+| Layer | Dev Schema | Prod Schema |
+|-------|-----------|-------------|
+| `10_ingestion` | `10_ingestion_products_dev` | `10_ingestion_products_prod` |
+| `20_staging` | `20_staging_products_dev` | `20_staging_products_prod` |
+| `30_enrichment` | `30_enrichment_demand_dev` | `30_enrichment_demand_prod` |
+| `40_dwagg` | `40_dwagg_supply_chain_dev` | `40_dwagg_supply_chain_prod` |
+| `50_serving` | `50_serving_analytics_dev` | `50_serving_analytics_prod` |
+
+### Directory Structure
+
+```
+models/
+├── 10_ingestion/{domain}/_sources.yml, raw_*.sql
+├── 15_wrangling/{domain}/wrg_*.sql
+├── 20_staging/{domain}/_stg_{domain}__models.yml, stg_*.sql
+├── 30_enrichment/{domain}/enr_*.sql
+├── 40_dwagg/{domain}/agg_*.sql
+├── 50_serving/{domain}/srv_*.sql
+├── macros/utils/farm_fingerprint_key.sql
+├── seeds/abc_classification_rules.csv
+└── tests/assert_no_negative_inventory.sql
+```
+
+---
+
+## dbt_project.yml Configuration
+
+```yaml
+name: lake_house
+version: '1.0.0'
+config-version: 2
+profile: lake_house
+
+vars:
+  client: "{{ env_var('client') }}"
+
+models:
+  lake_house:
+    10_ingestion:
+      +schema: "10_ingestion_{{ var('client') }}"
+      +materialized: ephemeral
+    15_wrangling:
+      +schema: "15_wrangling_{{ var('client') }}"
+      +materialized: view
+    20_staging:
+      +schema: "20_staging_{{ var('client') }}"
+      +materialized: view
+    30_enrichment:
+      +schema: "30_enrichment_{{ var('client') }}"
+      +materialized: table
+    40_dwagg:
+      +schema: "40_dwagg_{{ var('client') }}"
+      +materialized: table
+    50_serving:
+      +schema: "50_serving_{{ var('client') }}"
+      +materialized: table
+```
+
+### packages.yml
+
+```yaml
+packages:
+  - package: dbt-labs/dbt_utils
+    version: [">=1.0.0", "<2.0.0"]
+  - package: dbt-labs/dbt_external_tables
+    version: [">=0.9.0", "<1.0.0"]
+  - package: dbt-labs/codegen
+    version: [">=0.12.0", "<1.0.0"]
+```
+
+---
+
+## External Tables (GCS Parquet to BigQuery)
+
+The `10_ingestion` layer uses `dbt_external_tables` to expose GCS parquet files as queryable BigQuery tables.
+
+```yaml
+# models/10_ingestion/products/_sources.yml
+sources:
+  - name: external_products
+    schema: "10_ingestion_{{ var('client') }}"
+    tables:
+      - name: raw_products
+        external:
+          location: "gs://{{ var('client') }}-data-lake/products/*.parquet"
+          options:
+            format: PARQUET
+        columns:
+          - name: product_id
+            data_type: STRING
+          - name: product_name
+            data_type: STRING
+          - name: unit_cost
+            data_type: FLOAT64
+          - name: is_active
+            data_type: BOOL
+```
+
+Create/refresh: `dbt run-operation stage_external_sources`
+
+---
+
+## FARM_FINGERPRINT Surrogate Keys
+
+Uses BigQuery-native `FARM_FINGERPRINT` (returns `INT64`) instead of `md5` or `dbt_utils.generate_surrogate_key`. More efficient for joins.
+
+```sql
+-- Single-column key
+FARM_FINGERPRINT(CAST(product_id AS STRING)) as sk_product
+
+-- Composite key
+FARM_FINGERPRINT(CONCAT(
+    CAST(warehouse_id AS STRING), '-',
+    CAST(product_id AS STRING)
+)) as sk_inventory
+```
+
+Optional macro helper:
+
+```sql
+-- macros/utils/farm_fingerprint_key.sql
+{% macro farm_key(fields) %}
+    FARM_FINGERPRINT(CONCAT(
+        {% for field in fields %}
+            CAST({{ field }} AS STRING)
+            {% if not loop.last %}, '-', {% endif %}
+        {% endfor %}
+    ))
+{% endmacro %}
+
+-- Usage: {{ farm_key(['warehouse_id', 'product_id']) }} as sk_inventory
+```
+
+---
+
+## Staging Layer Pattern (20_staging)
+
+Two-CTE pattern (`source` + `renamed`). Always adds `FARM_FINGERPRINT` surrogate key.
+
+```sql
+-- stg_Products | Grain: one row per product | Schema: 20_staging_products_{env}
+{{ config(materialized='view') }}
+
+with source as (
+    select * from {{ source('external_products', 'raw_products') }}
+),
+renamed as (
+    select
+        FARM_FINGERPRINT(CAST(product_id AS STRING)) as sk_product,
+        product_id,
+        product_name,
+        category,
+        CAST(unit_cost AS FLOAT64) as unit_cost,
+        CAST(unit_price AS FLOAT64) as unit_price,
+        CAST(is_active AS BOOL) as is_active
+    from source
+)
+select * from renamed
+```
+
+**Rules**: Only `{{ source() }}` refs. No joins/aggregations/business logic. Always `view`. Explicit type casts.
+
+---
+
+## Enrichment Layer Pattern (30_enrichment)
+
+Joins staging models together with business logic.
+
+```sql
+-- enr_demand_with_products | Grain: one row per demand record | Schema: 30_enrichment_demand_{env}
+{{ config(materialized='table', tags=['enrichment', 'demand']) }}
+
+with demand as (
+    select * from {{ ref('stg_Demand') }}
+),
+products as (
+    select * from {{ ref('stg_Products') }}
+),
+enriched as (
+    select
+        d.sk_demand, d.demand_date, d.warehouse_id, d.product_id,
+        d.quantity_demanded,
+        p.product_name, p.category, p.unit_price,
+        d.quantity_demanded * p.unit_price as demand_value,
+        p.is_active as product_is_active
+    from demand d
+    left join products p on d.product_id = p.product_id
+)
+select * from enriched
+```
+
+**Rules**: Refs `stg_` models. Contains joins and calculated columns. Materialized as `table`.
+
+---
+
+## Aggregation/Data Mart Pattern (40_dwagg)
+
+KPIs and summaries. Uses `SAFE_DIVIDE` (returns NULL on zero division).
+
+```sql
+-- agg_inventory_by_warehouse | Grain: warehouse-product | Schema: 40_dwagg_supply_chain_{env}
+{{ config(materialized='table', tags=['aggregations', 'supply_chain']) }}
+
+with base as (
+    select * from {{ ref('stg_Inventory') }}
+),
+aggregated as (
+    select
+        FARM_FINGERPRINT(CONCAT(
+            CAST(warehouse_id AS STRING), '-',
+            CAST(product_id AS STRING)
+        )) as sk_inventory_agg,
+        warehouse_id,
+        product_id,
+        SUM(quantity_on_hand) as total_on_hand,
+        SUM(quantity_sold) as total_sold,
+        SAFE_DIVIDE(SUM(quantity_sold), SUM(quantity_on_hand)) as inventory_turnover,
+        SAFE_DIVIDE(SUM(quantity_on_hand), NULLIF(AVG(daily_demand), 0)) as days_of_supply
+    from base
+    group by warehouse_id, product_id
+)
+select * from aggregated
+```
+
+---
+
+## BigQuery-Specific SQL Functions
+
+Always use BigQuery-native functions. No PostgreSQL equivalents.
+
+| Category | Functions |
+|----------|-----------|
+| **Surrogate Keys** | `FARM_FINGERPRINT(CAST(x AS STRING))` |
+| **Safe Arithmetic** | `SAFE_DIVIDE()`, `SAFE_MULTIPLY()`, `SAFE_ADD()`, `SAFE_SUBTRACT()` |
+| **Casting** | `CAST(x AS FLOAT64/INT64/BOOL/STRING/TIMESTAMP/DATE)`, `SAFE_CAST()` |
+| **Date/Time** | `DATE_TRUNC(col, MONTH)`, `TIMESTAMP_TRUNC()`, `DATE_DIFF()`, `TIMESTAMP_DIFF()` |
+| **Formatting** | `FORMAT_DATE('%Y-%m-%d', col)`, `FORMAT_TIMESTAMP()`, `PARSE_DATE()`, `PARSE_TIMESTAMP()` |
+| **Null Handling** | `IFNULL(x, default)`, `COALESCE(a, b, c)`, `NULLIF(x, 0)` |
+| **Arrays/Structs** | `ARRAY_AGG(x ORDER BY y)`, `UNNEST(arr)`, `STRUCT(a AS f1, b AS f2)` |
+| **Strings** | `CONCAT()`, `LOWER()`, `UPPER()`, `TRIM()`, `REGEXP_EXTRACT(x, r'pattern')` |
+| **Current** | `CURRENT_DATE()`, `CURRENT_TIMESTAMP()` |
+
+---
+
+## Supply Chain Domain Models
+
+| Entity | Description | Key Fields |
+|--------|-------------|------------|
+| Products | SKUs with classification | `product_id`, `category`, `abc_class`, `xyz_class` |
+| Inventory | Stock levels by warehouse/product | `warehouse_id`, `product_id`, `quantity_on_hand` |
+| Demand | Historical sales and forecasts | `product_id`, `demand_date`, `quantity_demanded` |
+| Orders | Purchase and sales orders | `order_id`, `order_date`, `order_type`, `status` |
+| Suppliers | Vendor information | `supplier_id`, `lead_time_days`, `reliability_score` |
+| Warehouses | Storage locations | `warehouse_id`, `location`, `capacity` |
+
+**ABC/XYZ Classification**: ABC = revenue contribution (A=80%, B=15%, C=5%). XYZ = demand variability (X=stable, Y=moderate, Z=erratic).
+
+```sql
+CASE
+    WHEN cumulative_revenue_pct <= 0.80 THEN 'A'
+    WHEN cumulative_revenue_pct <= 0.95 THEN 'B'
+    ELSE 'C'
+END as abc_class
+```
+
+---
+
+## Testing Patterns
+
+```yaml
+# Primary key + foreign key + accepted values
+models:
+  - name: stg_Products
+    columns:
+      - name: sk_product
+        description: "Surrogate key (FARM_FINGERPRINT of product_id)"
+        data_tests:
+          - not_null
+          - unique
+      - name: product_id
+        data_tests:
+          - not_null
+      - name: is_active
+        data_tests:
+          - accepted_values:
+              values: [true, false]
+
+  - name: enr_demand_with_products
+    columns:
+      - name: product_id
+        description: "FK to stg_Products"
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_Products')
+              field: product_id
+```
+
+Custom singular test (returns rows = failure):
+
+```sql
+-- tests/assert_no_negative_inventory.sql
+select warehouse_id, product_id, quantity_on_hand
+from {{ ref('stg_Inventory') }}
+where quantity_on_hand < 0
+```
+
+Severity: `severity: error` (blocks pipeline, default) or `severity: warn` (logs only).
+
+---
+
+## Materialization Strategy
+
+| Layer | Default | Override When |
+|-------|---------|--------------|
+| `10_ingestion` | `ephemeral` | Never |
+| `15_wrangling` | `view` | Never |
+| `20_staging` | `view` | Never |
+| `30_enrichment` | `table` | `incremental` for large event joins |
+| `40_dwagg` | `table` | `incremental` for daily append patterns |
+| `50_serving` | `table` | `incremental` for large fact tables |
+
+### Incremental Pattern (BigQuery)
+
+```sql
+{{ config(
+    materialized='incremental',
+    unique_key='sk_demand',
+    incremental_strategy='merge',
+    on_schema_change='append_new_columns',
+    partition_by={'field': 'demand_date', 'data_type': 'date', 'granularity': 'month'},
+    cluster_by=['product_id', 'warehouse_id']
+) }}
+
+select
+    FARM_FINGERPRINT(CONCAT(CAST(product_id AS STRING), '-', CAST(demand_date AS STRING))) as sk_demand,
+    product_id, warehouse_id, demand_date, quantity_demanded
+from {{ ref('stg_Demand') }}
+{% if is_incremental() %}
+    where demand_date > (select MAX(demand_date) from {{ this }})
+{% endif %}
+```
+
+BigQuery options: `partition_by` (cost/perf), `cluster_by` (filtered queries), `incremental_strategy` (`merge` or `insert_overwrite`).
+
+---
+
+## Selectors and Tags
+
+```yaml
+# selectors.yml
+selectors:
+  - name: daily_refresh
+    definition:
+      union:
+        - method: tag
+          value: daily
+        - method: tag
+          value: staging
+  - name: weekly_aggregations
+    definition:
+      method: tag
+      value: aggregations
+  - name: full_pipeline
+    definition:
+      union:
+        - method: path
+          value: models/10_ingestion
+        - method: path
+          value: models/20_staging
+        - method: path
+          value: models/30_enrichment
+        - method: path
+          value: models/40_dwagg
+        - method: path
+          value: models/50_serving
+```
+
+Usage: `dbt run --selector daily_refresh` | Tags in config: `tags=['daily', 'supply_chain']`
+
+---
+
+## profiles.yml Configuration
+
+BigQuery only. No PostgreSQL.
+
+```yaml
+lake_house:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: "dev"
+      threads: 4
+      timeout_seconds: 300
+      location: US
+    prod:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: "prod"
+      threads: 8
+      timeout_seconds: 600
+      location: US
+      keyfile: "{{ env_var('DBT_BQ_KEYFILE') }}"
+```
+
+Install: `pip install dbt-bigquery` | Env vars: `GCP_PROJECT_ID`, `DBT_BQ_KEYFILE`, `client`
+
+---
+
+## Common dbt Commands
+
+```bash
+# Build and Run
+dbt run                                        # All models
+dbt run --select 20_staging                   # All staging models
+dbt run --select stg_Products+                # Model + all downstream
+dbt run --select +agg_inventory_by_warehouse  # Model + all upstream
+dbt run --selector daily_refresh              # By selector
+dbt run --full-refresh                        # Rebuild incrementals
+
+# Testing
+dbt test                                       # All tests
+dbt test --select stg_Products                # Specific model
+dbt test --select tag:supply_chain            # By tag
+
+# External Tables
+dbt run-operation stage_external_sources      # All external sources
+
+# Debugging
+dbt debug                                      # Verify connection
+dbt compile                                    # Compile without running
+dbt docs generate && dbt docs serve           # Browse documentation
+dbt ls --select 30_enrichment                 # List models in layer
+dbt show --select stg_Products --limit 10     # Preview results
+dbt seed                                       # Load seed CSVs
+```
+{% endraw %}

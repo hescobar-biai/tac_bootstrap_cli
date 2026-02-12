@@ -1,0 +1,271 @@
+---
+name: gcp-infra
+description: "Manages GCP infrastructure including Cloud Storage, Cloud Functions, Cloud Run, IAM, and BigQuery resources. Use when provisioning GCP resources, configuring Terraform, or managing service accounts and permissions."
+allowed-tools: Bash(gcloud *), Bash(gsutil *), Bash(terraform *), Read, Write
+---
+
+# GCP Infrastructure Management
+
+Provision, configure, and manage Google Cloud Platform infrastructure resources using Terraform and gcloud CLI. This skill covers Cloud Storage, Cloud Functions, Cloud Run, IAM, BigQuery, and cost monitoring patterns.
+
+## Prerequisites
+
+1. **Google Cloud SDK** installed and authenticated:
+   ```bash
+   gcloud auth login
+   gcloud config set project <PROJECT_ID>
+   ```
+
+2. **Terraform** >= 1.5 installed:
+   ```bash
+   terraform version
+   ```
+
+3. **Required APIs** enabled on the GCP project:
+   ```bash
+   gcloud services enable \
+     storage.googleapis.com \
+     cloudfunctions.googleapis.com \
+     run.googleapis.com \
+     bigquery.googleapis.com \
+     iam.googleapis.com \
+     cloudresourcemanager.googleapis.com \
+     cloudbilling.googleapis.com
+   ```
+
+4. **Service account** with appropriate permissions for Terraform operations:
+   ```bash
+   gcloud iam service-accounts create terraform-sa \
+     --display-name="Terraform Service Account"
+   ```
+
+## Instructions
+
+### Resource Provisioning Workflow
+
+Follow this workflow when the user requests GCP infrastructure changes:
+
+1. **Identify the resource scope**:
+   - Determine which GCP services are needed (Storage, Cloud Run, BigQuery, etc.)
+   - Identify the target project and region
+   - Confirm naming conventions with the user
+
+2. **Review existing infrastructure**:
+   ```bash
+   terraform state list
+   terraform plan
+   ```
+
+3. **Use the Terraform templates** in [templates/](templates/) as starting points:
+   - [templates/main.tf](templates/main.tf) - Provider configuration and backend
+   - [templates/storage.tf](templates/storage.tf) - Cloud Storage buckets with lifecycle policies
+   - [templates/bigquery.tf](templates/bigquery.tf) - BigQuery datasets and tables
+   - [templates/cloudrun.tf](templates/cloudrun.tf) - Cloud Run service definitions
+
+4. **Apply changes**:
+   ```bash
+   terraform init
+   terraform plan -out=tfplan
+   terraform apply tfplan
+   ```
+
+5. **Verify deployment**:
+   ```bash
+   gcloud run services list --region=<REGION>
+   gsutil ls
+   bq ls --project_id=<PROJECT_ID>
+   ```
+
+### Terraform Configuration
+
+When writing or modifying Terraform files:
+
+1. **Always use a remote backend** (GCS) for state management - see [templates/main.tf](templates/main.tf)
+2. **Pin provider versions** to avoid unexpected breaking changes
+3. **Use variables** for project ID, region, and environment-specific values
+4. **Tag all resources** with environment, team, and managed-by labels
+5. **Enable versioning** on state buckets
+
+### IAM and Service Account Setup
+
+Follow least-privilege principles when configuring IAM:
+
+1. **Create purpose-specific service accounts** - one per service, never share accounts
+2. **Use predefined roles** over primitive roles (Editor, Owner):
+   - `roles/storage.objectViewer` instead of `roles/storage.admin`
+   - `roles/bigquery.dataViewer` instead of `roles/bigquery.admin`
+   - `roles/run.invoker` instead of `roles/run.admin`
+3. **Bind roles at the narrowest scope** (resource > project > folder > org)
+4. **Use Workload Identity Federation** for external services instead of service account keys
+5. **Audit IAM bindings** regularly:
+   ```bash
+   gcloud projects get-iam-policy <PROJECT_ID> --format=json
+   ```
+
+See [reference.md](reference.md) for detailed IAM patterns and predefined role mappings.
+
+### Cost Monitoring
+
+1. **Set budget alerts** on all projects
+2. **Use labels** on resources for cost attribution
+3. **Review billing exports** in BigQuery monthly
+4. **Enable recommender APIs** for idle resource detection
+
+See the cost monitoring section in [reference.md](reference.md) for detailed patterns.
+
+## Examples
+
+### Example 1: Provision a Cloud Storage Bucket with Lifecycle Rules
+
+User request:
+```
+Create a GCS bucket for storing application logs with automatic deletion after 90 days
+and transition to Coldline after 30 days.
+```
+
+You would:
+1. Copy and customize [templates/storage.tf](templates/storage.tf):
+   ```bash
+   cp templates/storage.tf infra/storage.tf
+   ```
+2. Modify the bucket configuration:
+   ```hcl
+   resource "google_storage_bucket" "app_logs" {
+     name          = "${var.project_id}-app-logs"
+     location      = var.region
+     storage_class = "STANDARD"
+     uniform_bucket_level_access = true
+
+     lifecycle_rule {
+       action { type = "SetStorageClass" storage_class = "COLDLINE" }
+       condition { age = 30 }
+     }
+     lifecycle_rule {
+       action { type = "Delete" }
+       condition { age = 90 }
+     }
+
+     labels = {
+       environment = var.environment
+       team        = "platform"
+       managed_by  = "terraform"
+     }
+   }
+   ```
+3. Run Terraform:
+   ```bash
+   terraform init
+   terraform plan -out=tfplan
+   terraform apply tfplan
+   ```
+4. Verify the bucket exists:
+   ```bash
+   gsutil ls -L gs://<PROJECT_ID>-app-logs/
+   ```
+
+### Example 2: Deploy a Cloud Run Service with IAM
+
+User request:
+```
+Deploy our API container to Cloud Run with a dedicated service account
+that can only read from BigQuery and write to Cloud Storage.
+```
+
+You would:
+1. Create a dedicated service account with least-privilege roles:
+   ```bash
+   gcloud iam service-accounts create api-runner \
+     --display-name="API Cloud Run Service Account"
+
+   gcloud projects add-iam-policy-binding <PROJECT_ID> \
+     --member="serviceAccount:api-runner@<PROJECT_ID>.iam.gserviceaccount.com" \
+     --role="roles/bigquery.dataViewer"
+
+   gcloud projects add-iam-policy-binding <PROJECT_ID> \
+     --member="serviceAccount:api-runner@<PROJECT_ID>.iam.gserviceaccount.com" \
+     --role="roles/storage.objectCreator"
+   ```
+2. Customize [templates/cloudrun.tf](templates/cloudrun.tf) for the service:
+   ```hcl
+   resource "google_cloud_run_v2_service" "api" {
+     name     = "api-service"
+     location = var.region
+
+     template {
+       service_account = google_service_account.api_runner.email
+       containers {
+         image = "gcr.io/${var.project_id}/api:latest"
+         env { name = "BQ_DATASET" value = "analytics" }
+         env { name = "GCS_BUCKET" value = "${var.project_id}-output" }
+         resources {
+           limits = { cpu = "1000m", memory = "512Mi" }
+         }
+       }
+       scaling {
+         min_instance_count = 0
+         max_instance_count = 10
+       }
+     }
+   }
+   ```
+3. Apply and verify:
+   ```bash
+   terraform apply
+   gcloud run services describe api-service --region=<REGION>
+   ```
+
+### Example 3: Set Up BigQuery Dataset with Access Controls
+
+User request:
+```
+Create a BigQuery dataset for analytics with separate reader and writer
+service accounts, and a partitioned events table.
+```
+
+You would:
+1. Use [templates/bigquery.tf](templates/bigquery.tf) as the base
+2. Define the dataset with access controls:
+   ```hcl
+   resource "google_bigquery_dataset" "analytics" {
+     dataset_id    = "analytics"
+     friendly_name = "Analytics Dataset"
+     location      = var.region
+
+     access {
+       role          = "WRITER"
+       user_by_email = google_service_account.bq_writer.email
+     }
+     access {
+       role          = "READER"
+       user_by_email = google_service_account.bq_reader.email
+     }
+     access {
+       role          = "OWNER"
+       user_by_email = "admin-group@example.com"
+     }
+
+     labels = {
+       environment = var.environment
+       managed_by  = "terraform"
+     }
+   }
+   ```
+3. Add a time-partitioned events table:
+   ```hcl
+   resource "google_bigquery_table" "events" {
+     dataset_id = google_bigquery_dataset.analytics.dataset_id
+     table_id   = "events"
+
+     time_partitioning {
+       type  = "DAY"
+       field = "event_timestamp"
+     }
+
+     schema = file("schemas/events.json")
+   }
+   ```
+4. Create the service accounts and apply:
+   ```bash
+   terraform init && terraform plan -out=tfplan && terraform apply tfplan
+   bq show --format=prettyjson analytics
+   ```

@@ -1,0 +1,102 @@
+{% raw %}
+# Domain Service Template
+
+## Template
+
+**File**: `src/{{bounded_context}}/application/services/{{service_name}}.py`
+
+```python
+"""
+IDK: application-service, orchestration, {{service_name}}
+
+Module: {{service_name}}
+
+Responsibility:
+- Orchestrate {{service_class}} business logic
+- Coordinate between domain objects and infrastructure
+- Enforce business rules for {{bounded_context}}
+
+Invariants:
+- All methods are async
+- Dependencies injected via constructor
+- Returns domain objects or DTOs, not ORM models
+
+Related Docs:
+- docs/{{bounded_context}}/application/{{service_name}}.md
+"""
+
+import structlog
+
+logger = structlog.get_logger(__name__)
+
+
+class {{service_class}}:
+    """
+    IDK: application-service, {{service_name}}, orchestration
+
+    Responsibility:
+    - {{responsibility_description}}
+
+    Invariants:
+    - Dependencies injected, not created
+    - All public methods are async
+    - Errors raised as domain exceptions
+
+    Collaborators:
+    {{collaborators_list}}
+    """
+
+    def __init__(
+        self,
+        {{dependencies}}
+    ) -> None:
+        """Initialize with injected dependencies."""
+        {{dependency_assignments}}
+
+    async def {{method_name}}(
+        self,
+        {{method_params}}
+    ) -> {{return_type}}:
+        """
+        IDK: {{method_idk_keywords}}
+
+        Responsibility:
+        - {{method_responsibility}}
+
+        Inputs:
+        {{method_inputs}}
+
+        Outputs:
+        - {{return_type}}: {{output_description}}
+
+        Failure Modes:
+        {{failure_modes}}
+        """
+        {{method_implementation}}
+```
+
+---
+
+## Example: ComparisonService
+
+```python
+import structlog
+from src.evaluation.domain.value_objects.comparison_result import ComparisonResult
+from src.evaluation.domain.value_objects.comparison_metrics import ComparisonMetrics
+
+logger = structlog.get_logger(__name__)
+
+
+class ResponseComparisonService:
+    def __init__(self, execution_service, metrics_calculator) -> None:
+        self._execution_service = execution_service
+        self._metrics_calculator = metrics_calculator
+
+    async def compare(self, results: list, options: dict) -> ComparisonResult:
+        if len(results) < 2:
+            return ComparisonResult(comparable=False, reason="Need at least 2 results")
+        metrics = self._metrics_calculator.compute(results)
+        return ComparisonResult(comparable=True, metrics=metrics)
+```
+
+{% endraw %}

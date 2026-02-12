@@ -1,0 +1,298 @@
+# Backend Patterns Reference
+
+> **Note:** These are annotated code examples demonstrating the generic backend patterns. Adapt the data client, config, and service layer to your project's specific data source and framework.
+
+## Table of Contents
+- [Singleton Data Client](#singleton-data-client)
+- [Settings Config](#settings-config)
+- [Service Layer](#service-layer)
+- [API Endpoints](#api-endpoints)
+- [App Factory](#app-factory)
+
+---
+
+## Singleton Data Client
+
+Source: `<backend-dir>/core/<client_name>.py`
+
+```python
+"""Client wrapper for <data-source> queries."""
+import os
+from typing import Any, Optional
+import logging
+
+from .config import settings
+
+logger = logging.getLogger(__name__)
+
+
+class DataSourceClient:
+    """Wrapper around <data-source> client library."""
+
+    def __init__(self):
+        """Initialize client with credentials."""
+        self._client = None
+        self._initialize_client()
+
+    def _initialize_client(self) -> None:
+        """Initialize the client with appropriate credentials."""
+        try:
+            if settings.DATA_SOURCE_CREDENTIALS_PATH:
+                # Initialize with explicit credentials
+                self._client = SomeLibrary(
+                    url=settings.DATA_SOURCE_URL,
+                    credentials=load_credentials(settings.DATA_SOURCE_CREDENTIALS_PATH),
+                )
+            else:
+                # Initialize with default credentials (e.g., env-based auth)
+                self._client = SomeLibrary(
+                    url=settings.DATA_SOURCE_URL,
+                )
+            logger.info(f"Client initialized for: {settings.DATA_SOURCE_URL}")
+        except Exception as e:
+            logger.error(f"Failed to initialize client: {e}")
+            raise
+
+    @property
+    def client(self):
+        """Get the client, initializing if necessary."""
+        if self._client is None:
+            self._initialize_client()
+        return self._client
+
+    async def execute_query(
+        self, query: str, params: Optional[dict[str, Any]] = None, use_cache: bool = True
+    ) -> list[dict[str, Any]]:
+        try:
+            # Configure query options
+            options = {"cache": use_cache}
+            if params:
+                options["parameters"] = params
+            result = self.client.execute(query, **options)
+            return result.to_list()
+        except Exception as e:
+            logger.error(f"Query error: {e}")
+            raise
+
+
+# Singleton instance
+_client: Optional[DataSourceClient] = None
+
+def get_data_client() -> DataSourceClient:
+    """Get or create the client singleton."""
+    global _client
+    if _client is None:
+        _client = DataSourceClient()
+    return _client
+```
+
+Key elements:
+- Private `_client` initialized in constructor
+- `@property` with lazy re-init guard
+- Module-level `_instance` variable + `get_*()` factory function
+- All config from `settings` object, never hardcoded
+
+---
+
+## Settings Config
+
+Source: `<backend-dir>/core/config.py`
+
+```python
+"""Application configuration using pydantic-settings."""
+from pydantic_settings import BaseSettings
+from typing import Optional
+
+class Settings(BaseSettings):
+    # Application
+    APP_NAME: str = "My Application"
+    APP_VERSION: str = "1.0.0"
+    DEBUG: bool = False
+    API_PREFIX: str = "/api/v1"
+
+    # Data Source
+    DATA_SOURCE_URL: str                           # Required, no default
+    DATA_SOURCE_REGION: str = "us-east-1"          # Optional with default
+    DATA_SOURCE_CREDENTIALS_PATH: Optional[str] = None  # Nullable
+
+    # Database
+    DATABASE_HOST: str = "localhost"
+    DATABASE_PORT: int = 5432
+    DATABASE_NAME: str = "myapp"
+
+    # CORS
+    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8000"]
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+
+settings = Settings()
+```
+
+Key elements:
+- `BaseSettings` (not `BaseModel`) — loads from env vars + `.env` file
+- UPPERCASE_SNAKE naming
+- Required fields have no default; optional fields have sensible defaults
+- Module-level `settings` singleton
+
+---
+
+## Service Layer
+
+Source: `<backend-dir>/services/<domain>_service.py`
+
+```python
+"""Service layer for <domain> operations."""
+from typing import Any, Optional, List
+from datetime import date
+import logging
+
+from ..core.<client_module> import get_data_client
+from ..core.config import settings
+
+logger = logging.getLogger(__name__)
+
+
+class DomainAnalysisService:
+    """Service for executing <domain> queries."""
+
+    def __init__(self):
+        self.client = get_data_client()
+
+    async def get_daily_summary(
+        self,
+        start_date: date,
+        end_date: date,
+        group_by: Optional[list[str]] = None,
+        categories: Optional[List[str]] = None,
+        filters: Optional[List[str]] = None
+    ) -> list[dict[str, Any]]:
+        try:
+            if categories is None:
+                categories = [settings.DEFAULT_CATEGORY]
+            sql = queries.build_query(...)
+            results = await self.client.execute_query(sql, params={...})
+            return results
+        except Exception as e:
+            logger.error(f"Error in daily summary: {e}")
+            raise
+
+
+# Singleton factory
+_service: Optional[DomainAnalysisService] = None
+
+def get_analysis_service() -> DomainAnalysisService:
+    global _service
+    if _service is None:
+        _service = DomainAnalysisService()
+    return _service
+```
+
+Key elements:
+- Constructor takes client via `get_*()` singleton factory
+- All methods `async`
+- Methods return `list[dict[str, Any]]` (raw dicts, serialized by framework)
+- Own singleton factory for dependency injection
+
+---
+
+## API Endpoints
+
+Source: `<backend-dir>/api/v1/endpoints/<domain>.py`
+
+```python
+"""API endpoints for <domain>."""
+from fastapi import APIRouter, Query, HTTPException, Depends
+from datetime import date
+from typing import List, Optional
+import logging
+
+from ....models.schemas import DailySummaryResponse, SummaryMetrics
+from ....services.<domain>_service import get_analysis_service, DomainAnalysisService
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/<domain>", tags=["<domain>"])
+
+
+@router.get("/daily-summary", response_model=List[DailySummaryResponse])
+async def get_daily_summary(
+    start_date: date = Query(..., description="Start date (YYYY-MM-DD)"),
+    end_date: date = Query(..., description="End date (YYYY-MM-DD)"),
+    categories: Optional[List[str]] = Query(None, description="Filter categories"),
+    service: DomainAnalysisService = Depends(get_analysis_service)
+):
+    try:
+        if end_date < start_date:
+            raise HTTPException(status_code=400, detail="end_date must be after start_date")
+        max_days = 365
+        if (end_date - start_date).days > max_days:
+            raise HTTPException(status_code=400, detail=f"Date range cannot exceed {max_days} days")
+        results = await service.get_daily_summary(start_date, end_date, categories=categories)
+        return results
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in daily summary endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+```
+
+Key elements:
+- `APIRouter` with `prefix` and `tags`
+- `Query(...)` = required, `Query(None, ...)` = optional
+- `Depends(get_analysis_service)` for DI
+- `response_model` on every endpoint
+- `try/except HTTPException: raise` pattern to preserve user-facing errors
+- Generic `except Exception` catches everything else as 500
+
+---
+
+## App Factory
+
+Source: `<backend-dir>/main.py`
+
+```python
+"""Application main entry point."""
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from .core.config import settings
+from .api.v1.endpoints import domain_endpoints, health
+
+def create_application() -> FastAPI:
+    app = FastAPI(
+        title=settings.APP_NAME,
+        version=settings.APP_VERSION,
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url=f"{settings.API_PREFIX}/openapi.json"
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    app.include_router(health.router)
+    app.include_router(domain_endpoints.router, prefix=settings.API_PREFIX)
+
+    @app.on_event("startup")
+    async def startup_event():
+        logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
+
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        logger.info("Shutting down application")
+
+    return app
+
+app = create_application()
+```
+
+Key elements:
+- Factory function `create_application()`
+- CORS from settings
+- Health router at root, domain routers with API prefix
+- Startup/shutdown event handlers

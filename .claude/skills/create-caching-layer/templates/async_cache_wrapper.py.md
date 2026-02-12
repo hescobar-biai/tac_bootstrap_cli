@@ -1,0 +1,51 @@
+# Async Cache Wrapper Template
+
+**File**: `src/{{bounded_context}}/infrastructure/cache/async_{{cache_name}}_cache.py`
+
+```python
+"""
+IDK: async-cache, {{cache_name}}, concurrent-safe
+
+Responsibility:
+- Async-safe wrapper around sync LRU cache
+- Prevent duplicate computation via per-key locks
+- Run CPU-bound work in thread pool
+"""
+
+import asyncio
+
+from .{{cache_name}}_cache import {{cache_class}}Cache
+
+
+class Async{{cache_class}}Cache:
+    """Async wrapper around {{cache_class}}Cache."""
+
+    def __init__(self, sync_cache: {{cache_class}}Cache) -> None:
+        self._cache = sync_cache
+        self._compile_locks: dict[str, asyncio.Lock] = {}
+        self._lock = asyncio.Lock()
+
+    async def get_or_compute(self, key_data, compute_fn) -> any:
+        """Get from cache or compute and store."""
+        cached = self._cache.get(key_data)
+        if cached is not None:
+            return cached
+
+        key = self._cache._hash_key(key_data)
+        async with self._lock:
+            if key not in self._compile_locks:
+                self._compile_locks[key] = asyncio.Lock()
+            compile_lock = self._compile_locks[key]
+
+        async with compile_lock:
+            cached = self._cache.get(key_data)
+            if cached is not None:
+                return cached
+            result = await asyncio.to_thread(compute_fn, key_data)
+            self._cache.put(key_data, result)
+            return result
+
+    @property
+    def stats(self):
+        return self._cache.stats
+```

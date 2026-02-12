@@ -1,0 +1,676 @@
+{% raw %}
+# Repository Template
+
+Template for creating data access repositories.
+
+## Usage
+
+Replace placeholders:
+- `{{EntityName}}` - PascalCase entity name (e.g., `Product`)
+- `{{entity_name}}` - snake_case entity name (e.g., `product`)
+- `{{capability}}` - snake_case capability name (e.g., `product_catalog`)
+
+## Template
+
+```python
+"""
+IDK: repository, data-access, {{entity_name}}-persistence
+
+Module: repository
+
+Responsibility:
+- CRUD operations for {{EntityName}} entities
+- Custom queries for {{EntityName}} data
+- Data access abstraction layer
+- Query optimization and filtering
+
+Invariants:
+- All queries use SQLAlchemy ORM
+- Inherits base CRUD operations
+- Soft-deleted entities (state=2) excluded by default in custom queries
+- Returns ORM models, not domain entities
+
+Related Docs:
+- docs/{{capability}}/infrastructure/repository.md
+- docs/shared/infrastructure/base-repository.md
+"""
+
+from sqlalchemy.orm import Session
+
+from shared.infrastructure.base_repository import BaseRepository
+from .models import {{EntityName}}Model
+
+
+class {{EntityName}}Repository(BaseRepository[{{EntityName}}Model]):
+    """
+    IDK: repository, data-access, {{entity_name}}-persistence
+
+    Responsibility:
+    - Provide CRUD operations for {{EntityName}}
+    - Implement {{EntityName}}-specific queries
+    - Abstract database access patterns
+
+    Invariants:
+    - Extends BaseRepository with generic CRUD
+    - All custom queries filter soft-deleted (state != 2)
+    - Returns {{EntityName}}Model instances
+
+    Inherited Methods:
+    - get_by_id(entity_id) -> Model | None
+    - get_by_code(code) -> Model | None
+    - get_all(page, page_size, filters, sort_by, sort_order) -> (list, int)
+    - create(entity) -> Model
+    - update(entity_id, data) -> Model | None
+    - delete(entity_id) -> bool (hard delete)
+    - soft_delete(entity_id) -> Model | None
+    - exists(entity_id) -> bool
+    - count(filters) -> int
+
+    Collaborators:
+    - Session: database connection
+    - {{EntityName}}Model: ORM mapping
+
+    Related Docs:
+    - docs/{{capability}}/infrastructure/repository.md
+    - docs/shared/infrastructure/base-repository.md
+    """
+
+    def __init__(self, db: Session):
+        """
+        IDK: repository-initialization, dependency-injection
+
+        Responsibility:
+        - Initialize repository with database session
+        - Set model class for base operations
+
+        Invariants:
+        - Model class is {{EntityName}}Model
+        - Database session is valid
+
+        Inputs:
+        - db (Session): SQLAlchemy database session
+
+        Related Docs:
+        - docs/shared/infrastructure/repository-setup.md
+        """
+        super().__init__({{EntityName}}Model, db)
+
+    # Add custom query methods below
+```
+
+## Example: Product Repository
+
+```python
+"""
+IDK: repository, data-access, product-persistence
+
+Module: repository
+
+Responsibility:
+- CRUD operations for Product entities
+- Product-specific queries (SKU, category, availability, stock)
+- Inventory data access
+- Product search and filtering
+
+Invariants:
+- Inherits base CRUD from BaseRepository
+- Custom queries exclude soft-deleted products
+- Returns ProductModel instances
+- Stock queries filter by availability
+
+Related Docs:
+- docs/product_catalog/infrastructure/repository.md
+"""
+
+from sqlalchemy.orm import Session
+
+from shared.infrastructure.base_repository import BaseRepository
+from .models import ProductModel
+
+
+class ProductRepository(BaseRepository[ProductModel]):
+    """
+    IDK: repository, data-access, product-persistence
+
+    Responsibility:
+    - Provide CRUD operations for products
+    - Product-specific queries (SKU, category, stock)
+    - Support inventory management
+    - Enable product search and filtering
+
+    Invariants:
+    - All queries return ProductModel instances
+    - Active products have state=1
+    - Stock queries check is_available=True
+    - Excludes soft-deleted (state=2) in custom queries
+
+    Collaborators:
+    - Session: SQLAlchemy database session
+    - ProductModel: product ORM mapping
+
+    Related Docs:
+    - docs/product_catalog/infrastructure/repository.md
+    - docs/product_catalog/domain/product.md
+    """
+
+    def __init__(self, db: Session):
+        """
+        IDK: repository-initialization, dependency-injection
+
+        Responsibility:
+        - Initialize product repository with session
+        - Configure base repository with ProductModel
+
+        Inputs:
+        - db (Session): database session
+
+        Related Docs:
+        - docs/shared/infrastructure/repository-setup.md
+        """
+        super().__init__(ProductModel, db)
+
+    def get_by_sku(self, sku: str) -> ProductModel | None:
+        """
+        IDK: product-query, sku-lookup, unique-identifier
+
+        Responsibility:
+        - Find product by SKU (stock keeping unit)
+        - Return first match (SKU should be unique)
+
+        Invariants:
+        - SKU is unique per product
+        - Returns None if not found
+
+        Inputs:
+        - sku (str): stock keeping unit
+
+        Outputs:
+        - ProductModel | None: product or None
+
+        Related Docs:
+        - docs/product_catalog/infrastructure/queries.md
+        """
+        return self.db.query(self.model).filter(self.model.sku == sku).first()
+
+    def get_available(self) -> list[ProductModel]:
+        """
+        IDK: product-query, availability-filter, catalog-visibility
+
+        Responsibility:
+        - Get all available products
+        - Filter by availability and active state
+        - Support product catalog display
+
+        Invariants:
+        - Returns only is_available=True
+        - Returns only state=1 (active)
+        - Excludes soft-deleted products
+
+        Outputs:
+        - list[ProductModel]: available products
+
+        Related Docs:
+        - docs/product_catalog/infrastructure/queries.md
+        """
+        return (
+            self.db.query(self.model)
+            .filter(self.model.is_available == True)
+            .filter(self.model.state == 1)  # Active only
+            .all()
+        )
+
+    def get_by_category(self, category: str) -> list[ProductModel]:
+        """
+        IDK: product-query, category-filter, product-search
+
+        Responsibility:
+        - Find all products in given category
+        - Filter by active state
+        - Support category browsing
+
+        Invariants:
+        - Returns only active products (state=1)
+        - Category comparison is case-sensitive
+        - Returns empty list if no matches
+
+        Inputs:
+        - category (str): product category
+
+        Outputs:
+        - list[ProductModel]: products in category
+
+        Related Docs:
+        - docs/product_catalog/infrastructure/queries.md
+        """
+        return (
+            self.db.query(self.model)
+            .filter(self.model.category == category)
+            .filter(self.model.state == 1)
+            .all()
+        )
+
+    def get_low_stock(self, threshold: int = 10) -> list[ProductModel]:
+        """
+        IDK: product-query, inventory-alert, stock-management
+
+        Responsibility:
+        - Find products with stock below threshold
+        - Filter by availability
+        - Support inventory alerts
+
+        Invariants:
+        - Returns products with stock_quantity < threshold
+        - Includes only available products
+        - Threshold defaults to 10
+
+        Inputs:
+        - threshold (int): stock quantity threshold (default: 10)
+
+        Outputs:
+        - list[ProductModel]: low-stock products
+
+        Related Docs:
+        - docs/product_catalog/infrastructure/inventory-queries.md
+        """
+        return (
+            self.db.query(self.model)
+            .filter(self.model.stock_quantity < threshold)
+            .filter(self.model.is_available == True)
+            .all()
+        )
+
+    def update_stock(self, product_id: str, quantity: int) -> ProductModel | None:
+        """
+        IDK: inventory-update, stock-adjustment, data-mutation
+
+        Responsibility:
+        - Update product stock quantity
+        - Delegate to base update method
+        - Return updated product
+
+        Invariants:
+        - Product must exist
+        - Returns None if product not found
+        - Quantity can be any integer (negative allowed)
+
+        Inputs:
+        - product_id (str): product identifier
+        - quantity (int): new stock quantity
+
+        Outputs:
+        - ProductModel | None: updated product or None
+
+        Failure Modes:
+        - Returns None if product_id not found
+
+        Related Docs:
+        - docs/product_catalog/infrastructure/inventory-updates.md
+        """
+        return self.update(product_id, {"stock_quantity": quantity})
+```
+
+## Common Query Patterns
+
+### Filter by State
+
+```python
+def get_active(self) -> list[{{EntityName}}Model]:
+    """
+    IDK: query-pattern, state-filter, active-entities
+
+    Responsibility:
+    - Get only active entities (state=1)
+    - Exclude inactive and deleted
+
+    Outputs:
+    - list[{{EntityName}}Model]: active entities
+    """
+    return self.db.query(self.model).filter(self.model.state == 1).all()
+
+
+def get_inactive(self) -> list[{{EntityName}}Model]:
+    """
+    IDK: query-pattern, state-filter, inactive-entities
+
+    Responsibility:
+    - Get inactive entities (state=0)
+    - Support activation workflows
+
+    Outputs:
+    - list[{{EntityName}}Model]: inactive entities
+    """
+    return self.db.query(self.model).filter(self.model.state == 0).all()
+
+
+def get_deleted(self) -> list[{{EntityName}}Model]:
+    """
+    IDK: query-pattern, state-filter, soft-deleted
+
+    Responsibility:
+    - Get soft-deleted entities (state=2)
+    - Support recovery operations
+
+    Outputs:
+    - list[{{EntityName}}Model]: deleted entities
+    """
+    return self.db.query(self.model).filter(self.model.state == 2).all()
+```
+
+### Search
+
+```python
+def search(self, query: str) -> list[{{EntityName}}Model]:
+    """
+    IDK: search, text-query, fuzzy-match
+
+    Responsibility:
+    - Search entities by name or code
+    - Case-insensitive partial match
+    - Support user search functionality
+
+    Invariants:
+    - Uses ILIKE for case-insensitive search
+    - Searches both name and code fields
+    - Returns matches in any field
+
+    Inputs:
+    - query (str): search term
+
+    Outputs:
+    - list[{{EntityName}}Model]: matching entities
+
+    Related Docs:
+    - docs/shared/infrastructure/search-patterns.md
+    """
+    search_term = f"%{query}%"
+    return (
+        self.db.query(self.model)
+        .filter(
+            (self.model.name.ilike(search_term)) |
+            (self.model.code.ilike(search_term))
+        )
+        .all()
+    )
+```
+
+### Date Range
+
+```python
+from datetime import datetime
+
+def get_created_between(
+    self,
+    start: datetime,
+    end: datetime
+) -> list[{{EntityName}}Model]:
+    """
+    IDK: date-query, time-range, temporal-filter
+
+    Responsibility:
+    - Get entities created within date range
+    - Support reporting and analytics
+    - Filter by creation timestamp
+
+    Invariants:
+    - start and end are inclusive
+    - Returns entities where start <= created_at <= end
+
+    Inputs:
+    - start (datetime): range start
+    - end (datetime): range end
+
+    Outputs:
+    - list[{{EntityName}}Model]: entities in range
+
+    Related Docs:
+    - docs/shared/infrastructure/date-queries.md
+    """
+    return (
+        self.db.query(self.model)
+        .filter(self.model.created_at >= start)
+        .filter(self.model.created_at <= end)
+        .all()
+    )
+```
+
+### Aggregations
+
+```python
+from sqlalchemy import func
+
+def count_by_category(self) -> dict[str, int]:
+    """
+    IDK: aggregation, group-by, statistics
+
+    Responsibility:
+    - Count products per category
+    - Support analytics and reporting
+    - Group results by category
+
+    Outputs:
+    - dict[str, int]: {category: count}
+
+    Related Docs:
+    - docs/shared/infrastructure/aggregation-queries.md
+    """
+    results = (
+        self.db.query(
+            self.model.category,
+            func.count(self.model.id)
+        )
+        .group_by(self.model.category)
+        .all()
+    )
+    return {category: count for category, count in results}
+
+
+def get_total_value(self) -> float:
+    """
+    IDK: aggregation, calculation, inventory-value
+
+    Responsibility:
+    - Calculate total inventory value
+    - Sum of (unit_price * stock_quantity)
+    - Support financial reporting
+
+    Invariants:
+    - Returns 0.0 if no products
+    - Handles None/NULL safely
+
+    Outputs:
+    - float: total inventory value
+
+    Related Docs:
+    - docs/product_catalog/infrastructure/aggregations.md
+    """
+    result = (
+        self.db.query(
+            func.sum(self.model.unit_price * self.model.stock_quantity)
+        )
+        .scalar()
+    )
+    return result or 0.0
+```
+
+### Bulk Operations
+
+```python
+def bulk_update_status(self, ids: list[str], status: str) -> int:
+    """
+    IDK: bulk-operation, batch-update, performance
+
+    Responsibility:
+    - Update status for multiple entities
+    - Efficient batch operation
+    - Return count of updated records
+
+    Invariants:
+    - Updates only entities with IDs in list
+    - Returns number of updated rows
+    - Commits changes to database
+
+    Inputs:
+    - ids (list[str]): entity IDs to update
+    - status (str): new status value
+
+    Outputs:
+    - int: number of entities updated
+
+    Related Docs:
+    - docs/shared/infrastructure/bulk-operations.md
+    """
+    count = (
+        self.db.query(self.model)
+        .filter(self.model.id.in_(ids))
+        .update({self.model.status: status}, synchronize_session=False)
+    )
+    self.db.commit()
+    return count
+
+
+def soft_delete_many(self, ids: list[str]) -> int:
+    """
+    IDK: bulk-operation, soft-delete, batch-update
+
+    Responsibility:
+    - Soft delete multiple entities at once
+    - Set state=2 for all entities in list
+    - Return count of deleted records
+
+    Invariants:
+    - Sets state to 2 (deleted)
+    - Does not remove from database
+    - Returns count of affected rows
+
+    Inputs:
+    - ids (list[str]): entity IDs to delete
+
+    Outputs:
+    - int: number of entities deleted
+
+    Related Docs:
+    - docs/shared/infrastructure/soft-delete.md
+    """
+    count = (
+        self.db.query(self.model)
+        .filter(self.model.id.in_(ids))
+        .update({self.model.state: 2}, synchronize_session=False)
+    )
+    self.db.commit()
+    return count
+```
+
+## Best Practices
+
+1. **Use base repository methods** - Don't reimplement CRUD operations
+2. **Filter soft-deleted** - Exclude state=2 in custom queries
+3. **Add indexes** - Index columns used in WHERE clauses
+4. **Document query intent** - Use IDK to explain query purpose
+5. **Return models** - Let service layer convert to domain/DTOs
+6. **Batch when possible** - Use bulk operations for multiple updates
+7. **Use type hints** - All methods should specify return types
+
+## Anti-Patterns to Avoid
+
+**Don't duplicate base methods:**
+```python
+# BAD: Reimplementing base method
+def get_by_id(self, id: str):
+    return self.db.query(self.model).filter(self.model.id == id).first()
+
+# GOOD: Use inherited method from BaseRepository
+# (no need to define, already available)
+```
+
+**Don't forget state filtering:**
+```python
+# BAD: Returns soft-deleted entities
+def get_by_category(self, category: str):
+    return self.db.query(self.model).filter(self.model.category == category).all()
+
+# GOOD: Filter active entities only
+def get_by_category(self, category: str):
+    return (
+        self.db.query(self.model)
+        .filter(self.model.category == category)
+        .filter(self.model.state == 1)
+        .all()
+    )
+```
+
+**Don't add business logic:**
+```python
+# BAD: Business logic in repository
+def get_profitable_products(self):
+    products = self.db.query(self.model).all()
+    return [p for p in products if p.unit_price > p.cost * 1.5]
+
+# GOOD: Return data, let service handle business logic
+def get_all_with_cost(self):
+    return self.db.query(self.model).filter(self.model.cost.isnot(None)).all()
+```
+
+## Testing Repositories
+
+```python
+# tests/unit/{{capability}}/infrastructure/test_repository.py
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from shared.infrastructure.database import Base
+from {{capability}}.infrastructure.models import {{EntityName}}Model
+from {{capability}}.infrastructure.repository import {{EntityName}}Repository
+
+
+@pytest.fixture
+def db_session():
+    """Create in-memory test database."""
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    yield session
+    session.close()
+
+
+def test_get_by_code(db_session):
+    """Test finding entity by code."""
+    repo = {{EntityName}}Repository(db_session)
+
+    # Create test entity
+    entity = {{EntityName}}Model(
+        id="test-id",
+        code="TEST-001",
+        name="Test Entity",
+        state=1,
+    )
+    db_session.add(entity)
+    db_session.commit()
+
+    # Test retrieval
+    result = repo.get_by_code("TEST-001")
+    assert result is not None
+    assert result.name == "Test Entity"
+
+
+def test_custom_query(db_session):
+    """Test custom repository query."""
+    repo = {{EntityName}}Repository(db_session)
+
+    # Add test data
+    entities = [
+        {{EntityName}}Model(id="1", code="E1", name="Entity 1", state=1),
+        {{EntityName}}Model(id="2", code="E2", name="Entity 2", state=0),
+        {{EntityName}}Model(id="3", code="E3", name="Entity 3", state=2),
+    ]
+    db_session.add_all(entities)
+    db_session.commit()
+
+    # Test custom query filters correctly
+    active = repo.get_active()
+    assert len(active) == 1
+    assert active[0].code == "E1"
+```
+
+{% endraw %}
