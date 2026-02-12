@@ -612,8 +612,16 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
         os.makedirs(output_dir, exist_ok=True)
 
     # Build command - always use stream-json format and verbose
+    # Safety: resolve any remaining model aliases to full IDs before passing to CLI
+    model_id = request.model
+    _KNOWN_ALIASES = {"haiku", "sonnet", "opus"}
+    if model_id in _KNOWN_ALIASES:
+        from .workflow_ops import get_model_id
+        model_id = get_model_id(model_id)
+        logging.debug(f"🔄 Resolved model alias '{request.model}' → '{model_id}'")
+
     cmd = [CLAUDE_PATH, "-p", request.prompt]
-    cmd.extend(["--model", request.model])
+    cmd.extend(["--model", model_id])
     cmd.extend(["--output-format", "stream-json"])
     cmd.append("--no-session-persistence")  # Avoid session state issues with model switching
 
@@ -948,6 +956,14 @@ def execute_template(request: AgentTemplateRequest) -> AgentPromptResponse:
         mapped_model = request.model
     else:
         mapped_model = get_model_for_slash_command(request)
+
+    # Resolve model aliases ("haiku", "sonnet", "opus") to fully qualified IDs
+    # Claude Code CLI requires full model IDs (e.g., "claude-haiku-4-5-20251001"), not aliases
+    _KNOWN_ALIASES = {"haiku", "sonnet", "opus"}
+    if mapped_model in _KNOWN_ALIASES:
+        from .workflow_ops import get_model_id
+        mapped_model = get_model_id(mapped_model)
+
     request = request.model_copy(update={"model": mapped_model})
 
     # Construct prompt from slash command and args
