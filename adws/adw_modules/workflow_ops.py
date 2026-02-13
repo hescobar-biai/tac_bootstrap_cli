@@ -151,7 +151,7 @@ def get_model_id(model_type: str) -> str:
     config = load_config()
     model_policy = config.get("agentic", {}).get("model_policy", {})
     config_value = model_policy.get(f"{model_type}_model")
-    if config_value and not (isinstance(config_value, str) and config_value.startswith("${")):
+    if config_value and isinstance(config_value, str) and config_value not in ("None", "") and not config_value.startswith("${"):
         return config_value
 
     # Tier 3: Hardcoded defaults

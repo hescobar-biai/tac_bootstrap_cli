@@ -53,9 +53,9 @@ agentic:
     heavy: "{{ config.agentic.model_policy.heavy }}"
     fallback: "{{ config.agentic.model_policy.fallback | default('haiku') }}"  # Fallback model when quota is exhausted
     # Optional: Fully qualified model IDs (override hardcoded defaults via config or env vars)
-    opus_model: "{{ config.agentic.model_policy.opus_model | default('claude-opus-4-5-20251101') }}"
-    sonnet_model: "{{ config.agentic.model_policy.sonnet_model | default('claude-sonnet-4-5-20250929') }}"
-    haiku_model: "{{ config.agentic.model_policy.haiku_model | default('claude-haiku-4-5-20251001') }}"
+    opus_model: "{{ config.agentic.model_policy.opus_model or 'claude-opus-4-5-20251101' }}"
+    sonnet_model: "{{ config.agentic.model_policy.sonnet_model or 'claude-sonnet-4-5-20250929' }}"
+    haiku_model: "{{ config.agentic.model_policy.haiku_model or 'claude-haiku-4-5-20251001' }}"
     # Optional: Claude Code subagent model override
 {% if config.agentic.model_policy.subagent_model %}
     subagent_model: "{{ config.agentic.model_policy.subagent_model }}"
