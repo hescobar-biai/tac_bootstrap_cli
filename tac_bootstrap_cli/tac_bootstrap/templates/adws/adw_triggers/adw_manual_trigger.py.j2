@@ -3,6 +3,7 @@
 # dependencies = [
 #   "asyncpg>=0.29.0",
 #   "python-dotenv>=1.0.0",
+#   "pyyaml",
 #   "rich>=13.0",
 # ]
 # ///

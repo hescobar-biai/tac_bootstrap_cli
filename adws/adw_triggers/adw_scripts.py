@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = []
+# dependencies = ["pyyaml"]
 # ///
 """
 ADW Runner - Triggers AI Developer Workflows in background processes.

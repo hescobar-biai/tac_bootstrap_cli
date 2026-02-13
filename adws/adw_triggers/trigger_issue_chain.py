@@ -5,6 +5,7 @@
 #     "schedule",
 #     "python-dotenv",
 #     "pydantic",
+#     "pyyaml",
 # ]
 # ///
 
