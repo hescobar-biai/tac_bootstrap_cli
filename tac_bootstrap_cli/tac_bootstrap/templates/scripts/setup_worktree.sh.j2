@@ -83,12 +83,25 @@ EOF
 echo "  Created playwright-mcp-config.json"
 echo "  Created videos/ directory"
 
-# 4. Copy .claude/ directory so Claude Code recognizes worktree as project root
+# 4. Copy .claude/ essentials (commands, hooks, settings) to worktree
 # CRITICAL: Must COPY not symlink! Symlinks cause Claude to resolve paths to main repo
-# which results in files being written to main instead of the worktree
-if [ -d "$PARENT_DIR/.claude" ] && [ ! -e "$WORKTREE_PATH/.claude" ]; then
-    cp -R "$PARENT_DIR/.claude" "$WORKTREE_PATH/.claude"
-    echo "  Copied .claude/ directory"
+# Git may already create .claude/ with tracked files (plans/, rules/), so we merge
+# individual subdirectories instead of copying the whole .claude/ directory
+if [ -d "$PARENT_DIR/.claude" ]; then
+    mkdir -p "$WORKTREE_PATH/.claude"
+    for item in commands hooks settings.json CLAUDE.md; do
+        src="$PARENT_DIR/.claude/$item"
+        dst="$WORKTREE_PATH/.claude/$item"
+        if [ -e "$src" ] && [ ! -e "$dst" ]; then
+            cp -R "$src" "$dst"
+            echo "  Copied .claude/$item"
+        fi
+    done
+    # Also copy CLAUDE.md from project root if it exists
+    if [ -f "$PARENT_DIR/CLAUDE.md" ] && [ ! -f "$WORKTREE_PATH/CLAUDE.md" ]; then
+        cp "$PARENT_DIR/CLAUDE.md" "$WORKTREE_PATH/CLAUDE.md"
+        echo "  Copied CLAUDE.md"
+    fi
 fi
 
 # 5. Sync model configuration in worktree (resolves env var / config.yml models)
